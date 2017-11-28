@@ -352,18 +352,21 @@
            if [ -f $startdir/Makefile ]; then
              if [ $ver == 1 ]; then
                make auger-analysis-gui-old
+               make support-old
                if [ $? != 0 ]; then
 	          errorecho "Compiling of the old version of the program failed..."
 		  exit 1
 	       fi
              elif [ $ver == 2 ]; then
                make auger-analysis-gui-new
+               make support-new
                if [ $? != 0 ]; then
 	          errorecho "Compiling of the old version of the program failed..."
 		  exit 1
 	       fi
              fi
            fi
+         # For only support, we just compile support programs
 	 elif [ "$1" == "support" ]; then
            cd $startdir
            if [ -f $startdir/Makefile ]; then
