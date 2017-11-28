@@ -1,0 +1,121 @@
+# Makefile tutorial: https://www.gnu.org/software/make/manual/html_node/index.html#SEC_Contents
+ 
+# Make variables ----------------------------------------------------
+
+# Setup for wxWidgets and ROOT
+WXCONF=$(shell wx-config --cxxflags --libs)
+ROOTCONF=$(shell root-config --cflags --libs)
+ROOTINC=$(shell root-config --incdir)
+ROOTLIB=$(shell root-config --libs)
+
+# Code position directories
+SRC=./src
+DBG=./dbg
+SUBSRC=$(SRC)/substructure
+BIN=./bin
+IDIR=./include
+LDIR=./lib
+
+# Compiler options
+COMPOPT=-fPIC -g -std=c++11
+#COMPOPT=-fPIC -std=c++11
+
+# Include directories
+INC=-I. -I$(IDIR) -I$(ADSTROOT)/include/adst -I$(ROOTINC) -I$(TMVASYS)/inc
+
+# Used libraries
+OFFLINELIBS=-lRecEventKG -lAnalysisKG
+LIBS=-L. -L$(LDIR) -lsubstr -L$(ADSTROOT)/lib $(OFFLINELIBS) -L$(TMVASYS)/lib -lTMVA $(ROOTLIB) -lMLP -lMinuit -lstdc++
+
+# Specific variables for the main program
+TARGETOLD=auger-analysis-gui-old
+TARGETNEW=auger-analysis-gui-new
+
+# Filenames for source files
+FILES=$(wildcard $(SRC)/*.cpp)
+SUBFILES=$(wildcard $(SUBSRC)/*.cpp)
+SUBOFILES=$(addsuffix .o, $(basename $(SUBFILES)))
+# -------------------------------------------------------------------
+
+# Base rules --------------------------------------------------------
+
+# General make options
+all: auger_analysis $(LDIR)/libsubstr.so
+support-old: tmvagui batch-rewrite-old create_mva_plots individual_cut histograming
+support-new: tmvagui batch-rewrite-new create_mva_plots individual_cut histograming
+library: $(LDIR)/libsubstr.so
+
+# Make for main program (old version)
+$(TARGETOLD): $(LDIR)/libsubstr.so tmvagui batch-rewrite-old
+	@echo "\n# Compiling the main program (old) ------------------------------------------"
+	$(CXX) $(INC) $(COMPOPT) $(FILES) $(CPPFLAGS) -o $(BIN)/$@ $(WXCONF) $(LIBS)
+
+# Make for main program (old version)
+$(TARGETNEW): $(LDIR)/libsubstr.so tmvagui batch-rewrite-new
+	@echo "\n# Compiling the main program (new) ------------------------------------------"
+	$(CXX) $(INC) $(COMPOPT) $(FILES) $(CPPFLAGS) -o $(BIN)/$@ $(WXCONF) $(LIBS)
+# -------------------------------------------------------------------
+
+# Substructue library rules -----------------------------------------
+
+# Make for widget substructure
+$(LDIR)/libsubstr.so: $(LDIR)/libsubstr.a
+	@echo "\n# Creating a shared substructure library ------------------------------------"
+	$(CXX) $(INC) $(COMPOPT) $(SUBFILES) $(LDIR)/libsubstr.a -shared -o $@ $(WXCONF)
+
+$(LDIR)/libsubstr.a: $(SUBOFILES)
+	@echo "\n# Creating a static substructure library ------------------------------------"
+	ar r $@ $^
+
+$(SUBSRC)/%.o: $(SUBSRC)/%.cpp
+	@echo "\n# Compiling separate substructure source files ------------------------------"
+	$(CXX) $(INC) $(COMPOPT) -c -o $@ $< $(WXCONF)
+# -------------------------------------------------------------------
+
+# TMVA GUI interface rules ------------------------------------------
+tmvagui: $(SRC)/root_mva/TMVAGui.C
+	@echo "\n# Creating the TMVA GUI interface -------------------------------------------"
+	$(CXX) -I. $< -o ./bin/tmvagui $(ROOTCONF)
+	
+# -------------------------------------------------------------------
+
+# Batch rewrite rules -----------------------------------------------
+batch-rewrite-old: $(SRC)/batch_rewrite/batch_rewrite.cpp
+	@echo "\n# Creating the standalone batch rewrite (old) -------------------------------"
+	$(CXX) -I. -I$(IDIR) -I$(ADSTROOT)/include/adst -I$(ROOTINC) $(SRC)/batch_rewrite/batch_rewrite.cpp $(SRC)/separate_functions.cpp $(SRC)/observables.cpp -o ./bin/$@ -L. -L$(ADSTROOT)/lib $(OFFLINELIBS) $(ROOTCONF) -lMLP -lMinuit -lstdc++
+
+batch-rewrite-new: $(SRC)/batch_rewrite/batch_rewrite.cpp
+	@echo "\n# Creating the standalone batch rewrite (new) -------------------------------"
+	$(CXX) -I. -I$(IDIR) -I$(ADSTROOT)/include/adst -I$(ROOTINC) $(SRC)/batch_rewrite/batch_rewrite.cpp $(SRC)/separate_functions.cpp $(SRC)/observables.cpp -o ./bin/$@ -L. -L$(ADSTROOT)/lib $(OFFLINELIBS) $(ROOTCONF) -lMLP -lMinuit -lstdc++
+# -------------------------------------------------------------------
+
+# MVA plotting rules ------------------------------------------------
+create_mva_plots: $(SRC)/additional_scripts/create_mva_plots.cpp
+	@echo "\n# Creating the standalone MVA plotting script -------------------------------"
+	$(CXX) -I. -I$(IDIR) -I$(ROOTINC) $(SRC)/additional_scripts/create_mva_plots.cpp $(SRC)/separate_functions.cpp -o ./bin/$@ -L. $(ROOTCONF) -lMLP -lMinuit -lstdc++
+# -------------------------------------------------------------------
+
+# Cutting on individual observables ---------------------------------
+individual_cut: $(SRC)/additional_scripts/individual_observables.cpp
+	@echo "\n# Creating the standalone script for cutting on individual observables ------"
+	$(CXX) -I. -I$(IDIR) -I$(ROOTINC) $(SRC)/additional_scripts/individual_observables.cpp $(SRC)/separate_functions.cpp -o ./bin/$@ -L. $(ROOTCONF) -lMLP -lMinuit -lstdc++
+# -------------------------------------------------------------------
+
+# Plotting individual observable histograms -------------------------
+histograming: $(SRC)/additional_scripts/histograming.cpp
+	@echo "\n# Creating the standalone script for plotting individual observable histograms ------"
+	$(CXX) -I. -I$(IDIR) -I$(ROOTINC) $(SRC)/additional_scripts/histograming.cpp $(SRC)/separate_functions.cpp -o ./bin/$@ -L. $(ROOTCONF) -lMLP -lMinuit -lstdc++
+# -------------------------------------------------------------------
+
+# Cleaning rules ----------------------------------------------------
+
+# Rules for cleaning the installation
+clean:
+	@echo "# Cleaning the installation directory -----------------------------------------"
+	rm -f $(SUBSRC)/*.o
+	rm -f start.sh
+	rm -f $(IDIR)/workstation.h
+	rm -f $(SRC)/root_mva/plotsdir.h $(SRC)/root_mva/plots/* $(SRC)/root_mva/*.d $(SRC)/root_mva/*.so
+	rm -fr $(BIN)
+	rm -fr $(LDIR)
+# -------------------------------------------------------------------

@@ -1,0 +1,301 @@
+#include "frame.h"
+#include "separate_functions.h"
+#include "observables.h"
+#include "popups.h"
+
+// wxCollapsiblePane
+
+MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosition, wxSize(1024,671))
+{
+   InitObservables();
+   InitMethods();
+   InitVariables();
+
+   ReadLayout(&WW, &WH);
+   if(DBGSIG > 1)
+      cout << "# MyFrame               #: " << "Window size is: " << WW << "x" << WH << endl;
+   this->SetSize(0,0,WW,WH);
+
+   // Window size (default)
+   int lwidth = WW/2;
+   int rwidth = WW/2;
+
+   wxStaticText *temptext;
+   vector<string> vstemp;
+   vector<int> vitemp;
+   vector<double> vdtemp;
+   string stemp;
+
+   // Prepare the menu bar
+   menubar = new wxMenuBar;
+   file = new wxMenu;
+   file->Append(ID_SETLAYOUT, wxT("Set &user layout"));
+   file->Append(ID_SAVELAYOUT, wxT("Save &current layout"));
+   file->Append(wxID_EXIT, wxT("&Quit\tCtrl+W"));
+   menubar->Append(file, wxT("&File"));
+   help = new wxMenu;
+   help->Append(ID_OPENHELP, wxT("Open &help in browser"));
+   help->Append(wxID_ABOUT, wxT("&About"));
+   menubar->Append(help, wxT("&Help"));
+   SetMenuBar(menubar);
+
+   // Connection functions for menu bar items
+   Connect(ID_SAVELAYOUT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(MyFrame::SaveLayout));
+   Connect(ID_SETLAYOUT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(MyFrame::SetLayout));
+   Connect(wxID_EXIT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(MyFrame::OnQuit));
+   Connect(wxID_ABOUT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(MyFrame::OnAbout));
+
+   // Create a tab for MVA analysis
+   wxNotebook *tabs = new wxNotebook(this, -1, wxDefaultPosition, wxDefaultSize, wxNB_BOTTOM);
+
+// MVA analysis -----------------------------------------------------
+
+   // Set the scrollable window inside the frame
+   wxScrolledWindow *sw = new wxScrolledWindow(tabs);
+
+   // Horizontally align panels inside the scrolled window
+   wxBoxSizer *hboxhead = new wxBoxSizer(wxHORIZONTAL);
+
+   // Set the left panel inside the scrollable window (MVA analysis) ------------------------------------
+   wxPanel *leftmvapanel = new wxPanel(sw, -1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxBORDER_RAISED);
+
+   // Vertically align elements inside the panel
+   wxBoxSizer *vbox = new wxBoxSizer(wxVERTICAL);
+
+   // Make a title
+   MakeTitle(leftmvapanel, vbox, wxT("Filelist"));
+
+   // Label and button for opening root files
+   selectMvaFile = new LabelButton(leftmvapanel, wxT("File selection:"), wxT("..."), ID_OPENFILE, lwidth);
+   vbox->Add(selectMvaFile->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   Connect(ID_OPENFILE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SelectMvaFile));
+
+   // Label and listbox for displaying opened root files
+   mvaList[0] = new LabelList(leftmvapanel, wxT("ADST files:"), 70, 1, -1);
+   vbox->Add(mvaList[0]->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+
+   // Label and button to start rewriting ADST into simple form
+   startRewriting = new LabelButton(leftmvapanel, wxT("Select ADST files above to rewrite into a single rewritten ADST file (first list):"), wxT("Rewrite"), ID_REWRITE, lwidth);
+   vbox->Add(startRewriting->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   Connect(ID_REWRITE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SelectRewrite));
+
+   // Label and listbox for displaying rewriten root files
+   mvaList[1] = new LabelList(leftmvapanel, wxT("Rewritten ADST files:"), 70, 1, -1);
+   vbox->Add(mvaList[1]->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+
+   // Label + NEntry + two buttons
+   if(!vitemp.empty()) vitemp.erase(vitemp.begin(), vitemp.end());
+   if(!vstemp.empty()) vstemp.erase(vstemp.begin(), vstemp.end());
+   vstemp.push_back("Combine (into MVA)");
+   vitemp.push_back(ID_COMBINE);
+   vstemp.push_back("Merge (into rewritten ADST)");
+   vitemp.push_back(ID_MERGE);
+
+   startCombining = new LabelNEntryButton(leftmvapanel, wxT("Select rewritten ADST files above to combine into one rewritten ADST file (second list):"), 1., -1, vstemp, vitemp, lwidth);
+   startCombining->SetNEntryFormat(startCombining->widgetNE[0], 2, 0.01, 2, 0., 1.);
+   vbox->Add(startCombining->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   Connect(ID_COMBINE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SelectCombine));
+   Connect(ID_MERGE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SelectMerge));
+
+   // Label and listbox for MVA input root files
+   mvaList[2] = new LabelList(leftmvapanel, wxT("MVA input files:"), 70, 0, ID_SELECTMVAFILE);
+   vbox->Add(mvaList[2]->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   Connect(ID_SELECTMVAFILE, wxEVT_LISTBOX_DCLICK, wxCommandEventHandler(MyFrame::EnableMvaFile));
+
+   // Label for some extra information
+   temptext = new wxStaticText(leftmvapanel, -1, wxT("Double click a file from the above list (third list) to use it in the MVA analysis."));
+   vbox->Add(temptext, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 10);
+
+   leftmvapanel->SetSizer(vbox);
+   hboxhead->Add(leftmvapanel, 1, wxEXPAND);
+   sw->SetSizer(hboxhead);
+   // Set the left panel inside the scrollable window (MVA analysis) ------------------------------------
+   
+   // Set the right panel inside the scrollable window (MVA analysis) -----------------------------------
+   wxPanel *rightmvapanel = new wxPanel(sw, -1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxBORDER_RAISED);
+
+   // Vertically align elements inside the panel
+   vbox = new wxBoxSizer(wxVERTICAL);
+
+   // Make a title
+   MakeTitle(rightmvapanel, vbox, wxT("MVA analysis"));
+
+   // Label and text entry for MVA selected input MVA file
+   selectedMva = new LabelTEntry(rightmvapanel, wxT("Selected file for MVA analysis:"), wxT(""), -1, rwidth);
+   (selectedMva->widgetTE)->SetEditable(false);
+   vbox->Add(selectedMva->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+
+   // Label and listbox for MVA input observables
+   selectObservables = new LabelList(rightmvapanel, wxT("Observables to use in the MVA (Ctrl or Shift + Click to select multiple):"), 90, 1, ID_CHANGEOBSSELECT);
+   vbox->Add(selectObservables->subsizer, 0, wxLEFT | wxRIGHT | wxTOP, 5);
+   for(int i = 0; i < nrobs; i++)
+   {
+      (selectObservables->widgetLB)->Append(observables[i]);
+      if(obsorigsel[i])
+         (selectObservables->widgetLB)->SetSelection(i);
+   }
+   (selectObservables->widgetLB)->SetFirstItem(0);
+   Connect(ID_CHANGEOBSSELECT, wxEVT_LISTBOX, wxCommandEventHandler(MyFrame::UpdateObservableSelection));
+
+   // Label and combo box for selecting signal tree
+   if(!vstemp.empty()) vstemp.erase(vstemp.begin(), vstemp.end());
+   vstemp.push_back("Select signal...");
+   signalSelect = new LabelDrop(rightmvapanel, wxT("Select 'signal' tree:"), vstemp, vstemp[0], -1, rwidth);
+   vbox->Add(signalSelect->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (signalSelect->widgetCB)->SetSelection(0);
+
+   // Label and combo box for selecting background tree
+   if(!vstemp.empty()) vstemp.erase(vstemp.begin(), vstemp.end());
+   vstemp.push_back("Select background...");
+   backgroundSelect = new LabelDrop(rightmvapanel, wxT("Select 'background' tree:"), vstemp, vstemp[0], -1, rwidth);
+   vbox->Add(backgroundSelect->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (backgroundSelect->widgetCB)->SetSelection(0);
+
+   // Label and combo box for selecting MVA method type
+   if(!vstemp.empty()) vstemp.erase(vstemp.begin(), vstemp.end());
+   for(int i = 0; i < nrmethods; i++)
+      vstemp.push_back(GetMethodName(methods[i]));
+   methodsSelect = new LabelDrop(rightmvapanel, wxT("Choose MVA analysis method:"), vstemp, "Neural network (MLPBNN)", -1, rwidth);
+   vbox->Add(methodsSelect->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (methodsSelect->widgetCB)->SetSelection((methodsSelect->widgetCB)->FindString("Neural network (MLPBNN)"));
+
+   // Label + NEntry for choosing the MVA cut
+   cutMva = new LabelNEntry(rightmvapanel, wxT("Choose MVA cut value:"), 0., -1, rwidth);
+   cutMva->SetNEntryFormat(cutMva->widgetNE[0], 4, 0.0001, 0, 0., 0.);
+   vbox->Add(cutMva->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+
+   // Label for cuts
+   vbox->Add(-1, 10);
+   temptext = new wxStaticText(rightmvapanel, -1, wxT("Cut and binning on energy, zenith angle and/or risetime:"));
+   vbox->Add(temptext, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10);
+
+   // Label and combo box for selecting the type of observables for cuts SD or FD
+   if(!vstemp.empty()) vstemp.erase(vstemp.begin(), vstemp.end());
+   vstemp.push_back("SD observables (energySD and zenithSD)");
+   vstemp.push_back("FD observables (energyFD and zenithFD)");
+   cutObservables = new LabelDrop(rightmvapanel, wxT("Select cut observables type:"), vstemp, vstemp[1], -1, rwidth);
+   vbox->Add(cutObservables->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (cutObservables->widgetCB)->SetSelection(1);
+
+   // Check + label + NEntry for choosing energy cut
+   if(!vitemp.empty()) vitemp.erase(vitemp.begin(), vitemp.end());
+   if(!vdtemp.empty()) vdtemp.erase(vdtemp.begin(), vdtemp.end());
+   vdtemp.push_back(17.);
+   vitemp.push_back(ID_ENERGYLIMITMIN);
+   vdtemp.push_back(21.);
+   vitemp.push_back(ID_ENERGYLIMITMAX);
+   cutEnergy = new CheckNEntry(rightmvapanel, true, wxT("Energy limits:"), -1, vdtemp, vitemp, rwidth);
+   cutEnergy->SetNEntryFormat(cutEnergy->widgetNE[0], 2, 0.01, 2, 0., 25.);
+   cutEnergy->SetNEntryFormat(cutEnergy->widgetNE[1], 2, 0.01, 2, 0., 25.);
+   vbox->Add(cutEnergy->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   Connect(ID_ENERGYLIMITMIN, wxEVT_SPINCTRLDOUBLE, wxSpinDoubleEventHandler(MyFrame::UpdateEnergyBinSelect));
+   Connect(ID_ENERGYLIMITMAX, wxEVT_SPINCTRLDOUBLE, wxSpinDoubleEventHandler(MyFrame::UpdateEnergyBinSelect));
+
+   // Label + NEntry + dropbox + button for choosing energy binning options
+   cutEnergyBins = new LabelNEntryDropButton(rightmvapanel, wxT("Energy binning:"), 1., ID_ENERGYBIN, vstemp, "", -1, wxT("Check bins"), ID_CHECKENERGYBINS, rwidth);
+   cutEnergyBins->SetNEntryFormat(cutEnergyBins->widgetNE[0], 0, 1, 2, 1., 30.);
+   vbox->Add(cutEnergyBins->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   Connect(ID_ENERGYBIN, wxEVT_SPINCTRLDOUBLE, wxSpinDoubleEventHandler(MyFrame::UpdateEnergyBinSelect));
+   RunEnergyBinSelect();
+   Connect(ID_CHECKENERGYBINS, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::CheckEnergyBin));
+
+   // Check + label + NEntry for choosing zenith angle cut
+   if(!vitemp.empty()) vitemp.erase(vitemp.begin(), vitemp.end());
+   if(!vdtemp.empty()) vdtemp.erase(vdtemp.begin(), vdtemp.end());
+   vdtemp.push_back(0.);
+   vitemp.push_back(ID_ZENITHLIMITMIN);
+   vdtemp.push_back(60.);
+   vitemp.push_back(ID_ZENITHLIMITMAX);
+   cutZenith = new CheckNEntry(rightmvapanel, true, wxT("Zenith angle limits:"), -1, vdtemp, vitemp, rwidth);
+   cutZenith->SetNEntryFormat(cutZenith->widgetNE[0], 2, 0.01, 2, 0., 180.);
+   cutZenith->SetNEntryFormat(cutZenith->widgetNE[1], 2, 0.01, 2, 0., 180.);
+   vbox->Add(cutZenith->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   Connect(ID_ZENITHLIMITMIN, wxEVT_SPINCTRLDOUBLE, wxSpinDoubleEventHandler(MyFrame::UpdateZenithBinSelect));
+   Connect(ID_ZENITHLIMITMAX, wxEVT_SPINCTRLDOUBLE, wxSpinDoubleEventHandler(MyFrame::UpdateZenithBinSelect));
+
+   // Label + NEntry + dropbox + button for choosing zenith angle binning options
+   cutZenithBins = new LabelNEntryDropButton(rightmvapanel, wxT("Zenith binning:"), 1., ID_ZENITHBIN, vstemp, "", -1, wxT("Check bins"), ID_CHECKZENITHBINS, rwidth);
+   cutZenithBins->SetNEntryFormat(cutZenithBins->widgetNE[0], 0, 1, 2, 1., 30.);
+   vbox->Add(cutZenithBins->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   Connect(ID_ZENITHBIN, wxEVT_SPINCTRLDOUBLE, wxSpinDoubleEventHandler(MyFrame::UpdateZenithBinSelect));
+   RunZenithBinSelect();
+   Connect(ID_CHECKZENITHBINS, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::CheckZenithBin));
+
+   // Check + label + NEntry for choosing maximum risetime error cut
+   cutRisetime = new CheckNEntry(rightmvapanel, true, wxT("Maximum relative risetime limit:"), -1, 0.3, -1, rwidth);
+   cutRisetime->SetNEntryFormat(cutRisetime->widgetNE[0], 3, 0.001, 2, 0., 10.);
+   vbox->Add(cutRisetime->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+
+   // Label and combo box for selecting the eye selection method
+   if(!vstemp.empty()) vstemp.erase(vstemp.begin(), vstemp.end());
+   vstemp.push_back("Combine stereo FD events");
+   vstemp.push_back("Any FD eye inside cut");
+   vstemp.push_back("Average of active eyes");
+   eyeSelection = new LabelDrop(rightmvapanel, wxT("Eye selection method, if more than one FD eye:"), vstemp, vstemp[0], -1, rwidth);
+   vbox->Add(eyeSelection->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (eyeSelection->widgetCB)->SetSelection(0);
+
+   // Label and combo box for selecting data tree
+   if(!vstemp.empty()) vstemp.erase(vstemp.begin(), vstemp.end());
+   vstemp.push_back("Select data...");
+   dataSelect = new LabelDrop(rightmvapanel, wxT("Select 'data' tree:"), vstemp, vstemp[0], -1, rwidth);
+   vbox->Add(dataSelect->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (dataSelect->widgetCB)->SetSelection(0);
+
+   vbox->Add(-1, 10);
+
+   // Checkboxes for additional MVA settings
+   specialMva = new CheckList(rightmvapanel, true, wxT("Open MVA graphical interface after training and testing"), -1);
+   vbox->Add(specialMva->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+
+   // Multiple buttons to start MVA analysis
+   if(!vitemp.empty()) vitemp.erase(vitemp.begin(), vitemp.end());
+   if(!vstemp.empty()) vstemp.erase(vstemp.begin(), vstemp.end());
+   vstemp.push_back("Start MVA analysis");
+   vitemp.push_back(ID_STARTMVA);
+   vstemp.push_back("Create temp event file");
+   vitemp.push_back(ID_TEMPFILE);
+   vstemp.push_back("Apply MVA cut");
+   vitemp.push_back(ID_MVACUT);
+   vstemp.push_back("Check all bins");
+   vitemp.push_back(ID_CHECKBINS);
+   vstemp.push_back("Default options");
+   vitemp.push_back(ID_DEFOPTIONS);
+   startMva = new LabelButton(rightmvapanel, "", vstemp, vitemp, rwidth);
+   vbox->Add(startMva->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   Connect(ID_STARTMVA, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::StartMvaAnalysis));
+   Connect(ID_TEMPFILE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::CreateTempEventFile));
+   Connect(ID_MVACUT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::ApplyMvaCut));
+   Connect(ID_CHECKBINS, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::CheckBothBins));
+   Connect(ID_DEFOPTIONS, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SetDefaultMva));
+
+   rightmvapanel->SetSizer(vbox);
+   hboxhead->Add(rightmvapanel, 1, wxEXPAND);
+   sw->SetSizer(hboxhead);
+   // Set the right panel inside the scrollable window (MVA analysis) -----------------------------------
+
+   // Event for when we close the window
+//   Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(MyFrame::OnClose));
+
+   // Set scroll bars
+   sw->SetScrollbars(10, 10, 500/10, 350/10);
+   sw->Scroll(0,0);
+
+   // Add MVA analysis subframe to a tab
+   tabs->AddPage(sw, wxT("MVA analysis"));
+
+// MVA analysis -----------------------------------------------------
+
+// ADST cuts --------------------------------------------------------
+
+   // Set the scrollable window inside the frame
+   sw = new wxScrolledWindow(tabs);
+
+   // Add ADST cuts subframe to a tab
+   tabs->AddPage(sw, wxT("ADST cuts"));
+
+// ADST cuts --------------------------------------------------------
+
+//   CreateStatusBar();
+   Centre();
+}

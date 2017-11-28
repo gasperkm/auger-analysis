@@ -1,0 +1,27 @@
+if [ ! -d results ]; then
+  mkdir results
+fi
+
+export LD_LIBRARY_PATH=$PWD/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+
+if [ "$offversion" == "old" ]; then
+  if [ "$1" == "main" ]; then
+    ./bin/auger-analysis-gui-old
+  elif [ "$1" == "rewrite" ]; then
+    ./bin/batch-rewrite-old "$@"
+  else
+    ./bin/auger-analysis-gui-old
+  fi
+elif [ "$offversion" == "new" ]; then
+  if [ "$1" == "main" ]; then
+    ./bin/auger-analysis-gui-new
+  elif [ "$1" == "rewrite" ]; then
+    ./bin/batch-rewrite-new "$@"
+  else
+    ./bin/auger-analysis-gui-new
+  fi
+else
+  echo "Error! No offline version supplied."
+  helptext
+  exit 1
+fi

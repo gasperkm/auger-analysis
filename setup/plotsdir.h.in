@@ -1,0 +1,6 @@
+#ifndef _PLOTSDIR_H_
+#define _PLOTSDIR_H_
+
+#define PLOTSDIR "BASEDIR/src/root_mva/plots"
+
+#endif

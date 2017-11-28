@@ -1,0 +1,17 @@
+#ifndef _WORKSTATION_H_
+#define _WORKSTATION_H_
+
+// DBGSIG:
+//   - 0 = no debug printout
+//   - 1 = debug printout regarding analysis
+//   - 2 = debug printout regarding analysis (additional) + wxWidgets
+#define DBGSIG 1
+
+#define rootdir "path-to-installation"
+//#define rootdir "/home/gkukec/Gasper/programiranje/wxWidgets/auger-analysis"
+
+#define OFFVER SOMETHING
+
+#define ALLEYES 4
+
+#endif

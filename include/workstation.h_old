@@ -1,0 +1,13 @@
+#ifndef _WORKSTATION_H_
+#define _WORKSTATION_H_
+
+#define DBGSIG 0
+
+//#define rootdir "path-to-installation"
+#define rootdir "/home/gkukec/Gasper/programiranje/wxWidgets/auger-analysis"
+
+#define OFFVER SOMETHING
+
+#define ALLEYES 4
+
+#endif
