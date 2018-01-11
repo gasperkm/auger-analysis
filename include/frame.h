@@ -124,6 +124,7 @@ public:
     void SelectMvaFile(wxCommandEvent& event);
     int CheckFormat(string *infile);
     void SelectRewrite(wxCommandEvent& event);
+    void PrepareFileSplit(wxCommandEvent& event);
     void SelectCombine(wxCommandEvent& event);
     void SelectMerge(wxCommandEvent& event);
 
@@ -143,6 +144,7 @@ public:
     void ApplyMvaCut(wxCommandEvent& event);
     void SetDefaultMva(wxCommandEvent& event);
     int StartRewrite(string *outfile);
+    int StartFileSplit(string infile);
     int StartCombine(string *outfile);
     int StartMerge(string *outfile);
 
@@ -175,9 +177,10 @@ const int ID_OPENHELP 		= 103;
 // MVA analysis left panel IDs
 const int ID_OPENFILE 		= 201;
 const int ID_REWRITE 		= 202;
-const int ID_COMBINE 		= 203;
-const int ID_MERGE 		= 204;
-const int ID_SELECTMVAFILE 	= 205;
+const int ID_SPLIT 		= 203;
+const int ID_COMBINE 		= 204;
+const int ID_MERGE 		= 205;
+const int ID_SELECTMVAFILE 	= 206;
 
 // MVA analysis right panel IDs
 const int ID_CHANGEOBSSELECT 	= 300;

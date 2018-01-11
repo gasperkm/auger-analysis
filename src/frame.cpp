@@ -83,17 +83,20 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    mvaList[1] = new LabelList(leftmvapanel, wxT("Rewritten ADST files:"), 70, 1, -1);
    vbox->Add(mvaList[1]->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
 
-   // Label + NEntry + two buttons
+   // Label + NEntry + three buttons
    if(!vitemp.empty()) vitemp.erase(vitemp.begin(), vitemp.end());
    if(!vstemp.empty()) vstemp.erase(vstemp.begin(), vstemp.end());
-   vstemp.push_back("Combine (into MVA)");
+   vstemp.push_back("Split (by fraction)");
+   vitemp.push_back(ID_SPLIT);
+   vstemp.push_back("Combine (MVA input)");
    vitemp.push_back(ID_COMBINE);
-   vstemp.push_back("Merge (into rewritten ADST)");
+   vstemp.push_back("Merge (rewritten ADST)");
    vitemp.push_back(ID_MERGE);
 
    startCombining = new LabelNEntryButton(leftmvapanel, wxT("Select rewritten ADST files above to combine into one rewritten ADST file (second list):"), 1., -1, vstemp, vitemp, lwidth);
    startCombining->SetNEntryFormat(startCombining->widgetNE[0], 2, 0.01, 2, 0., 1.);
    vbox->Add(startCombining->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   Connect(ID_SPLIT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::PrepareFileSplit));
    Connect(ID_COMBINE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SelectCombine));
    Connect(ID_MERGE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SelectMerge));
 

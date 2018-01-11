@@ -81,6 +81,27 @@ int MyFrame::CheckFormat(string *infile)
    }
 }
 
+// Select a file to split depending on the fraction of events we need -> and write it back to rewritten ADST format
+void MyFrame::PrepareFileSplit(wxCommandEvent& event)
+{
+   wxArrayInt selections;
+   (mvaList[1]->widgetLB)->GetSelections(selections);
+
+   if(!selections.IsEmpty())
+   {
+      if(selections.GetCount() == 1)
+      {
+         ret = StartFileSplit(string((mvaList[1]->widgetLB)->GetString(selections[0])));
+         if(ret == 0)
+            InfoPopup("Finished spliting files", "The selected files have been split according to the set fraction.");
+      }
+      else
+         AlertPopup("Multiple files selected", "Multiple files from the second listbox were selected. Please select only one file to split.");
+   }
+   else
+      AlertPopup("No selected files", "No files from the second listbox were selected. Please select only one file to split.");
+}
+
 // Select a file to use for rewritten file
 void MyFrame::SelectRewrite(wxCommandEvent& event)
 {

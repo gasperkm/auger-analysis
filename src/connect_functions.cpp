@@ -5,6 +5,8 @@
 #include "combine.h"
 #include "mvaefficiency.h"
 
+#include <chrono>
+
 // Double click on list to select a MVA file for input
 void MyFrame::EnableMvaFile(wxCommandEvent& event)
 {
@@ -1615,6 +1617,182 @@ int MyFrame::StartRewrite(string *outfile)
       AlertPopup("No selected files", "No files from the first listbox were selected. Please select one or more files (holding Ctrl or Shift while clicking) to rewrite.");
       return -1;
    }
+}
+
+// Select a file to split depending on the fraction of events we need -> and write it back to rewritten ADST format
+int MyFrame::StartFileSplit(string infile)
+{
+   float *ftemp;
+   int *itemp;
+   string *stemp;
+   float *obsvars;
+   int rewritecode;
+
+   stemp = new string[4];
+   stemp[0] = RemoveExtension(&infile) + "_split-1.root";
+   stemp[1] = RemoveExtension(&infile) + "_split-2.root";
+
+   ftemp = new float[2];
+   itemp = new int[4];
+   
+   ftemp[0] = (startCombining->widgetNE[0])->GetValue();
+   
+   TFile *input = TFile::Open(infile.c_str(), "READ");
+   TTree *tempTree = (TTree*)input->Get("TreeA");
+   TList *tempkeyslist = (TList*)input->GetListOfKeys();
+   TTree *readTree;
+   TTree *writeTree;
+   
+   itemp[0] = tempTree->GetEntries();
+   itemp[1] = (int)TMath::Ceil(itemp[0]*ftemp[0]);
+   itemp[2] = (int)(itemp[0]-itemp[1]);
+
+/*   Observables *obstemp = new Observables(observables);
+   for(int j = 0; j < nrobs; j++)
+      tempTree->SetBranchAddress((obstemp->GetName(j)).c_str(), obstemp->obsstruct[j].value);
+   for(int i = 0; i < 40; i++)
+   {
+      cout << "# i = " << i << endl;
+      tempTree->GetEntry(i);
+      ftemp[1] = 0;
+      for(int j = 0; j < ALLEYES; j++)
+      {
+         cout << "EYE " << j << ": " << obstemp->GetValue("energyFD", j) << endl;
+         ftemp[1] += obstemp->GetValue("energyFD", j);
+      }
+      cout << "Testing value: " << ftemp[1] << endl;
+   }
+
+//   return 1;*/
+   
+   if( (itemp[0] == 0) || (itemp[1] == 0) || (itemp[2] == 0) )
+   {
+      AlertPopup("No events in split file", "One of the split files will have no events (" + ToString(itemp[1]) + "/" + ToString(itemp[2]) + "). Please adjust the fraction accordingly and restart.");
+
+      delete[] ftemp;
+      delete[] itemp;
+      delete[] stemp;
+
+      return 1;
+   }
+   else
+   {
+      itemp[3] = 0;
+      stemp[2] = "Currently splitting file \"" + RemovePath(&infile) + "\" into two files: \"" + RemovePath(&stemp[0]) + "\" and \"" + RemovePath(&stemp[1])+ "\". Please wait for it to finish.";
+      ShowProgress(wxT("Splitting rewritten ADST file"), stemp[2].c_str(), 2*(input->GetNkeys())*itemp[0]);
+
+      cout << "# Will start splitting file " << RemovePath(&infile) << " into:" << endl;
+      cout << "# - First file:  " << RemovePath(&stemp[0]) << " (" << itemp[1] << " of " << itemp[0] << " total events)" << endl;
+      cout << "# - Second file: " << RemovePath(&stemp[1]) << " (" << itemp[2] << " of " << itemp[0] << " total events)" << endl;
+   
+      // Preparing shuffled list for sampling
+      vector<int> shuflist;
+      for(int i = 0; i < itemp[0]; i++)
+         shuflist.push_back(i);
+   
+      shuffle(shuflist.begin(), shuflist.end(), default_random_engine((unsigned int)chrono::system_clock::now().time_since_epoch().count()));
+
+      vector<int> split1list;
+      vector<int> split2list;
+
+      for(int i = 0; i < itemp[0]; i++)
+      {
+         if(i < itemp[1])
+            split1list.push_back(shuflist[i]);
+	 else
+            split2list.push_back(shuflist[i]);
+      }
+
+      // Loop over the two split files
+      TFile *output;
+      for(int i = 0; i < 2; i++)
+      {
+         cout << "# Currently writing out to: " << stemp[i] << endl;
+         output = TFile::Open(stemp[i].c_str(), "RECREATE");
+
+         // Loop over all trees
+         for(int k = 0; k < input->GetNkeys(); k++)
+         {
+            // Prepare observables for reading and writing
+            Observables *obser = new Observables(observables);
+            Observables *obser_neg = new Observables(observables);
+            Observables *obser_pos = new Observables(observables);
+
+            // Name and title of the current tree
+            stemp[2] = string((tempkeyslist->At(k))->GetName());
+            stemp[3] = string((tempkeyslist->At(k))->GetTitle());
+
+            cout << "#   Currently selected tree: " << stemp[2] << "; " << stemp[3] << endl;
+
+            // Tree for reading
+            readTree = (TTree*)input->Get(stemp[2].c_str());
+            readTree->SetBranchAddress("rewritecode", &rewritecode);
+            for(int j = 0; j < nrobs; j++)
+            {
+               readTree->SetBranchAddress((obser->GetName(j)).c_str(), obser->obsstruct[j].value);
+               readTree->SetBranchAddress((obser->GetName(j) + "_neg").c_str(), obser_neg->obsstruct[j].value);
+               readTree->SetBranchAddress((obser->GetName(j) + "_pos").c_str(), obser_pos->obsstruct[j].value);
+            }
+
+            // Tree for writing
+            writeTree = new TTree(stemp[2].c_str(), stemp[3].c_str());
+            writeTree->Branch("rewritecode", &rewritecode, "rewritecode/I");
+            for(int j = 0; j < nrobs; j++)
+            {
+               writeTree->Branch((obser->GetName(j)).c_str(), &(obser->obsstruct[j].value), (obser->GetName(j) + "[" + ToString(ALLEYES) + "]/F").c_str());
+               writeTree->Branch((obser->GetName(j) + "_neg").c_str(), &(obser_neg->obsstruct[j].value), (obser->GetName(j) + "_neg[" + ToString(ALLEYES) + "]/F").c_str());
+               writeTree->Branch((obser->GetName(j) + "_pos").c_str(), &(obser_pos->obsstruct[j].value), (obser->GetName(j) + "_pos[" + ToString(ALLEYES) + "]/F").c_str());
+            }
+
+	    itemp[2] = 0;
+            // Loop over all events 
+            for(int j = 0; j < itemp[0]; j++)
+            {
+               readTree->GetEntry(j);
+
+	       // Check if the values in this tree are valid
+	       ftemp[1] = 0;
+               for(int j = 0; j < ALLEYES; j++)
+                  ftemp[1] += obser->GetValue("energyFD", j);
+
+	       if( (ftemp[1] == -4) || (ftemp[1] > 1.e+15) )
+	       {
+                  // Select the correct tree to write to
+                  if( (find(split1list.begin(), split1list.end(), j) != split1list.end()) && (i == 0) )
+                     writeTree->Fill();
+                  if( (find(split2list.begin(), split2list.end(), j) != split2list.end()) && (i == 1) )
+                     writeTree->Fill();
+	       }
+	       else
+		  itemp[2]++;
+
+	       // Update the progress bar
+	       itemp[3]++;
+	       if(itemp[3]%((int)(2*(input->GetNkeys())*itemp[0]*0.05)) == 0)
+                  progress->Update(itemp[3]);
+            }
+
+	    cout << "#   There were " << itemp[2] << " invalid events." << endl;
+
+	    writeTree->Write();
+
+	    delete obser;
+	    delete obser_neg;
+	    delete obser_pos;
+	    delete writeTree;
+         }
+
+	 output->Close();
+      }
+
+      progress->Update(2*(input->GetNkeys())*itemp[0]);
+   }
+
+   delete[] ftemp;
+   delete[] itemp;
+   delete[] stemp;
+
+   return 0;
 }
 
 // Combine the observables from multiple ADST files into a single root file
