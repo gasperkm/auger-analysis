@@ -200,5 +200,6 @@ const int ID_DEFOPTIONS 	= 313;
 
 // Additional IDs for any custom dialogs
 const int ID_MVACUTDIALOG	= 401;
+const int ID_RANDSEEDDIALOG	= 402;
 
 #endif

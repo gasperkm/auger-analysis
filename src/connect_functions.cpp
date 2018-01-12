@@ -1627,13 +1627,14 @@ int MyFrame::StartFileSplit(string infile)
    string *stemp;
    float *obsvars;
    int rewritecode;
-
-   stemp = new string[4];
-   stemp[0] = RemoveExtension(&infile) + "_split-1.root";
-   stemp[1] = RemoveExtension(&infile) + "_split-2.root";
+   unsigned int randSeed = (unsigned int)chrono::system_clock::now().time_since_epoch().count();
 
    ftemp = new float[2];
    itemp = new int[4];
+   stemp = new string[5];
+
+   stemp[0] = RemoveExtension(&infile) + "_split-1.root";
+   stemp[1] = RemoveExtension(&infile) + "_split-2.root";
    
    ftemp[0] = (startCombining->widgetNE[0])->GetValue();
    
@@ -1644,7 +1645,10 @@ int MyFrame::StartFileSplit(string infile)
    TTree *writeTree;
    
    itemp[0] = tempTree->GetEntries();
-   itemp[1] = (int)TMath::Ceil(itemp[0]*ftemp[0]);
+   if(ftemp[0] < 1)
+      itemp[1] = (int)TMath::Ceil(itemp[0]*ftemp[0]);
+   else
+      itemp[1] = (int)TMath::Ceil(ftemp[0]);
    itemp[2] = (int)(itemp[0]-itemp[1]);
 
 /*   Observables *obstemp = new Observables(observables);
@@ -1665,20 +1669,41 @@ int MyFrame::StartFileSplit(string infile)
 
 //   return 1;*/
    
-   if( (itemp[0] == 0) || (itemp[1] == 0) || (itemp[2] == 0) )
+   if( (itemp[0] == 0) || (itemp[1] == 0) || (itemp[2] <= 0) )
    {
-      AlertPopup("No events in split file", "One of the split files will have no events (" + ToString(itemp[1]) + "/" + ToString(itemp[2]) + "). Please adjust the fraction accordingly and restart.");
+      AlertPopup("No events in split file", "One of the split files will have no events (" + ToString(itemp[1]) + "/" + ToString(itemp[2]) + "). Total number of events is " + ToString(itemp[0]) + ". Please adjust the split setting accordingly and restart.");
 
       delete[] ftemp;
       delete[] itemp;
       delete[] stemp;
+      input->Close();
 
       return 1;
    }
    else
    {
+      stemp[2] = "Selecting random seed for splitting the rewritten ADST file into two parts.\nThe current seed is selected randomly based on time.\n";
+
+      cout << "# Random seed = " << randSeed << endl;
+      NEDialog randomseedDialog(wxT("Random seed"), wxSize(500,200), stemp[2], "Set MVA cut:", randSeed, &ID_RANDSEEDDIALOG);
+      randomseedDialog.SetNEntryFormat(randomseedDialog.widgetNE, 0, 1, 2, 0, 10000000000);
+      if(randomseedDialog.ShowModal() == wxID_OK)
+      {
+         randSeed = (unsigned int)randomseedDialog.GetNEValue();
+         cout << "# Selected random seed is: " << randSeed << endl;
+      }
+      else
+      {
+         delete[] ftemp;
+         delete[] itemp;
+         delete[] stemp;
+         input->Close();
+
+         return 1;
+      }
+
       itemp[3] = 0;
-      stemp[2] = "Currently splitting file \"" + RemovePath(&infile) + "\" into two files: \"" + RemovePath(&stemp[0]) + "\" and \"" + RemovePath(&stemp[1])+ "\". Please wait for it to finish.";
+      stemp[2] = "Currently splitting file\n   " + RemovePath(&infile) + "        \t" + ToString(itemp[0]) + " events\ninto two files:\n   " + RemovePath(&stemp[0]) + "\t" + ToString(itemp[1]) + " events\n   " + RemovePath(&stemp[1])+ "\t" + ToString(itemp[2]) + " events\n\nPlease wait for it to finish.";
       ShowProgress(wxT("Splitting rewritten ADST file"), stemp[2].c_str(), 2*(input->GetNkeys())*itemp[0]);
 
       cout << "# Will start splitting file " << RemovePath(&infile) << " into:" << endl;
@@ -1691,6 +1716,7 @@ int MyFrame::StartFileSplit(string infile)
          shuflist.push_back(i);
    
       shuffle(shuflist.begin(), shuflist.end(), default_random_engine((unsigned int)chrono::system_clock::now().time_since_epoch().count()));
+//      shuffle(shuflist.begin(), shuflist.end(), default_random_engine((unsigned int)chrono::system_clock::now().time_since_epoch().count()));
 
       vector<int> split1list;
       vector<int> split2list;
@@ -1735,7 +1761,11 @@ int MyFrame::StartFileSplit(string infile)
             }
 
             // Tree for writing
-            writeTree = new TTree(stemp[2].c_str(), stemp[3].c_str());
+	    if( (stemp[3].compare("Signal tree from old file.") == 0) || (stemp[3].compare("Signal tree from new file.") == 0) || (stemp[3].compare("Background tree with all events, including signal events.") == 0) )
+	       stemp[4] = stemp[3];
+	    else
+               stemp[4] = stemp[3] + "-split" + ToString(i+1);
+            writeTree = new TTree(stemp[2].c_str(), stemp[4].c_str());
             writeTree->Branch("rewritecode", &rewritecode, "rewritecode/I");
             for(int j = 0; j < nrobs; j++)
             {
@@ -1744,35 +1774,32 @@ int MyFrame::StartFileSplit(string infile)
                writeTree->Branch((obser->GetName(j) + "_pos").c_str(), &(obser_pos->obsstruct[j].value), (obser->GetName(j) + "_pos[" + ToString(ALLEYES) + "]/F").c_str());
             }
 
-	    itemp[2] = 0;
-            // Loop over all events 
-            for(int j = 0; j < itemp[0]; j++)
-            {
-               readTree->GetEntry(j);
+	    // Check if the values in this tree are valid
+	    if( (stemp[3].compare("Signal tree from old file.") == 0) || (stemp[3].compare("Signal tree from new file.") == 0) )
+	    {
+	       // Update the progress bar
+	       itemp[3]+=itemp[0];
+               progress->Update(itemp[3]);
+	    }
+	    else
+	    {
+               // Loop over all events 
+               for(int j = 0; j < itemp[0]; j++)
+               {
+                  readTree->GetEntry(j);
 
-	       // Check if the values in this tree are valid
-	       ftemp[1] = 0;
-               for(int j = 0; j < ALLEYES; j++)
-                  ftemp[1] += obser->GetValue("energyFD", j);
-
-	       if( (ftemp[1] == -4) || (ftemp[1] > 1.e+15) )
-	       {
                   // Select the correct tree to write to
                   if( (find(split1list.begin(), split1list.end(), j) != split1list.end()) && (i == 0) )
                      writeTree->Fill();
                   if( (find(split2list.begin(), split2list.end(), j) != split2list.end()) && (i == 1) )
                      writeTree->Fill();
-	       }
-	       else
-		  itemp[2]++;
 
-	       // Update the progress bar
-	       itemp[3]++;
-	       if(itemp[3]%((int)(2*(input->GetNkeys())*itemp[0]*0.05)) == 0)
-                  progress->Update(itemp[3]);
-            }
-
-	    cout << "#   There were " << itemp[2] << " invalid events." << endl;
+	          // Update the progress bar
+	          itemp[3]++;
+	          if(itemp[3]%((int)(2*(input->GetNkeys())*itemp[0]*0.05)) == 0)
+                     progress->Update(itemp[3]);
+               }
+	    }
 
 	    writeTree->Write();
 

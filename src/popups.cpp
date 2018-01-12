@@ -40,6 +40,7 @@ NEDialog::NEDialog(const wxString &title, const wxSize &size, string text, strin
    wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
    wxStaticText *widgetLabel = new wxStaticText(panel, -1, label);
    widgetNE = new wxSpinCtrlDouble(panel, *numID);
+   widgetNE->SetRange(-9999999999., 9999999999.);
    widgetNE->SetValue(nevalue);
 
    hbox->Add(widgetLabel, 0, wxLEFT | wxTOP, 5);
