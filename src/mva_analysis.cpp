@@ -791,90 +791,123 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
 int MyFrame::BookTheMethod(TMVA::Factory *factory)
 {
    string *stemp;
-   stemp = new string;
+   stemp = new string[3];
 
-   *stemp = (methodsSelect->widgetCB)->GetStringSelection();
-   cout << "# BookTheMethod         #: " << *stemp << ", " << GetMethodName(*stemp) << endl;
+   stemp[0] = (methodsSelect->widgetCB)->GetStringSelection();
+   cout << "# BookTheMethod         #: " << stemp[0] << ", " << GetMethodName(stemp[0]) << endl;
 
-   if(GetMethodName(*stemp) == "Cuts")
-      factory->BookMethod(TMVA::Types::kCuts, (GetMethodName(*stemp)).c_str(), "!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart");
-   else if(GetMethodName(*stemp) == "CutsD")
-      factory->BookMethod(TMVA::Types::kCuts, (GetMethodName(*stemp)).c_str(), "!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart:VarTransform=Decorrelate");
-   else if(GetMethodName(*stemp) == "CutsPCA")
-      factory->BookMethod(TMVA::Types::kCuts, (GetMethodName(*stemp)).c_str(), "!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart:VarTransform=PCA");
-   else if(GetMethodName(*stemp) == "CutsGA")
-      factory->BookMethod(TMVA::Types::kCuts, (GetMethodName(*stemp)).c_str(), "H:!V:FitMethod=GA:CutRangeMin[0]=-10:CutRangeMax[0]=10:VarProp[1]=FMax:EffSel:Steps=30:Cycles=3:PopSize=400:SC_steps=10:SC_rate=5:SC_factor=0.95");
-   else if(GetMethodName(*stemp) == "CutsSA")
-      factory->BookMethod(TMVA::Types::kCuts, (GetMethodName(*stemp)).c_str(), "!H:!V:FitMethod=SA:EffSel:MaxCalls=150000:KernelTemp=IncAdaptive:InitialTemp=1e+6:MinTemp=1e-6:Eps=1e-10:UseDefaultScale");
-   else if(GetMethodName(*stemp) == "Likelihood")
-      factory->BookMethod(TMVA::Types::kLikelihood, (GetMethodName(*stemp)).c_str(), "H:!V:TransformOutput:PDFInterpol=Spline2:NSmoothSig[0]=20:NSmoothBkg[0]=20:NSmoothBkg[1]=10:NSmooth=1:NAvEvtPerBin=50");
-   else if(GetMethodName(*stemp) == "LikelihoodD")
-      factory->BookMethod(TMVA::Types::kLikelihood, (GetMethodName(*stemp)).c_str(), "!H:!V:TransformOutput:PDFInterpol=Spline2:NSmoothSig[0]=20:NSmoothBkg[0]=20:NSmooth=5:NAvEvtPerBin=50:VarTransform=Decorrelate");
-   else if(GetMethodName(*stemp) == "LikelihoodPCA")
-      factory->BookMethod(TMVA::Types::kLikelihood, (GetMethodName(*stemp)).c_str(), "!H:!V:!TransformOutput:PDFInterpol=Spline2:NSmoothSig[0]=20:NSmoothBkg[0]=20:NSmooth=5:NAvEvtPerBin=50:VarTransform=PCA"); 
-   else if(GetMethodName(*stemp) == "LikelihoodKDE")
-      factory->BookMethod(TMVA::Types::kLikelihood, (GetMethodName(*stemp)).c_str(), "!H:!V:!TransformOutput:PDFInterpol=KDE:KDEtype=Gauss:KDEiter=Adaptive:KDEFineFactor=0.3:KDEborder=None:NAvEvtPerBin=50"); 
-   else if(GetMethodName(*stemp) == "LikelihoodMIX")
-      factory->BookMethod(TMVA::Types::kLikelihood, (GetMethodName(*stemp)).c_str(), "!H:!V:!TransformOutput:PDFInterpolSig[0]=KDE:PDFInterpolBkg[0]=KDE:PDFInterpolSig[1]=KDE:PDFInterpolBkg[1]=KDE:PDFInterpolSig[2]=Spline2:PDFInterpolBkg[2]=Spline2:PDFInterpolSig[3]=Spline2:PDFInterpolBkg[3]=Spline2:KDEtype=Gauss:KDEiter=Nonadaptive:KDEborder=None:NAvEvtPerBin=50"); 
-   else if(GetMethodName(*stemp) == "PDERS")
-      factory->BookMethod(TMVA::Types::kPDERS, (GetMethodName(*stemp)).c_str(), "!H:!V:NormTree=T:VolumeRangeMode=Adaptive:KernelEstimator=Gauss:GaussSigma=0.3:NEventsMin=400:NEventsMax=600");
-   else if(GetMethodName(*stemp) == "PDERSD")
-      factory->BookMethod(TMVA::Types::kPDERS, (GetMethodName(*stemp)).c_str(), "!H:!V:VolumeRangeMode=Adaptive:KernelEstimator=Gauss:GaussSigma=0.3:NEventsMin=400:NEventsMax=600:VarTransform=Decorrelate");
-   else if(GetMethodName(*stemp) == "PDERSPCA")
-      factory->BookMethod(TMVA::Types::kPDERS, (GetMethodName(*stemp)).c_str(), "!H:!V:VolumeRangeMode=Adaptive:KernelEstimator=Gauss:GaussSigma=0.3:NEventsMin=400:NEventsMax=600:VarTransform=PCA");
-   else if(GetMethodName(*stemp) == "PDEFoam")
-      factory->BookMethod(TMVA::Types::kPDEFoam, (GetMethodName(*stemp)).c_str(), "!H:!V:SigBgSeparate=F:TailCut=0.001:VolFrac=0.0666:nActiveCells=500:nSampl=2000:nBin=5:Nmin=100:Kernel=None:Compress=T");
-   else if(GetMethodName(*stemp) == "PDEFoamBoost")
-      factory->BookMethod(TMVA::Types::kPDEFoam, (GetMethodName(*stemp)).c_str(), "!H:!V:Boost_Num=30:Boost_Transform=linear:SigBgSeparate=F:MaxDepth=4:UseYesNoCell=T:DTLogic=MisClassificationError:FillFoamWithOrigWeights=F:TailCut=0:nActiveCells=500:nBin=20:Nmin=400:Kernel=None:Compress=T");
-   else if(GetMethodName(*stemp) == "KNN")
-      factory->BookMethod(TMVA::Types::kKNN, (GetMethodName(*stemp)).c_str(), "H:nkNN=20:ScaleFrac=0.8:SigmaFact=1.0:Kernel=Gaus:UseKernel=F:UseWeight=T:!Trim");
-   else if(GetMethodName(*stemp) == "LD")
-      factory->BookMethod(TMVA::Types::kLD, (GetMethodName(*stemp)).c_str(), "H:!V:VarTransform=None:CreateMVAPdfs:PDFInterpolMVAPdf=Spline2:NbinsMVAPdf=50:NsmoothMVAPdf=10");
-   else if(GetMethodName(*stemp) == "Fisher")
-      factory->BookMethod(TMVA::Types::kFisher, (GetMethodName(*stemp)).c_str(), "H:!V:Fisher:VarTransform=None:CreateMVAPdfs:PDFInterpolMVAPdf=Spline2:NbinsMVAPdf=50:NsmoothMVAPdf=10");
-   else if(GetMethodName(*stemp) == "FisherG")
-      factory->BookMethod(TMVA::Types::kFisher, (GetMethodName(*stemp)).c_str(), "H:!V:VarTransform=Gauss");
-   else if(GetMethodName(*stemp) == "BoostedFisher")
-      factory->BookMethod(TMVA::Types::kFisher, (GetMethodName(*stemp)).c_str(), "H:!V:Boost_Num=20:Boost_Transform=log:Boost_Type=AdaBoost:Boost_AdaBoostBeta=0.2:!Boost_DetailedMonitoring");
-   else if(GetMethodName(*stemp) == "HMatrix")
-      factory->BookMethod(TMVA::Types::kHMatrix, (GetMethodName(*stemp)).c_str(), "!H:!V:VarTransform=None");
-   else if(GetMethodName(*stemp) == "FDA_GA")
-      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(*stemp)).c_str(), "H:!V:Formula=(0)+(1)*x0+(2)*x1+(3)*x2+(4)*x3:ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=GA:PopSize=300:Cycles=3:Steps=20:Trim=True:SaveBestGen=1");
-   else if(GetMethodName(*stemp) == "FDA_SA")
-      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(*stemp)).c_str(), "H:!V:Formula=(0)+(1)*x0+(2)*x1+(3)*x2+(4)*x3:ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=SA:MaxCalls=15000:KernelTemp=IncAdaptive:InitialTemp=1e+6:MinTemp=1e-6:Eps=1e-10:UseDefaultScale");
-   else if(GetMethodName(*stemp) == "FDA_MC")
-      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(*stemp)).c_str(), "H:!V:Formula=(0)+(1)*x0+(2)*x1+(3)*x2+(4)*x3:ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=MC:SampleSize=100000:Sigma=0.1");
-   else if(GetMethodName(*stemp) == "FDA_MT")
-      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(*stemp)).c_str(), "H:!V:Formula=(0)+(1)*x0+(2)*x1+(3)*x2+(4)*x3:ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=MINUIT:ErrorLevel=1:PrintLevel=-1:FitStrategy=2:UseImprove:UseMinos:SetBatch");
-   else if(GetMethodName(*stemp) == "FDA_GAMT")
-      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(*stemp)).c_str(), "H:!V:Formula=(0)+(1)*x0+(2)*x1+(3)*x2+(4)*x3:ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=GA:Converger=MINUIT:ErrorLevel=1:PrintLevel=-1:FitStrategy=0:!UseImprove:!UseMinos:SetBatch:Cycles=1:PopSize=5:Steps=5:Trim");
-   else if(GetMethodName(*stemp) == "FDA_MCMT")
-      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(*stemp)).c_str(), "H:!V:Formula=(0)+(1)*x0+(2)*x1+(3)*x2+(4)*x3:ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=MC:Converger=MINUIT:ErrorLevel=1:PrintLevel=-1:FitStrategy=0:!UseImprove:!UseMinos:SetBatch:SampleSize=20");
-   else if(GetMethodName(*stemp) == "MLP")
-      factory->BookMethod(TMVA::Types::kMLP, (GetMethodName(*stemp)).c_str(), "H:!V:NeuronType=tanh:VarTransform=N:NCycles=600:HiddenLayers=N+5:TestRate=5:!UseRegulator");
-   else if(GetMethodName(*stemp) == "MLPBFGS")
-      factory->BookMethod(TMVA::Types::kMLP, (GetMethodName(*stemp)).c_str(), "H:!V:NeuronType=tanh:VarTransform=N:NCycles=600:HiddenLayers=N+5:TestRate=5:TrainingMethod=BFGS:!UseRegulator");
-   else if(GetMethodName(*stemp) == "MLPBNN")
-      factory->BookMethod(TMVA::Types::kMLP, (GetMethodName(*stemp)).c_str(), "H:!V:NeuronType=tanh:VarTransform=N:NCycles=600:HiddenLayers=N+5:TestRate=5:TrainingMethod=BFGS:UseRegulator");
-   else if(GetMethodName(*stemp) == "CFMlpANN")
-      factory->BookMethod(TMVA::Types::kCFMlpANN, (GetMethodName(*stemp)).c_str(), "!H:!V:NCycles=2000:HiddenLayers=N+1,N");
-   else if(GetMethodName(*stemp) == "TMlpANN")
-      factory->BookMethod(TMVA::Types::kTMlpANN, (GetMethodName(*stemp)).c_str(), "!H:!V:NCycles=200:HiddenLayers=N+1,N:LearningMethod=BFGS:ValidationFraction=0.3");
-   else if(GetMethodName(*stemp) == "SVM")
-      factory->BookMethod(TMVA::Types::kSVM, (GetMethodName(*stemp)).c_str(), "Gamma=0.25:Tol=0.001:VarTransform=Norm");
-   else if(GetMethodName(*stemp) == "BDT")
-      factory->BookMethod(TMVA::Types::kBDT, (GetMethodName(*stemp)).c_str(), "!H:!V:NTrees=850:MinNodeSize=2.5%:MaxDepth=3:BoostType=AdaBoost:AdaBoostBeta=0.5:UseBaggedBoost:BaggedSampleFraction=0.5:SeparationType=GiniIndex:nCuts=20");
-   else if(GetMethodName(*stemp) == "BDTG")
-      factory->BookMethod(TMVA::Types::kBDT, (GetMethodName(*stemp)).c_str(), "!H:!V:NTrees=1000:MinNodeSize=2.5%:BoostType=Grad:Shrinkage=0.10:UseBaggedBoost:BaggedSampleFraction=0.5:nCuts=20:MaxDepth=2");
-   else if(GetMethodName(*stemp) == "BDTB")
-      factory->BookMethod(TMVA::Types::kBDT, (GetMethodName(*stemp)).c_str(), "!H:!V:NTrees=400:BoostType=Bagging:SeparationType=GiniIndex:nCuts=20");
-   else if(GetMethodName(*stemp) == "BDTD")
-      factory->BookMethod(TMVA::Types::kBDT, (GetMethodName(*stemp)).c_str(), "!H:!V:NTrees=400:MinNodeSize=5%:MaxDepth=3:BoostType=AdaBoost:SeparationType=GiniIndex:nCuts=20:VarTransform=Decorrelate");
-   else if(GetMethodName(*stemp) == "BDTF")
+   // Prepare formula for FDA methods
+   for(int i = 0; i <= nrselobs; i++)
+   {
+      if(i == 0)
+         stemp[2] = "(" + ToString(i) + ")";
+      else
+         stemp[2] = stemp[2] + "+(" + ToString(i) + ")*x" + ToString(i-1);
+   }
+   cout << "# BookTheMethod         #: Using formula " << stemp[2] << endl;
+
+   if(GetMethodName(stemp[0]) == "Cuts")
+      factory->BookMethod(TMVA::Types::kCuts, (GetMethodName(stemp[0])).c_str(), "!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart");
+   else if(GetMethodName(stemp[0]) == "CutsD")
+      factory->BookMethod(TMVA::Types::kCuts, (GetMethodName(stemp[0])).c_str(), "!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart:VarTransform=Decorrelate");
+   else if(GetMethodName(stemp[0]) == "CutsPCA")
+      factory->BookMethod(TMVA::Types::kCuts, (GetMethodName(stemp[0])).c_str(), "!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart:VarTransform=PCA");
+   else if(GetMethodName(stemp[0]) == "CutsGA")
+      factory->BookMethod(TMVA::Types::kCuts, (GetMethodName(stemp[0])).c_str(), "H:!V:FitMethod=GA:CutRangeMin[0]=-10:CutRangeMax[0]=10:VarProp[1]=FMax:EffSel:Steps=30:Cycles=3:PopSize=400:SC_steps=10:SC_rate=5:SC_factor=0.95");
+   else if(GetMethodName(stemp[0]) == "CutsSA")
+      factory->BookMethod(TMVA::Types::kCuts, (GetMethodName(stemp[0])).c_str(), "!H:!V:FitMethod=SA:EffSel:MaxCalls=150000:KernelTemp=IncAdaptive:InitialTemp=1e+6:MinTemp=1e-6:Eps=1e-10:UseDefaultScale");
+   else if(GetMethodName(stemp[0]) == "Likelihood")
+      factory->BookMethod(TMVA::Types::kLikelihood, (GetMethodName(stemp[0])).c_str(), "H:!V:TransformOutput:PDFInterpol=Spline2:NSmoothSig[0]=20:NSmoothBkg[0]=20:NSmoothBkg[1]=10:NSmooth=1:NAvEvtPerBin=50");
+   else if(GetMethodName(stemp[0]) == "LikelihoodD")
+      factory->BookMethod(TMVA::Types::kLikelihood, (GetMethodName(stemp[0])).c_str(), "!H:!V:TransformOutput:PDFInterpol=Spline2:NSmoothSig[0]=20:NSmoothBkg[0]=20:NSmooth=5:NAvEvtPerBin=50:VarTransform=Decorrelate");
+   else if(GetMethodName(stemp[0]) == "LikelihoodPCA")
+      factory->BookMethod(TMVA::Types::kLikelihood, (GetMethodName(stemp[0])).c_str(), "!H:!V:!TransformOutput:PDFInterpol=Spline2:NSmoothSig[0]=20:NSmoothBkg[0]=20:NSmooth=5:NAvEvtPerBin=50:VarTransform=PCA"); 
+   else if(GetMethodName(stemp[0]) == "LikelihoodKDE")
+      factory->BookMethod(TMVA::Types::kLikelihood, (GetMethodName(stemp[0])).c_str(), "!H:!V:!TransformOutput:PDFInterpol=KDE:KDEtype=Gauss:KDEiter=Adaptive:KDEFineFactor=0.3:KDEborder=None:NAvEvtPerBin=50"); 
+   else if(GetMethodName(stemp[0]) == "LikelihoodMIX")
+      factory->BookMethod(TMVA::Types::kLikelihood, (GetMethodName(stemp[0])).c_str(), "!H:!V:!TransformOutput:PDFInterpolSig[0]=KDE:PDFInterpolBkg[0]=KDE:PDFInterpolSig[1]=KDE:PDFInterpolBkg[1]=KDE:PDFInterpolSig[2]=Spline2:PDFInterpolBkg[2]=Spline2:PDFInterpolSig[3]=Spline2:PDFInterpolBkg[3]=Spline2:KDEtype=Gauss:KDEiter=Nonadaptive:KDEborder=None:NAvEvtPerBin=50"); 
+   else if(GetMethodName(stemp[0]) == "PDERS")
+      factory->BookMethod(TMVA::Types::kPDERS, (GetMethodName(stemp[0])).c_str(), "!H:!V:NormTree=T:VolumeRangeMode=Adaptive:KernelEstimator=Gauss:GaussSigma=0.3:NEventsMin=400:NEventsMax=600");
+   else if(GetMethodName(stemp[0]) == "PDERSD")
+      factory->BookMethod(TMVA::Types::kPDERS, (GetMethodName(stemp[0])).c_str(), "!H:!V:VolumeRangeMode=Adaptive:KernelEstimator=Gauss:GaussSigma=0.3:NEventsMin=400:NEventsMax=600:VarTransform=Decorrelate");
+   else if(GetMethodName(stemp[0]) == "PDERSPCA")
+      factory->BookMethod(TMVA::Types::kPDERS, (GetMethodName(stemp[0])).c_str(), "!H:!V:VolumeRangeMode=Adaptive:KernelEstimator=Gauss:GaussSigma=0.3:NEventsMin=400:NEventsMax=600:VarTransform=PCA");
+   else if(GetMethodName(stemp[0]) == "PDEFoam")
+      factory->BookMethod(TMVA::Types::kPDEFoam, (GetMethodName(stemp[0])).c_str(), "!H:!V:SigBgSeparate=F:TailCut=0.001:VolFrac=0.0666:nActiveCells=500:nSampl=2000:nBin=5:Nmin=100:Kernel=None:Compress=T");
+   else if(GetMethodName(stemp[0]) == "PDEFoamBoost")
+      factory->BookMethod(TMVA::Types::kPDEFoam, (GetMethodName(stemp[0])).c_str(), "!H:!V:Boost_Num=30:Boost_Transform=linear:SigBgSeparate=F:MaxDepth=4:UseYesNoCell=T:DTLogic=MisClassificationError:FillFoamWithOrigWeights=F:TailCut=0:nActiveCells=500:nBin=20:Nmin=400:Kernel=None:Compress=T");
+   else if(GetMethodName(stemp[0]) == "KNN")
+      factory->BookMethod(TMVA::Types::kKNN, (GetMethodName(stemp[0])).c_str(), "H:nkNN=20:ScaleFrac=0.8:SigmaFact=1.0:Kernel=Gaus:UseKernel=F:UseWeight=T:!Trim");
+   else if(GetMethodName(stemp[0]) == "LD")
+      factory->BookMethod(TMVA::Types::kLD, (GetMethodName(stemp[0])).c_str(), "H:!V:VarTransform=None:CreateMVAPdfs:PDFInterpolMVAPdf=Spline2:NbinsMVAPdf=50:NsmoothMVAPdf=10");
+   else if(GetMethodName(stemp[0]) == "Fisher")
+      factory->BookMethod(TMVA::Types::kFisher, (GetMethodName(stemp[0])).c_str(), "H:!V:Fisher:VarTransform=None:CreateMVAPdfs:PDFInterpolMVAPdf=Spline2:NbinsMVAPdf=50:NsmoothMVAPdf=10");
+   else if(GetMethodName(stemp[0]) == "FisherG")
+      factory->BookMethod(TMVA::Types::kFisher, (GetMethodName(stemp[0])).c_str(), "H:!V:VarTransform=Gauss");
+   else if(GetMethodName(stemp[0]) == "BoostedFisher")
+      factory->BookMethod(TMVA::Types::kFisher, (GetMethodName(stemp[0])).c_str(), "H:!V:Boost_Num=20:Boost_Transform=log:Boost_Type=AdaBoost:Boost_AdaBoostBeta=0.2:!Boost_DetailedMonitoring");
+   else if(GetMethodName(stemp[0]) == "HMatrix")
+      factory->BookMethod(TMVA::Types::kHMatrix, (GetMethodName(stemp[0])).c_str(), "!H:!V:VarTransform=None");
+   else if(GetMethodName(stemp[0]) == "FDA_GA")
+   {
+      stemp[1] = "H:!V:Formula=" + stemp[2] + ":ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=GA:PopSize=300:Cycles=3:Steps=20:Trim=True:SaveBestGen=1";
+      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), stemp[1].c_str());
+   }
+   else if(GetMethodName(stemp[0]) == "FDA_SA")
+   {
+//      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), "H:!V:Formula=(0)+(1)*x0+(2)*x1+(3)*x2+(4)*x3:ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=SA:MaxCalls=15000:KernelTemp=IncAdaptive:InitialTemp=1e+6:MinTemp=1e-6:Eps=1e-10:UseDefaultScale");
+      stemp[1] = "H:!V:Formula=" + stemp[2] + ":ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=SA:MaxCalls=15000:KernelTemp=IncAdaptive:InitialTemp=1e+6:MinTemp=1e-6:Eps=1e-10:UseDefaultScale";
+      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), stemp[1].c_str());
+   }
+   else if(GetMethodName(stemp[0]) == "FDA_MC")
+   {
+//      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), "H:!V:Formula=(0)+(1)*x0+(2)*x1+(3)*x2+(4)*x3:ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=MC:SampleSize=100000:Sigma=0.1");
+      stemp[1] = "H:!V:Formula=" + stemp[2] + ":ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=MC:SampleSize=100000:Sigma=0.1";
+      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), stemp[1].c_str());
+   }
+   else if(GetMethodName(stemp[0]) == "FDA_MT")
+   {
+//      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), "H:!V:Formula=(0)+(1)*x0+(2)*x1+(3)*x2+(4)*x3:ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=MINUIT:ErrorLevel=1:PrintLevel=-1:FitStrategy=2:UseImprove:UseMinos:SetBatch");
+      stemp[1] = "H:!V:Formula=" + stemp[2] + ":ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=MINUIT:ErrorLevel=1:PrintLevel=-1:FitStrategy=2:UseImprove:UseMinos:SetBatch";
+      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), stemp[1].c_str());
+   }
+   else if(GetMethodName(stemp[0]) == "FDA_GAMT")
+   {
+//      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), "H:!V:Formula=(0)+(1)*x0+(2)*x1+(3)*x2+(4)*x3:ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=GA:Converger=MINUIT:ErrorLevel=1:PrintLevel=-1:FitStrategy=0:!UseImprove:!UseMinos:SetBatch:Cycles=1:PopSize=5:Steps=5:Trim");
+      stemp[1] = "H:!V:Formula=" + stemp[2] + ":ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=GA:Converger=MINUIT:ErrorLevel=1:PrintLevel=-1:FitStrategy=0:!UseImprove:!UseMinos:SetBatch:Cycles=1:PopSize=5:Steps=5:Trim";
+      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), stemp[1].c_str());
+   }
+   else if(GetMethodName(stemp[0]) == "FDA_MCMT")
+   {
+//      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), "H:!V:Formula=(0)+(1)*x0+(2)*x1+(3)*x2+(4)*x3:ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=MC:Converger=MINUIT:ErrorLevel=1:PrintLevel=-1:FitStrategy=0:!UseImprove:!UseMinos:SetBatch:SampleSize=20");
+      stemp[1] = "H:!V:Formula=" + stemp[2] + ":ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=MC:Converger=MINUIT:ErrorLevel=1:PrintLevel=-1:FitStrategy=0:!UseImprove:!UseMinos:SetBatch:SampleSize=20";
+      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), stemp[1].c_str());
+   }
+   else if(GetMethodName(stemp[0]) == "MLP")
+      factory->BookMethod(TMVA::Types::kMLP, (GetMethodName(stemp[0])).c_str(), "H:!V:NeuronType=tanh:VarTransform=N:NCycles=600:HiddenLayers=N+5:TestRate=5:!UseRegulator");
+   else if(GetMethodName(stemp[0]) == "MLPBFGS")
+      factory->BookMethod(TMVA::Types::kMLP, (GetMethodName(stemp[0])).c_str(), "H:!V:NeuronType=tanh:VarTransform=N:NCycles=600:HiddenLayers=N+5:TestRate=5:TrainingMethod=BFGS:!UseRegulator");
+   else if(GetMethodName(stemp[0]) == "MLPBNN")
+      factory->BookMethod(TMVA::Types::kMLP, (GetMethodName(stemp[0])).c_str(), "H:!V:NeuronType=tanh:VarTransform=N:NCycles=600:HiddenLayers=N+5:TestRate=5:TrainingMethod=BFGS:UseRegulator");
+   else if(GetMethodName(stemp[0]) == "CFMlpANN")
+      factory->BookMethod(TMVA::Types::kCFMlpANN, (GetMethodName(stemp[0])).c_str(), "!H:!V:NCycles=2000:HiddenLayers=N+1,N");
+   else if(GetMethodName(stemp[0]) == "TMlpANN")
+      factory->BookMethod(TMVA::Types::kTMlpANN, (GetMethodName(stemp[0])).c_str(), "!H:!V:NCycles=200:HiddenLayers=N+1,N:LearningMethod=BFGS:ValidationFraction=0.3");
+   else if(GetMethodName(stemp[0]) == "SVM")
+      factory->BookMethod(TMVA::Types::kSVM, (GetMethodName(stemp[0])).c_str(), "Gamma=0.25:Tol=0.001:VarTransform=Norm");
+   else if(GetMethodName(stemp[0]) == "BDT")
+      factory->BookMethod(TMVA::Types::kBDT, (GetMethodName(stemp[0])).c_str(), "!H:!V:NTrees=850:MinNodeSize=2.5%:MaxDepth=3:BoostType=AdaBoost:AdaBoostBeta=0.5:UseBaggedBoost:BaggedSampleFraction=0.5:SeparationType=GiniIndex:nCuts=20");
+   else if(GetMethodName(stemp[0]) == "BDTG")
+      factory->BookMethod(TMVA::Types::kBDT, (GetMethodName(stemp[0])).c_str(), "!H:!V:NTrees=1000:MinNodeSize=2.5%:BoostType=Grad:Shrinkage=0.10:UseBaggedBoost:BaggedSampleFraction=0.5:nCuts=20:MaxDepth=2");
+   else if(GetMethodName(stemp[0]) == "BDTB")
+      factory->BookMethod(TMVA::Types::kBDT, (GetMethodName(stemp[0])).c_str(), "!H:!V:NTrees=400:BoostType=Bagging:SeparationType=GiniIndex:nCuts=20");
+   else if(GetMethodName(stemp[0]) == "BDTD")
+      factory->BookMethod(TMVA::Types::kBDT, (GetMethodName(stemp[0])).c_str(), "!H:!V:NTrees=400:MinNodeSize=5%:MaxDepth=3:BoostType=AdaBoost:SeparationType=GiniIndex:nCuts=20:VarTransform=Decorrelate");
+   else if(GetMethodName(stemp[0]) == "BDTF")
       factory->BookMethod(TMVA::Types::kBDT, "BDTMitFisher", "!H:!V:NTrees=50:MinNodeSize=2.5%:UseFisherCuts:MaxDepth=3:BoostType=AdaBoost:AdaBoostBeta=0.5:SeparationType=GiniIndex:nCuts=20");
-   else if(GetMethodName(*stemp) == "RuleFit")
-      factory->BookMethod(TMVA::Types::kRuleFit, (GetMethodName(*stemp)).c_str(), "H:!V:RuleFitModule=RFTMVA:Model=ModRuleLinear:MinImp=0.001:RuleMinDist=0.001:NTrees=20:fEventsMin=0.01:fEventsMax=0.5:GDTau=-1.0:GDTauPrec=0.01:GDStep=0.01:GDNSteps=10000:GDErrScale=1.02");
-   else if(GetMethodName(*stemp) == "All")
+   else if(GetMethodName(stemp[0]) == "RuleFit")
+      factory->BookMethod(TMVA::Types::kRuleFit, (GetMethodName(stemp[0])).c_str(), "H:!V:RuleFitModule=RFTMVA:Model=ModRuleLinear:MinImp=0.001:RuleMinDist=0.001:NTrees=20:fEventsMin=0.01:fEventsMax=0.5:GDTau=-1.0:GDTauPrec=0.01:GDStep=0.01:GDNSteps=10000:GDErrScale=1.02");
+   else if(GetMethodName(stemp[0]) == "All")
    {
       factory->BookMethod(TMVA::Types::kCuts, "Cuts", "!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart");
       factory->BookMethod(TMVA::Types::kCuts, "CutsD", "!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart:VarTransform=Decorrelate");
@@ -884,7 +917,9 @@ int MyFrame::BookTheMethod(TMVA::Factory *factory)
       factory->BookMethod(TMVA::Types::kKNN, "KNN", "H:nkNN=20:ScaleFrac=0.8:SigmaFact=1.0:Kernel=Gaus:UseKernel=F:UseWeight=T:!Trim");
       factory->BookMethod(TMVA::Types::kFisher, "Fisher", "H:!V:Fisher:VarTransform=None:CreateMVAPdfs:PDFInterpolMVAPdf=Spline2:NbinsMVAPdf=50:NsmoothMVAPdf=10");
       factory->BookMethod(TMVA::Types::kLD, "LD", "H:!V:VarTransform=None:CreateMVAPdfs:PDFInterpolMVAPdf=Spline2:NbinsMVAPdf=50:NsmoothMVAPdf=10");
-      factory->BookMethod(TMVA::Types::kFDA, "FDA_GA", "H:!V:Formula=(0)+(1)*x0+(2)*x1+(3)*x2+(4)*x3:ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=GA:PopSize=300:Cycles=3:Steps=20:Trim=True:SaveBestGen=1");
+      stemp[1] = "H:!V:Formula=" + stemp[2] + ":ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=GA:PopSize=300:Cycles=3:Steps=20:Trim=True:SaveBestGen=1";
+      factory->BookMethod(TMVA::Types::kFDA, "FDA_GA", stemp[1].c_str());
+//      factory->BookMethod(TMVA::Types::kFDA, "FDA_GA", "H:!V:Formula=(0)+(1)*x0+(2)*x1+(3)*x2+(4)*x3:ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=GA:PopSize=300:Cycles=3:Steps=20:Trim=True:SaveBestGen=1");
       factory->BookMethod(TMVA::Types::kMLP, "MLPBNN", "H:!V:NeuronType=tanh:VarTransform=N:NCycles=600:HiddenLayers=N+5:TestRate=5:TrainingMethod=BFGS:UseRegulator");
       factory->BookMethod(TMVA::Types::kSVM, "SVM", "Gamma=0.25:Tol=0.001:VarTransform=Norm");
       factory->BookMethod(TMVA::Types::kBDT, "BDT", "!H:!V:NTrees=850:MinNodeSize=2.5%:MaxDepth=3:BoostType=AdaBoost:AdaBoostBeta=0.5:UseBaggedBoost:BaggedSampleFraction=0.5:SeparationType=GiniIndex:nCuts=20");
@@ -892,11 +927,11 @@ int MyFrame::BookTheMethod(TMVA::Factory *factory)
    }
    else
    {
-      delete stemp;
+      delete[] stemp;
       return -1;
    }
 
-   delete stemp;
+   delete[] stemp;
    return 0;
 }
 

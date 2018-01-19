@@ -66,6 +66,79 @@ void MvaEfficiency::RunMvaEfficiency(TString *inname)
    DrawHistogram();
 }
 
+void MvaEfficiency::SetPlotLimits()
+{
+   cout << endl << "# SetPlotLimits()" << endl;
+
+   // setup the ploting limits, depending on the used mva method
+   if(methodTitle.Contains("CutsD"))
+   {
+      plotXmin = 0.;
+      plotXmax = 1.;
+   }
+   else if(methodTitle.Contains("Cuts"))
+   {
+      plotXmin = 0.;
+      plotXmax = 1.;
+   }
+   else if(methodTitle.Contains("LikelihoodPCA"))
+   {
+      plotXmin = 0.;
+      plotXmax = 1.;
+   }
+   else if(methodTitle.Contains("Likelihood"))
+   {
+      plotXmin = 0.;
+      plotXmax = 1.;
+   }
+   else if(methodTitle.Contains("PDERS"))
+   {
+      plotXmin = 0.;
+      plotXmax = 1.;
+   }
+   else if(methodTitle.Contains("KNN"))
+   {
+      plotXmin = 0.;
+      plotXmax = 1.;
+   }
+   else if(methodTitle.Contains("LD"))
+   {
+      plotXmin = -1.;
+      plotXmax = 1.;
+   }
+   else if(methodTitle.Contains("Fisher"))
+   {
+      plotXmin = -1.6;
+      plotXmax = 1.6;
+   }
+   else if(methodTitle.Contains("FDA_GA"))
+   {
+      plotXmin = 0.;
+      plotXmax = 1.;
+   }
+   else if(methodTitle.Contains("MLPBNN"))
+   {
+      plotXmin = -0.1;
+      plotXmax = 1.1;
+   }
+   else if(methodTitle.Contains("SVM"))
+   {
+      plotXmin = 0.;
+      plotXmax = 1.;
+   }
+   else if(methodTitle.Contains("BDT"))
+   {
+      plotXmin = -0.5;
+      plotXmax = 0.5;
+   }
+   else if(methodTitle.Contains("RuleFit"))
+   {
+      plotXmin = -1.6;
+      plotXmax = 1.6;
+   }
+
+}
+
 void MvaEfficiency::ReadHistogram(TFile *file)
 {
    cout << endl << "# ReadHistogram()" << endl;
@@ -96,6 +169,8 @@ void MvaEfficiency::ReadHistogram(TFile *file)
             maxLenTitle = methodTitle.Length();
 	 TString hname = "MVA_" + methodTitle;
          cout << "--- Classifier: " << methodTitle << endl;
+
+	 SetPlotLimits();
 
 	 sig = dynamic_cast<TH1*>(titDir->Get(hname + "_S"));
 	 bgd = dynamic_cast<TH1*>(titDir->Get(hname + "_B"));

@@ -1287,7 +1287,7 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
 	 stemp[2] = stemp[2] + "- Cut with equal Signal/Background: " + ToString(effplot->sigbgdCut, 4) + " (" + ToString(100.*(effplot->GetHistValue(1, 0)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(1, 1)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(1, 2)), 2) + "%/" + ToString(effplot->GetHistValue(1, 3), 4) + ")\n";
 	 stemp[2] = stemp[2] + "- Cut with equal Signal/Purity: " + ToString(effplot->sigpurCut, 4) + " (" + ToString(100.*(effplot->GetHistValue(2, 0)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(2, 1)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(2, 2)), 2) + "%/" + ToString(effplot->GetHistValue(2, 3), 4) + ")\n";
 
-         NEDialog cutMvaDialog(wxT("MVA cut"), wxSize(600,200), stemp[2], "Set MVA cut:", effplot->sigbgdCut, &ID_MVACUTDIALOG);
+         NEDialog cutMvaDialog(wxT("MVA cut"), wxSize(600,200), stemp[2], "Set MVA cut:", effplot->sigpurCut, &ID_MVACUTDIALOG);
          cutMvaDialog.SetNEntryFormat(cutMvaDialog.widgetNE, 4, 0.0001, 0, 0., 0.);
 	 if(cutMvaDialog.ShowModal() == wxID_OK)
             (cutMva->widgetNE[0])->SetValue(cutMvaDialog.GetNEValue());

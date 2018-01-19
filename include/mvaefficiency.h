@@ -73,6 +73,7 @@ public:
    double optimalCut, sigbgdCut, sigpurCut;
 
    void RunMvaEfficiency(TString *inname);
+   void SetPlotLimits();
    void ReadHistogram(TFile *file);
    void SetFormula(const TString& f);
    void UpdateSignificanceHist();
