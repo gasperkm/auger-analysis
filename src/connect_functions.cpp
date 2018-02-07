@@ -46,8 +46,6 @@ void MyFrame::EnableMvaFile(wxCommandEvent& event)
 	 {
             signalName = "TreeS" + ToString(i);
 	    stemp[1] = string(ifile->GetKey(signalName.c_str())->GetTitle());
-/*	    stemp[0] = RemoveBeforeLast(&stemp[1], "/");
-	    stemp[1] = RemoveFromLast(&stemp[0], "(");*/
 	    (signalSelect->widgetCB)->Append(stemp[1]);
 	    (backgroundSelect->widgetCB)->Append(stemp[1]);
 	    (dataSelect->widgetCB)->Append(stemp[1]);
@@ -62,8 +60,39 @@ void MyFrame::EnableMvaFile(wxCommandEvent& event)
       cout << "# EnableMvaFile         #: " << "Found " << nrkeys << " signal keys in the selected file." << endl;
 
       mixednum = backgroundType.size();
+      if(mixednum > 2)
+      {
+         for(int i = 0; i < mixednum; i++)
+	 {
+            for(int j = 0; j < mixednum; j++)
+	    {
+               if(i < j)
+	       {
+                  stemp[1] = backgroundType[i] + " + " + backgroundType[j];
+                  (backgroundSelect->widgetCB)->Append(stemp[1]);
+	       }
+	    }
+	 }
+      }
+      if(mixednum > 3)
+      {
+         for(int i = 0; i < mixednum; i++)
+	 {
+            for(int j = 0; j < mixednum; j++)
+	    {
+               for(int k = 0; k < mixednum; k++)
+	       {
+                  if( (i < j) && (j < k) )
+	          {
+                     stemp[1] = backgroundType[i] + " + " + backgroundType[j] + " + " + backgroundType[k];
+                     (backgroundSelect->widgetCB)->Append(stemp[1]);
+	          }
+	       }
+	    }
+	 }
+      }
       // Add mixed combinations for background trees
-      if(mixednum == 3)
+/*      if(mixednum == 3)
       {
 	 stemp[1] = backgroundType[0] + " + " + backgroundType[1];
 	 (backgroundSelect->widgetCB)->Append(stemp[1]);
@@ -95,7 +124,7 @@ void MyFrame::EnableMvaFile(wxCommandEvent& event)
 	 (backgroundSelect->widgetCB)->Append(stemp[1]);
 	 stemp[1] = backgroundType[1] + " + " + backgroundType[2] + " + " + backgroundType[3];
 	 (backgroundSelect->widgetCB)->Append(stemp[1]);
-      }
+      }*/
 
       // Select the signal tree
       if(oldselect[0] >= cnt)
@@ -1026,6 +1055,152 @@ void MyFrame::UpdateObservableSelection(wxCommandEvent& event)
    freshAnalysis = false;
 }
 
+// Handle events concerning lists
+void MyFrame::EditList(wxCommandEvent& event)
+{
+   int *itemp;
+   itemp = new int[3];
+   string *stemp;
+   stemp = new string[2];
+   wxArrayInt selections;
+
+//   cout << "# EditList: " << event.GetId() << endl;
+   for(int i = 0; i < nrlists; i++)
+   {
+      itemp[0] = (allLBE[i]->widgetLB)->GetCount();
+//      cout << "List has " << itemp[0] << " events" << endl;
+      (allLBE[i]->widgetLB)->GetSelections(selections);
+      itemp[1] = selections.GetCount();
+
+      if(event.GetId() == (1001 + 4*i))	// delete the selection
+      {
+//         cout << "Clicked the Delete command, " << i << endl;
+
+	 if(!selections.IsEmpty())
+	 {
+	    for(int j = itemp[1]-1; j >= 0; j--)
+	    {
+//	       cout << "Deleting entry " << selections[j] << endl;
+	       (allLBE[i]->widgetLB)->Delete(selections[j]);
+	    }
+
+	    if((allLBE[i]->widgetLB)->GetCount() > 0)
+	    {
+               if(selections[0] > 0)
+	       {
+                  (allLBE[i]->widgetLB)->SetSelection(selections[0]-1);
+//	          cout << "Selecting entry " << selections[0]-1 << endl;
+	       }
+	       else
+	       {
+                  (allLBE[i]->widgetLB)->SetSelection(0);
+//	          cout << "Selecting entry " << 0 << endl;
+	       }
+	    }
+	 }
+	 else
+	 {
+            AlertPopup("No selection", "There were no entries selected in the listbox.");
+            delete[] itemp;
+            delete[] stemp;
+            return;
+	 }
+
+	 break;
+      }
+      else if(event.GetId() == (1002 + 4*i))	// move up the list
+      {
+//         cout << "Clicked the Move Up command, " << i << endl;
+
+	 if(!selections.IsEmpty())
+	 {
+	    for(int j = 0; j < itemp[1]; j++)
+	    {
+	       if(selections[0] > 0)
+	       {
+//	          cout << "Moving entry " << selections[j] << endl;
+                  stemp[0] = (allLBE[i]->widgetLB)->GetString(selections[j]-1);
+                  stemp[1] = (allLBE[i]->widgetLB)->GetString(selections[j]);
+
+	          (allLBE[i]->widgetLB)->SetString(selections[j]-1, stemp[1]);
+	          (allLBE[i]->widgetLB)->SetString(selections[j], stemp[0]);
+//	          cout << "Up to " << selections[j]-1 << endl;
+
+                  (allLBE[i]->widgetLB)->SetSelection(selections[j]-1);
+		  (allLBE[i]->widgetLB)->Deselect(selections[j]);
+	       }
+	       else
+	       {
+                  AlertPopup("Entry at top", "One of the selected entries is already at the top of the listbox. Please reselect.");
+                  delete[] itemp;
+                  delete[] stemp;
+                  return;
+	       }
+	    }
+	 }
+	 else
+	 {
+            AlertPopup("No selection", "There were no entries selected in the listbox.");
+            delete[] itemp;
+            delete[] stemp;
+            return;
+	 }
+
+	 break;
+      }
+      else if(event.GetId() == (1003 + 4*i))	// move down the list
+      {
+//         cout << "Clicked the Move Down command, " << i << endl;
+
+	 if(!selections.IsEmpty())
+	 {
+	    for(int j = itemp[1]-1; j >= 0; j--)
+	    {
+	       if(selections[itemp[1]-1] < itemp[0]-1)
+	       {
+//	          cout << "Moving entry " << selections[j] << endl;
+                  stemp[0] = (allLBE[i]->widgetLB)->GetString(selections[j]);
+                  stemp[1] = (allLBE[i]->widgetLB)->GetString(selections[j]+1);
+
+	          (allLBE[i]->widgetLB)->SetString(selections[j], stemp[1]);
+	          (allLBE[i]->widgetLB)->SetString(selections[j]+1, stemp[0]);
+//	          cout << "Down to " << selections[j]+1 << endl;
+
+                  (allLBE[i]->widgetLB)->SetSelection(selections[j]+1);
+		  (allLBE[i]->widgetLB)->Deselect(selections[j]);
+	       }
+	       else
+	       {
+                  AlertPopup("Entry at bottom", "One of the selected entries is already at the bottom of the listbox. Please reselect.");
+                  delete[] itemp;
+                  delete[] stemp;
+                  return;
+	       }
+	    }
+	 }
+	 else
+	 {
+            AlertPopup("No selection", "There were no entries selected in the listbox.");
+            delete[] itemp;
+            delete[] stemp;
+            return;
+	 }
+
+	 break;
+      }
+      else if(event.GetId() == (1004 + 4*i))	// clear the list
+      {
+//         cout << "Clicked the Clear command " << i << endl;
+	 (allLBE[i]->widgetLB)->Clear();
+
+	 break;
+      }
+   }
+
+   delete[] itemp;
+   delete[] stemp;
+}
+
 // Don't start analysis, but just rewrite the input file as a temporary event file
 void MyFrame::CreateTempEventFile(wxCommandEvent& event)
 {
@@ -1033,7 +1208,7 @@ void MyFrame::CreateTempEventFile(wxCommandEvent& event)
 
    string tempfile;
    tempfile = (selectedMva->widgetTE)->GetLineText(0);
-   cout << "# StartMvaAnalysis      #: " << "Opening file " << tempfile << " to rewrite it into a temporary event file." << endl;
+   cout << "# CreateTempEventFile   #: " << "Opening file " << tempfile << " to rewrite it into a temporary event file." << endl;
 
    tempAnalysisFile = RemoveFilename(&tempfile) + "/temporary_event_file.root";
    nrTreeEvents = new int[nrkeys];
@@ -1627,48 +1802,36 @@ int MyFrame::StartFileSplit(string infile)
    string *stemp;
    float *obsvars;
    int rewritecode;
+   // Set the random seed
    unsigned int randSeed = (unsigned int)chrono::system_clock::now().time_since_epoch().count();
 
    ftemp = new float[2];
    itemp = new int[4];
    stemp = new string[5];
 
+   // Prepare the output filenames
    stemp[0] = RemoveExtension(&infile) + "_split-1.root";
    stemp[1] = RemoveExtension(&infile) + "_split-2.root";
    
-   ftemp[0] = (startCombining->widgetNE[0])->GetValue();
+   // Get the value for splitting (either fraction of events or number of events)
+   ftemp[0] = (startSplitting->widgetNE[0])->GetValue();
    
+   // Open input file and save All Tree and list of keys
    TFile *input = TFile::Open(infile.c_str(), "READ");
    TTree *tempTree = (TTree*)input->Get("TreeA");
    TList *tempkeyslist = (TList*)input->GetListOfKeys();
    TTree *readTree;
    TTree *writeTree;
    
+   // Set the number of all events (itemp[0]), events in one output file (itemp[1]) and events in other output file (itemp[2])
    itemp[0] = tempTree->GetEntries();
    if(ftemp[0] < 1)
       itemp[1] = (int)TMath::Ceil(itemp[0]*ftemp[0]);
    else
       itemp[1] = (int)TMath::Ceil(ftemp[0]);
    itemp[2] = (int)(itemp[0]-itemp[1]);
-
-/*   Observables *obstemp = new Observables(observables);
-   for(int j = 0; j < nrobs; j++)
-      tempTree->SetBranchAddress((obstemp->GetName(j)).c_str(), obstemp->obsstruct[j].value);
-   for(int i = 0; i < 40; i++)
-   {
-      cout << "# i = " << i << endl;
-      tempTree->GetEntry(i);
-      ftemp[1] = 0;
-      for(int j = 0; j < ALLEYES; j++)
-      {
-         cout << "EYE " << j << ": " << obstemp->GetValue("energyFD", j) << endl;
-         ftemp[1] += obstemp->GetValue("energyFD", j);
-      }
-      cout << "Testing value: " << ftemp[1] << endl;
-   }
-
-//   return 1;*/
    
+   // If any of these are 0, cancel splitting
    if( (itemp[0] == 0) || (itemp[1] == 0) || (itemp[2] <= 0) )
    {
       AlertPopup("No events in split file", "One of the split files will have no events (" + ToString(itemp[1]) + "/" + ToString(itemp[2]) + "). Total number of events is " + ToString(itemp[0]) + ". Please adjust the split setting accordingly and restart.");
@@ -1682,8 +1845,8 @@ int MyFrame::StartFileSplit(string infile)
    }
    else
    {
+      // Open a dialog to select the random seed
       stemp[2] = "Selecting random seed for splitting the rewritten ADST file into two parts.\nThe current seed is selected randomly based on time.\n";
-
       cout << "# Random seed = " << randSeed << endl;
       NEDialog randomseedDialog(wxT("Random seed"), wxSize(500,200), stemp[2], "Set MVA cut:", randSeed, &ID_RANDSEEDDIALOG);
       randomseedDialog.SetNEntryFormat(randomseedDialog.widgetNE, 0, 1, 2, 0, 10000000000);
@@ -1702,6 +1865,7 @@ int MyFrame::StartFileSplit(string infile)
          return 1;
       }
 
+      // Printout some information about splitting the files
       itemp[3] = 0;
       stemp[2] = "Currently splitting file\n   " + RemovePath(&infile) + "        \t" + ToString(itemp[0]) + " events\ninto two files:\n   " + RemovePath(&stemp[0]) + "\t" + ToString(itemp[1]) + " events\n   " + RemovePath(&stemp[1])+ "\t" + ToString(itemp[2]) + " events\n\nPlease wait for it to finish.";
       ShowProgress(wxT("Splitting rewritten ADST file"), stemp[2].c_str(), 2*(input->GetNkeys())*itemp[0]);
@@ -1710,16 +1874,17 @@ int MyFrame::StartFileSplit(string infile)
       cout << "# - First file:  " << RemovePath(&stemp[0]) << " (" << itemp[1] << " of " << itemp[0] << " total events)" << endl;
       cout << "# - Second file: " << RemovePath(&stemp[1]) << " (" << itemp[2] << " of " << itemp[0] << " total events)" << endl;
    
-      // Preparing shuffled list for sampling
+      // Preparing shuffled list for sampling (saving to two vectors with event numbers)
       vector<int> shuflist;
       for(int i = 0; i < itemp[0]; i++)
          shuflist.push_back(i);
    
-      shuffle(shuflist.begin(), shuflist.end(), default_random_engine((unsigned int)chrono::system_clock::now().time_since_epoch().count()));
+      shuffle(shuflist.begin(), shuflist.end(), default_random_engine(randSeed));
 //      shuffle(shuflist.begin(), shuflist.end(), default_random_engine((unsigned int)chrono::system_clock::now().time_since_epoch().count()));
 
       vector<int> split1list;
       vector<int> split2list;
+      vector<int> seleye;
 
       for(int i = 0; i < itemp[0]; i++)
       {
@@ -1728,6 +1893,11 @@ int MyFrame::StartFileSplit(string infile)
 	 else
             split2list.push_back(shuflist[i]);
       }
+
+      // Determine the type of observables to cut on (SD or FD)
+      selcuttype = (cutObservables->widgetCB)->GetSelection();
+      // Determine how eye selection should be handled (any eye inside selection or average)
+      seleyetype = (eyeSelection->widgetCB)->GetSelection();
 
       // Loop over the two split files
       TFile *output;
@@ -1750,7 +1920,7 @@ int MyFrame::StartFileSplit(string infile)
 
             cout << "#   Currently selected tree: " << stemp[2] << "; " << stemp[3] << endl;
 
-            // Tree for reading
+            // Prepare tree for reading
             readTree = (TTree*)input->Get(stemp[2].c_str());
             readTree->SetBranchAddress("rewritecode", &rewritecode);
             for(int j = 0; j < nrobs; j++)
@@ -1760,7 +1930,7 @@ int MyFrame::StartFileSplit(string infile)
                readTree->SetBranchAddress((obser->GetName(j) + "_pos").c_str(), obser_pos->obsstruct[j].value);
             }
 
-            // Tree for writing
+            // Prepare tree for writing
 	    if( (stemp[3].compare("Signal tree from old file.") == 0) || (stemp[3].compare("Signal tree from new file.") == 0) || (stemp[3].compare("Background tree with all events, including signal events.") == 0) )
 	       stemp[4] = stemp[3];
 	    else
@@ -1788,11 +1958,23 @@ int MyFrame::StartFileSplit(string infile)
                {
                   readTree->GetEntry(j);
 
+                  // Check if event is inside the selected cuts
+                  if(!seleye.empty()) seleye.erase(seleye.begin(), seleye.end());
+
+                  if(DBGSIG > 1)
+                     cout << "# MvaSetTrees           #: " << "Event = " << j << endl;
+                  ret = IsInsideCuts(obser, obser_neg, obser_pos, &seleye, true);
+
                   // Select the correct tree to write to
-                  if( (find(split1list.begin(), split1list.end(), j) != split1list.end()) && (i == 0) )
-                     writeTree->Fill();
-                  if( (find(split2list.begin(), split2list.end(), j) != split2list.end()) && (i == 1) )
-                     writeTree->Fill();
+		  if(ret != -1)
+		  {
+                     if( (find(split1list.begin(), split1list.end(), j) != split1list.end()) && (i == 0) )
+                        writeTree->Fill();
+                     if( (find(split2list.begin(), split2list.end(), j) != split2list.end()) && (i == 1) )
+                        writeTree->Fill();
+		  }
+		  else
+                     cout << "# MvaSetTrees           #: " << "Event = " << j << " is outside the selected cuts." << endl;
 
 	          // Update the progress bar
 	          itemp[3]++;

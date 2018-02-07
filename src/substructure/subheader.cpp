@@ -58,13 +58,13 @@ int Subheader::GetButtonHeight(wxButton *bt)
    return (bt->GetSize()).GetHeight();
 }
 
-int Subheader::GetDropBoxWidth(wxComboBox *db)
+int Subheader::GetDropBoxWidth(wxChoice *db)
 {
 //   return (bt->GetTextExtent(bt->GetLabelText())).GetWidth();
    return (db->GetSize()).GetWidth();
 }
 
-int Subheader::GetDropBoxHeight(wxComboBox *db)
+int Subheader::GetDropBoxHeight(wxChoice *db)
 {
 //   return (bt->GetTextExtent(bt->GetLabelText())).GetHeight();
    return (db->GetSize()).GetHeight();
@@ -80,6 +80,16 @@ int Subheader::GetCheckBoxHeight(wxCheckBox *cb)
 {
 //   return (bt->GetTextExtent(bt->GetLabelText())).GetHeight();
    return (cb->GetSize()).GetHeight();
+}
+
+void Subheader::SetLabelSize(wxStaticText *st, int width, int height)
+{
+   if(width == -1)
+      st->SetSize(GetLabelWidth(st), height);
+   else if(height == -1)
+      st->SetSize(width, GetLabelHeight(st));
+   else if( (width != -1) && (height != -1) )
+      st->SetSize(width, height);
 }
 
 void Subheader::SetNEntryFormat(wxSpinCtrlDouble *sc, int nrdig, double incr, int limit, double minlim, double maxlim)

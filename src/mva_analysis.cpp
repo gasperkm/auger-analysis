@@ -3,6 +3,7 @@
 #include "adst_mva.h"
 #include "popups.h"
 #include "combine.h"
+#include <algorithm>
 
 // Add observables to the MVA analysis
 //int MyFrame::MvaAddObservables(TMVA::Factory *factory)
@@ -219,12 +220,12 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
    {
       tempTree->GetEntry(j);
 
-      // TODO: Check if event is inside the selected cuts
+      // Check if event is inside the selected cuts
       if(!seleye.empty()) seleye.erase(seleye.begin(), seleye.end());
 
       if(DBGSIG > 1)
          cout << "# MvaSetTrees           #: " << "Event = " << j << endl;
-      ret = IsInsideCuts(invalues, invalues_neg, invalues_pos, &seleye);
+      ret = IsInsideCuts(invalues, invalues_neg, invalues_pos, &seleye, false);
 
       // Combine stereo FD events
       if(ret == 0)
@@ -328,65 +329,6 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
                cout << "# MvaSetTrees           #: " << "Writeout values (combined), " << observables[i] << ": " << outobs[i] << ", " << outobs_neg[i] << ", " << outobs_pos[i] << endl;
 	 }
          outtree->Fill();
-
-/*         if(DBGSIG > 1)
-	    cout << "# MvaSetTrees           #: " << "Event " << j << " IsInsideCuts (" << seleye.size() << ")" << endl;
-         itemp[2] = seleye[0];
-
-         itemp[0]++;
-         if(seleye.size() > 1)
-         {
-            itemp[1]++;
-
-            if(DBGSIG > 1)
-	    {
-               cout << "# MvaSetTrees           #: " << "Event " << j << " has multiple eyes inside the cuts = ";
-               for(int i = 0; i < seleye.size(); i++)
-                  cout << seleye[i] << " ";
-               cout << endl;
-             }
-
-            // Determine which FD eye has the smallest error on xmax
-            ftemp[3] = 100.;
-
-	    for(int k = 0; k < seleye.size(); k++)
-	    {
-               // Get error on xmax value (relative)
-               ftemp[0] = invalues->GetValue(generalObservables->GetInt("xmax"), seleye[k]);
-               ftemp[1] = invalues_neg->GetValue(generalObservables->GetInt("xmax"), seleye[k]);
-
-               if(DBGSIG > 1)
-	          cout << "# MvaSetTrees           #: " << "Values: " << ftemp[0] << ", " << ftemp[1] << endl;
-
-	       ftemp[0] = ftemp[1]/ftemp[0];
-
-               if(DBGSIG > 1)
-	       {
-   	          cout << "# MvaSetTrees           #: " << "Old relative error: " << ftemp[3] << endl;
-   	          cout << "# MvaSetTrees           #: " << "New relative error: " << ftemp[0] << endl;
-   	       }
-	       
-	       // If error is smaller, save them
-	       if(ftemp[0] < ftemp[3])
-	       {
-                  ftemp[3] = ftemp[0];
-		  itemp[2] = seleye[k];
-	       }
-	    }
-	    
-            if(DBGSIG > 1)
-	       cout << "# MvaSetTrees           #: " << "Best eye is: " << itemp[2] << endl;
-	 }
-
-         for(int i = 0; i < nrobs; i++)
-	 {
-            outobs[i] = invalues->GetValue(i, itemp[2]);
-            outobs_neg[i] = invalues_neg->GetValue(i, itemp[2]);
-            outobs_pos[i] = invalues_pos->GetValue(i, itemp[2]);
-            if(DBGSIG > 1)
-	       cout << "# MvaSetTrees           #: " << "Saving data " << i << ": " << outobs[i] << " (" << outobs_neg[i] << ", " << outobs_pos[i] << ")" << endl;
-	 }
-	 outtree->Fill();*/
       }
       // Any of the eyes is inside the cut
       else if(ret == 1)
@@ -462,9 +404,6 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
                   outobs[i] += invalues->GetValue(i, k);
                   outobs_neg[i] += invalues_neg->GetValue(i, k);
                   outobs_pos[i] += invalues_pos->GetValue(i, k);
-/*                  outobs[i] += invalues->obsstruct[i].value[k];
-                  outobs_neg[i] += invalues->obsstruct[i].value[k];
-                  outobs_pos[i] += invalues->obsstruct[i].value[k];*/
 	       }
 	    }
 
@@ -497,12 +436,14 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
    return ret;
 }
 
-int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, vector<int> *seleye)
+int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, vector<int> *seleye, bool split)
 {
    bool *sepcut, isinside;
    sepcut = new bool[3];
+   bool *btemp;
+   btemp = new bool[2];
    float *ftemp;
-   ftemp = new float[2];
+   ftemp = new float[4];
    float *ftempaver;
    ftempaver = new float[2];
    float *wQuantity, *quantitySum, *wQuantitySum;
@@ -521,9 +462,15 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
    selectedBin[1] = (cutZenithBins->widgetCB)->GetSelection();
 
    // Determine the type of observables to cut on (SD or FD)
-   selcuttype = (cutObservables->widgetCB)->GetSelection();
+   if(!split)
+      selcuttype = (cutObservables->widgetCB)->GetSelection();
+   else
+      selcuttype = (splitCutObservables->widgetCB)->GetSelection();
    // Determine how eye selection should be handled (any eye inside selection or average)
-   seleyetype = (eyeSelection->widgetCB)->GetSelection();
+   if(!split)
+      seleyetype = (eyeSelection->widgetCB)->GetSelection();
+   else
+      seleyetype = (splitEyeSelection->widgetCB)->GetSelection();
 
    for(int i = 0; i < 2; i++)
    {
@@ -534,12 +481,25 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
       wQuantitySum[i] = 0;
    }
 
+   if(!split)
+   {
+      btemp[0] = (cutEnergy->widgetChBox)->IsChecked();
+      btemp[1] = (cutZenith->widgetChBox)->IsChecked();
+      btemp[2] = (cutRisetime->widgetChBox)->IsChecked();
+   }
+   else
+   {
+      btemp[0] = (splitCutEnergy->widgetChBox)->IsChecked();
+      btemp[1] = (splitCutZenith->widgetChBox)->IsChecked();
+      btemp[2] = (splitCutRisetime->widgetChBox)->IsChecked();
+   }
+
    // Calculate averages for all eyes
    for(int i = 0; i < ALLEYES; i++)
    {
       if(selcuttype == 0)
       {
-         if((cutEnergy->widgetChBox)->IsChecked())
+         if(btemp[0])
          {
             if(mean->GetValue(mean->GetInt("energySD"), i) != -1)
             {
@@ -548,7 +508,7 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
             }
          }
 
-         if((cutZenith->widgetChBox)->IsChecked())
+         if(btemp[1])
          {
             if(mean->GetValue(mean->GetInt("zenithSD"), i) != -1)
             {
@@ -559,7 +519,7 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
       }
       else if(selcuttype == 1)
       {
-         if((cutEnergy->widgetChBox)->IsChecked())
+         if(btemp[0])
          {
             if(mean->GetValue(mean->GetInt("energyFD"), i) != -1)
             {
@@ -575,7 +535,7 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
             }
          }
 
-         if((cutZenith->widgetChBox)->IsChecked())
+         if(btemp[1])
          {
             if(mean->GetValue(mean->GetInt("zenithFD"), i) != -1)
             {
@@ -623,7 +583,7 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
          ftempaver[1] = -1;
    }
 
-   if(DBGSIG > 1)
+//   if(DBGSIG > 1)
       cout << "# IsInsideCuts          #: " << "All values: Nr. eyes = " << avercount[0] << ", " << avercount[1] << ", Average = " << ftempaver[0] << ", " << ftempaver[1] << ", Combined = " << quantitySum[0] << ", " << quantitySum[1] << endl;
 
    if(DBGSIG > 1)
@@ -634,7 +594,7 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
       // SD observables for cut
       if(selcuttype == 0)
       {
-         if((cutEnergy->widgetChBox)->IsChecked())
+         if(btemp[0])
          {
 	    if(seleyetype == 0)		// combined
                ftemp[0] = mean->GetValue(mean->GetInt("energySD"), i);
@@ -648,10 +608,22 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
 
             if( (ftemp[0] != -1) )
             {
-               if((ftemp[0] > ecutBins[selectedBin[0]]) && (ftemp[0] <= ecutBins[selectedBin[0]+1]))
-                  sepcut[0] = true;
+               if(!split)
+	       {
+                  if((ftemp[0] > ecutBins[selectedBin[0]]) && (ftemp[0] <= ecutBins[selectedBin[0]+1]))
+                     sepcut[0] = true;
+	          else
+                     sepcut[0] = false;
+	       }
 	       else
-                  sepcut[0] = false;
+	       {
+                  ftemp[2] = (float)pow(10, splitCutEnergy->GetNumber(splitCutEnergy->widgetNE[0]));
+                  ftemp[3] = (float)pow(10, splitCutEnergy->GetNumber(splitCutEnergy->widgetNE[1]));
+                  if((ftemp[0] > ftemp[2]) && (ftemp[0] <= ftemp[3]))
+                     sepcut[0] = true;
+	          else
+                     sepcut[0] = false;
+	       }
             }
 	    else
                sepcut[0] = false;
@@ -659,7 +631,7 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
 	 else
             sepcut[0] = true;
 
-         if((cutZenith->widgetChBox)->IsChecked()) 
+         if(btemp[1]) 
          {
 	    if(seleyetype == 0)		// combined
                ftemp[0] = mean->GetValue(mean->GetInt("zenithSD"), i);
@@ -673,10 +645,22 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
 
             if( (ftemp[0] != -1) )
             {
-               if((ftemp[0] > AsinSqrt(zcutBins[selectedBin[1]],false)) && (ftemp[0] <= AsinSqrt(zcutBins[selectedBin[1]+1],false)))
-                  sepcut[1] = true;
+               if(!split)
+	       {
+                  if((ftemp[0] > AsinSqrt(zcutBins[selectedBin[1]],false)) && (ftemp[0] <= AsinSqrt(zcutBins[selectedBin[1]+1],false)))
+                     sepcut[1] = true;
+	          else
+                     sepcut[1] = false;
+	       }
 	       else
-                  sepcut[1] = false;
+	       {
+                  ftemp[2] = DegToRad(splitCutZenith->GetNumber(splitCutZenith->widgetNE[0]));
+                  ftemp[3] = DegToRad(splitCutZenith->GetNumber(splitCutZenith->widgetNE[1]));
+                  if((ftemp[0] > ftemp[2]) && (ftemp[0] <= ftemp[3]))
+                     sepcut[1] = true;
+	          else
+                     sepcut[1] = false;
+	       }
             }
 	    else
                sepcut[1] = false;
@@ -687,7 +671,7 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
       // FD observables for cut
       else if(selcuttype == 1)
       {
-         if((cutEnergy->widgetChBox)->IsChecked()) 
+         if(btemp[0]) 
          {
 	    if(seleyetype == 0)		// combined
                ftemp[0] = quantitySum[0];
@@ -701,10 +685,22 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
 
             if( (ftemp[0] != -1) )
             {
-               if((ftemp[0] > ecutBins[selectedBin[0]]) && (ftemp[0] <= ecutBins[selectedBin[0]+1]))
-                  sepcut[0] = true;
+               if(!split)
+	       {
+                  if((ftemp[0] > ecutBins[selectedBin[0]]) && (ftemp[0] <= ecutBins[selectedBin[0]+1]))
+                     sepcut[0] = true;
+	          else
+                     sepcut[0] = false;
+	       }
 	       else
-                  sepcut[0] = false;
+	       {
+                  ftemp[2] = (float)pow(10, splitCutEnergy->GetNumber(splitCutEnergy->widgetNE[0]));
+                  ftemp[3] = (float)pow(10, splitCutEnergy->GetNumber(splitCutEnergy->widgetNE[1]));
+                  if((ftemp[0] > ftemp[2]) && (ftemp[0] <= ftemp[3]))
+                     sepcut[0] = true;
+	          else
+                     sepcut[0] = false;
+	       }
             }
 	    else
                sepcut[0] = false;
@@ -712,7 +708,7 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
 	 else
             sepcut[0] = true;
 
-         if((cutZenith->widgetChBox)->IsChecked()) 
+         if(btemp[1]) 
          {
 	    if(seleyetype == 0)		// combined
                ftemp[0] = quantitySum[1];
@@ -726,10 +722,22 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
 
             if( (ftemp[0] != -1) )
             {
-               if((ftemp[0] > AsinSqrt(zcutBins[selectedBin[1]],false)) && (ftemp[0] <= AsinSqrt(zcutBins[selectedBin[1]+1],false)))
-                  sepcut[1] = true;
+               if(!split)
+	       {
+                  if((ftemp[0] > AsinSqrt(zcutBins[selectedBin[1]],false)) && (ftemp[0] <= AsinSqrt(zcutBins[selectedBin[1]+1],false)))
+                     sepcut[1] = true;
+	          else
+                     sepcut[1] = false;
+	       }
 	       else
-                  sepcut[1] = false;
+	       {
+                  ftemp[2] = DegToRad(splitCutZenith->GetNumber(splitCutZenith->widgetNE[0]));
+                  ftemp[3] = DegToRad(splitCutZenith->GetNumber(splitCutZenith->widgetNE[1]));
+                  if((ftemp[0] > ftemp[2]) && (ftemp[0] <= ftemp[3]))
+                     sepcut[1] = true;
+	          else
+                     sepcut[1] = false;
+	       }
             }
 	    else
                sepcut[1] = false;
@@ -738,7 +746,7 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
             sepcut[1] = true;
       }
 
-      if((cutRisetime->widgetChBox)->IsChecked()) 
+      if(btemp[2]) 
       {
          ftemp[0] = mean->GetValue(mean->GetInt("risetimerecalc"), i);
          ftemp[1] = neg->GetValue(neg->GetInt("risetimerecalc"), i);
@@ -748,10 +756,20 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
 
          if( ((ftemp[0] != -1) && (ftemp[1] != -1)) )
          {
-            if(ftemp[1]/ftemp[0] <= (cutRisetime->widgetNE[0])->GetValue())
-               sepcut[2] = true;
-	    else
-               sepcut[2] = false;
+            if(!split)
+	    {
+               if(ftemp[1]/ftemp[0] <= (cutRisetime->widgetNE[0])->GetValue())
+                  sepcut[2] = true;
+	       else
+                  sepcut[2] = false;
+	    }
+            else
+	    {
+               if(ftemp[1]/ftemp[0] <= (splitCutRisetime->widgetNE[0])->GetValue())
+                  sepcut[2] = true;
+	       else
+                  sepcut[2] = false;
+	    }
          }
 	 else
             sepcut[2] = false;
@@ -762,7 +780,8 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
       isinside = sepcut[0] & sepcut[1] & sepcut[2];
 
       if(DBGSIG > 1)
-         cout << endl << "# IsInsideCuts          #: " << "isinside = " << (int)isinside << ", sepcut[0] = " << (int)sepcut[0] << ", sepcut[1] = " << (int)sepcut[1] << ", sepcut[2] = " << (int)sepcut[2] << endl;
+	      cout << endl;
+         cout << "# IsInsideCuts          #: " << "isinside = " << (int)isinside << ", sepcut[0] = " << (int)sepcut[0] << ", sepcut[1] = " << (int)sepcut[1] << ", sepcut[2] = " << (int)sepcut[2] << endl;
 
       if(isinside)
          seleye->push_back(i);
@@ -776,6 +795,8 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
    delete[] quantitySum;
    delete[] wQuantitySum;
 
+   cout << "# IsInsideCuts          #: " << "return code = " << seleyetype << endl;
+
    if(seleye->size() > 0)
    {
       if( (seleyetype >= 0) && (seleyetype < 3) )
@@ -787,14 +808,80 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
       return -1;
 }
 
+// Get the TMVA type
+void MyFrame::SetTmvaType(TMVA::Factory *factory, int nr, string *formula)
+{
+   string *stemp;
+   stemp = new string[2];
+
+   // Cut optimization
+   if(methods[nr].find("Cuts") != string::npos)
+      factory->BookMethod(TMVA::Types::kCuts, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // 1D likelihood
+   if(methods[nr].find("Likelihood") != string::npos)
+      factory->BookMethod(TMVA::Types::kLikelihood, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // Multidimensional likelihood
+   if(methods[nr].find("PDERS") != string::npos)
+      factory->BookMethod(TMVA::Types::kPDERS, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // Likelihood estimator
+   if(methods[nr].find("PDEFoam") != string::npos)
+      factory->BookMethod(TMVA::Types::kPDEFoam, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // Nearest neighbours
+   if(methods[nr].find("KNN") != string::npos)
+      factory->BookMethod(TMVA::Types::kKNN, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // Linear discriminant
+   if(methods[nr].find("LD") != string::npos)
+      factory->BookMethod(TMVA::Types::kLD, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // Fisher discriminants
+   if(methods[nr].find("Fisher") != string::npos)
+      factory->BookMethod(TMVA::Types::kFisher, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // H-Matrix discriminant
+   if(methods[nr].find("HMatrix") != string::npos)
+      factory->BookMethod(TMVA::Types::kHMatrix, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // Functional discriminant
+   if(methods[nr].find("FDA") != string::npos)
+   {
+      stemp[0] = methodsOpt[nr];
+      cout << "Old method options: " << stemp[0] << endl;
+      cout << "Formula: " << *formula << endl;
+      stemp[0].replace(stemp[0].find("VARFORMULA"), 10, *formula);
+      cout << "New method options: " << stemp[0] << endl;
+      factory->BookMethod(TMVA::Types::kFDA, methods[nr].c_str(), stemp[0].c_str());
+   }
+   // Neural networks
+   if(methods[nr].find("MLP") != string::npos)
+      factory->BookMethod(TMVA::Types::kMLP, methods[nr].c_str(), methodsOpt[nr].c_str());
+   if(methods[nr].find("CFMlpANN") != string::npos)
+      factory->BookMethod(TMVA::Types::kCFMlpANN, methods[nr].c_str(), methodsOpt[nr].c_str());
+   if(methods[nr].find("TMlpANN") != string::npos)
+      factory->BookMethod(TMVA::Types::kTMlpANN, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // Support vector machine
+   if(methods[nr].find("SVM") != string::npos)
+      factory->BookMethod(TMVA::Types::kSVM, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // Boosted decision trees
+   if(methods[nr].find("BDT") != string::npos)
+      factory->BookMethod(TMVA::Types::kBDT, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // Friedman's rulefit
+   if(methods[nr].find("RuleFit") != string::npos)
+      factory->BookMethod(TMVA::Types::kRuleFit, methods[nr].c_str(), methodsOpt[nr].c_str());
+
+   delete[] stemp;
+}
+
 // Book the method, depending on which was chosen
 int MyFrame::BookTheMethod(TMVA::Factory *factory)
 {
    string *stemp;
    stemp = new string[3];
+   vector<string>::iterator it;
+   int *itemp;
+   itemp = new int[2];
 
    stemp[0] = (methodsSelect->widgetCB)->GetStringSelection();
-   cout << "# BookTheMethod         #: " << stemp[0] << ", " << GetMethodName(stemp[0]) << endl;
+   it = find(methods.begin(), methods.end(), GetMethodName(stemp[0]));
+   itemp[0] = distance(methods.begin(), it);
+   cout << "# BookTheMethod         #: " << stemp[0] << ", " << methods[itemp[0]] << endl;
+   cout << "Method info: " << methods[itemp[0]] << ", " << methodsDesc[itemp[0]] << ", " << methodsOpt[itemp[0]] << endl;
 
    // Prepare formula for FDA methods
    for(int i = 0; i <= nrselobs; i++)
@@ -805,8 +892,59 @@ int MyFrame::BookTheMethod(TMVA::Factory *factory)
          stemp[2] = stemp[2] + "+(" + ToString(i) + ")*x" + ToString(i-1);
    }
    cout << "# BookTheMethod         #: Using formula " << stemp[2] << endl;
+   
+   if(GetMethodName(stemp[0]) == "All")
+   {
+      for(int i = 1; i <= nrmethods; i++)
+         SetTmvaType(factory, i, &stemp[2]);
+   }
+   else
+      SetTmvaType(factory, itemp[0], &stemp[2]);
+/*      // Cut optimization
+      if(methods[itemp[0]].find("Cuts") != string::npos)
+         factory->BookMethod(TMVA::Types::kCuts, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
+      // 1D likelihood
+      if(methods[itemp[0]].find("Likelihood") != string::npos)
+         factory->BookMethod(TMVA::Types::kLikelihood, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
+      // Multidimensional likelihood
+      if(methods[itemp[0]].find("PDERS") != string::npos)
+         factory->BookMethod(TMVA::Types::kPDERS, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
+      // Likelihood estimator
+      if(methods[itemp[0]].find("PDEFoam") != string::npos)
+         factory->BookMethod(TMVA::Types::kPDEFoam, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
+      // Nearest neighbours
+      if(methods[itemp[0]].find("KNN") != string::npos)
+         factory->BookMethod(TMVA::Types::kKNN, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
+      // Linear discriminant
+      if(methods[itemp[0]].find("LD") != string::npos)
+         factory->BookMethod(TMVA::Types::kLD, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
+      // Fisher discriminants
+      if(methods[itemp[0]].find("Fisher") != string::npos)
+         factory->BookMethod(TMVA::Types::kFisher, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
+      // H-Matrix discriminant
+      if(methods[itemp[0]].find("HMatrix") != string::npos)
+         factory->BookMethod(TMVA::Types::kHMatrix, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
+      // Functional discriminant
+      if(methods[itemp[0]].find("FDA") != string::npos)
+         factory->BookMethod(TMVA::Types::kFDA, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
+      // Neural networks
+      if(methods[itemp[0]].find("MLP") != string::npos)
+         factory->BookMethod(TMVA::Types::kMLP, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
+      if(methods[itemp[0]].find("CFMlpANN") != string::npos)
+         factory->BookMethod(TMVA::Types::kCFMlpANN, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
+      if(methods[itemp[0]].find("TMlpANN") != string::npos)
+         factory->BookMethod(TMVA::Types::kTMlpANN, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
+      // Support vector machine
+      if(methods[itemp[0]].find("SVM") != string::npos)
+         factory->BookMethod(TMVA::Types::kSVM, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
+      // Boosted decision trees
+      if(methods[itemp[0]].find("BDT") != string::npos)
+         factory->BookMethod(TMVA::Types::kBDT, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
+      // Friedman's rulefit
+      if(methods[itemp[0]].find("RuleFit") != string::npos)
+         factory->BookMethod(TMVA::Types::kRuleFit, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());*/
 
-   if(GetMethodName(stemp[0]) == "Cuts")
+/*   if(GetMethodName(stemp[0]) == "Cuts")
       factory->BookMethod(TMVA::Types::kCuts, (GetMethodName(stemp[0])).c_str(), "!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart");
    else if(GetMethodName(stemp[0]) == "CutsD")
       factory->BookMethod(TMVA::Types::kCuts, (GetMethodName(stemp[0])).c_str(), "!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart:VarTransform=Decorrelate");
@@ -929,9 +1067,10 @@ int MyFrame::BookTheMethod(TMVA::Factory *factory)
    {
       delete[] stemp;
       return -1;
-   }
+   }*/
 
    delete[] stemp;
+   delete[] itemp;
    return 0;
 }
 

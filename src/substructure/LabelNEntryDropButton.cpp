@@ -19,7 +19,7 @@ LabelNEntryDropButton::LabelNEntryDropButton(wxPanel *parent, wxString label, do
     if(DBGSIG > 1)
        cout << "# LabelNEntryDropButton #: " << "Number entry width = " << GetNumEntryWidth(widgetNE[0]) << ", Number entry height = " << GetNumEntryHeight(widgetNE[0]) << endl;
     // Create a dropbox
-    widgetCB = new wxComboBox(parent, dropID, selecttext);
+    widgetCB = new wxChoice(parent, dropID);
     if(DBGSIG > 1)
        cout << "# LabelNEntryDropButton #: " << "DropBox width = " << GetDropBoxWidth(widgetCB) << ", DropBox height = " << GetDropBoxHeight(widgetCB) << endl;
     for(int i = 0; i < entrytext.size(); i++)

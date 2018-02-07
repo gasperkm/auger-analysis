@@ -45,7 +45,7 @@ double SinSquare(double input, bool degree)
       return sin(input)*sin(input);
 }
 
-// Calculate the arcsin square of an value (if degree = true, result is in degrees)
+// Calculate the arcsin square of a value (if degree = true, result is in degrees)
 double AsinSqrt(double input, bool degree)
 {
    if(degree)

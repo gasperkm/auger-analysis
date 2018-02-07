@@ -55,6 +55,8 @@ public:
     vector<bool> obsorigsel;
     int nrselobs;
     vector<string> methods;
+    vector<string> methodsOpt;
+    vector<string> methodsDesc;
     int nrmethods;
     int oldselect[3];
     vector<double> ecutBins;
@@ -63,6 +65,9 @@ public:
     int seleyetype;
     vector<int> sigSeleye;
     vector<int> backSeleye;
+
+    int nrlists;
+    LabelListEdit *allLBE[20];
 
     int nrkeys;
     TList *keyslist;
@@ -100,9 +105,18 @@ public:
 
     // Control substructures
     LabelButton *selectMvaFile;
-    LabelList *mvaList[3];
+    LabelListEdit *mvaList[3];
+//    LabelListEdit *krnekiList;
     LabelButton *startRewriting;
-    LabelNEntryButton *startCombining;
+    LabelButton *startCombining;
+
+    LabelNEntryButton *startSplitting;
+    LabelDrop *splitCutObservables;
+    CheckNEntry *splitCutEnergy;
+    CheckNEntry *splitCutZenith;
+    CheckNEntry *splitCutRisetime;
+    LabelDrop *splitEyeSelection;
+
     LabelTEntry *selectedMva;
     LabelList *selectObservables;
     LabelDrop *signalSelect;
@@ -147,13 +161,15 @@ public:
     int StartFileSplit(string infile);
     int StartCombine(string *outfile);
     int StartMerge(string *outfile);
+    void EditList(wxCommandEvent& event);
 
     // Functions for the MVA analysis
 //    int MvaNoteObservables(TMVA::Factory *factory);
     int MvaNoteObservables(int count);
     int MvaTreeFile(string *infilename, string *outfilename, int *nrEvents);
     int MvaSetTrees(int type, TFile *ifile, TTree *outtree);
-    int IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, vector<int> *seleye);
+    int IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, vector<int> *seleye, bool split);
+    void SetTmvaType(TMVA::Factory *factory, int nr, string *formula);
     int BookTheMethod(TMVA::Factory *factory);
     int GetTrainingShift(string *mvafilename);
     void GetCorrelations(TFile *corfile);
@@ -201,5 +217,11 @@ const int ID_DEFOPTIONS 	= 313;
 // Additional IDs for any custom dialogs
 const int ID_MVACUTDIALOG	= 401;
 const int ID_RANDSEEDDIALOG	= 402;
+
+// Additional IDs for custom options regarding listboxes
+const int ID_DELETELIST		= 1001;
+const int ID_UPLIST		= 1002;
+const int ID_DOWNLIST		= 1003;
+const int ID_CLEARLIST		= 1004;
 
 #endif

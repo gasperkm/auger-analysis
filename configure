@@ -22,8 +22,10 @@
      colorecho ""
      colorecho "[option] = Option for configure:"
      colorecho "  help       Display configure instructions."
-     colorecho "  nomake     Configure installation, but do not run make."
-     colorecho "  all        Same as nomake, but compile the program afterwards with make."
+#     colorecho "  nomake     Configure installation, but do not run make."
+     colorecho "  all        Configure installation and afterwards compile with make."
+     colorecho "  old        Same as all, but compile with old ADST version only."
+     colorecho "  new        Same as nomake, but compile with new ADST version only."
      colorecho "  support    Same as all, but only compile support programs (not main GUI)."
      colorecho "  clean      Clean the installation directory. Does not clean the results directory."
      colorecho "  compress   Compress the source code in a tar-ball."
@@ -32,7 +34,7 @@
      colorecho "  --root-install=/root/install/directory"
      colorecho ""
      colorecho "Example:"
-     colorecho "  ./configure all new --root-install=/home/user/root"
+     colorecho "  ./configure all --root-install=/home/user/root"
      colorecho ""
      colorecho "#------------------------------"
    }
@@ -52,7 +54,7 @@
      fi
    
      # Print help and exit if we give a wrong first argument
-     if  [ "$1" != "nomake" ] && [ "$1" != "all" ] && [ "$1" != "support" ] && [ "$1" != "lib" ] && [ "$1" != "clean" ] && [ "$1" != "compress" ]; then
+     if  [ "$1" != "all" ] && [ "$1" != "old" ] && [ "$1" != "new" ] && [ "$1" != "support" ] && [ "$1" != "lib" ] && [ "$1" != "clean" ] && [ "$1" != "compress" ]; then
        errorecho "Error! Wrong configuration option selected (first argument)."
        echo ""
        helptext
@@ -125,50 +127,12 @@
          errorecho "Error! Directory $startdir/auger-analysis already exists."
          exit 1
        fi
-#      cd $startdir
-#      if [ ! -d $startdir/auger-analysis-gui ]; then
-#        mkdir $startdir/auger-analysis-gui
-#        mkdir $startdir/auger-analysis-gui/results
-#        mkdir $startdir/auger-analysis-gui/layout
-#        mkdir $startdir/auger-analysis-gui/settings
-#        mkdir $startdir/auger-analysis-gui/setup
-#        echo "Copying files to temporary directory $startdir/auger-analysis-gui..."
-#        cp -r configure ./dict ./doc ./include ./input ./src ./auger-analysis-gui/ 
-#        cp -r ./layout/default.layout ./auger-analysis-gui/layout/
-#        cp -r ./setup/setup_ADST.sh ./setup/*.tar.gz ./auger-analysis-gui/setup/
-#        cd $startdir/auger-analysis-gui/setup
-#        for f in *.tar.gz
-#        do
-#          tar -zxf $f
-#        done
-#        cd $startdir
-#        echo "default.layout" > ./auger-analysis-gui/layout/selected_layout.txt
-#  # TODO - Settings default files
-#        cd $startdir/auger-analysis-gui
-#        echo "Cleaning the base directory in $startdir/auger-analysis-gui..."
-#        rm -f ./*.bak
-#        echo "Cleaning the subdirectories of $startdir/auger-analysis-gui..."
-#        rm -f ./*/*.bak
-#        cd $startdir/auger-analysis-gui/src
-#        rm -f ./*/*.bak
-#        cd $startdir
-#        echo "Creating a tar-ball auger-analysis-gui.tar.gz..."
-#        tar czf $startdir/auger-analysis-gui.tar.gz ./auger-analysis-gui
-#        echo "Removing the temporary directory $startdir/auger-analysis-gui..."
-#        rm -fr $startdir/auger-analysis-gui
-#        exit 0
-#      else
-#        errorecho "Error! Directory ./auger-analysis-gui already exists."
-#        exit 1
-#      fi
      fi
    
      # Configure the workstation information and directory of program (0 if we find something and 1 otherwise)
      basedir=$(echo $startdir | sed 's/\//\\\//g')
    
-     if [ "$1" == "nomake" ] || [ "$1" == "all" ] || [ "$1" == "support" ] || [ "$1" == "lib" ]; then
-#       export CPP=/usr/bin/gcc-4.8
-#       export CXX=/usr/bin/g++-4.8
+     if [ "$1" == "all" ] || [ "$1" == "old" ] || [ "$1" == "new" ] || [ "$1" == "support" ] || [ "$1" == "lib" ]; then
        for ver in 1 2
        do
 	 # Find path-to-installation and replace it with the base directory
@@ -214,28 +178,20 @@
    
          # Create the two ADST versions (old and new)
          if [ $ver == 1 ]; then
-            source $startdir/setup/setup_ADST.sh $startdir old
-   	 if [ ! -d $ADSTROOT ]; then
-   	    cd $startdir/setup
-   	    for ball in *.tar.gz
-   	    do
-   	       tar -zxf $ball
-   	    done
-   	 fi
-   	 cd $ADSTROOT
-   	 make
+           source $startdir/setup/setup_ADST.sh $startdir old
          elif [ $ver == 2 ]; then
-            source $startdir/setup/setup_ADST.sh $startdir new
+           source $startdir/setup/setup_ADST.sh $startdir new
+         fi
+
    	 if [ ! -d $ADSTROOT ]; then
-   	    cd $startdir/setup
-   	    for ball in *.tar.gz
-   	    do
-   	       tar -zxf $ball
-   	    done
+   	   cd $startdir/setup
+   	   for ball in *.tar.gz
+   	   do
+   	     tar -zxf $ball
+   	   done
    	 fi
    	 cd $ADSTROOT
    	 make
-         fi
    
 	 # Create the external TMVA version (only for the first time)
          if [ $ver == 1 ]; then

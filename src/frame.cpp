@@ -71,8 +71,20 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    Connect(ID_OPENFILE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SelectMvaFile));
 
    // Label and listbox for displaying opened root files
-   mvaList[0] = new LabelList(leftmvapanel, wxT("ADST files:"), 70, 1, -1);
+   if(!vitemp.empty()) vitemp.erase(vitemp.begin(), vitemp.end());
+   vitemp.push_back(ID_DELETELIST + 4*nrlists);
+   vitemp.push_back(ID_UPLIST + 4*nrlists);
+   vitemp.push_back(ID_DOWNLIST + 4*nrlists);
+   vitemp.push_back(ID_CLEARLIST + 4*nrlists);
+
+   mvaList[0] = new LabelListEdit(leftmvapanel, wxT("ADST files:"), lwidth, 70, 1, -1, vitemp);
    vbox->Add(mvaList[0]->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   Connect(vitemp[0], wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::EditList));
+   Connect(vitemp[1], wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::EditList));
+   Connect(vitemp[2], wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::EditList));
+   Connect(vitemp[3], wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::EditList));
+   allLBE[nrlists] = mvaList[0];
+   nrlists++;
 
    // Label and button to start rewriting ADST into simple form
    startRewriting = new LabelButton(leftmvapanel, wxT("Select ADST files above to rewrite into a single rewritten ADST file (first list):"), wxT("Rewrite"), ID_REWRITE, lwidth);
@@ -80,34 +92,126 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    Connect(ID_REWRITE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SelectRewrite));
 
    // Label and listbox for displaying rewriten root files
-   mvaList[1] = new LabelList(leftmvapanel, wxT("Rewritten ADST files:"), 70, 1, -1);
+   if(!vitemp.empty()) vitemp.erase(vitemp.begin(), vitemp.end());
+   vitemp.push_back(ID_DELETELIST + 4*nrlists);
+   vitemp.push_back(ID_UPLIST + 4*nrlists);
+   vitemp.push_back(ID_DOWNLIST + 4*nrlists);
+   vitemp.push_back(ID_CLEARLIST + 4*nrlists);
+
+   mvaList[1] = new LabelListEdit(leftmvapanel, wxT("Rewritten ADST files:"), lwidth, 70, 1, -1, vitemp);
    vbox->Add(mvaList[1]->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   Connect(vitemp[0], wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::EditList));
+   Connect(vitemp[1], wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::EditList));
+   Connect(vitemp[2], wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::EditList));
+   Connect(vitemp[3], wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::EditList));
+   allLBE[nrlists] = mvaList[1];
+   nrlists++;
 
    // Label + NEntry + three buttons
    if(!vitemp.empty()) vitemp.erase(vitemp.begin(), vitemp.end());
    if(!vstemp.empty()) vstemp.erase(vstemp.begin(), vstemp.end());
-   vstemp.push_back("Split");
-   vitemp.push_back(ID_SPLIT);
-   vstemp.push_back("Combine (MVA input)");
+   vstemp.push_back("Combine (to MVA input)");
    vitemp.push_back(ID_COMBINE);
-   vstemp.push_back("Merge (rewritten ADST)");
+   vstemp.push_back("Merge (to rewritten ADST)");
    vitemp.push_back(ID_MERGE);
 
-   startCombining = new LabelNEntryButton(leftmvapanel, wxT("Select rewritten ADST files above to combine into one rewritten ADST file (second list):"), 1., -1, vstemp, vitemp, lwidth);
-   startCombining->SetNEntryFormat(startCombining->widgetNE[0], 2, 0.01, -1, 0., -1.);
+   startCombining = new LabelButton(leftmvapanel, wxT("Select rewritten ADST files above to combine into one rewritten ADST file (second list):"), vstemp, vitemp, lwidth);
    vbox->Add(startCombining->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
-   Connect(ID_SPLIT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::PrepareFileSplit));
    Connect(ID_COMBINE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SelectCombine));
    Connect(ID_MERGE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SelectMerge));
 
    // Label and listbox for MVA input root files
-   mvaList[2] = new LabelList(leftmvapanel, wxT("MVA input files:"), 70, 0, ID_SELECTMVAFILE);
+   if(!vitemp.empty()) vitemp.erase(vitemp.begin(), vitemp.end());
+   vitemp.push_back(ID_DELETELIST + 4*nrlists);
+   vitemp.push_back(ID_UPLIST + 4*nrlists);
+   vitemp.push_back(ID_DOWNLIST + 4*nrlists);
+   vitemp.push_back(ID_CLEARLIST + 4*nrlists);
+
+   mvaList[2] = new LabelListEdit(leftmvapanel, wxT("MVA input files:"), lwidth, 70, 0, ID_SELECTMVAFILE, vitemp);
    vbox->Add(mvaList[2]->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
    Connect(ID_SELECTMVAFILE, wxEVT_LISTBOX_DCLICK, wxCommandEventHandler(MyFrame::EnableMvaFile));
+   Connect(vitemp[0], wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::EditList));
+   Connect(vitemp[1], wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::EditList));
+   Connect(vitemp[2], wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::EditList));
+   Connect(vitemp[3], wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::EditList));
+   allLBE[nrlists] = mvaList[2];
+   nrlists++;
 
    // Label for some extra information
    temptext = new wxStaticText(leftmvapanel, -1, wxT("Double click a file from the above list (third list) to use it in the MVA analysis."));
    vbox->Add(temptext, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 10);
+
+   // Make a title
+   MakeTitle(leftmvapanel, vbox, wxT("Rewritten ADST preparation"));
+
+   // Label for splitting
+   vbox->Add(-1, 10);
+   temptext = new wxStaticText(leftmvapanel, -1, wxT("Settings for splitting rewritten ADST files into two separate files:"));
+   vbox->Add(temptext, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10);
+
+   // Label and combo box for selecting the type of observables for cuts SD or FD (splitting)
+   if(!vstemp.empty()) vstemp.erase(vstemp.begin(), vstemp.end());
+   vstemp.push_back("SD observables (energySD and zenithSD)");
+   vstemp.push_back("FD observables (energyFD and zenithFD)");
+   splitCutObservables = new LabelDrop(leftmvapanel, wxT("Select cut observables type:"), vstemp, vstemp[1], -1, rwidth);
+   vbox->Add(splitCutObservables->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (splitCutObservables->widgetCB)->SetSelection(1);
+
+   // Check + label + NEntry for choosing energy cut (splitting)
+   if(!vitemp.empty()) vitemp.erase(vitemp.begin(), vitemp.end());
+   if(!vdtemp.empty()) vdtemp.erase(vdtemp.begin(), vdtemp.end());
+   vdtemp.push_back(17.);
+   vitemp.push_back(-1);
+   vdtemp.push_back(21.);
+   vitemp.push_back(-1);
+   splitCutEnergy = new CheckNEntry(leftmvapanel, false, wxT("Energy limits:"), -1, vdtemp, vitemp, rwidth);
+   splitCutEnergy->SetNEntryFormat(splitCutEnergy->widgetNE[0], 2, 0.01, 2, 0., 25.);
+   splitCutEnergy->SetNEntryFormat(splitCutEnergy->widgetNE[1], 2, 0.01, 2, 0., 25.);
+   vbox->Add(splitCutEnergy->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+
+   // Check + label + NEntry for choosing zenith angle cut (splitting)
+   if(!vitemp.empty()) vitemp.erase(vitemp.begin(), vitemp.end());
+   if(!vdtemp.empty()) vdtemp.erase(vdtemp.begin(), vdtemp.end());
+   vdtemp.push_back(0.);
+   vitemp.push_back(-1);
+   vdtemp.push_back(60.);
+   vitemp.push_back(-1);
+   splitCutZenith = new CheckNEntry(leftmvapanel, false, wxT("Zenith angle limits:"), -1, vdtemp, vitemp, rwidth);
+   splitCutZenith->SetNEntryFormat(splitCutZenith->widgetNE[0], 2, 0.01, 2, 0., 180.);
+   splitCutZenith->SetNEntryFormat(splitCutZenith->widgetNE[1], 2, 0.01, 2, 0., 180.);
+   vbox->Add(splitCutZenith->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+
+   // Check + label + NEntry for choosing maximum risetime error cut (splitting)
+   splitCutRisetime = new CheckNEntry(leftmvapanel, false, wxT("Maximum relative risetime limit:"), -1, 0.3, -1, rwidth);
+   splitCutRisetime->SetNEntryFormat(splitCutRisetime->widgetNE[0], 3, 0.001, 2, 0., 10.);
+   vbox->Add(splitCutRisetime->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+
+   // Label and combo box for selecting the eye selection method
+   if(!vstemp.empty()) vstemp.erase(vstemp.begin(), vstemp.end());
+   vstemp.push_back("Combine stereo FD events");
+   vstemp.push_back("Any FD eye inside cut");
+   vstemp.push_back("Average of active eyes");
+   splitEyeSelection = new LabelDrop(leftmvapanel, wxT("Eye selection method, if more than one FD eye:"), vstemp, vstemp[0], -1, rwidth);
+   vbox->Add(splitEyeSelection->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (splitEyeSelection->widgetCB)->SetSelection(0);
+
+   // Label + NEntry + button for splitting rewritten ADST files
+   startSplitting = new LabelNEntryButton(leftmvapanel, wxT("Split by a fraction (decimal) or number of events (integer):"), 0.5, -1, "Split", ID_SPLIT, lwidth);
+   startSplitting->SetNEntryFormat(startSplitting->widgetNE[0], 2, 0.01, -1, -1.0, -1.);
+   vbox->Add(startSplitting->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   Connect(ID_SPLIT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::PrepareFileSplit));
+
+   // Label for additional splitting instructions
+   vbox->Add(-1, 5);
+   temptext = new wxStaticText(leftmvapanel, -1, wxT("For splitting, use the following in the above number field:"));
+   vbox->Add(temptext, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10);
+   temptext = new wxStaticText(leftmvapanel, -1, wxT(" - decimal between 0.00 and 1.00 to split by fraction"));
+   vbox->Add(temptext, 0, wxEXPAND | wxLEFT | wxRIGHT, 10);
+   temptext = new wxStaticText(leftmvapanel, -1, wxT(" - integer to split by number of events"));
+   vbox->Add(temptext, 0, wxEXPAND | wxLEFT | wxRIGHT, 10);
+   temptext = new wxStaticText(leftmvapanel, -1, wxT(" - negative number to export to a single file"));
+   vbox->Add(temptext, 0, wxEXPAND | wxLEFT | wxRIGHT, 10);
+   vbox->Add(-1, 5);
 
    leftmvapanel->SetSizer(vbox);
    hboxhead->Add(leftmvapanel, 1, wxEXPAND);
@@ -158,9 +262,9 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    if(!vstemp.empty()) vstemp.erase(vstemp.begin(), vstemp.end());
    for(int i = 0; i < nrmethods; i++)
       vstemp.push_back(GetMethodName(methods[i]));
-   methodsSelect = new LabelDrop(rightmvapanel, wxT("Choose MVA analysis method:"), vstemp, "Neural network (MLPBNN)", -1, rwidth);
+   methodsSelect = new LabelDrop(rightmvapanel, wxT("Choose MVA analysis method:"), vstemp, GetMethodName("MLPBNN"), -1, rwidth);
    vbox->Add(methodsSelect->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
-   (methodsSelect->widgetCB)->SetSelection((methodsSelect->widgetCB)->FindString("Neural network (MLPBNN)"));
+   (methodsSelect->widgetCB)->SetSelection((methodsSelect->widgetCB)->FindString(GetMethodName("MLPBNN")));
 
    // Label + NEntry for choosing the MVA cut
    cutMva = new LabelNEntry(rightmvapanel, wxT("Choose MVA cut value:"), 0., -1, rwidth);

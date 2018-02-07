@@ -21,7 +21,7 @@ public:
 
     wxStaticText *widgetLabel;
     wxSpinCtrlDouble *widgetNE[2];
-    wxComboBox *widgetCB;
+    wxChoice *widgetCB;
     wxButton *widgetTB[6];
 
     wxBoxSizer *subsizer;

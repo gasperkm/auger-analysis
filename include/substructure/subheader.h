@@ -3,6 +3,7 @@
 
 #include <wx/wx.h>
 #include <wx/spinctrl.h>
+#include <wx/editlbox.h>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -24,10 +25,12 @@ public:
    int GetNumEntryHeight(wxSpinCtrlDouble *sc);
    int GetButtonWidth(wxButton *bt);
    int GetButtonHeight(wxButton *bt);
-   int GetDropBoxWidth(wxComboBox *db);
-   int GetDropBoxHeight(wxComboBox *db);
+   int GetDropBoxWidth(wxChoice *db);
+   int GetDropBoxHeight(wxChoice *db);
    int GetCheckBoxWidth(wxCheckBox *cb);
    int GetCheckBoxHeight(wxCheckBox *cb);
+
+   void SetLabelSize(wxStaticText *st, int width, int height);
 
    void SetNEntryFormat(wxSpinCtrlDouble *sc, int nrdig, double incr, int limit, double minlim, double maxlim);
 

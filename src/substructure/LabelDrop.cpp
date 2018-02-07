@@ -11,7 +11,7 @@ LabelDrop::LabelDrop(wxPanel *parent, wxString label, vector<string> entrytext, 
     if(DBGSIG > 1)
        cout << "# LabelDrop             #: " << "Label text width = " << GetLabelWidth(widgetLabel) << ", Label text height = " << GetLabelHeight(widgetLabel) << endl;
     // Create a dropbox
-    widgetCB = new wxComboBox(parent, dropID, selecttext);
+    widgetCB = new wxChoice(parent, dropID);
     if(DBGSIG > 1)
        cout << "# LabelDrop             #: " << "DropBox width = " << GetDropBoxWidth(widgetCB) << ", DropBox height = " << GetDropBoxHeight(widgetCB) << endl;
     for(int i = 0; i < entrytext.size(); i++)

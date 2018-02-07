@@ -169,7 +169,7 @@ void MyFrame::SelectCombine(wxCommandEvent& event)
       delete[] stemp;
    }
    else
-      AlertPopup("No selected files", "No files from the first listbox were selected. Please select one or more files (holding Ctrl or Shift while clicking) to rewrite.");
+      AlertPopup("No selected files", "No files from the second listbox were selected. Please select one or more files (holding Ctrl or Shift while clicking) to rewrite.");
 }
 
 // Select a file to use for combined file
@@ -204,7 +204,7 @@ void MyFrame::SelectMerge(wxCommandEvent& event)
       delete[] stemp;
    }
    else
-      AlertPopup("No selected files", "No files from the first listbox were selected. Please select one or more files (holding Ctrl or Shift while clicking) to rewrite.");
+      AlertPopup("No selected files", "No files from the second listbox were selected. Please select one or more files (holding Ctrl or Shift while clicking) to rewrite.");
 }
 
 // Select a file to use for MVA analysis (Start analysis)

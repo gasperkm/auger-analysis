@@ -1,5 +1,6 @@
 #include "substructure/subheader.h"
 #include "substructure/LabelList.h"
+#include "workstation.h"
 #include <iostream>
 
 LabelList::LabelList(wxPanel *parent, wxString label, int height, int multi, const int listID)
@@ -15,7 +16,7 @@ LabelList::LabelList(wxPanel *parent, wxString label, int height, int multi, con
     else
        widgetLB = new wxListBox(parent, listID, wxDefaultPosition, wxSize(-1, height), 0, NULL, wxLB_SINGLE);
 
-    vbox->Add(widgetLabel, 0, wxLEFT | wxTOP, padding);
+    vbox->Add(widgetLabel, 0, wxEXPAND, padding);
     vbox->Add(widgetLB, 0, wxEXPAND | wxALL, padding);
     subsizer->Add(vbox, 1);
 }

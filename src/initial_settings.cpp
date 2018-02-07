@@ -87,6 +87,52 @@ void MyFrame::InitObservables()
 
 void MyFrame::InitMethods()
 {
+   ifstream ifs;
+   string *stemp = new string[4];
+   char *ctemp = new char[1024];
+   stemp[0] = string(rootdir) + "/input/mva_options.txt";
+   ifs.open(stemp[0].c_str(), ifstream::in);
+
+   if(ifs.is_open())
+   {
+      if(!methods.empty())
+         methods.erase(methods.begin(), methods.end());
+      if(!methodsOpt.empty())
+         methodsOpt.erase(methodsOpt.begin(), methodsOpt.end());
+      if(!methodsDesc.empty())
+         methodsDesc.erase(methodsDesc.begin(), methodsDesc.end());
+
+      methods.push_back("All");
+      methodsDesc.push_back("Test all methods");
+      methodsOpt.push_back("AllMethods");
+
+      while(1)
+      {
+         if(ifs.peek() == '#')
+         {
+            ifs.getline(ctemp, 1024);
+            if(DBGSIG > 1)
+               cout << "Line: " << ctemp << endl;
+         }
+         else
+         {
+            ifs >> stemp[1] >> stemp[2] >> stemp[3];
+//	    cout << "Method:" << endl << "  " << stemp[1] << endl << "  " << stemp[2] << endl << "  " << stemp[3] << endl;
+            methods.push_back(stemp[1]);
+            methodsDesc.push_back(stemp[2]);
+            methodsOpt.push_back(stemp[3]);
+	    ifs.ignore(1,' ');
+            if(ifs.eof()) break;
+         }
+      }
+
+      nrmethods = methods.size();
+   }
+
+   ifs.close();
+   delete[] stemp;
+   delete[] ctemp;
+/*}
    if(!methods.empty())
       methods.erase(methods.begin(), methods.end());
 
@@ -105,7 +151,7 @@ void MyFrame::InitMethods()
    methods.push_back("BDT");
    methods.push_back("RuleFit");
 
-   nrmethods = methods.size();
+   nrmethods = methods.size();*/
 }
 
 void MyFrame::InitVariables()
@@ -126,4 +172,6 @@ void MyFrame::InitVariables()
    *currentCutsInputDir = string(rootdir) + "/results";
 
    freshAnalysis = false;
+
+   nrlists = 0;
 }

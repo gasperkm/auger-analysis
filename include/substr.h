@@ -11,6 +11,7 @@
 #include "substructure/LabelNEntryButton.h"
 #include "substructure/LabelButton.h"
 #include "substructure/LabelList.h"
+#include "substructure/LabelListEdit.h"
 #include "substructure/LabelDrop.h"
 
 #endif
