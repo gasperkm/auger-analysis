@@ -47,6 +47,8 @@ public:
    void PrintVectors(int type);
    int FindPos(int sigbackdata, int type);
    void FindPos(int sigbackdata, int type, vector<int> *out);
+
+   string GetTreeName(int nr);
 };
 
 #endif

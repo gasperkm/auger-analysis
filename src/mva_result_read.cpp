@@ -319,3 +319,9 @@ void ResultRead::FindPos(int sigbackdata, int type, vector<int> *out)
          out->push_back(i);
    }
 }
+
+// Get the name of the tree using the identifier for the tree
+string ResultRead::GetTreeName(int nr)
+{
+   return treeName[nr];
+}

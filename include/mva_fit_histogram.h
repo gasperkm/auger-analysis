@@ -13,6 +13,11 @@ class MvaFitHist
 {
 private:
    // Variables needed for the chi2 calculation
+   int *nrsim;
+   double *simnorm;
+   TH1F *simhist[40];
+   TH1F *sims[40];
+
    int nrsig, nrback, nrdata;
    double signorm, bgdnorm;
    TH1F *result[40];
@@ -40,14 +45,22 @@ private:
    double *residVal, chiVal, chiProb;
    int chiNdf, chiGood;
 
+   // Variables for step and initial value during minimization
+   double *minstep;
+   double *minvar;
+   int nrparam;
+
    // Procedure (0 = range of ratios, 1 = minimization)
    int fitproc;
+   // Settings option (0 = keep same settings, 1 = change for each file)
+   int setopt;
    // Step size of ratio change
    double ratioStep;
    // Selection type for trees
    int treeSelect;
    // Selected trees
    vector<int> trees;
+   vector<string> treeNames;
 
    // Filename
    string filename;
@@ -60,10 +73,10 @@ public:
 //   void fcn(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t iflag);
    double fcn(const double *par);
 
-   void PrepareHistograms(string *fname, int *proc, double *step);
+   void PrepareHistograms(int run, string *fname, int *proc, double *step);
    void PlotDistributions();
    void StartFitting();
-   void PlotSumResiduals(double *sigFrac);
+   void PlotSumResiduals(double *sigFrac, double *sigFracErr);
 };
 
 #endif

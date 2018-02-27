@@ -11,7 +11,7 @@ using namespace std;
 MvaFitHist::MvaFitHist()
 {
    stemp = new string[2];
-   itemp = new int[2];
+   itemp = new int[3];
    dtemp = new double[3];
 
    nrbins = 100;
@@ -25,12 +25,17 @@ MvaFitHist::MvaFitHist()
    mystyle = new RootStyle();
 
    residVal = new double[nrbins];
+   nrsim = new int[40];
+   simnorm = new double[40];
+
+   minstep = new double[40];
+   minvar = new double[40];
 }
 
 MvaFitHist::MvaFitHist(int bincount, double xlow, double xhigh)
 {
    stemp = new string[2];
-   itemp = new int[2];
+   itemp = new int[3];
    dtemp = new double[3];
 
    nrbins = bincount;
@@ -44,6 +49,9 @@ MvaFitHist::MvaFitHist(int bincount, double xlow, double xhigh)
    mystyle = new RootStyle();
 
    residVal = new double[nrbins];
+
+   minstep = new double[40];
+   minvar = new double[40];
 }
 
 MvaFitHist::~MvaFitHist()
@@ -59,48 +67,54 @@ MvaFitHist::~MvaFitHist()
    delete f;
 
    delete[] residVal;
-}
+   delete[] nrsim;
+   delete[] simnorm;
 
-/*void MvaFitHist::fcn(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t iflag)
-{
-   signorm = (double)nrdata/(double)nrsig;
-   bgdnorm = (double)nrdata/(double)nrback;
-   
-   sim1 = (TH1F*)simsig->Clone("sim1");
-   sim1->Scale(par[0]*signorm);
-   sim2 = (TH1F*)simback->Clone("sim2");
-   sim2->Scale((1.-par[0])*bgdnorm);
-   
-   sim = (TH1F*)sim1->Clone("sim");
-   sim->Add(sim2);
-   
-   f = sim->Chi2Test(data, "WW P CHI2");
-}*/
+   delete[] minstep;
+   delete[] minvar;
+}
 
 double MvaFitHist::fcn(const double *par)
 {
-   signorm = (double)nrdata/(double)nrsig;
-   bgdnorm = (double)nrdata/(double)nrback;
-   
-   sim1 = (TH1F*)simsig->Clone("sim1");
-   sim1->Scale(par[0]*signorm);
-   sim2 = (TH1F*)simback->Clone("sim2");
-   sim2->Scale((1.-par[0])*bgdnorm);
-   
-   sim = (TH1F*)sim1->Clone("sim");
-   sim->Add(sim2);
+//   cout << "Calculating Chi2 value:" << endl;
+   dtemp[0] = 1.;
+   for(int i = 0; i <= nrparam; i++)
+   {
+      simnorm[i] = (double)nrdata/(double)nrsim[i];
+//      cout << i << " (" << trees[i] << "): " << simnorm[i] << "\t";
+      stemp[0] = "sims" + ToString(i);
+//      cout << stemp[0] << "\t";
+      sims[i] = (TH1F*)simhist[i]->Clone(stemp[0].c_str());
+
+      if(i < nrparam)
+      {
+         sims[i]->Scale(par[i]*simnorm[i]);
+         dtemp[0] -= par[i];
+//         cout << par[i] << "\t" << dtemp[0] << endl;
+      }
+      else
+      {
+         sims[i]->Scale(dtemp[0]*simnorm[i]);
+//         cout << dtemp[0] << endl;
+      }
+   }
+
+   sim = (TH1F*)sims[0]->Clone("sim");
+   for(int i = 1; i <= nrparam; i++)
+      sim->Add(sims[i]);
    
    return sim->Chi2Test(data, "WU CHI2");
 }
 
-void MvaFitHist::PrepareHistograms(string *fname, int *proc, double *step)
+void MvaFitHist::PrepareHistograms(int run, string *fname, int *proc, double *step)
 {
-   fitproc = *proc;
+   fitproc = proc[0];
+   setopt = proc[1];
    ratioStep = *step;
    filename = *fname;
    mystyle->SetBaseStyle();
 
-   cout << "Opening file: " << filename << endl;
+   cout << endl << "Opening file: " << filename << endl;
    f = new TFile(filename.c_str(), "READ");
 
    float mva;
@@ -143,66 +157,93 @@ void MvaFitHist::PrepareHistograms(string *fname, int *proc, double *step)
    }
 
    // Check the application_result.txt file
-   ResultRead *analRes = new ResultRead();
-   stemp[0] = RemoveFilename(&filename) + "/application_results.txt";
-   itemp[0] = analRes->ReadFile(stemp[0]);
-   if(itemp[0] != 1)
+   if( ((setopt == 0) && (run == 0)) || (setopt == 1) )
    {
-      cout << endl << "Available trees:" << endl;
-      analRes->PrintVectors(0);
-      cout << endl << "Use selected trees for histogram fit (0) or manually select the trees (1)? ";
-      cin >> treeSelect;
-      while( (treeSelect != 0) && (treeSelect != 1) )
+      if(!trees.empty())
+         trees.erase(trees.begin(), trees.end());
+      if(!treeNames.empty())
+         treeNames.erase(treeNames.begin(), treeNames.end());
+
+      ResultRead *analRes = new ResultRead();
+      stemp[0] = RemoveFilename(&filename) + "/application_results.txt";
+      itemp[0] = analRes->ReadFile(stemp[0]);
+      if(itemp[0] != 1)
       {
+         cout << endl << "Available trees:" << endl;
+         analRes->PrintVectors(0);
          cout << endl << "Use selected trees for histogram fit (0) or manually select the trees (1)? ";
          cin >> treeSelect;
+         while( (treeSelect != 0) && (treeSelect != 1) )
+         {
+            cout << endl << "Use selected trees for histogram fit (0) or manually select the trees (1)? ";
+            cin >> treeSelect;
+         }
+
+         if(treeSelect == 0)
+         {
+            // Saving signal tree position
+            analRes->FindPos(1, 0, &trees);
+            // Saving background tree position
+            analRes->FindPos(2, 0, &trees);
+            // Saving data tree position
+            analRes->FindPos(3, 0, &trees);
+
+            for(int i = 0; i < trees.size(); i++)
+               treeNames.push_back(analRes->GetTreeName(trees[i]));
+         }
+         else if(treeSelect == 1)
+         {
+            // Saving simulation trees
+            cout << "Enter tree numbers (shown in square brackets) to select simulation trees (use -1 to finish):" << endl;
+            while(itemp[1] != -1)
+            {
+               cout << "  Select simulation tree: ";
+      	    cin >> itemp[1];
+               if(itemp[1] != -1) 
+               {
+                  trees.push_back(itemp[1]);
+                  treeNames.push_back(analRes->GetTreeName(itemp[1]));
+               }
+            }
+            // Saving the data tree
+            cout << "Enter tree number (shown in square brackets) to select data tree: ";
+      	 cin >> itemp[1];
+            trees.push_back(itemp[1]);
+            treeNames.push_back(analRes->GetTreeName(itemp[1]));
+         }
+
+         cout << "The selected simulation trees are: ";
+         for(int i = 0; i < trees.size()-1; i++)
+         {
+            if(i > 0)
+               cout << ", ";
+            cout << trees[i] << " (" << treeNames[i] << ")";
+         }
+         cout << endl << "The selected data tree is: " << trees[trees.size()-1] << " (" << treeNames[trees.size()-1] << ")" << endl << endl;
       }
 
-      if(treeSelect == 0)
-      {
-         // Saving signal tree position
-         analRes->FindPos(1, 0, &trees);
-         // Saving background tree position
-         analRes->FindPos(2, 0, &trees);
-         // Saving data tree position
-         analRes->FindPos(3, 0, &trees);
-      }
-      else if(treeSelect == 1)
-      {
-         // Saving simulation trees
-	 cout << "Enter tree numbers (shown in square brackets) to select simulation trees (use -1 to finish):" << endl;
-	 while(itemp[1] != -1)
-	 {
-            cout << "  Select simulation tree: ";
-   	    cin >> itemp[1];
-	    if(itemp[1] != -1) 
-               trees.push_back(itemp[1]);
-	 }
-         // Saving the data tree
-	 cout << "Enter tree number (shown in square brackets) to select data tree: ";
-   	 cin >> itemp[1];
-         trees.push_back(itemp[1]);
-      }
-
-      cout << "The selected simulation trees are: ";
-      for(int i = 0; i < trees.size()-1; i++)
-      {
-	 if(i > 0)
-            cout << ", ";
-         cout << trees[i];
-      }
-      cout << endl << "The selected data tree is: " << trees[trees.size()-1] << endl << endl;
+      delete analRes;
    }
 
    // Save signal and background distributions
    simsig = (TH1F*)result[trees[0]]->Clone("simsig");
    nrsig = nentries[trees[0]];
-   simback = (TH1F*)result[trees[1]]->Clone("simback");
+   simback = (TH1F*)result[trees[trees.size()-2]]->Clone("simback");
    nrback = nentries[trees[1]];
+   for(int i = 0; i < trees.size()-1; i++)
+   {
+      stemp[0] = "simhist" + ToString(i);
+      simhist[i] = (TH1F*)result[trees[i]]->Clone(stemp[0].c_str());
+      nrsim[i] = nentries[trees[i]];
+   }
+
+   // Set the number of parameters that will be needed to fit (number of simulation trees - 1)
+   nrparam = trees.size() - 2;
+   cout << "Number of parameters for fitting: " << nrparam << endl;
 
    // Save data distributions
    data = (TH1F*)result[trees[trees.size()-1]]->Clone("data");
-   nrdata = nentries[trees[2]];
+   nrdata = nentries[trees[trees.size()-1]];
    yrange[0] = data->GetMaximum();
 
    // Create directory structure for plots and delete old plots
@@ -259,7 +300,7 @@ void MvaFitHist::StartFitting()
       for(int i = 0; i < nrsteps; i++)
       {
          dtemp[0] = (double)i*ratioStep;
-         PlotSumResiduals(dtemp);
+         PlotSumResiduals(dtemp, dtemp);
       }
    }
    // Find the best fit with TMinuit
@@ -269,25 +310,46 @@ void MvaFitHist::StartFitting()
       minim->SetMaxFunctionCalls(1000000);
       minim->SetMaxIterations(10000);
       minim->SetTolerance(0.01);
-      minim->SetPrintLevel(1);
+      minim->SetPrintLevel(0);
 
-      ROOT::Math::Functor fmin(this,&MvaFitHist::fcn,1);
+      ROOT::Math::Functor fmin(this,&MvaFitHist::fcn,nrparam);
       srand48(time(NULL));
-      double step = 0.01, var = drand48();
+      for(int i = 0; i < nrparam; i++)
+      {
+         minstep[i] = 0.01;
+	 minvar[i] = drand48();
+      }
+//      double step = 0.01, var = drand48();
       minim->SetFunction(fmin);
-      minim->SetVariable(0, "frac", var, step);
+      for(int i = 0; i < nrparam; i++)
+      {
+         stemp[0] = "frac" + ToString(i);
+//         minim->SetVariable(i, stemp[0].c_str(), minvar[i], minstep[i]);
+         minim->SetLimitedVariable(i, stemp[0].c_str(), minvar[i], minstep[i], 0.0, 1.0);
+      }
       minim->Minimize();
 
       double *bestfrac = (double*)minim->X();
       double *bestfracerr = (double*)minim->Errors();
-      dtemp[0] = bestfrac[0];
-      dtemp[1] = bestfracerr[0];
-      PlotSumResiduals(dtemp);
+
+      cout << "Minimization status = " << minim->Status() << endl;
+      cout << "MinValue = " << minim->MinValue() << endl;
+      cout << "Edm = " << minim->Edm() << endl;
+      cout << "Number of function calls = " << minim->NCalls() << endl;
+      for(int i = 0; i < nrparam; i++)
+         cout << "frac" << i << "\t = " << ToString(bestfrac[i], 5) << "\t+/-\t" << ToString(bestfracerr[i], 5) << endl;
+
+      if(minim->Status() == 0)
+         cout << "Minimizer succesfully found a minimum." << endl;
+      else
+         cout << "Minimizer did not converge and might have not found a correct minimum." << endl;
+
+      PlotSumResiduals(bestfrac, bestfracerr);
    }
 }
 
 // Plot data, normalized signal+background and normalized residuals
-void MvaFitHist::PlotSumResiduals(double *sigFrac)
+void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr)
 {
    TCanvas *c1 = new TCanvas("c1","",1200,900);
    TPad *upperpad = new TPad("upperpad", "upperpad", 0.004, 0.490, 0.996, 0.996);
@@ -302,7 +364,34 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac)
    data->GetXaxis()->SetTitleOffset(2.0);
    data->Draw();
 
-   signorm = (double)nrdata/(double)nrsig;
+//   cout << "Calculating Chi2 value:" << endl;
+   dtemp[0] = 1.;
+   for(int i = 0; i <= nrparam; i++)
+   {
+      simnorm[i] = (double)nrdata/(double)nrsim[i];
+//      cout << i << " (" << trees[i] << "): " << simnorm[i] << "\t";
+      stemp[0] = "sims" + ToString(i);
+//      cout << stemp[0] << "\t";
+      sims[i] = (TH1F*)simhist[i]->Clone(stemp[0].c_str());
+
+      if(i < nrparam)
+      {
+         sims[i]->Scale(sigFrac[i]*simnorm[i]);
+         dtemp[0] -= sigFrac[i];
+//         cout << sigFrac[i] << "\t" << dtemp[0] << endl;
+      }
+      else
+      {
+         sims[i]->Scale(dtemp[0]*simnorm[i]);
+//         cout << dtemp[0] << endl;
+      }
+   }
+
+   sim = (TH1F*)sims[0]->Clone("sim");
+   for(int i = 1; i <= nrparam; i++)
+      sim->Add(sims[i]);
+
+/*   signorm = (double)nrdata/(double)nrsig;
    bgdnorm = (double)nrdata/(double)nrback;
    
    sim1 = (TH1F*)simsig->Clone("sim1");
@@ -311,7 +400,7 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac)
    sim2->Scale((1.-sigFrac[0])*bgdnorm);
    
    sim = (TH1F*)sim1->Clone("sim");
-   sim->Add(sim2);
+   sim->Add(sim2);*/
 
    mystyle->SetHistColor((TH1*)sim, 0);
    mystyle->SetAxisTitles((TH1*)sim, "MVA variable", "Number of events");
@@ -342,17 +431,32 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac)
 
    TLatex chiText;
    chiText.SetTextAlign(21);
-   stemp[0] = "#chi^{2}/NDF = " + ToString(chiVal, 3) + "/" + ToString(chiNdf) + " = " + ToString(chiVal/(double)chiNdf, 3);
+   stemp[0] = "#chi^{2}/NDF = " + ToString(chiVal, 4) + "/" + ToString(chiNdf) + " = " + ToString(chiVal/(double)chiNdf, 4);
    chiText.DrawLatex(0.5, TMath::MaxElement(2, yrange), stemp[0].c_str());
    if(fitproc == 0)
    {
-      stemp[0] = "r_{p} = " + ToString(sigFrac[0], 3);
+      stemp[0] = "r_{p} = " + ToString(sigFrac[0], 4);
       chiText.DrawLatex(0.5, 0.94*TMath::MaxElement(2, yrange), stemp[0].c_str());
    }
    else if(fitproc == 1)
    {
-      stemp[0] = "r_{p} = " + ToString(sigFrac[0], 3) + " #pm " + ToString(sigFrac[1],3);
-      chiText.DrawLatex(0.5, 0.94*TMath::MaxElement(2, yrange), stemp[0].c_str());
+      dtemp[0] = 1.;
+      dtemp[1] = 0.;
+      for(int i = 0; i <= nrparam; i++)
+      {
+         if(i < nrparam)
+         {
+            dtemp[0] -= sigFrac[i];
+            dtemp[1] += sigFracErr[i];
+            stemp[0] = "r_{" + ToString(i+1) + "} = " + ToString(sigFrac[i], 4) + " #pm " + ToString(sigFracErr[i], 4) + " (" + treeNames[i] + ")";
+            chiText.DrawLatex(0.5, (1.-0.06*((double)i+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
+         }
+         else
+         {
+            stemp[0] = "r_{" + ToString(i+1) + "} = " + ToString(dtemp[0], 4) + " #pm " + ToString(dtemp[1], 4) + " (" + treeNames[i] + ")";
+            chiText.DrawLatex(0.5, (1.-0.06*((double)i+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
+         }
+      }
    }
 
    lowerpad->cd();
@@ -388,14 +492,14 @@ int main(int argc, char **argv)
 
    if(argc > 1)
    {
-      int *itemp = new int;
+      int *itemp = new int[2];
       double *dtemp = new double;
       string *stemp = new string;
 
       cerr << "Perform histogram fit on a range of ratios (0) or perform a minimization (1)? ";
-      cin >> *itemp;
+      cin >> itemp[0];
       
-      if(*itemp == 0)
+      if(itemp[0] == 0)
       {
          cerr << "What should be the step size for ratios (between 0 and 1)? ";
 	 cin >> *dtemp;
@@ -406,22 +510,25 @@ int main(int argc, char **argv)
 	    cin >> *dtemp;
 	 }
       }
-      else if( (*itemp != 0) && (*itemp != 1) )
+      else if( (itemp[0] != 0) && (itemp[0] != 1) )
       {
          cerr << "Error! Wrong fitting procedure." << endl;
 	 return 1;
       }
 
+      cerr << "Keep settings the same throughout all input files (0) or set settings for each file separately (1)? ";
+      cin >> itemp[1];
+
+      MvaFitHist *fithist = new MvaFitHist();
       for(int i = 0; i < argc-1; i++)
       {
          *stemp = string(argv[i+1]);
 
-         MvaFitHist *fithist = new MvaFitHist();
-         fithist->PrepareHistograms(stemp, itemp, dtemp);
+         fithist->PrepareHistograms(i, stemp, itemp, dtemp);
          fithist->PlotDistributions();
 	 fithist->StartFitting();
-         delete fithist;
       }
+      delete fithist;
 
       delete itemp;
       delete dtemp;
