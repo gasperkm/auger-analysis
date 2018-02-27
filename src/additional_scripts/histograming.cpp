@@ -1,6 +1,7 @@
 #define _STANDALONE_ 1
 #include "workstation.h"
 #include "separate_functions.h"
+#include "root_style.h"
 
 using namespace std;
 
@@ -100,11 +101,7 @@ int main(int argc, char **argv)
    stemp[0] = "rm -fr " + RemoveFilename(&filename) + "/histograms/risetime-comparison_*";
    system(stemp[0].c_str());
 
-   // Prepare colors for signal, background and MVA cut line
-   int c_SignalLine     = TColor::GetColor("#0000ee");
-   int c_SignalFill     = TColor::GetColor("#7d99d1");
-   int c_AllLine        = TColor::GetColor("#ff0000");
-   int c_AllFill        = TColor::GetColor("#ff0000");
+   // Prepare colors for MVA cut line
    int c_MvaCut         = TColor::GetColor("#ffff66");
 
    // Prepare plotting objects (legend, line, histograms, graphs,...) - for a maximum of 50 observables
@@ -151,43 +148,11 @@ int main(int argc, char **argv)
    float completemin = 1.e+30, completemax = -1.e+30;	// minimum and maximum values of observables from all trees
 
    // Prepare canvases and clear any ROOT default statistics
-   gStyle->SetOptStat(0);
-
-   gStyle->SetCanvasBorderMode(0);
-   gStyle->SetFrameBorderMode(0);
-   gStyle->SetPalette(1,0);
-   gStyle->SetOptTitle(0);
-   gStyle->SetCanvasColor(0);
-   gStyle->SetStatFontSize(0.024);
-   gStyle->SetStatBorderSize(1);
-   gStyle->SetStatColor(kGray);
-   gStyle->SetStatX(0.925);
-   gStyle->SetStatY(0.925);
-   gStyle->SetStatW(0.13);
-   gStyle->SetTextFont(132);
-   gStyle->SetTextSize(0.08);
-   gStyle->SetLabelSize(0.03,"xyz");
-   gStyle->SetLabelOffset(0.01,"xyz");
-   gStyle->SetPadTickX(1);
-   gStyle->SetPadTickY(1);
-   gStyle->SetCanvasDefX(100);
-   gStyle->SetCanvasDefY(50);
-   gStyle->SetCanvasDefW(900);
-   gStyle->SetCanvasDefH(600);
-   gStyle->SetPadBottomMargin(0.1);
-   gStyle->SetPadTopMargin(0.04);
-   gStyle->SetPadLeftMargin(0.125);
-   gStyle->SetPadRightMargin(0.04);
+   RootStyle *mystyle = new RootStyle();
+   mystyle->SetBaseStyle();
 
    TCanvas *c1 = new TCanvas("c1","",1200,900);
-   c1->SetGrid();
-   c1->SetRightMargin(0.05);
-   c1->SetTopMargin(0.05);
-
    TCanvas *c2 = new TCanvas("c2","",1200,900);
-   c2->SetGrid();
-   c2->SetRightMargin(0.05);
-   c2->SetTopMargin(0.05);
 
    // Open output file to read saved values
    TFile *ifile = new TFile(filename.c_str(), "READ");
@@ -370,10 +335,7 @@ int main(int argc, char **argv)
             max[i] = treeHist[i]->GetMaximum();
 
 	 // Set line and fill attributes for histograms
-         treeHist[i]->SetLineColor(c_SignalLine);
-         treeHist[i]->SetLineWidth(2);
-         treeHist[i]->SetFillColor(c_SignalFill);
-         treeHist[i]->SetFillStyle(1001);
+	 mystyle->SetHistColor((TH1*)treeHist[i], 1);
 
 	 // Draw signal and background histograms
          treeHist[i]->Draw();
@@ -388,17 +350,7 @@ int main(int argc, char **argv)
          treeHist[i]->GetXaxis()->SetRangeUser(xhistlimit[0], xhistlimit[1]);
 
 	 // Setup axis (title, labels)
-         treeHist[i]->GetYaxis()->SetTitle("Number of events");
-         treeHist[i]->GetXaxis()->SetTitle(tempdesc[i].c_str());
-         treeHist[i]->GetXaxis()->SetTitleOffset(1.2);
-         treeHist[i]->GetXaxis()->CenterTitle(kTRUE);
-         treeHist[i]->GetXaxis()->SetLabelSize(0.028);
-         treeHist[i]->GetXaxis()->SetLabelOffset(0.015);
-         treeHist[i]->GetYaxis()->SetTitleOffset(1.3);
-         treeHist[i]->GetYaxis()->CenterTitle(kTRUE);
-         treeHist[i]->GetYaxis()->SetLabelSize(0.028);
-         treeHist[i]->GetYaxis()->SetLabelOffset(0.015);
-         treeHist[i]->SetTitle("");
+	 mystyle->SetAxisTitles((TH1*)treeHist[i], tempdesc[i], "Number of events");
 
          // Write down the underflow and overflow information
          uoflowtext.SetTextSize(0.017);
@@ -428,14 +380,8 @@ int main(int argc, char **argv)
          maxobs[3] = riserecalcHist->GetMaximum();
 
       // Set line and fill attributes for histograms
-      riserecalcHist->SetLineColor(c_SignalLine);
-      riserecalcHist->SetLineWidth(2);
-      riserecalcHist->SetFillColor(c_SignalFill);
-      riserecalcHist->SetFillStyle(1001);
-      riseHist->SetLineColor(c_AllLine);
-      riseHist->SetLineWidth(2);
-      riseHist->SetFillColor(c_AllFill);
-      riseHist->SetFillStyle(3554);
+      mystyle->SetHistColor((TH1*)riserecalcHist, 1);
+      mystyle->SetHistColor((TH1*)riseHist, 0);
 
       // Draw signal and background histograms
       riserecalcHist->Draw();
@@ -450,17 +396,7 @@ int main(int argc, char **argv)
       riserecalcHist->GetXaxis()->SetRangeUser(maxobs[0], maxobs[1]);
 
       // Setup axis (title, labels)
-      riserecalcHist->GetYaxis()->SetTitle("Number of events");
-      riserecalcHist->GetXaxis()->SetTitle(tempdesc[riseobs[1]].c_str());
-      riserecalcHist->GetXaxis()->SetTitleOffset(1.2);
-      riserecalcHist->GetXaxis()->CenterTitle(kTRUE);
-      riserecalcHist->GetXaxis()->SetLabelSize(0.028);
-      riserecalcHist->GetXaxis()->SetLabelOffset(0.015);
-      riserecalcHist->GetYaxis()->SetTitleOffset(1.3);
-      riserecalcHist->GetYaxis()->CenterTitle(kTRUE);
-      riserecalcHist->GetYaxis()->SetLabelSize(0.028);
-      riserecalcHist->GetYaxis()->SetLabelOffset(0.015);
-      riserecalcHist->SetTitle("");
+      mystyle->SetAxisTitles((TH1*)riserecalcHist, tempdesc[riseobs[1]], "Number of events");
 
       // Draw a legend with info on signal and background events
       legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-.12, gPad->GetLeftMargin()+.45, 1-gPad->GetTopMargin());

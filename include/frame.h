@@ -93,6 +93,7 @@ public:
     bool freshAnalysis;
 
     string mvaresults;
+    string mvaprintout;
 
     int mixednum;
 

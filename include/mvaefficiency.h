@@ -45,7 +45,7 @@ private:
    TH1 *sigE, *bgdE;
    TH1 *purS, *sSig, *effpurS;
    TCanvas *effcanvas;
-   TLatex *line1, *line2;
+   TLatex *line1, *line2, *line3, *line4;
    double plotXmin, plotXmax;
    TGaxis *rightAxis;
    double maxSignificance, maxSignificanceErr;

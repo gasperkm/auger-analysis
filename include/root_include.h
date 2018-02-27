@@ -66,6 +66,9 @@
 #ifndef ROOT_TGraphErrors
 #include "TGraphErrors.h"
 #endif
+#ifndef ROOT_TGraphAsymmErrors
+#include "TGraphAsymmErrors.h"
+#endif
 #ifndef ROOT_TStyle
 #include "TStyle.h"
 #endif
@@ -135,6 +138,11 @@
 #endif
 #ifndef ROOT_TMVA_Config
 #include "TMVA/Config.h"
+#endif
+
+// Root Minuit includes
+#ifndef ROOT_TMinuit
+#include "TMinuit.h"
 #endif
 
 #endif

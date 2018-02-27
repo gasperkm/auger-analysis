@@ -583,7 +583,7 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
          ftempaver[1] = -1;
    }
 
-//   if(DBGSIG > 1)
+   if(DBGSIG > 1)
       cout << "# IsInsideCuts          #: " << "All values: Nr. eyes = " << avercount[0] << ", " << avercount[1] << ", Average = " << ftempaver[0] << ", " << ftempaver[1] << ", Combined = " << quantitySum[0] << ", " << quantitySum[1] << endl;
 
    if(DBGSIG > 1)
@@ -780,8 +780,7 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
       isinside = sepcut[0] & sepcut[1] & sepcut[2];
 
       if(DBGSIG > 1)
-	      cout << endl;
-         cout << "# IsInsideCuts          #: " << "isinside = " << (int)isinside << ", sepcut[0] = " << (int)sepcut[0] << ", sepcut[1] = " << (int)sepcut[1] << ", sepcut[2] = " << (int)sepcut[2] << endl;
+         cout << endl << "# IsInsideCuts          #: " << "isinside = " << (int)isinside << ", sepcut[0] = " << (int)sepcut[0] << ", sepcut[1] = " << (int)sepcut[1] << ", sepcut[2] = " << (int)sepcut[2] << endl;
 
       if(isinside)
          seleye->push_back(i);
@@ -795,7 +794,8 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
    delete[] quantitySum;
    delete[] wQuantitySum;
 
-   cout << "# IsInsideCuts          #: " << "return code = " << seleyetype << endl;
+   if(DBGSIG > 1)
+      cout << "# IsInsideCuts          #: " << "return code = " << seleyetype << endl;
 
    if(seleye->size() > 0)
    {
@@ -1307,8 +1307,6 @@ void MyFrame::CreateOutput(TTree *app, TMVA::Reader *reader, string mvamethod, f
       backcount[i] = 0;
    }
 
-   int cnt;
-
    TBranch *mvabranch;
    if(mean == 0)
       mvabranch = app->Branch("MVA", &obsvars[nrobs], "MVA/F");
@@ -1335,7 +1333,6 @@ void MyFrame::CreateOutput(TTree *app, TMVA::Reader *reader, string mvamethod, f
    for(int ievt = 0; ievt < app->GetEntries(); ievt++)
    {
       app->GetEntry(ievt);
-      cnt = 0;
 
       obsvars[nrobs] = reader->EvaluateMVA(mvamethod.c_str());
       if(mean == 0)
@@ -1369,6 +1366,8 @@ void MyFrame::CreateOutput(TTree *app, TMVA::Reader *reader, string mvamethod, f
 
    cutResults.push_back(sigcount[0]);
    cutResults.push_back(backcount[0]);
+
+   mvaprintout = mvaprintout + ToString(app->GetEntries()) + "\t" + ToString(sigcount[0]) + "\t" + ToString(backcount[0]) + "\t" + string(app->GetTitle()) + "\n";
 
    if(DBGSIG > 0)
       cout << "# CreateOutput          #: " << "Finished here..." << endl;

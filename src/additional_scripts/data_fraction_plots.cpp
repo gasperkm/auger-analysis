@@ -8,16 +8,243 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
+   float yrange[2];
+   float fraction;
+   float *ftemp;
+   char *ctemp;
+   string *stemp;
+
+   int nrbins = -1;
+
+   ResultRead *analRes = new ResultRead();
+
+   cout << "If rebalancing is needed, please enter the fraction of data events taken as signal (otherwise enter -1): ";
+   cin >> fraction;
+
    string filename;
    if(argc > 1)
-      filename = string(argv[1]);
+   {
+      nrbins = argc-1;
+      cout << "Number of bins on the plot = " << nrbins << endl;
+
+      ftemp = new float[2];
+      ctemp = new char;
+      stemp = new string[2];
+
+      // Arrays for plotting
+      float *xbin[3];
+      float *ybinSig[3];
+      float *ybinBack[3];
+      float *ybinData[3];
+      float *ybinDataRebal[3];
+
+      for(int i = 0; i < 3; i++)
+      {
+         xbin[i] = new float[nrbins];
+         ybinSig[i] = new float[nrbins];
+         ybinBack[i] = new float[nrbins];
+         ybinData[i] = new float[nrbins];
+         ybinDataRebal[i] = new float[nrbins];
+      }
+
+      // Going through all input files
+      for(int i = 0; i < nrbins; i++)
+      {
+         filename = string(argv[i+1]);
+	 analRes->ReadFile(filename);
+
+	 // Getting xbin values
+	 xbin[0][i] = analRes->GetEnergy();
+	 analRes->GetEnergyError(ftemp);
+	 xbin[1][i] = ftemp[0];
+	 xbin[2][i] = ftemp[1];
+
+	 // Getting signal ybin values
+	 ybinSig[0][i] = analRes->GetFraction(1, -1);
+	 analRes->GetFractionError(ftemp);
+	 ybinSig[1][i] = ftemp[0];
+	 ybinSig[2][i] = ftemp[1];
+
+	 // Getting background ybin values
+	 ybinBack[0][i] = analRes->GetFraction(0, -1);
+	 analRes->GetFractionError(ftemp);
+	 ybinBack[1][i] = ftemp[0];
+	 ybinBack[2][i] = ftemp[1];
+
+	 // Getting data ybin values
+	 ybinData[0][i] = analRes->GetFraction(2, -1);
+	 analRes->GetFractionError(ftemp);
+	 ybinData[1][i] = ftemp[0];
+	 ybinData[2][i] = ftemp[1];
+
+	 if(fraction != -1)
+	 {
+	    // Getting data ybin values (rebalanced)
+	    ybinDataRebal[0][i] = analRes->GetFraction(2, fraction);
+	    analRes->GetFractionError(ftemp);
+	    ybinDataRebal[1][i] = ftemp[0];
+	    ybinDataRebal[2][i] = ftemp[1];
+	 }
+      }
+
+      // Minimum and maximum values for all bins and types
+      cerr << "Minimum and maximum values for all bins (without error bars):" << endl;
+      cerr << "- Signal:     \t" << TMath::MinElement(nrbins, ybinSig[0]) << "\t" << TMath::MaxElement(nrbins, ybinSig[0]) << endl;
+      cerr << "- Background: \t" << TMath::MinElement(nrbins, ybinBack[0]) << "\t" << TMath::MaxElement(nrbins, ybinBack[0]) << endl;
+      cerr << "- Data:       \t" << TMath::MinElement(nrbins, ybinData[0]) << "\t" << TMath::MaxElement(nrbins, ybinData[0]) << endl;
+      if(fraction != -1)
+         cerr << "- Rebal. Data:\t" << TMath::MinElement(nrbins, ybinDataRebal[0]) << "\t" << TMath::MaxElement(nrbins, ybinDataRebal[0]) << endl;
+
+      // y-range settings
+      cerr << endl << "Please set the y-axis range for all plots (comma separated): ";
+      cin >> yrange[0] >> *ctemp >> yrange[1];
+
+      // Prepare canvases and clear any ROOT default statistics
+      RootStyle *mystyle = new RootStyle();
+      mystyle->SetBaseStyle();
+
+      TCanvas *c1 = new TCanvas("c1","",1200,900);
+      gStyle->SetEndErrorSize(6);
+
+      // Preparing all graphs
+      // Signal
+      TGraphAsymmErrors *grSig = new TGraphAsymmErrors(nrbins, xbin[0], ybinSig[0], xbin[1], xbin[2], ybinSig[1], ybinSig[2]);
+      mystyle->SetGraphColor(grSig, 1);
+      grSig->GetYaxis()->SetRangeUser(yrange[0], yrange[1]);
+
+      // Background
+      TGraphAsymmErrors *grBack = new TGraphAsymmErrors(nrbins, xbin[0], ybinBack[0], xbin[1], xbin[2], ybinBack[1], ybinBack[2]);
+      mystyle->SetGraphColor(grBack, 0);
+      grBack->GetYaxis()->SetRangeUser(yrange[0], yrange[1]);
+
+      // Data
+      TGraphAsymmErrors *grData = new TGraphAsymmErrors(nrbins, xbin[0], ybinData[0], xbin[1], xbin[2], ybinData[1], ybinData[2]);
+      mystyle->SetGraphColor(grData, 2);
+      grData->GetYaxis()->SetRangeUser(yrange[0], yrange[1]);
+
+      TGraphAsymmErrors *grDataRebal;
+      // Rebalanced Data
+      if(fraction != -1)
+      {
+         grDataRebal = new TGraphAsymmErrors(nrbins, xbin[0], ybinDataRebal[0], xbin[1], xbin[2], ybinDataRebal[1], ybinDataRebal[2]);
+         mystyle->SetGraphColor(grDataRebal, 2);
+         grDataRebal->GetYaxis()->SetRangeUser(yrange[0], yrange[1]);
+      }
+
+      // Create directory structure for plots and delete old plots
+      stemp[0] = RemoveFilename(&filename);
+      stemp[1] = "mkdir -p " + RemoveFilename(&stemp[0]) + "/plots";
+      system(stemp[1].c_str());
+      stemp[1] = "rm -fr " + RemoveFilename(&stemp[0]) + "/plots/fraction_plot_*";
+      system(stemp[1].c_str());
+
+      // Plotting each graph separately
+      mystyle->SetAxisTitles(grSig, "FD energy [log(E/eV)]", "Purity of signal simulation events");
+      grSig->Draw("AP");
+      stemp[1] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_sig-only.pdf";
+      c1->SaveAs(stemp[1].c_str());
+
+      mystyle->SetAxisTitles(grBack, "FD energy [log(E/eV)]", "Purity of background simulation events");
+      grBack->Draw("AP");
+      stemp[1] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_back-only.pdf";
+      c1->SaveAs(stemp[1].c_str());
+
+      mystyle->SetAxisTitles(grData, "FD energy [log(E/eV)]", "Signal fraction of data events");
+      grData->Draw("AP");
+      stemp[1] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_data-only.pdf";
+      c1->SaveAs(stemp[1].c_str());
+
+      if(fraction != -1)
+      {
+         mystyle->SetAxisTitles(grDataRebal, "FD energy [log(E/eV)]", "Signal fraction of data events (rebalanced)");
+         grDataRebal->Draw("AP");
+         stemp[1] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_data-only_rebalanced.pdf";
+         c1->SaveAs(stemp[1].c_str());
+      }
+
+      // Plotting combinations
+      mystyle->SetAxisTitles(grSig, "FD energy [log(E/eV)]", "Purity of simulation events");
+      grSig->Draw("AP");
+      grBack->Draw("P;SAME");
+      stemp[1] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_sig-back.pdf";
+      c1->SaveAs(stemp[1].c_str());
+
+      mystyle->SetAxisTitles(grSig, "FD energy [log(E/eV)]", "Purity of simulation events and signal fraction of data events");
+      grSig->Draw("AP");
+      grData->Draw("P;SAME");
+      stemp[1] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_sig-data.pdf";
+      c1->SaveAs(stemp[1].c_str());
+
+      if(fraction != -1)
+      {
+         mystyle->SetAxisTitles(grSig, "FD energy [log(E/eV)]", "Purity of simulation events and signal fraction of data events (rebalanced)");
+         grSig->Draw("AP");
+         grDataRebal->Draw("P;SAME");
+         stemp[1] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_sig-data_rebalanced.pdf";
+         c1->SaveAs(stemp[1].c_str());
+      }
+
+      mystyle->SetAxisTitles(grBack, "FD energy [log(E/eV)]", "Purity of simulation events and signal fraction of data events");
+      grBack->Draw("AP");
+      grData->Draw("P;SAME");
+      stemp[1] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_back-data.pdf";
+      c1->SaveAs(stemp[1].c_str());
+
+      if(fraction != -1)
+      {
+         mystyle->SetAxisTitles(grBack, "FD energy [log(E/eV)]", "Purity of simulation events and signal fraction of data events (rebalanced)");
+         grBack->Draw("AP");
+         grDataRebal->Draw("P;SAME");
+         stemp[1] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_back-data_rebalanced.pdf";
+         c1->SaveAs(stemp[1].c_str());
+      }
+
+      if(fraction != -1)
+      {
+         mystyle->SetAxisTitles(grData, "FD energy [log(E/eV)]", "Signal fraction of data events (rebalanced)");
+         grData->Draw("AP");
+         grDataRebal->Draw("P;SAME");
+         stemp[1] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_data-data_rebalanced.pdf";
+         c1->SaveAs(stemp[1].c_str());
+      }
+
+      // All together
+      mystyle->SetAxisTitles(grSig, "FD energy [log(E/eV)]", "Purity of simulation events and signal fraction of data events");
+      grSig->Draw("AP");
+      grBack->Draw("P;SAME");
+      grData->Draw("P;SAME");
+      stemp[1] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_all.pdf";
+      c1->SaveAs(stemp[1].c_str());
+
+      if(fraction != -1)
+      {
+         mystyle->SetAxisTitles(grSig, "FD energy [log(E/eV)]", "Purity of simulation events and signal fraction of data events (rebalanced)");
+         grSig->Draw("AP");
+         grBack->Draw("P;SAME");
+         grDataRebal->Draw("P;SAME");
+         stemp[1] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_all_rebalanced.pdf";
+         c1->SaveAs(stemp[1].c_str());
+      }
+
+      // Removing allocated variables
+      delete[] ftemp;
+      delete ctemp;
+      delete[] stemp;
+      for(int i = 0; i < 3; i++)
+      {
+         delete[] xbin[i];
+         delete[] ybinSig[i];
+         delete[] ybinBack[i];
+         delete[] ybinData[i];
+      }
+   }
    else
    {
-      cerr << "Error! No input file supplied. Rerun program and add input file as argument." << endl;
+      cerr << "Error! No input files supplied. Rerun program and add input files as arguments." << endl;
       return 1;
    }
    
-   gSystem->Load("libTree.so");
+/*   gSystem->Load("libTree.so");
 
    //-----------------------------------------
    ifstream ifs;
@@ -106,41 +333,12 @@ int main(int argc, char **argv)
    int mvacutapply;
    mvacut[1] = -1;
    mvacut[2] = -1;
-
-   // Read out MVA cuts, if the results file exists
-   ResultRead *analysisResults = new ResultRead();
-   stemp[0] = RemoveFilename(&filename) + "/application_results.txt";
-   itemp[0] = analysisResults->ReadFile(stemp[0]);
-   
-   if(itemp[0] == 1)
-   {
-      cerr << "Set the MVA cut value: ";
-      cin >> mvacut[0];
-      cerr << "Set negative MVA cut value (set to -1 if not needed): ";
-      cin >> mvacut[1];
-      cerr << "Set positive MVA cut value (set to -1 if not needed): ";
-      cin >> mvacut[2];
-   }
-   else
-   {
-      mvacut[0] = analysisResults->GetMvaCut(0);
-      mvacut[1] = analysisResults->GetMvaCut(-1);
-      mvacut[2] = analysisResults->GetMvaCut(1);
-      cerr << "The MVA cut values are:" << endl;
-      cerr << "- " << mvacut[0] << " (mean)" << endl;
-      cerr << "- " << mvacut[1] << " (neg)" << endl;
-      cerr << "- " << mvacut[2] << " (pos)" << endl;
-
-/*      analysisResults->PrintVectors();
-
-      cerr << "Energy is:   " << analysisResults->GetEnergy() << "\t";
-      analysisResults->GetEnergyError(ftemp);
-      cerr << ftemp[0] << "\t" << ftemp[1] << endl;
-
-      cerr << "Fraction is: " << analysisResults->GetFraction(2, -1) << "\t";
-      analysisResults->GetFractionError(ftemp);
-      cerr << ftemp[0] << "\t" << ftemp[1] << endl;*/
-   }
+   cerr << "Set the MVA cut value: ";
+   cin >> mvacut[0];
+   cerr << "Set negative MVA cut value (set to -1 if not needed): ";
+   cin >> mvacut[1];
+   cerr << "Set positive MVA cut value (set to -1 if not needed): ";
+   cin >> mvacut[2];
 
    // Plots use the mean, negative or positive MVA value as splitting element
    cerr << "Perform cut on mean value (0), negative value (-1) or positive value (1): ";
@@ -211,14 +409,8 @@ int main(int argc, char **argv)
    xhistlimit = new float[3];
    int *galacticNr;			// vector positions for galactic longitude and latitude
    galacticNr = new int[2];
-/*   float *galacticVal;			// vector for values of galactic longitude and latitude
-   galacticVal = new float[2];
-   float *projectVal;			// vector for values of galactic longitude and latitude (projected in Aitoff)
-   projectVal = new float[2];*/
    int *horizontalNr;			// vector positions for horizontal azimuth and zenith
    horizontalNr = new int[2];
-/*   float *horizontalVal;		// vector for values of horizontal azimuth and zenith
-   horizontalVal = new float[2];*/
 //   int cnt;				// counter
    int scatcnt;				// counter for scatter plots
    int scatcntsig[50];
@@ -420,17 +612,6 @@ int main(int argc, char **argv)
 	    }
 
 	    // Write out information for all observables, cut and event number
-/*            if(i == itemp[1]-1)
-	    {
-               cout << "  MVA Event = " << ievt << ": value = " << obsvars[mvanumber] << " (cut = " << mvacut[3] << ") , observable = " << observables[i] << endl;
-	    }
-	    else
-	    {
-               if(isangle[0])
-                  cout << "  Event = " << ievt << ": values = " << ToDeg(obsvars[3*i]) << ", " << ToDeg(obsvars[3*i+1]) << ", " << ToDeg(obsvars[3*i+2]) << ", observable = " << observables[i] << endl;
-               else
-                  cout << "  Event = " << ievt << ": values = " << obsvars[3*i] << ", " << obsvars[3*i+1] << ", " << obsvars[3*i+2] << ", observable = " << observables[i] << endl;
-	    }*/
 
 	    xhistlimit[2] = (tempmax[i]-tempmin[i])*0.05;
             xhistlimit[0] = tempmin[i] - xhistlimit[2];
@@ -585,8 +766,6 @@ int main(int argc, char **argv)
 	 xhistlimit[2] = (tempmax[i]-tempmin[i])*0.05;
          xhistlimit[0] = tempmin[i] - xhistlimit[2];
 	 xhistlimit[1] = tempmax[i] + xhistlimit[2];
-/*	 if(i == itemp[1]-1)
-            basesig[i]->GetXaxis()->SetRangeUser(-0.5, 1.5);*/
          basesig[i]->GetYaxis()->SetRangeUser(0.,max[i]*1.2);
          basesig[i]->SetMaximum(max[i]*1.2);
          basesig[i]->GetXaxis()->SetRange(xhistlimit[0], xhistlimit[1]);
@@ -679,14 +858,8 @@ int main(int argc, char **argv)
 	       mystyle->SetGraphColor(scatback[scatcnt], 0);
 
 	       // Set axis ranges
-/*	       if(i == itemp[1]-1)
-                  scatsig[scatcnt]->GetXaxis()->SetRangeUser(-0.5, 1.5);
-	       else*/
 		  dtemp[0] = (maximumval[i] - minimumval[i])*0.05;
                   scatsig[scatcnt]->GetXaxis()->SetRangeUser(minimumval[i] - dtemp[0], maximumval[i] + dtemp[0]);
-/*	       if(j == itemp[1]-1)
-                  scatsig[scatcnt]->GetYaxis()->SetRangeUser(-0.5, 1.5);
-	       else*/
 		  dtemp[1] = (maximumval[j] - minimumval[j])*0.05;
                   scatsig[scatcnt]->GetYaxis()->SetRangeUser(minimumval[j] - dtemp[1], maximumval[j] + dtemp[1]);
 
@@ -696,18 +869,6 @@ int main(int argc, char **argv)
                // Draw signal and background histograms
                scatsig[scatcnt]->Draw("AP");
                scatback[scatcnt]->Draw("P;SAME");
-
-/*               // Draw a legend with info on signal and background events
-               legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-.12, gPad->GetLeftMargin()+.28, 1-gPad->GetTopMargin());
-               legend->SetFillStyle(legendFill);
-               legend->SetFillColor(c_MvaCut);
-               stemp[0] = "MVA cut background events (" + ToString(backcount[i]) + ")";
-               legend->AddEntry(scatback[scatcnt],stemp[0].c_str(),"p");
-               stemp[0] = "MVA cut signal events (" + ToString(sigcount[i]) + ")";
-               legend->AddEntry(scatsig[scatcnt],stemp[0].c_str(),"p");
-               legend->SetBorderSize(1);
-               legend->SetMargin(0.3);
-               legend->Draw("SAME");*/
 
                // Prepare save name for scatter plots
                stemp[1] = string((tempkeyslist->At(2*k))->GetName());
@@ -796,13 +957,6 @@ int main(int argc, char **argv)
       horizontalaitoffback->Draw("AITOFF");
       c2->SaveAs(stemp[4].c_str());
 
-/*      stemp[3] = "created_plots/skymap_aitoff_" + stemp[1] + "_signal.pdf";
-      aitoffsig->SetMarkerStyle(20);
-      aitoffsig->SetMarkerSize(0.7);
-      aitoffsig->SetMarkerColor(2);
-      aitoffsig->Draw("AP");
-      c2->SaveAs(stemp[3].c_str());*/
-
       // Delete all plot objects
       for(int i = 0; i < itemp[1]; i++)
       {
@@ -817,13 +971,6 @@ int main(int argc, char **argv)
    } // Loop over all trees
 
    ifile->Close();
-
-/*   // Minimum and maximum values over all observables and trees
-   cout << endl << "Observables minimum and maximum values:" << endl;
-   for(int i = 0; i < itemp[1]; i++)
-   {
-      cout << observables[i] << ":\t" << minimumval[i] << "\t" << maximumval[i] << endl;
-   }*/
 
    delete ifile;
 
@@ -848,6 +995,7 @@ int main(int argc, char **argv)
    delete[] backcount;
    delete[] minimumval;
    delete[] maximumval;
+*/
 
    cerr << "Plotting program finished correctly." << endl;
    return 0;

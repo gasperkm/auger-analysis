@@ -308,16 +308,24 @@
            if [ -f $startdir/Makefile ]; then
              if [ $ver == 1 ]; then
                make auger-analysis-gui-old
-               make support-old
                if [ $? != 0 ]; then
 	          errorecho "Compiling of the old version of the program failed..."
 		  exit 1
 	       fi
+               make support-old
+               if [ $? != 0 ]; then
+	          errorecho "Compiling of support programs for old version of the program failed..."
+		  exit 1
+	       fi
              elif [ $ver == 2 ]; then
                make auger-analysis-gui-new
+               if [ $? != 0 ]; then
+	          errorecho "Compiling of the new version of the program failed..."
+		  exit 1
+	       fi
                make support-new
                if [ $? != 0 ]; then
-	          errorecho "Compiling of the old version of the program failed..."
+	          errorecho "Compiling of support programs for new version of the program failed..."
 		  exit 1
 	       fi
              fi
@@ -329,19 +337,30 @@
              if [ $ver == 1 ]; then
                make support-old
                if [ $? != 0 ]; then
-	          errorecho "Compiling of the old version of support programs failed..."
+	          errorecho "Compiling of support programs for old version of the program failed..."
 		  exit 1
 	       fi
              elif [ $ver == 2 ]; then
                make support-new
                if [ $? != 0 ]; then
-	          errorecho "Compiling of the old version of support programs failed..."
+	          errorecho "Compiling of support programs for new version of the program failed..."
 		  exit 1
 	       fi
              fi
            fi
          fi
        done
+
+       if [ "$1" == "all" ] || [ "$1" == "support" ]; then
+         cd $startdir
+         if [ -f $startdir/Makefile ]; then
+           make support
+           if [ $? != 0 ]; then
+	      errorecho "Compiling of support programs failed..."
+	      exit 1
+	   fi
+         fi
+       fi
      fi
    
      if [ "$1" == "clean" ]; then

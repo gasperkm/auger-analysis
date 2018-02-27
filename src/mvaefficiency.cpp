@@ -21,6 +21,8 @@ MvaEfficiency::MvaEfficiency(int sigN, int bgdN, string *plotdir)
    effcanvas = 0;
    line1 = 0;
    line2 = 0;
+   line3 = 0;
+   line4 = 0;
    plotXmin = -0.1;
    plotXmax = 1.1;
    rightAxis = 0;
@@ -311,15 +313,24 @@ void MvaEfficiency::DrawHistogram()
    // print comments
    TLatex tl;
    tl.SetNDC();
-   tl.SetTextSize(0.033);
+//   tl.SetTextSize(0.033);
+   tl.SetTextSize(0.03);
    maxbin = sSig->GetMaximumBin();
-   line1 = tl.DrawLatex(0.15, 0.23, Form("For %1.0f signal and %1.0f background", fNSignal, fNBackground));
-   tl.DrawLatex(0.15, 0.19, "events the maximum " + GetLatexFormula() + " is");
    
    if(maxSignificanceErr > 0)
+   {
+      line1 = tl.DrawLatex(0.15, 0.23, Form("For %1.0f signal and %1.0f background", fNSignal, fNBackground));
+      tl.DrawLatex(0.15, 0.19, "events the maximum " + GetLatexFormula() + " is");
       line2 = tl.DrawLatex(0.15, 0.15, Form("%5.2f +- %4.2f when cutting at %5.4f", maxSignificance, maxSignificanceErr, sSig->GetXaxis()->GetBinCenter(maxbin)));
+   }
    else
-      line2 = tl.DrawLatex(0.15, 0.15, Form("%4.2f when cutting at %5.4f", maxSignificance, sSig->GetXaxis()->GetBinCenter(maxbin)));
+   {
+      line1 = tl.DrawLatex(0.15, 0.31, Form("For %1.0f signal and %1.0f background", fNSignal, fNBackground));
+      tl.DrawLatex(0.15, 0.27, "events the maximum " + GetLatexFormula() + " is");
+      line2 = tl.DrawLatex(0.15, 0.23, Form("%4.2f when cutting at %5.4f (optimal)", GetHistValue(0, 3), optimalCut));
+      line3 = tl.DrawLatex(0.15, 0.19, Form("%4.2f when cutting at %5.4f (equal sig and bgd)", GetHistValue(1, 3), sigbgdCut));
+      line4 = tl.DrawLatex(0.15, 0.15, Form("%4.2f when cutting at %5.4f (equal sig and sig purity)", GetHistValue(2, 3), sigpurCut));
+   }
    
    // add comment for Method cuts
    if(methodTitle.Contains("Cuts"))
@@ -423,7 +434,9 @@ void MvaEfficiency::PrintResults()
       if(maxSignificanceErr > 0)
          line2->SetText(0.15, 0.15, Form("%3.2g +- %3.2g when cutting at %3.4g", maxSignificance, maxSignificanceErr, sSig->GetXaxis()->GetBinCenter(maxbin)));
       else
+      {
          line2->SetText(0.15, 0.15, Form("%3.4f when cutting at %3.4f", maxSignificance, sSig->GetXaxis()->GetBinCenter(maxbin)));
+      }
    }
 
    if(maxSignificanceErr <= 0)
