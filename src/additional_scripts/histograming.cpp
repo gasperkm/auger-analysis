@@ -12,7 +12,7 @@ int main(int argc, char **argv)
       filename = string(argv[1]);
    else
    {
-      cerr << "Error! No input file supplied. Rerun program and add input file as argument." << endl;
+      cerr << "Error! No input file supplied. Rerun program and add input file as argument (mvatree_file.root)." << endl;
       return 1;
    }
    

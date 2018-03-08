@@ -159,6 +159,30 @@ void RootStyle::SetHistColor(TH1 *plot, int sigbackdata)
    }
 }
 
+void RootStyle::SetHistColorSimple(TH1 *plot, int sigbackdata)
+{
+   if(sigbackdata == 0)
+   {
+      plot->SetLineColor(c_BackgroundLine);
+      plot->SetLineWidth(2);
+   }
+   else if(sigbackdata == 1)
+   {
+      plot->SetLineColor(c_SignalLine);
+      plot->SetLineWidth(2);
+   }
+   else if(sigbackdata == 2)
+   {
+      plot->SetLineColor(c_DataLine);
+      plot->SetLineWidth(2);
+   }
+   else if(sigbackdata == 3)
+   {
+      plot->SetLineColor(c_ResidLine);
+      plot->SetLineWidth(2);
+   }
+}
+
 // Setting colors for graphs
 void RootStyle::SetGraphColor(TGraph *plot, int sigbackdata)
 {

@@ -12,7 +12,7 @@ ResultRead::ResultRead()
    nrtrees = new int[3];
 
    itemp = new int[6];
-   stemp = new string;
+   stemp = new string[2];
    ftemp = new float[5];
    fraction = new float[3];
 }
@@ -24,7 +24,7 @@ ResultRead::~ResultRead()
    delete[] mvacut;
    delete[] nrtrees;
    delete[] itemp;
-   delete stemp;
+   delete[] stemp;
    delete[] ftemp;
    delete[] fraction;
 }
@@ -65,7 +65,7 @@ int ResultRead::ReadFile(string inname)
 
          for(int j = 0; j < *nrtrees; j++)
          {
-            ifile >> itemp[0] >> itemp[1] >> itemp[2] >> itemp[3] >> *stemp;
+            ifile >> itemp[0] >> itemp[1] >> itemp[2] >> itemp[3] >> stemp[0];
 
 /*            if(itemp[0] > 0)
             {*/
@@ -73,7 +73,7 @@ int ResultRead::ReadFile(string inname)
                allEvents.push_back((float)itemp[1]);
                siglikeEvents.push_back((float)itemp[2]);
                bgdlikeEvents.push_back((float)itemp[3]);
-               treeName.push_back(*stemp);
+               treeName.push_back(stemp[0]);
 //            }
          }
       }
@@ -96,7 +96,17 @@ void ResultRead::GetEnergyError(float *err)
    err[1] = (TMath::Log10(ebin[1]) - TMath::Log10(ebin[0]))/2.1;
 }
 
-float ResultRead::GetFraction(int sigbackdata, float rebal)
+float ResultRead::GetLowEnergy()
+{
+   return TMath::Log10(ebin[0]);
+}
+
+float ResultRead::GetHighEnergy()
+{
+   return TMath::Log10(ebin[1]);
+}
+
+float ResultRead::GetFraction(int sigbackdata, float norm)
 {
    // User selects background
    if(sigbackdata == 0)
@@ -108,11 +118,11 @@ float ResultRead::GetFraction(int sigbackdata, float rebal)
    else if(sigbackdata == 2)
       itemp[0] = 3;
 
-   cout << "Selected value = " << itemp[0] << endl;
+//   cout << "Selected value = " << itemp[0] << endl;
 
    // Find the number of all signal, background and data trees per type (mean, negative, positive)
    itemp[1] = treeType.size()/3;
-   cout << "Number of trees = " << itemp[1] << endl;
+//   cout << "Number of trees = " << itemp[1] << endl;
 
    // Some trees are missing
    if(treeType.size() < 9)
@@ -140,9 +150,9 @@ float ResultRead::GetFraction(int sigbackdata, float rebal)
             ftemp[0] += 100.*bgdlikeEvents[i]/allEvents[i];
             ftemp[1] += 100.*bgdlikeEvents[i+itemp[1]]/allEvents[i+itemp[1]];
             ftemp[2] += 100.*bgdlikeEvents[i+2*itemp[1]]/allEvents[i+2*itemp[1]];
-            cout << i << ": Background mean =\t" << ftemp[0] << endl;
-            cout << i << ": Background neg =\t" << ftemp[1] << endl;
-            cout << i << ": Background pos =\t" << ftemp[2] << endl;
+//            cout << i << ": Background mean =\t" << ftemp[0] << endl;
+//            cout << i << ": Background neg =\t" << ftemp[1] << endl;
+//            cout << i << ": Background pos =\t" << ftemp[2] << endl;
 	 }
 	 // Signal events (save signal fraction)
 	 else if(itemp[0] == 1)
@@ -150,27 +160,28 @@ float ResultRead::GetFraction(int sigbackdata, float rebal)
             ftemp[0] += 100.*siglikeEvents[i]/allEvents[i];
             ftemp[1] += 100.*siglikeEvents[i+itemp[1]]/allEvents[i+itemp[1]];
             ftemp[2] += 100.*siglikeEvents[i+2*itemp[1]]/allEvents[i+2*itemp[1]];
-            cout << i << ": Sig mean =\t" << ftemp[0] << endl;
-            cout << i << ": Sig neg =\t" << ftemp[1] << endl;
-            cout << i << ": Sig pos =\t" << ftemp[2] << endl;
+//            cout << i << ": Sig mean =\t" << ftemp[0] << endl;
+//            cout << i << ": Sig neg =\t" << ftemp[1] << endl;
+//            cout << i << ": Sig pos =\t" << ftemp[2] << endl;
 	    break;
 	 }
 	 // Data events (save signal fraction)
 	 else if(itemp[0] == 3)
 	 {
-            // No rebalancing of data
-            if(rebal == -1)
+            // No normalizing of data
+            if(norm == -1)
 	    {
                ftemp[0] += 100.*siglikeEvents[i]/allEvents[i];
                ftemp[1] += 100.*siglikeEvents[i+itemp[1]]/allEvents[i+itemp[1]];
                ftemp[2] += 100.*siglikeEvents[i+2*itemp[1]]/allEvents[i+2*itemp[1]];
-               cout << i << ": Data mean =\t" << ftemp[0] << endl;
-               cout << i << ": Data neg =\t" << ftemp[1] << endl;
-               cout << i << ": Data pos =\t" << ftemp[2] << endl;
+//               cout << i << ": Data mean =\t" << ftemp[0] << endl;
+//               cout << i << ": Data neg =\t" << ftemp[1] << endl;
+//               cout << i << ": Data pos =\t" << ftemp[2] << endl;
 	       break;
 	    }
-            // Rebalancing of data
-	    else if(rebal >= 0)
+            // Normalizing of data
+//	    else if(norm >= 0)
+            else if(norm > -1)
 	    {
 	       // Mean, negative error, positive error
 	       for(int k = 0; k < 3; k++)
@@ -188,30 +199,30 @@ float ResultRead::GetFraction(int sigbackdata, float rebal)
                         itemp[4] += bgdlikeEvents[j];
 	             }
 	          }
-		  cout << k << ": " << itemp[2] << ", " << itemp[3] << ", " << itemp[4] << endl;
+//		  cout << k << ": " << itemp[2] << ", " << itemp[3] << ", " << itemp[4] << endl;
 	          // Fraction of signal-like data events - Fraction of wrongly classified signal events
 		  itemp[5] = FindPos(3, k);
-		  cout << "Data tree is at: " << itemp[5] << endl;
+//		  cout << "Data tree is at: " << itemp[5] << endl;
 	          ftemp[4] = (siglikeEvents[itemp[5]]/allEvents[itemp[5]]);
 		  itemp[5] = FindPos(1, k);
-		  cout << "Signal tree is at: " << itemp[5] << endl;
+//		  cout << "Signal tree is at: " << itemp[5] << endl;
 		  ftemp[4] -= (bgdlikeEvents[itemp[5]]/allEvents[itemp[5]]);
 //	          ftemp[4] = (siglikeEvents[(k+1)*itemp[1]-1]/allEvents[(k+1)*itemp[1]-1]) - (bgdlikeEvents[k*itemp[1]]/allEvents[k*itemp[1]]);
-		  cout << k << ": f4 = " << ftemp[4] << endl;
+//		  cout << k << ": f4 = " << ftemp[4] << endl;
 	          // Fraction of signal-like data events - Fraction of wrongly classified background events
 		  itemp[5] = FindPos(3, k);
-		  cout << "Data tree is at: " << itemp[5] << endl;
+//		  cout << "Data tree is at: " << itemp[5] << endl;
 	          ftemp[5] = (siglikeEvents[itemp[5]]/allEvents[itemp[5]]) - ((float)itemp[3]/(float)itemp[2]);
-		  cout << k << ": f5 = " << ftemp[5] << endl;
-	          // Rebalanced value
+//		  cout << k << ": f5 = " << ftemp[5] << endl;
+	          // Normalized value
 		  itemp[5] = FindPos(1, k);
-		  cout << "Signal tree is at: " << itemp[5] << endl;
-	          ftemp[k] = 100.*( (rebal*allEvents[itemp[5]]*ftemp[4]/(siglikeEvents[itemp[5]] - bgdlikeEvents[itemp[5]])) + ((1.-rebal)*(float)itemp[2]*ftemp[5]/((float)itemp[4] - (float)itemp[3])) );
+//		  cout << "Signal tree is at: " << itemp[5] << endl;
+	          ftemp[k] = 100.*( (norm*allEvents[itemp[5]]*ftemp[4]/(siglikeEvents[itemp[5]] - bgdlikeEvents[itemp[5]])) + ((1.-norm)*(float)itemp[2]*ftemp[5]/((float)itemp[4] - (float)itemp[3])) );
 	       }
 
-               cout << i << ": Data mean =\t" << ftemp[0] << " (rebalanced)" << endl;
-               cout << i << ": Data neg =\t" << ftemp[1] << " (rebalanced)" << endl;
-               cout << i << ": Data pos =\t" << ftemp[2] << " (rebalanced)" << endl;
+//               cout << i << ": Data mean =\t" << ftemp[0] << " (normalized)" << endl;
+//               cout << i << ": Data neg =\t" << ftemp[1] << " (normalized)" << endl;
+//               cout << i << ": Data pos =\t" << ftemp[2] << " (normalized)" << endl;
 	    }
 	 }
       }
@@ -224,9 +235,9 @@ float ResultRead::GetFraction(int sigbackdata, float rebal)
    fraction[1] = TMath::Abs(ftemp[0] - ftemp[2]);
    fraction[2] = TMath::Abs(ftemp[0] - ftemp[1]);
 
-   cout << "Fraction mean =\t" << fraction[0] << endl;
-   cout << "Fraction neg =\t" << fraction[1] << endl;
-   cout << "Fraction pos =\t" << fraction[2] << endl;
+//   cout << "Fraction mean =\t" << fraction[0] << endl;
+//   cout << "Fraction neg =\t" << fraction[1] << endl;
+//   cout << "Fraction pos =\t" << fraction[2] << endl;
 
    return fraction[0];
 }
@@ -324,4 +335,31 @@ void ResultRead::FindPos(int sigbackdata, int type, vector<int> *out)
 string ResultRead::GetTreeName(int nr)
 {
    return treeName[nr];
+}
+
+// Get the type of the file (0 = individual observable analysis, 1 = mva analysis)
+int ResultRead::GetFileType()
+{
+   itemp[0] = filename.find("individual_results");
+   if(itemp[0] != string::npos)
+      return 0;
+
+   itemp[0] = filename.find("application_results");
+   if(itemp[0] != string::npos)
+      return 1;
+
+   return -1;
+}
+
+// Get observable type from individual results file
+string ResultRead::GetObservableType()
+{
+   stemp[0] = RemovePath(&filename);
+   stemp[1] = RemoveExtension(&stemp[0]);
+   stemp[0] = "individual_results_";
+   stemp[1].erase(0, (size_t)stemp[0].length()); 
+   if(stemp[1].length() > 0)
+      return stemp[1];
+   else
+      return "mva-analysis";
 }

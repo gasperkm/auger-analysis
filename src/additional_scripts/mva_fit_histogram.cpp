@@ -30,6 +30,8 @@ MvaFitHist::MvaFitHist()
 
    minstep = new double[40];
    minvar = new double[40];
+
+   appvar = -1;
 }
 
 MvaFitHist::MvaFitHist(int bincount, double xlow, double xhigh)
@@ -52,6 +54,8 @@ MvaFitHist::MvaFitHist(int bincount, double xlow, double xhigh)
 
    minstep = new double[40];
    minvar = new double[40];
+
+   appvar = -1;
 }
 
 MvaFitHist::~MvaFitHist()
@@ -156,19 +160,20 @@ void MvaFitHist::PrepareHistograms(int run, string *fname, int *proc, double *st
       cout << "  Highest value = " << norm[i] << endl;
    }
 
-   // Check the application_result.txt file
-   if( ((setopt == 0) && (run == 0)) || (setopt == 1) )
-   {
-      if(!trees.empty())
-         trees.erase(trees.begin(), trees.end());
-      if(!treeNames.empty())
-         treeNames.erase(treeNames.begin(), treeNames.end());
+   ResultRead *analRes = new ResultRead();
+   stemp[0] = RemoveFilename(&filename) + "/application_results.txt";
+   itemp[0] = analRes->ReadFile(stemp[0]);
 
-      ResultRead *analRes = new ResultRead();
-      stemp[0] = RemoveFilename(&filename) + "/application_results.txt";
-      itemp[0] = analRes->ReadFile(stemp[0]);
-      if(itemp[0] != 1)
+   if(itemp[0] != 1)
+   {
+      // Check the application_result.txt file
+      if( ((setopt == 0) && (run == 0)) || (setopt == 1) )
       {
+         if(!trees.empty())
+            trees.erase(trees.begin(), trees.end());
+         if(!treeNames.empty())
+            treeNames.erase(treeNames.begin(), treeNames.end());
+
          cout << endl << "Available trees:" << endl;
          analRes->PrintVectors(0);
          cout << endl << "Use selected trees for histogram fit (0) or manually select the trees (1)? ";
@@ -211,19 +216,22 @@ void MvaFitHist::PrepareHistograms(int run, string *fname, int *proc, double *st
             trees.push_back(itemp[1]);
             treeNames.push_back(analRes->GetTreeName(itemp[1]));
          }
-
-         cout << "The selected simulation trees are: ";
-         for(int i = 0; i < trees.size()-1; i++)
-         {
-            if(i > 0)
-               cout << ", ";
-            cout << trees[i] << " (" << treeNames[i] << ")";
-         }
-         cout << endl << "The selected data tree is: " << trees[trees.size()-1] << " (" << treeNames[trees.size()-1] << ")" << endl << endl;
       }
 
-      delete analRes;
+      cout << "The selected simulation trees are: ";
+      for(int i = 0; i < trees.size()-1; i++)
+      {
+         if(i > 0)
+            cout << ", ";
+         cout << trees[i] << " (" << treeNames[i] << ")";
+      }
+      cout << endl << "The selected data tree is: " << trees[trees.size()-1] << " (" << treeNames[trees.size()-1] << ")" << endl << endl;
+
+      // Getting the signal fraction approximation for the data
+      appvar = analRes->GetFraction(2, -1)/100.;
    }
+
+   delete analRes;
 
    // Save signal and background distributions
    simsig = (TH1F*)result[trees[0]]->Clone("simsig");
@@ -300,7 +308,7 @@ void MvaFitHist::StartFitting()
       for(int i = 0; i < nrsteps; i++)
       {
          dtemp[0] = (double)i*ratioStep;
-         PlotSumResiduals(dtemp, dtemp);
+         PlotSumResiduals(dtemp, dtemp, 0, 0);
       }
    }
    // Find the best fit with TMinuit
@@ -308,48 +316,74 @@ void MvaFitHist::StartFitting()
    {
       ROOT::Math::Minimizer *minim = ROOT::Math::Factory::CreateMinimizer("Minuit2","");
       minim->SetMaxFunctionCalls(1000000);
-      minim->SetMaxIterations(10000);
-      minim->SetTolerance(0.01);
+      minim->SetMaxIterations(5000);
+//      minim->SetTolerance(0.01);
       minim->SetPrintLevel(0);
 
       ROOT::Math::Functor fmin(this,&MvaFitHist::fcn,nrparam);
       srand48(time(NULL));
-      for(int i = 0; i < nrparam; i++)
+
+      itemp[0] = 0;
+      itemp[1] = -1;
+      while(itemp[0] < 6)
       {
-         minstep[i] = 0.01;
-	 minvar[i] = drand48();
+         for(int i = 0; i < nrparam; i++)
+         {
+            // As a rule of thumb, it should be between 5-10% of the range (0.05-0.1)
+            if(itemp[0] == 0) minstep[i] = 0.05;
+            if(itemp[0] == 1) minstep[i] = 0.03;
+            if(itemp[0] == 2) minstep[i] = 0.01;
+            if(itemp[0] == 3) minstep[i] = 0.005;
+            if(itemp[0] == 4) minstep[i] = 0.003;
+            if(itemp[0] == 5) minstep[i] = 0.001;
+
+            if((appvar != -1) && (i == 0))
+            {
+               minvar[i] = appvar;
+               cout << "Approximate value of r" << ToString(i+1) << " = " << appvar << endl;
+            }
+            else
+               minvar[i] = drand48();
+         }
+//         double step = 0.01, var = drand48();
+         minim->SetFunction(fmin);
+         for(int i = 0; i < nrparam; i++)
+         {
+            stemp[0] = "frac" + ToString(i);
+//            minim->SetVariable(i, stemp[0].c_str(), minvar[i], minstep[i]);
+            minim->SetLimitedVariable(i, stemp[0].c_str(), minvar[i], minstep[i], 0.0, 1.0);
+         }
+         minim->Minimize();
+	 itemp[0]++;
+	 itemp[1] = minim->Status();
+
+         if(itemp[1] == 0)
+	 {
+            cout << "Minimizer succesfully found a minimum (step = " << minstep[0] << ")." << endl;
+	    break;
+	 }
+         else
+            cout << "Minimizer did not converge and might have not found a correct minimum (step = " << minstep[0] << ")." << endl;
+         cout << endl;
       }
-//      double step = 0.01, var = drand48();
-      minim->SetFunction(fmin);
-      for(int i = 0; i < nrparam; i++)
-      {
-         stemp[0] = "frac" + ToString(i);
-//         minim->SetVariable(i, stemp[0].c_str(), minvar[i], minstep[i]);
-         minim->SetLimitedVariable(i, stemp[0].c_str(), minvar[i], minstep[i], 0.0, 1.0);
-      }
-      minim->Minimize();
 
       double *bestfrac = (double*)minim->X();
       double *bestfracerr = (double*)minim->Errors();
 
-      cout << "Minimization status = " << minim->Status() << endl;
+      cout << endl << "Minimization status = " << minim->Status() << endl;
       cout << "MinValue = " << minim->MinValue() << endl;
       cout << "Edm = " << minim->Edm() << endl;
       cout << "Number of function calls = " << minim->NCalls() << endl;
+      cout << "Number of iterations = " << minim->NIterations() << endl;
       for(int i = 0; i < nrparam; i++)
          cout << "frac" << i << "\t = " << ToString(bestfrac[i], 5) << "\t+/-\t" << ToString(bestfracerr[i], 5) << endl;
 
-      if(minim->Status() == 0)
-         cout << "Minimizer succesfully found a minimum." << endl;
-      else
-         cout << "Minimizer did not converge and might have not found a correct minimum." << endl;
-
-      PlotSumResiduals(bestfrac, bestfracerr);
+      PlotSumResiduals(bestfrac, bestfracerr, minim->Status(), minstep[0]);
    }
 }
 
 // Plot data, normalized signal+background and normalized residuals
-void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr)
+void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int status, double selStep)
 {
    TCanvas *c1 = new TCanvas("c1","",1200,900);
    TPad *upperpad = new TPad("upperpad", "upperpad", 0.004, 0.490, 0.996, 0.996);
@@ -408,6 +442,9 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr)
    data->SetMaximum(1.1*TMath::MaxElement(2, yrange));
    sim->Draw("SAME");
 
+   chiVal = 0;
+   chiNdf = 0;
+   chiGood = 0;
    chiProb = sim->Chi2TestX(data, chiVal, chiNdf, chiGood, "WU", residVal);
    cout << "Chi2 = " << chiVal << ", prob = " << chiProb << ", NDF = " << chiNdf << ", igood = " << chiGood << endl;
 
@@ -431,15 +468,19 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr)
 
    TLatex chiText;
    chiText.SetTextAlign(21);
-   stemp[0] = "#chi^{2}/NDF = " + ToString(chiVal, 4) + "/" + ToString(chiNdf) + " = " + ToString(chiVal/(double)chiNdf, 4);
-   chiText.DrawLatex(0.5, TMath::MaxElement(2, yrange), stemp[0].c_str());
    if(fitproc == 0)
    {
+      stemp[0] = "#chi^{2}/NDF = " + ToString(chiVal, 4) + "/" + ToString(chiNdf) + " = " + ToString(chiVal/(double)chiNdf, 4);
+      chiText.DrawLatex(0.5, TMath::MaxElement(2, yrange), stemp[0].c_str());
+
       stemp[0] = "r_{p} = " + ToString(sigFrac[0], 4);
       chiText.DrawLatex(0.5, 0.94*TMath::MaxElement(2, yrange), stemp[0].c_str());
    }
    else if(fitproc == 1)
    {
+      stemp[0] = "#chi^{2}/NDF = " + ToString(chiVal, 4) + "/" + ToString(chiNdf) + " = " + ToString(chiVal/(double)chiNdf, 4) + ", status = " + ToString(status) + ", step = " + ToString(selStep, 3);
+      chiText.DrawLatex(0.5, TMath::MaxElement(2, yrange), stemp[0].c_str());
+
       dtemp[0] = 1.;
       dtemp[1] = 0.;
       for(int i = 0; i <= nrparam; i++)
@@ -468,14 +509,68 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr)
    resid->Draw();
 
    c1->Update();
+
+   stemp[1] = "";
+   itemp[1] = 0;
+   itemp[0] = Find(treeNames, "Proton");
+   if((itemp[0] != -1) && (itemp[0] <= nrparam))
+   {
+      if(itemp[1] == 0)
+      {
+         stemp[1] += "p";
+	 itemp[1]++;
+      }
+      else
+         stemp[1] += "-p";
+   }
+
+   itemp[0] = Find(treeNames, "Helium");
+   if((itemp[0] != -1) && (itemp[0] <= nrparam))
+   {
+      if(itemp[1] == 0)
+      {
+         stemp[1] += "He";
+	 itemp[1]++;
+      }
+      else
+         stemp[1] += "-He";
+   }
+
+   itemp[0] = Find(treeNames, "Oxygen");
+   if((itemp[0] != -1) && (itemp[0] <= nrparam))
+   {
+      if(itemp[1] == 0)
+      {
+         stemp[1] += "O";
+	 itemp[1]++;
+      }
+      else
+         stemp[1] += "-O";
+   }
+
+   itemp[0] = Find(treeNames, "Iron");
+   if((itemp[0] != -1) && (itemp[0] <= nrparam))
+   {
+      if(itemp[1] == 0)
+      {
+         stemp[1] += "Fe";
+	 itemp[1]++;
+      }
+      else
+         stemp[1] += "-Fe";
+   }
+
+   if(itemp[1] > 0)
+      stemp[1] += "_";
+
    if(fitproc == 0)
    {
-      stemp[0] = RemoveFilename(&filename) + "/fithist/composition_residuals_" + ToString(100*sigFrac[0], 0) + ".pdf";
+      stemp[0] = RemoveFilename(&filename) + "/fithist/" + stemp[1] + "composition_residuals_" + ToString(100*sigFrac[0], 0) + ".pdf";
       c1->SaveAs(stemp[0].c_str());
    }
    else if(fitproc == 1)
    {
-      stemp[0] = RemoveFilename(&filename) + "/fithist/composition_residuals_minuit2.pdf";
+      stemp[0] = RemoveFilename(&filename) + "/fithist/" + stemp[1] + "composition_residuals_minuit2.pdf";
       c1->SaveAs(stemp[0].c_str());
    }
    
@@ -536,7 +631,7 @@ int main(int argc, char **argv)
    }
    else
    {
-      cerr << "Error! No input files supplied. Rerun program and add input files as arguments." << endl;
+      cerr << "Error! No input files supplied. Rerun program and add input files as arguments (mvatree_file.root)." << endl;
       return 1;
    }
 

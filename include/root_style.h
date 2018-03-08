@@ -26,6 +26,8 @@ public:
    void SetGraphColor(TGraph *plot, int sigbackdata);
    void SetGraphColor(TGraphErrors *plot, int sigbackdata);
    void SetGraphColor(TGraphAsymmErrors *plot, int sigbackdata);
+
+   void SetHistColorSimple(TH1 *plot, int sigbackdata);
 };
 
 #endif

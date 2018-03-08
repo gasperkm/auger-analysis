@@ -1,18 +1,14 @@
-#ifndef _MVA_FIT_HISTOGRAM_H_
-#define _MVA_FIT_HISTOGRAM_H_
+#ifndef _INDIVIDUAL_OBSERVABLES_H_
+#define _INDIVIDUAL_OBSERVABLES_H_
 
 #include "workstation.h"
 #include "root_include.h"
 #include "root_style.h"
 
-#include "Math/Minimizer.h"
-#include "Math/Factory.h"
-#include "Math/Functor.h"
-
-class MvaFitHist
+class IndividObs
 {
 private:
-   // Variables needed for the chi2 calculation
+/*   // Variables needed for the chi2 calculation
    int *nrsim;
    double *simnorm;
    TH1F *simhist[40];
@@ -65,19 +61,65 @@ private:
 
    // Filename
    string filename;
-   TFile *f;
+   TFile *f;*/
+   int sigcount, backcount;
+   int nrobs;
+   string mvaprintout;
+
+   vector<int> trees;
+   vector<string> treeNames;
+   double *mean;
+   double *minrange;
+   double *maxrange;
+
+   double range[2];
+
+   vector<double> obsvect[3];
+   vector<double> obsvect_neg[3];
+   vector<double> obsvect_pos[3];
+
+   vector<string> observables;
+   vector<float> obssel;
+   vector<float> tempmin;
+   vector<float> tempmax;
+   vector<string> tempdesc;
+
+   string filename;
+
+   string *stemp;
+   double *dtemp;
+   int *itemp;
+   float *ftemp;
+   char *ctemp;
+
+   double obscut[3];
+
+   double negerror, poserror, meannegerror, meanposerror;
+
+   float obsvars[3];
+
+   TH1F *signalhist, *backgroundhist, *purS;
+
+   int nbin_hist_high;
+
+   int sign;
+
+   int sigpurCutBest, backpurCutBest, sigbgdCutBest;
 public:
-   MvaFitHist();
-   MvaFitHist(int bincount, double xlow, double xhigh);
-   virtual ~MvaFitHist();
+   IndividObs(string infile, vector<int> inv);
+   virtual ~IndividObs();
 
-//   void fcn(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t iflag);
-   double fcn(const double *par);
+   int ReadObservables();
 
-   void PrepareHistograms(int run, string *fname, int *proc, double *step);
-   void PlotDistributions();
-   void StartFitting();
-   void PlotSumResiduals(double *sigFrac, double *sigFracErr, int status, double selStep);
+   void PrepareFolders();
+
+   void AppendPrintout(string print);
+   void GetObsVectors(int obs);
+   void CalculateCut(int obs);
+   void ApplyObsCut(int obs, int type);
+   void PrintoutResults(int obs);
+
+   int GetNrObservables();
 };
 
 #endif

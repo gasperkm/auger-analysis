@@ -250,7 +250,26 @@ int Find(vector<string> strvec, string search)
    for(int i = 0; i < strvec.size(); i++)
    {
       if( strvec[i].find(search) != string::npos )
+      {
          retval = i;
+	 break;
+      }
+   }
+
+   return retval;
+}
+
+int FindVecPos(vector<int> intvec, int search)
+{
+   int retval = -1;
+
+   for(int i = 0; i < intvec.size(); i++)
+   {
+      if( intvec[i] == search )
+      {
+         retval = i;
+	 break;
+      }
    }
 
    return retval;

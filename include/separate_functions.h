@@ -39,5 +39,7 @@ string DecimalToBinary(int dec);
 
 // Searching for parts in a string vector
 int Find(vector<string> strvec, string search);
+// Searching for location of integer in vector
+int FindVecPos(vector<int> intvec, int search);
 
 #endif

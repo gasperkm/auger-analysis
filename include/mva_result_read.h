@@ -36,10 +36,12 @@ public:
    void ZeroVectors();
    
    // 0 = background, 1 = signal, 2 = data
-   float GetFraction(int sigbackdata, float rebal);
+   float GetFraction(int sigbackdata, float norm);
    void GetFractionError(float *err);
    float GetEnergy();
    void GetEnergyError(float *err);
+   float GetLowEnergy();
+   float GetHighEnergy();
    float GetMvaCut(int type);
    int GetNrTrees(int type);
 
@@ -49,6 +51,8 @@ public:
    void FindPos(int sigbackdata, int type, vector<int> *out);
 
    string GetTreeName(int nr);
+   int GetFileType();
+   string GetObservableType();
 };
 
 #endif
