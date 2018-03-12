@@ -131,6 +131,8 @@ float ResultRead::GetFraction(int sigbackdata, float norm)
       return -1;
    }
 
+   int nrbacktrees = 0;
+
    // Loop over signal, background and data values (only select values that are selected by sigbackdata values
    for(int i = 0; i < treeType.size(); i++)
    {
@@ -150,6 +152,7 @@ float ResultRead::GetFraction(int sigbackdata, float norm)
             ftemp[0] += 100.*bgdlikeEvents[i]/allEvents[i];
             ftemp[1] += 100.*bgdlikeEvents[i+itemp[1]]/allEvents[i+itemp[1]];
             ftemp[2] += 100.*bgdlikeEvents[i+2*itemp[1]]/allEvents[i+2*itemp[1]];
+	    nrbacktrees++;
 //            cout << i << ": Background mean =\t" << ftemp[0] << endl;
 //            cout << i << ": Background neg =\t" << ftemp[1] << endl;
 //            cout << i << ": Background pos =\t" << ftemp[2] << endl;
@@ -231,9 +234,18 @@ float ResultRead::GetFraction(int sigbackdata, float norm)
          break;
    }
 
-   fraction[0] = ftemp[0];
-   fraction[1] = TMath::Abs(ftemp[0] - ftemp[2]);
-   fraction[2] = TMath::Abs(ftemp[0] - ftemp[1]);
+   if(sigbackdata == 0)
+   {
+      fraction[0] = ftemp[0]/(float)nrbacktrees;
+      fraction[1] = TMath::Abs(ftemp[0] - ftemp[2])/(float)nrbacktrees;
+      fraction[2] = TMath::Abs(ftemp[0] - ftemp[1])/(float)nrbacktrees;
+   }
+   else
+   {
+      fraction[0] = ftemp[0];
+      fraction[1] = TMath::Abs(ftemp[0] - ftemp[2]);
+      fraction[2] = TMath::Abs(ftemp[0] - ftemp[1]);
+   }
 
 //   cout << "Fraction mean =\t" << fraction[0] << endl;
 //   cout << "Fraction neg =\t" << fraction[1] << endl;
