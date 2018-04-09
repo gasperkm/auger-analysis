@@ -6,9 +6,9 @@ using namespace std;
 
 RootStyle::RootStyle()
 {
-   labelsize = 22;
+   labelsize = 24;
    labelfont = 63;
-   titlesize = 22;
+   titlesize = 24;
    titlefont = 63;
    textsize = 18;
    textfont = 63;
@@ -19,6 +19,8 @@ RootStyle::RootStyle()
    c_BackgroundFill = TColor::GetColor("#ff0000");
    c_DataLine = TColor::GetColor("#000000");
    c_DataFill = TColor::GetColor("#808080");
+   c_DataNormLine = TColor::GetColor("#00bb00");
+   c_DataNormFill = TColor::GetColor("#00bb00");
    c_ResidLine = TColor::GetColor("#000000");
    c_ResidFill = TColor::GetColor("#808080");
 
@@ -75,6 +77,7 @@ void RootStyle::SetBaseStyle()
    basestyle->SetLabelOffset(0.015,"xyz");
    basestyle->SetTitleOffset(1.6, "x");
    basestyle->SetTitleOffset(1.9, "y");
+   basestyle->SetEndErrorSize(10);
 
    gROOT->SetStyle("basestyle");
    gROOT->ForceStyle(1);
@@ -192,7 +195,7 @@ void RootStyle::SetGraphColor(TGraph *plot, int sigbackdata)
       plot->SetLineWidth(2);
       plot->SetMarkerColorAlpha(c_BackgroundLine, 0.75);
       plot->SetMarkerStyle(21);
-      plot->SetMarkerSize(0.7);
+      plot->SetMarkerSize(1.4);
    }
    else if(sigbackdata == 1)
    {
@@ -200,7 +203,7 @@ void RootStyle::SetGraphColor(TGraph *plot, int sigbackdata)
       plot->SetLineWidth(2);
       plot->SetMarkerColorAlpha(c_SignalLine, 0.75);
       plot->SetMarkerStyle(20);
-      plot->SetMarkerSize(0.7);
+      plot->SetMarkerSize(1.4);
    }
    else if(sigbackdata == 2)
    {
@@ -208,7 +211,15 @@ void RootStyle::SetGraphColor(TGraph *plot, int sigbackdata)
       plot->SetLineWidth(2);
       plot->SetMarkerColorAlpha(c_DataLine, 0.75);
       plot->SetMarkerStyle(22);
-      plot->SetMarkerSize(0.9);
+      plot->SetMarkerSize(1.6);
+   }
+   else if(sigbackdata == 3)
+   {
+      plot->SetLineColorAlpha(c_DataNormLine, 0.75);
+      plot->SetLineWidth(2);
+      plot->SetMarkerColorAlpha(c_DataNormLine, 0.75);
+      plot->SetMarkerStyle(23);
+      plot->SetMarkerSize(1.6);
    }
 }
 
@@ -220,7 +231,7 @@ void RootStyle::SetGraphColor(TGraphErrors *plot, int sigbackdata)
       plot->SetLineWidth(2);
       plot->SetMarkerColorAlpha(c_BackgroundLine, 0.75);
       plot->SetMarkerStyle(21);
-      plot->SetMarkerSize(0.7);
+      plot->SetMarkerSize(1.4);
    }
    else if(sigbackdata == 1)
    {
@@ -228,7 +239,7 @@ void RootStyle::SetGraphColor(TGraphErrors *plot, int sigbackdata)
       plot->SetLineWidth(2);
       plot->SetMarkerColorAlpha(c_SignalLine, 0.75);
       plot->SetMarkerStyle(20);
-      plot->SetMarkerSize(0.7);
+      plot->SetMarkerSize(1.4);
    }
    else if(sigbackdata == 2)
    {
@@ -236,7 +247,15 @@ void RootStyle::SetGraphColor(TGraphErrors *plot, int sigbackdata)
       plot->SetLineWidth(2);
       plot->SetMarkerColorAlpha(c_DataLine, 0.75);
       plot->SetMarkerStyle(22);
-      plot->SetMarkerSize(0.9);
+      plot->SetMarkerSize(1.6);
+   }
+   else if(sigbackdata == 3)
+   {
+      plot->SetLineColorAlpha(c_DataNormLine, 0.75);
+      plot->SetLineWidth(2);
+      plot->SetMarkerColorAlpha(c_DataNormLine, 0.75);
+      plot->SetMarkerStyle(23);
+      plot->SetMarkerSize(1.6);
    }
 }
 
@@ -248,7 +267,7 @@ void RootStyle::SetGraphColor(TGraphAsymmErrors *plot, int sigbackdata)
       plot->SetLineWidth(2);
       plot->SetMarkerColorAlpha(c_BackgroundLine, 0.75);
       plot->SetMarkerStyle(21);
-      plot->SetMarkerSize(0.7);
+      plot->SetMarkerSize(1.4);
    }
    else if(sigbackdata == 1)
    {
@@ -256,7 +275,7 @@ void RootStyle::SetGraphColor(TGraphAsymmErrors *plot, int sigbackdata)
       plot->SetLineWidth(2);
       plot->SetMarkerColorAlpha(c_SignalLine, 0.75);
       plot->SetMarkerStyle(20);
-      plot->SetMarkerSize(0.7);
+      plot->SetMarkerSize(1.4);
    }
    else if(sigbackdata == 2)
    {
@@ -264,6 +283,14 @@ void RootStyle::SetGraphColor(TGraphAsymmErrors *plot, int sigbackdata)
       plot->SetLineWidth(2);
       plot->SetMarkerColorAlpha(c_DataLine, 0.75);
       plot->SetMarkerStyle(22);
-      plot->SetMarkerSize(0.9);
+      plot->SetMarkerSize(1.6);
+   }
+   else if(sigbackdata == 3)
+   {
+      plot->SetLineColorAlpha(c_DataNormLine, 0.75);
+      plot->SetLineWidth(2);
+      plot->SetMarkerColorAlpha(c_DataNormLine, 0.75);
+      plot->SetMarkerStyle(23);
+      plot->SetMarkerSize(1.6);
    }
 }

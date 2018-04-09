@@ -8,7 +8,7 @@ class RootStyle
 {
 private:
    int labelsize, labelfont, titlesize, titlefont, textsize, textfont;
-   int c_SignalLine, c_SignalFill, c_BackgroundLine, c_BackgroundFill, c_DataLine, c_DataFill, c_ResidLine, c_ResidFill;
+   int c_SignalLine, c_SignalFill, c_BackgroundLine, c_BackgroundFill, c_DataLine, c_DataFill, c_DataNormLine, c_DataNormFill, c_ResidLine, c_ResidFill;
    int signalfill, backgroundfill, datafill, residfill;
    TStyle *basestyle;
 public:

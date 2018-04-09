@@ -9,8 +9,8 @@ using namespace std;
 void SetColor(TGraphAsymmErrors *gr, int cur, int nrbins)
 {
    int ci = 1738+cur;
-   double colormix = (double)cur/(double)nrbins;
-   TColor *color = new TColor(ci, 1.-colormix, 0, colormix, "", 1);
+   double colormix = (double)cur/(double)(nrbins-1.);
+   TColor *color = new TColor(ci, colormix, 0, 1.-colormix, "", 1);
 
    gr->SetMarkerColor(ci);
    gr->SetMarkerSize(0.9);
@@ -31,6 +31,8 @@ int main(int argc, char **argv)
    double *dtemp;
    bool runnorm;
    bool autoFrac;
+   bool xErrors;
+   string plotInstr[2];
 
    int nrbins = -1;
 
@@ -39,7 +41,7 @@ int main(int argc, char **argv)
    string filename;
    if(argc > 1)
    {
-      ftemp = new float[2];
+      ftemp = new float[3];
       ctemp = new char;
       stemp = new string[3];
       itemp = new int[2];
@@ -76,6 +78,32 @@ int main(int argc, char **argv)
          cin >> onlyplot;
       }
 
+      if( (onlyplot == 0) || (onlyplot == 1) )
+      {
+         cout << "Represent x-axis bins with error bars (0) or not (1)? ";
+	 cin >> itemp[0];
+	 while( (itemp[0] != 0) && (itemp[0] != 1) )
+	 {
+            cout << "Represent x-axis bins with error bars (0) or not (1)? ";
+	    cin >> itemp[0];
+	 }
+
+	 if(itemp[0] == 0)
+	 {
+            xErrors = true;
+	    plotInstr[0] = "AP";
+	    plotInstr[1] = "P;SAME";
+	    cout << "Using errors." << endl;
+	 }
+	 else if(itemp[0] == 1)
+	 {
+            xErrors = false;
+	    plotInstr[0] = "APL";
+	    plotInstr[1] = "PL;SAME";
+	    cout << "Not using errors." << endl;
+	 }
+      }
+
       if(onlyplot == 0)
       {
          cout << "For linear normalization, please enter the fraction of data events taken as signal (if unknown, enter -1): ";
@@ -91,19 +119,29 @@ int main(int argc, char **argv)
          // Arrays for plotting
          float *xbin[3];
          float *ybinSig[3];
+         float *ybinSigNorm[3];
          float *ybinBack[3];
+         float *ybinBackNorm[3];
          float *ybinData[3];
          float *ybinDataNorm[3];
+         float *ybinDataLna[3];
+         float *ybinDataLnaNorm[3];
 	 float *ylowfractest[3], *yhighfractest[3];
 	 float *ylowlimitfrac, *yhighlimitfrac;
+
+	 vector<string> treeName;
 
          for(int i = 0; i < 3; i++)
          {
             xbin[i] = new float[nrbins];
             ybinSig[i] = new float[nrbins];
+            ybinSigNorm[i] = new float[nrbins];
             ybinBack[i] = new float[nrbins];
+            ybinBackNorm[i] = new float[nrbins];
             ybinData[i] = new float[nrbins];
             ybinDataNorm[i] = new float[nrbins];
+            ybinDataLna[i] = new float[nrbins];
+            ybinDataLnaNorm[i] = new float[nrbins];
 
 	    if(autoFrac)
 	    {
@@ -124,11 +162,22 @@ int main(int argc, char **argv)
             filename = string(argv[i+1]);
             analRes->ReadFile(filename);
 
+	    // Get tree name
+	    treeName.push_back(analRes->GetTreeName(i));
+
             // Getting xbin values
             xbin[0][i] = analRes->GetEnergy();
             analRes->GetEnergyError(ftemp);
-            xbin[1][i] = ftemp[0];
-            xbin[2][i] = ftemp[1];
+	    if(xErrors)
+	    {
+               xbin[1][i] = ftemp[0];
+               xbin[2][i] = ftemp[1];
+	    }
+	    else
+	    {
+               xbin[1][i] = 0;
+               xbin[2][i] = 0;
+	    }
 
             // Getting signal ybin values
             ybinSig[0][i] = analRes->GetFraction(1, -1);
@@ -150,6 +199,16 @@ int main(int argc, char **argv)
 
             if(!autoFrac)
             {
+               ybinSigNorm[0][i] = analRes->GetFraction(1, fraction);
+               analRes->GetFractionError(ftemp);
+               ybinSigNorm[1][i] = ftemp[0];
+               ybinSigNorm[2][i] = ftemp[1];
+
+               ybinBackNorm[0][i] = analRes->GetFraction(0, fraction);
+               analRes->GetFractionError(ftemp);
+               ybinBackNorm[1][i] = ftemp[0];
+               ybinBackNorm[2][i] = ftemp[1];
+
                // Getting data ybin values (normalized)
                ybinDataNorm[0][i] = analRes->GetFraction(2, fraction);
                analRes->GetFractionError(ftemp);
@@ -171,6 +230,14 @@ int main(int argc, char **argv)
                analRes->GetFractionError(ftemp);
                yhighfractest[1][i] = ftemp[0];
                yhighfractest[2][i] = ftemp[1];
+
+	       ybinSigNorm[0][i] = 0.;
+	       ybinSigNorm[1][i] = 0.;
+	       ybinSigNorm[2][i] = 0.;
+
+	       ybinBackNorm[0][i] = 0.;
+	       ybinBackNorm[1][i] = 0.;
+	       ybinBackNorm[2][i] = 0.;
 
 	       ybinDataNorm[0][i] = 0.;
 	       ybinDataNorm[1][i] = 0.;
@@ -197,13 +264,13 @@ int main(int argc, char **argv)
 
 	       if(TMath::MinElement(2,ftemp) == ylowfractest[0][i])
 	       {
-                  ylowlimitfrac[i] = (ylowfractest[0][i]-ylowfractest[1][i])/100.;
-                  yhighlimitfrac[i] = (yhighfractest[0][i]+yhighfractest[2][i])/100.;
+                  ylowlimitfrac[i] = (ylowfractest[0][i]-ylowfractest[1][i]);
+                  yhighlimitfrac[i] = (yhighfractest[0][i]+yhighfractest[2][i]);
 	       }
 	       else
 	       {
-                  ylowlimitfrac[i] = (yhighfractest[0][i]-yhighfractest[1][i])/100.;
-                  yhighlimitfrac[i] = (ylowfractest[0][i]+ylowfractest[2][i])/100.;
+                  ylowlimitfrac[i] = (yhighfractest[0][i]-yhighfractest[1][i]);
+                  yhighlimitfrac[i] = (ylowfractest[0][i]+ylowfractest[2][i]);
 	       }
 
 	       cout << i << ": lowest (ylow) = " << ylowlimitfrac[i] << "\t highest (yhigh) = " << yhighlimitfrac[i] << endl;
@@ -269,20 +336,153 @@ int main(int argc, char **argv)
 */
 	       cout << "   orig = " << ybinData[0][i] << " (" << ybinData[1][i] << "," << ybinData[2][i] << ")\t norm = " << ybinDataNorm[0][i] << " (" << ybinDataNorm[1][i] << "," << ybinDataNorm[2][i] << ")\t diff = " << (ybinDataNorm[0][i] - ybinData[0][i]) << endl;
 
-	       fraction = ybinDataNorm[0][i]/100.;
+	       fraction = ybinDataNorm[0][i];
+
+               // Getting signal ybin values (normalized)
+               ybinSigNorm[0][i] = analRes->GetFraction(1, fraction);
+               analRes->GetFractionError(ftemp);
+               ybinSigNorm[1][i] = ftemp[0];
+               ybinSigNorm[2][i] = ftemp[1];
+
+               // Getting signal ybin values (normalized)
+               ybinBackNorm[0][i] = analRes->GetFraction(0, fraction);
+               analRes->GetFractionError(ftemp);
+               ybinBackNorm[1][i] = ftemp[0];
+               ybinBackNorm[2][i] = ftemp[1];
 	    }
 
 	    // Decide if we want to create plots or not
 	    runnorm = true;
 	 }
 
+	 // Calculate LnA values
+	 for(int i = 0; i < nrbins; i++)
+	 {
+	    // Old calculation
+            // Raw data (mean + propagation of errors)
+            ybinDataLna[0][i] = TMath::Log(56)*(ybinSig[0][i] - ybinData[0][i])/(ybinSig[0][i] - (1.-ybinBack[0][i]));
+	    ftemp[0] = ybinSig[1][i] + ybinData[1][i];
+	    ftemp[1] = ybinSig[1][i] + ybinBack[1][i];
+	    ybinDataLna[1][i] = (TMath::Log(56)*ftemp[0]*ftemp[1])/(ftemp[0] + ftemp[1]);
+	    ftemp[0] = ybinSig[2][i] + ybinData[2][i];
+	    ftemp[1] = ybinSig[2][i] + ybinBack[2][i];
+	    ybinDataLna[2][i] = (TMath::Log(56)*ftemp[0]*ftemp[1])/(ftemp[0] + ftemp[1]);
+
+//	    cerr << i << ": Raw = " << ybinDataLna[0][i] << "\t"  << ybinDataLna[1][i] << "\t" << ybinDataLna[2][i] << endl;
+
+	    // Normalized data (mean + propagation of errors)
+            ybinDataLnaNorm[0][i] = TMath::Log(56)*(1. - ybinDataNorm[0][i]);
+            ybinDataLnaNorm[1][i] = TMath::Log(56)*(1. - (ybinDataNorm[0][i]-ybinDataNorm[1][i]));
+            ybinDataLnaNorm[1][i] = TMath::Abs(ybinDataLnaNorm[0][i] - ybinDataLnaNorm[1][i]);
+            ybinDataLnaNorm[2][i] = TMath::Log(56)*(1. - (ybinDataNorm[0][i]+ybinDataNorm[2][i]));
+            ybinDataLnaNorm[2][i] = TMath::Abs(ybinDataLnaNorm[0][i] - ybinDataLnaNorm[2][i]);
+
+/*            // New calculation
+            // Raw data (mean + propagation of errors)
+            ybinDataLna[0][i] = TMath::Log(56)*(ybinSig[0][i] - ybinData[0][i])/(ybinSig[0][i] - (1.-ybinBack[0][i]));
+	    ftemp[0] = ybinSig[1][i] + ybinData[1][i];
+	    ftemp[1] = ybinSig[1][i] + ybinBack[1][i];
+	    ybinDataLna[1][i] = (TMath::Log(56)*ftemp[0]*ftemp[1])/(ftemp[0] + ftemp[1]);
+	    ftemp[0] = ybinSig[2][i] + ybinData[2][i];
+	    ftemp[1] = ybinSig[2][i] + ybinBack[2][i];
+	    ybinDataLna[2][i] = (TMath::Log(56)*ftemp[0]*ftemp[1])/(ftemp[0] + ftemp[1]);
+
+//	    cerr << i << ": Raw = " << ybinDataLna[0][i] << "\t"  << ybinDataLna[1][i] << "\t" << ybinDataLna[2][i] << endl;
+
+	    // Normalized data (mean + propagation of errors)
+	    if(ybinDataNorm[0][i] <= 1.)
+               ybinDataLnaNorm[0][i] = TMath::Log(56)*TMath::Sqrt(1. - ybinDataNorm[0][i]);
+	    else
+               ybinDataLnaNorm[0][i] = TMath::Log(56)*(1. - ybinDataNorm[0][i]);
+
+	    if(ybinDataNorm[1][i] <= 1.)
+               ybinDataLnaNorm[1][i] = TMath::Log(56)*TMath::Sqrt(1. - (ybinDataNorm[0][i]-ybinDataNorm[1][i]));
+	    else
+               ybinDataLnaNorm[1][i] = TMath::Log(56)*(1. - (ybinDataNorm[0][i]-ybinDataNorm[1][i]));
+            ybinDataLnaNorm[1][i] = TMath::Abs(ybinDataLnaNorm[0][i] - ybinDataLnaNorm[1][i]);
+
+	    if(ybinDataNorm[2][i] <= 1.)
+               ybinDataLnaNorm[2][i] = TMath::Log(56)*TMath::Sqrt(1. - (ybinDataNorm[0][i]+ybinDataNorm[2][i]));
+	    else
+               ybinDataLnaNorm[2][i] = TMath::Log(56)*(1. - (ybinDataNorm[0][i]+ybinDataNorm[2][i]));
+            ybinDataLnaNorm[2][i] = TMath::Abs(ybinDataLnaNorm[0][i] - ybinDataLnaNorm[2][i]);*/
+
+/*            ybinDataLnaNorm[1][i] = TMath::Log(56)*(ybinSigNorm[0][i] - (ybinDataNorm[0][i]-ybinDataNorm[1][i])/(ybinSigNorm[0][i] - (1.-ybinBackNorm[0][i]));
+            ybinDataLnaNorm[2][i] = TMath::Log(56)*(ybinSigNorm[0][i] - ybinDataNorm[0][i])/(ybinSigNorm[0][i] - (1.-ybinBackNorm[0][i]));*/
+/*	    ftemp[0] = ybinSigNorm[1][i] + ybinDataNorm[1][i];
+	    ftemp[1] = ybinSigNorm[1][i] + ybinBackNorm[1][i];
+	    ybinDataLnaNorm[1][i] = (TMath::Log(56)*ftemp[0]*ftemp[1])/(ftemp[0] + ftemp[1]);
+	    ftemp[0] = ybinSigNorm[2][i] + ybinDataNorm[2][i];
+	    ftemp[1] = ybinSigNorm[2][i] + ybinBackNorm[2][i];
+	    ybinDataLnaNorm[2][i] = (TMath::Log(56)*ftemp[0]*ftemp[1])/(ftemp[0] + ftemp[1]);*/
+
+//	    cerr << i << ": Normalized = " << ybinDataLnaNorm[0][i] << "\t"  << ybinDataLnaNorm[1][i] << "\t" << ybinDataLnaNorm[2][i] << endl;
+	 }
+
+	 cout << endl << "Point printout:" << endl;
+	 ftemp[0] = 0;
+	 ftemp[1] = 0;
+	 ftemp[2] = 0;
+	 // Skip the first point, just because
+	 for(int i = 1; i < nrbins; i++)
+	 {
+            cerr << i << ": Signal     = " << ybinSig[0][i] << "\t" << ybinSig[1][i] << "\t" << ybinSig[2][i] << endl;
+            cerr << i << ": Background = " << ybinBack[0][i] << "\t" << ybinBack[1][i] << "\t" << ybinBack[2][i] << endl;
+            cerr << i << ": Raw data   = " << ybinData[0][i] << "\t" << ybinData[1][i] << "\t" << ybinData[2][i] << endl;
+            cerr << i << ": Norm. data = " << ybinDataNorm[0][i] << "\t" << ybinDataNorm[1][i] << "\t" << ybinDataNorm[2][i] << endl;
+	    ftemp[0] += ybinDataNorm[0][i];
+	    ftemp[1] += ybinDataNorm[1][i];
+	    ftemp[2] += ybinDataNorm[2][i];
+	 }
+	 cout << endl << "Mean norm. data value = " << ftemp[0]/(nrbins-1.) << "\t" << ftemp[1]/(nrbins-1.) << "\t" << ftemp[2]/(nrbins-1.) << endl;
+	 cout << endl;
+
          // Minimum and maximum values for all bins and types
          cerr << "Minimum and maximum values for all bins (without error bars):" << endl;
-         cerr << "- Signal:     \t" << TMath::MinElement(nrbins, ybinSig[0]) << "\t" << TMath::MaxElement(nrbins, ybinSig[0]) << endl;
-         cerr << "- Background: \t" << TMath::MinElement(nrbins, ybinBack[0]) << "\t" << TMath::MaxElement(nrbins, ybinBack[0]) << endl;
-         cerr << "- Data:       \t" << TMath::MinElement(nrbins, ybinData[0]) << "\t" << TMath::MaxElement(nrbins, ybinData[0]) << endl;
+	 ftemp[0] = TMath::MinElement(nrbins, ybinSig[0]);
+	 ftemp[1] = TMath::MaxElement(nrbins, ybinSig[0]);
+         cerr << "- Signal:           \t" << ftemp[0] << "\t" << ftemp[1] << endl;
+	 ftemp[0] = TMath::MinElement(nrbins, ybinBack[0]);
+	 ftemp[1] = TMath::MaxElement(nrbins, ybinBack[0]);
+         cerr << "- Background:       \t" << ftemp[0] << "\t" << ftemp[1] << endl;
+	 ftemp[0] = TMath::MinElement(nrbins, ybinData[0]);
+	 ftemp[1] = TMath::MaxElement(nrbins, ybinData[0]);
+         cerr << "- Data:             \t" << ftemp[0] << "\t" << ftemp[1] << endl;
          if(runnorm)
-            cerr << "- Norm. Data:\t" << TMath::MinElement(nrbins, ybinDataNorm[0]) << "\t" << TMath::MaxElement(nrbins, ybinDataNorm[0]) << endl;
+	 {
+	    ftemp[0] = TMath::MinElement(nrbins, ybinSigNorm[0]);
+	    ftemp[1] = TMath::MaxElement(nrbins, ybinSigNorm[0]);
+            cerr << "- Norm. Signal:     \t" << ftemp[0] << "\t" << ftemp[1] << endl;
+	    ftemp[0] = TMath::MinElement(nrbins, ybinBackNorm[0]);
+	    ftemp[1] = TMath::MaxElement(nrbins, ybinBackNorm[0]);
+            cerr << "- Norm. Background: \t" << ftemp[0] << "\t" << ftemp[1] << endl;
+	    ftemp[0] = TMath::MinElement(nrbins, ybinDataNorm[0]);
+	    ftemp[1] = TMath::MaxElement(nrbins, ybinDataNorm[0]);
+            cerr << "- Norm. Data:       \t" << ftemp[0] << "\t" << ftemp[1] << endl;
+	 }
+
+         cerr << "Largest possible minimum and maximum values for all bins (with error bars):" << endl;
+	 ftemp[0] = TMath::MinElement(nrbins, ybinSig[0]) - TMath::MaxElement(nrbins, ybinSig[1]);
+	 ftemp[1] = TMath::MaxElement(nrbins, ybinSig[0]) + TMath::MaxElement(nrbins, ybinSig[2]);
+         cerr << "- Signal:           \t" << ftemp[0] << "\t" << ftemp[1] << endl;
+	 ftemp[0] = TMath::MinElement(nrbins, ybinBack[0]) - TMath::MaxElement(nrbins, ybinBack[1]);
+	 ftemp[1] = TMath::MaxElement(nrbins, ybinBack[0]) + TMath::MaxElement(nrbins, ybinBack[2]);
+         cerr << "- Background:       \t" << ftemp[0] << "\t" << ftemp[1] << endl;
+	 ftemp[0] = TMath::MinElement(nrbins, ybinData[0]) - TMath::MaxElement(nrbins, ybinData[1]);
+	 ftemp[1] = TMath::MaxElement(nrbins, ybinData[0]) + TMath::MaxElement(nrbins, ybinData[2]);
+         cerr << "- Data:             \t" << ftemp[0] << "\t" << ftemp[1] << endl;
+         if(runnorm)
+	 {
+	    ftemp[0] = TMath::MinElement(nrbins, ybinSigNorm[0]) - TMath::MaxElement(nrbins, ybinSigNorm[1]);
+	    ftemp[1] = TMath::MaxElement(nrbins, ybinSigNorm[0]) + TMath::MaxElement(nrbins, ybinSigNorm[2]);
+            cerr << "- Norm. Signal:     \t" << ftemp[0] << "\t" << ftemp[1] << endl;
+	    ftemp[0] = TMath::MinElement(nrbins, ybinBackNorm[0]) - TMath::MaxElement(nrbins, ybinBackNorm[1]);
+	    ftemp[1] = TMath::MaxElement(nrbins, ybinBackNorm[0]) + TMath::MaxElement(nrbins, ybinBackNorm[2]);
+            cerr << "- Norm. Background: \t" << ftemp[0] << "\t" << ftemp[1] << endl;
+	    ftemp[0] = TMath::MinElement(nrbins, ybinDataNorm[0]) - TMath::MaxElement(nrbins, ybinDataNorm[1]);
+	    ftemp[1] = TMath::MaxElement(nrbins, ybinDataNorm[0]) + TMath::MaxElement(nrbins, ybinDataNorm[2]);
+            cerr << "- Norm. Data:       \t" << ftemp[0] << "\t" << ftemp[1] << endl;
+	 }
 
          // y-range settings
          cerr << endl << "Please set the y-axis range for all plots (comma separated): ";
@@ -322,9 +522,9 @@ int main(int argc, char **argv)
          mystyle->SetBaseStyle();
 
          TCanvas *c1 = new TCanvas("c1","",1200,900);
-         gStyle->SetEndErrorSize(6);
 
          // Preparing all graphs
+	 yrange[1] += 0.25*(yrange[1]-yrange[0]);
          // Signal
          TGraphAsymmErrors *grSig = new TGraphAsymmErrors(nrbins, xbin[0], ybinSig[0], xbin[1], xbin[2], ybinSig[1], ybinSig[2]);
          mystyle->SetGraphColor(grSig, 1);
@@ -340,18 +540,39 @@ int main(int argc, char **argv)
          mystyle->SetGraphColor(grData, 2);
          grData->GetYaxis()->SetRangeUser(yrange[0], yrange[1]);
 
-         TGraphAsymmErrors *grDataNorm;
-         // Normalized Data
+         TGraphAsymmErrors *grSigNorm, *grBackNorm, *grDataNorm;
+         // Normalized values
          if(runnorm)
          {
+            grSigNorm = new TGraphAsymmErrors(nrbins, xbin[0], ybinSigNorm[0], xbin[1], xbin[2], ybinSigNorm[1], ybinSigNorm[2]);
+            mystyle->SetGraphColor(grSigNorm, 1);
+            grSigNorm->GetYaxis()->SetRangeUser(yrange[0], yrange[1]);
+
+            grBackNorm = new TGraphAsymmErrors(nrbins, xbin[0], ybinBackNorm[0], xbin[1], xbin[2], ybinBackNorm[1], ybinBackNorm[2]);
+            mystyle->SetGraphColor(grBackNorm, 0);
+            grBackNorm->GetYaxis()->SetRangeUser(yrange[0], yrange[1]);
+
             grDataNorm = new TGraphAsymmErrors(nrbins, xbin[0], ybinDataNorm[0], xbin[1], xbin[2], ybinDataNorm[1], ybinDataNorm[2]);
-            mystyle->SetGraphColor(grDataNorm, 2);
+            mystyle->SetGraphColor(grDataNorm, 3);
             grDataNorm->GetYaxis()->SetRangeUser(yrange[0], yrange[1]);
          }
 
+	 // LnA graphs for data and normalized data
+	 TGraphAsymmErrors *grDataLna, *grDataLnaNorm;
+         grDataLna = new TGraphAsymmErrors(nrbins, xbin[0], ybinDataLna[0], xbin[1], xbin[2], ybinDataLna[1], ybinDataLna[2]);
+         mystyle->SetGraphColor(grDataLna, 2);
+         grDataLna->GetYaxis()->SetRangeUser(-0.7, 5.);
+         if(runnorm)
+         {
+            grDataLnaNorm = new TGraphAsymmErrors(nrbins, xbin[0], ybinDataLnaNorm[0], xbin[1], xbin[2], ybinDataLnaNorm[1], ybinDataLnaNorm[2]);
+            mystyle->SetGraphColor(grDataLnaNorm, 3);
+            grDataLnaNorm->GetYaxis()->SetRangeUser(-0.7, 5.);
+         }
+
          // Plotting each graph separately
+	 // Signal only
          mystyle->SetAxisTitles(grSig, "FD energy [log(E/eV)]", "Purity of signal simulation events");
-         grSig->Draw("AP");
+         grSig->Draw(plotInstr[0].c_str());
          if(itemp[0] == 0)
          {
             stemp[1] = analRes->GetObservableType();
@@ -369,8 +590,9 @@ int main(int argc, char **argv)
          }
          grSig->Write(("sig_" + stemp[1]).c_str());
 
+	 // Background only
          mystyle->SetAxisTitles(grBack, "FD energy [log(E/eV)]", "Purity of background simulation events");
-         grBack->Draw("AP");
+         grBack->Draw(plotInstr[0].c_str());
          if(itemp[0] == 0)
          {
             stemp[1] = analRes->GetObservableType();
@@ -388,8 +610,9 @@ int main(int argc, char **argv)
          }
          grBack->Write(("back_" + stemp[1]).c_str());
 
+	 // Raw data only
          mystyle->SetAxisTitles(grData, "FD energy [log(E/eV)]", "Signal fraction of data events");
-         grData->Draw("AP");
+         grData->Draw(plotInstr[0].c_str());
          if(itemp[0] == 0)
          {
             stemp[1] = analRes->GetObservableType();
@@ -409,8 +632,49 @@ int main(int argc, char **argv)
 
          if(runnorm)
          {
-            mystyle->SetAxisTitles(grDataNorm, "FD energy [log(E/eV)]", "Signal fraction of data events (normalized)");
-            grDataNorm->Draw("AP");
+            // Normalized signal only
+            mystyle->SetAxisTitles(grSigNorm, "FD energy [log(E/eV)]", "Purity of signal simulation events");
+            grSigNorm->Draw(plotInstr[0].c_str());
+            if(itemp[0] == 0)
+            {
+               stemp[1] = analRes->GetObservableType();
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_" + stemp[1] + "_sig-only_normalized.pdf";
+               c1->SaveAs(stemp[2].c_str());
+            }
+            else if(itemp[0] == 1)
+            {
+               if(autoFrac)
+	          stemp[1] = "frac-auto";
+	       else
+                  stemp[1] = "frac-" + ToString(fraction, 3);
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_sig-only_normalized.pdf";
+               c1->SaveAs(stemp[2].c_str());
+            }
+            grSigNorm->Write(("signorm_" + stemp[1]).c_str());
+
+	    // Normalized background only
+            mystyle->SetAxisTitles(grBackNorm, "FD energy [log(E/eV)]", "Purity of background simulation events");
+            grBackNorm->Draw(plotInstr[0].c_str());
+            if(itemp[0] == 0)
+            {
+               stemp[1] = analRes->GetObservableType();
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_" + stemp[1] + "_back-only_normalized.pdf";
+               c1->SaveAs(stemp[2].c_str());
+            }
+            else if(itemp[0] == 1)
+            {
+               if(autoFrac)
+	          stemp[1] = "frac-auto";
+	       else
+                  stemp[1] = "frac-" + ToString(fraction, 3);
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_back-only_normalized.pdf";
+               c1->SaveAs(stemp[2].c_str());
+            }
+            grBackNorm->Write(("backnorm_" + stemp[1]).c_str());
+
+	    // Normalized data only
+            mystyle->SetAxisTitles(grDataNorm, "FD energy [log(E/eV)]", "Signal fraction of data events");
+            grDataNorm->Draw(plotInstr[0].c_str());
             if(itemp[0] == 0)
             {
                stemp[1] = analRes->GetObservableType();
@@ -429,10 +693,22 @@ int main(int argc, char **argv)
             grDataNorm->Write(("datanorm_" + stemp[1]).c_str());
          }
 
-         // Plotting combinations
+         // Plotting combinations (signal/background, signal_norm/background_norm, data/data-norm)
+	 TLegend *legend;
+	 int c_Legend = TColor::GetColor("#ffff66");
+	 int nrfigs = 2;
+	 // Signal/background
          mystyle->SetAxisTitles(grSig, "FD energy [log(E/eV)]", "Purity of simulation events");
-         grSig->Draw("AP");
-         grBack->Draw("P;SAME");
+         grSig->Draw(plotInstr[0].c_str());
+         grBack->Draw(plotInstr[1].c_str());
+	 legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	 legend->SetFillStyle(1001);
+	 legend->SetFillColor(c_Legend);
+	 legend->AddEntry(grSig, "Signal", "lp");
+	 legend->AddEntry(grBack, "Background", "lp");
+         legend->SetBorderSize(1);
+         legend->SetMargin(0.3);
+         legend->Draw("same");
          if(itemp[0] == 0)
          {
             stemp[1] = analRes->GetObservableType();
@@ -445,77 +721,45 @@ int main(int argc, char **argv)
             c1->SaveAs(stemp[2].c_str());
          }
 
-         mystyle->SetAxisTitles(grSig, "FD energy [log(E/eV)]", "Purity of simulation events and signal fraction of data events");
-         grSig->Draw("AP");
-         grData->Draw("P;SAME");
-         if(itemp[0] == 0)
-         {
-            stemp[1] = analRes->GetObservableType();
-            stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_" + stemp[1] + "_sig-data.pdf";
-            c1->SaveAs(stemp[2].c_str());
-         }
-         else if(itemp[0] == 1)
-         {
-            stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_sig-data.pdf";
-            c1->SaveAs(stemp[2].c_str());
-         }
-
          if(runnorm)
          {
-            mystyle->SetAxisTitles(grSig, "FD energy [log(E/eV)]", "Purity of simulation events and signal fraction of data events (normalized)");
-            grSig->Draw("AP");
-            grDataNorm->Draw("P;SAME");
+	    // Normalized signal/background
+            mystyle->SetAxisTitles(grSigNorm, "FD energy [log(E/eV)]", "Purity of simulation events");
+            grSigNorm->Draw(plotInstr[0].c_str());
+            grBackNorm->Draw(plotInstr[1].c_str());
+	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	    legend->SetFillStyle(1001);
+	    legend->SetFillColor(c_Legend);
+	    legend->AddEntry(grSigNorm, "Signal (normalized)", "lp");
+	    legend->AddEntry(grBackNorm, "Background (normalized)", "lp");
+            legend->SetBorderSize(1);
+            legend->SetMargin(0.3);
+            legend->Draw("same");
             if(itemp[0] == 0)
             {
                stemp[1] = analRes->GetObservableType();
-               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_" + stemp[1] + "_sig-data_normalized.pdf";
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_" + stemp[1] + "_sig-back_normalized.pdf";
                c1->SaveAs(stemp[2].c_str());
             }
             else if(itemp[0] == 1)
             {
-               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_sig-data_normalized.pdf";
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_sig-back_normalized.pdf";
                c1->SaveAs(stemp[2].c_str());
             }
-         }
 
-         mystyle->SetAxisTitles(grBack, "FD energy [log(E/eV)]", "Purity of simulation events and signal fraction of data events");
-         grBack->Draw("AP");
-         grData->Draw("P;SAME");
-         if(itemp[0] == 0)
-         {
-            stemp[1] = analRes->GetObservableType();
-            stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_" + stemp[1] + "_back-data.pdf";
-            c1->SaveAs(stemp[2].c_str());
-         }
-         else if(itemp[0] == 1)
-         {
-            stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_back-data.pdf";
-            c1->SaveAs(stemp[2].c_str());
-         }
-
-         if(runnorm)
-         {
-            mystyle->SetAxisTitles(grBack, "FD energy [log(E/eV)]", "Purity of simulation events and signal fraction of data events (normalized)");
-            grBack->Draw("AP");
-            grDataNorm->Draw("P;SAME");
-            if(itemp[0] == 0)
-            {
-               stemp[1] = analRes->GetObservableType();
-               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_" + stemp[1] + "_back-data_normalized.pdf";
-               c1->SaveAs(stemp[2].c_str());
-            }
-            else if(itemp[0] == 1)
-            {
-               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_back-data_normalized.pdf";
-               c1->SaveAs(stemp[2].c_str());
-            }
-         }
-
-         if(runnorm)
-         {
-            mystyle->SetAxisTitles(grData, "FD energy [log(E/eV)]", "Signal fraction of data events (normalized)");
-            grData->Draw("AP");
-            grDataNorm->Draw("P;SAME");
+	    // Data/data-norm
+            mystyle->SetAxisTitles(grData, "FD energy [log(E/eV)]", "Signal fraction of data events");
+//	    grData->SetLineStyle(9);
+            grData->Draw(plotInstr[0].c_str());
+            grDataNorm->Draw(plotInstr[1].c_str());
+	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	    legend->SetFillStyle(1001);
+	    legend->SetFillColor(c_Legend);
+	    legend->AddEntry(grData, "Data (raw)", "lp");
+	    legend->AddEntry(grDataNorm, "Data (normalized)", "lp");
+            legend->SetBorderSize(1);
+            legend->SetMargin(0.3);
+            legend->Draw("same");
             if(itemp[0] == 0)
             {
                stemp[1] = analRes->GetObservableType();
@@ -527,13 +771,51 @@ int main(int argc, char **argv)
                stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_data-data_normalized.pdf";
                c1->SaveAs(stemp[2].c_str());
             }
-         }
+//	    grData->SetLineStyle(1);
 
-         // All together
-         mystyle->SetAxisTitles(grSig, "FD energy [log(E/eV)]", "Purity of simulation events and signal fraction of data events");
-         grSig->Draw("AP");
-         grBack->Draw("P;SAME");
-         grData->Draw("P;SAME");
+	    // LnA data/data-norm
+            mystyle->SetAxisTitles(grDataLna, "FD energy [log(E/eV)]", "<lnA> of data events");
+//	    grDataLna->SetLineStyle(9);
+            grDataLna->Draw(plotInstr[0].c_str());
+            grDataLnaNorm->Draw(plotInstr[1].c_str());
+	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	    legend->SetFillStyle(1001);
+	    legend->SetFillColor(c_Legend);
+	    legend->AddEntry(grDataLna, "Data (raw)", "lp");
+	    legend->AddEntry(grDataLnaNorm, "Data (normalized)", "lp");
+            legend->SetBorderSize(1);
+            legend->SetMargin(0.3);
+            legend->Draw("same");
+            if(itemp[0] == 0)
+            {
+               stemp[1] = analRes->GetObservableType();
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_lnA_" + stemp[1] + "_data-data_normalized.pdf";
+               c1->SaveAs(stemp[2].c_str());
+            }
+            else if(itemp[0] == 1)
+            {
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_lnA_data-data_normalized.pdf";
+               c1->SaveAs(stemp[2].c_str());
+            }
+//	    grDataLna->SetLineStyle(1);
+	 }
+
+         // Collections of three (signal/background/data, signal/background/data-norm, signal-norm/background-norm/data, signal-norm/background-norm/data-norm, signal/background/data/data-norm)
+	 nrfigs = 3;
+	 // Signal/background/data
+         mystyle->SetAxisTitles(grSig, "FD energy [log(E/eV)]", "Purity of simulation events/Signal fraction of data events");
+         grSig->Draw(plotInstr[0].c_str());
+         grBack->Draw(plotInstr[1].c_str());
+         grData->Draw(plotInstr[1].c_str());
+	 legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	 legend->SetFillStyle(1001);
+	 legend->SetFillColor(c_Legend);
+	 legend->AddEntry(grSig, "Signal", "lp");
+	 legend->AddEntry(grBack, "Background", "lp");
+	 legend->AddEntry(grData, "Data (raw)", "lp");
+         legend->SetBorderSize(1);
+         legend->SetMargin(0.3);
+         legend->Draw("same");
          if(itemp[0] == 0)
          {
             stemp[1] = analRes->GetObservableType();
@@ -548,10 +830,73 @@ int main(int argc, char **argv)
 
          if(runnorm)
          {
-            mystyle->SetAxisTitles(grSig, "FD energy [log(E/eV)]", "Purity of simulation events and signal fraction of data events (normalized)");
-            grSig->Draw("AP");
-            grBack->Draw("P;SAME");
-            grDataNorm->Draw("P;SAME");
+            // Signal/background/data-norm
+            mystyle->SetAxisTitles(grSig, "FD energy [log(E/eV)]", "Purity of simulation events/Signal fraction of data events");
+            grSig->Draw(plotInstr[0].c_str());
+            grBack->Draw(plotInstr[1].c_str());
+            grDataNorm->Draw(plotInstr[1].c_str());
+	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	    legend->SetFillStyle(1001);
+	    legend->SetFillColor(c_Legend);
+	    legend->AddEntry(grSig, "Signal", "lp");
+	    legend->AddEntry(grBack, "Background", "lp");
+	    legend->AddEntry(grDataNorm, "Data (normalized)", "lp");
+            legend->SetBorderSize(1);
+            legend->SetMargin(0.3);
+            legend->Draw("same");
+            if(itemp[0] == 0)
+            {
+               stemp[1] = analRes->GetObservableType();
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_" + stemp[1] + "_all-data_normalized.pdf";
+               c1->SaveAs(stemp[2].c_str());
+            }
+            else if(itemp[0] == 1)
+            {
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_all-data_normalized.pdf";
+               c1->SaveAs(stemp[2].c_str());
+            }
+
+            // Signal-norm/background-norm/data
+            mystyle->SetAxisTitles(grSigNorm, "FD energy [log(E/eV)]", "Purity of simulation events/Signal fraction of data events");
+            grSigNorm->Draw(plotInstr[0].c_str());
+            grBackNorm->Draw(plotInstr[1].c_str());
+            grData->Draw(plotInstr[1].c_str());
+	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	    legend->SetFillStyle(1001);
+	    legend->SetFillColor(c_Legend);
+	    legend->AddEntry(grSigNorm, "Signal (normalized)", "lp");
+	    legend->AddEntry(grBackNorm, "Background (normalized)", "lp");
+	    legend->AddEntry(grDataNorm, "Data (raw)", "lp");
+            legend->SetBorderSize(1);
+            legend->SetMargin(0.3);
+            legend->Draw("same");
+            if(itemp[0] == 0)
+            {
+               stemp[1] = analRes->GetObservableType();
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_" + stemp[1] + "_all-sim_normalized.pdf";
+               c1->SaveAs(stemp[2].c_str());
+            }
+            else if(itemp[0] == 1)
+            {
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_all-sim_normalized.pdf";
+               c1->SaveAs(stemp[2].c_str());
+            }
+
+	    nrfigs = 4;
+            // Signal-norm/background-norm/data-norm
+            mystyle->SetAxisTitles(grSigNorm, "FD energy [log(E/eV)]", "Purity of simulation events/Signal fraction of data events");
+            grSigNorm->Draw(plotInstr[0].c_str());
+            grBackNorm->Draw(plotInstr[1].c_str());
+            grDataNorm->Draw(plotInstr[1].c_str());
+	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	    legend->SetFillStyle(1001);
+	    legend->SetFillColor(c_Legend);
+	    legend->AddEntry(grSigNorm, "Signal (normalized)", "lp");
+	    legend->AddEntry(grBackNorm, "Background (normalized)", "lp");
+	    legend->AddEntry(grDataNorm, "Data (normalized)", "lp");
+            legend->SetBorderSize(1);
+            legend->SetMargin(0.3);
+            legend->Draw("same");
             if(itemp[0] == 0)
             {
                stemp[1] = analRes->GetObservableType();
@@ -563,7 +908,162 @@ int main(int argc, char **argv)
                stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_all_normalized.pdf";
                c1->SaveAs(stemp[2].c_str());
             }
+
+            // Signal/background/data/data-norm
+            mystyle->SetAxisTitles(grSig, "FD energy [log(E/eV)]", "Purity of simulation events/Signal fraction of data events");
+            grSig->Draw(plotInstr[0].c_str());
+            grBack->Draw(plotInstr[1].c_str());
+//	    grData->SetLineStyle(9);
+            grData->Draw(plotInstr[1].c_str());
+            grDataNorm->Draw(plotInstr[1].c_str());
+	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(4*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	    legend->SetFillStyle(1001);
+	    legend->SetFillColor(c_Legend);
+	    legend->AddEntry(grSig, "Signal", "lp");
+	    legend->AddEntry(grBack, "Background", "lp");
+	    legend->AddEntry(grData, "Data (raw)", "lp");
+	    legend->AddEntry(grDataNorm, "Data (normalized)", "lp");
+            legend->SetBorderSize(1);
+            legend->SetMargin(0.3);
+            legend->Draw("same");
+            if(itemp[0] == 0)
+            {
+               stemp[1] = analRes->GetObservableType();
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_" + stemp[1] + "_all-data-data_normalized.pdf";
+               c1->SaveAs(stemp[2].c_str());
+            }
+            else if(itemp[0] == 1)
+            {
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_all-data-data_normalized.pdf";
+               c1->SaveAs(stemp[2].c_str());
+            }
+//	    grData->SetLineStyle(1);
          }
+
+	 TText *t = new TText();
+         t->SetTextAlign(12);
+         t->SetTextColor(28);
+         t->SetTextSize(24);
+	 TLine *l = new TLine();
+         l->SetLineWidth(2);
+         l->SetLineStyle(7);
+	 l->SetLineColor(28);
+
+	 nrfigs = 2;
+
+	 // LnA raw data only
+         mystyle->SetAxisTitles(grDataLna, "FD energy [log(E/eV)]", "<lnA> of data events");
+         grDataLna->Draw(plotInstr[0].c_str());
+
+	 // Right side markings
+         c1->Update();
+         t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(1),  "p");
+         t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(4),  "He");
+         t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(14), "N");
+         t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(16), "O");
+         t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(56), "Fe");
+         // Draw lines marking the particle types
+         l->DrawLine(gPad->GetUxmin(), TMath::Log(1), gPad->GetUxmax(), TMath::Log(1));
+         l->DrawLine(gPad->GetUxmin(), TMath::Log(4), gPad->GetUxmax(), TMath::Log(4));
+         l->DrawLine(gPad->GetUxmin(), TMath::Log(14), gPad->GetUxmax(), TMath::Log(14));
+         l->DrawLine(gPad->GetUxmin(), TMath::Log(16), gPad->GetUxmax(), TMath::Log(16));
+         l->DrawLine(gPad->GetUxmin(), TMath::Log(56), gPad->GetUxmax(), TMath::Log(56));
+
+         if(itemp[0] == 0)
+         {
+            stemp[1] = analRes->GetObservableType();
+            stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_lnA_" + stemp[1] + "_data-only.pdf";
+            c1->SaveAs(stemp[2].c_str());
+         }
+         else if(itemp[0] == 1)
+         {
+/*            if(autoFrac)
+	       stemp[1] = "frac-auto";
+	    else
+               stemp[1] = "frac-" + ToString(fraction, 3);*/
+            stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_lnA_data-only.pdf";
+            c1->SaveAs(stemp[2].c_str());
+         }
+//         grDataLna->Write(("datalna_" + stemp[1]).c_str());
+
+         if(runnorm)
+         {
+	    // LnA normalized data only
+            mystyle->SetAxisTitles(grDataLnaNorm, "FD energy [log(E/eV)]", "<lnA> of data events");
+            grDataLnaNorm->Draw(plotInstr[0].c_str());
+
+	    // Right side markings
+            c1->Update();
+            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(1),  "p");
+            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(4),  "He");
+            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(14), "N");
+            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(16), "O");
+            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(56), "Fe");
+            // Draw lines marking the particle types
+            l->DrawLine(gPad->GetUxmin(), TMath::Log(1), gPad->GetUxmax(), TMath::Log(1));
+            l->DrawLine(gPad->GetUxmin(), TMath::Log(4), gPad->GetUxmax(), TMath::Log(4));
+            l->DrawLine(gPad->GetUxmin(), TMath::Log(14), gPad->GetUxmax(), TMath::Log(14));
+            l->DrawLine(gPad->GetUxmin(), TMath::Log(16), gPad->GetUxmax(), TMath::Log(16));
+            l->DrawLine(gPad->GetUxmin(), TMath::Log(56), gPad->GetUxmax(), TMath::Log(56));
+
+            if(itemp[0] == 0)
+            {
+               stemp[1] = analRes->GetObservableType();
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_lnA_" + stemp[1] + "_data-only_normalized.pdf";
+               c1->SaveAs(stemp[2].c_str());
+            }
+            else if(itemp[0] == 1)
+            {
+/*               if(autoFrac)
+	          stemp[1] = "frac-auto";
+	       else
+                  stemp[1] = "frac-" + ToString(fraction, 3);*/
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_lnA_data-only_normalized.pdf";
+               c1->SaveAs(stemp[2].c_str());
+            }
+//            grDataLnaNorm->Write(("datalnanorm_" + stemp[1]).c_str());
+
+	    // LnA data/data-norm
+            mystyle->SetAxisTitles(grDataLna, "FD energy [log(E/eV)]", "<lnA> of data events");
+//	    grDataLna->SetLineStyle(9);
+            grDataLna->Draw(plotInstr[0].c_str());
+            grDataLnaNorm->Draw(plotInstr[1].c_str());
+	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	    legend->SetFillStyle(1001);
+	    legend->SetFillColor(c_Legend);
+	    legend->AddEntry(grDataLna, "Data (raw)", "lp");
+	    legend->AddEntry(grDataLnaNorm, "Data (normalized)", "lp");
+            legend->SetBorderSize(1);
+            legend->SetMargin(0.3);
+            legend->Draw("same");
+
+	    // Right side markings
+            c1->Update();
+            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(1),  "p");
+            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(4),  "He");
+            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(14), "N");
+            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(16), "O");
+            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(56), "Fe");
+            // Draw lines marking the particle types
+            l->DrawLine(gPad->GetUxmin(), TMath::Log(1), gPad->GetUxmax(), TMath::Log(1));
+            l->DrawLine(gPad->GetUxmin(), TMath::Log(4), gPad->GetUxmax(), TMath::Log(4));
+            l->DrawLine(gPad->GetUxmin(), TMath::Log(14), gPad->GetUxmax(), TMath::Log(14));
+            l->DrawLine(gPad->GetUxmin(), TMath::Log(16), gPad->GetUxmax(), TMath::Log(16));
+            l->DrawLine(gPad->GetUxmin(), TMath::Log(56), gPad->GetUxmax(), TMath::Log(56));
+
+            if(itemp[0] == 0)
+            {
+               stemp[1] = analRes->GetObservableType();
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_lnA_" + stemp[1] + "_data-data_normalized.pdf";
+               c1->SaveAs(stemp[2].c_str());
+            }
+            else if(itemp[0] == 1)
+            {
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_lnA_data-data_normalized.pdf";
+               c1->SaveAs(stemp[2].c_str());
+            }
+//	    grDataLna->SetLineStyle(1);
+	 }
 
          printRes->Close();
 
@@ -571,9 +1071,13 @@ int main(int argc, char **argv)
          {
             delete[] xbin[i];
             delete[] ybinSig[i];
+            delete[] ybinSigNorm[i];
             delete[] ybinBack[i];
+            delete[] ybinBackNorm[i];
             delete[] ybinData[i];
             delete[] ybinDataNorm[i];
+            delete[] ybinDataLna[i];
+            delete[] ybinDataLnaNorm[i];
 
             if(autoFrac)
             {
