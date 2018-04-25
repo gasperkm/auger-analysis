@@ -133,7 +133,7 @@ void ReplacePart(string *inname, string toreplace, string replace)
 {
    size_t searchchar = inname->find(toreplace);
    if(searchchar != string::npos)
-      inname->replace(searchchar+1, (searchchar + toreplace.length()), replace);
+      inname->replace(searchchar, toreplace.length(), replace);
 }
 
 // Replace all occurrences of a character inside another string

@@ -132,26 +132,6 @@ void MyFrame::InitMethods()
    ifs.close();
    delete[] stemp;
    delete[] ctemp;
-/*}
-   if(!methods.empty())
-      methods.erase(methods.begin(), methods.end());
-
-   methods.push_back("All");
-   methods.push_back("Cuts");
-   methods.push_back("CutsD");
-   methods.push_back("Likelihood");
-   methods.push_back("LikelihoodPCA");
-   methods.push_back("PDERS");
-   methods.push_back("KNN");
-   methods.push_back("Fisher");
-   methods.push_back("LD");
-   methods.push_back("FDA_GA");
-   methods.push_back("MLPBNN");
-   methods.push_back("SVM");
-   methods.push_back("BDT");
-   methods.push_back("RuleFit");
-
-   nrmethods = methods.size();*/
 }
 
 void MyFrame::InitVariables()

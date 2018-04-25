@@ -90,6 +90,12 @@ batch-rewrite-new: $(SRC)/batch_rewrite/batch_rewrite.cpp
 	$(CXX) -I. -I$(IDIR) -I$(ADSTROOT)/include/adst -I$(ROOTINC) $(SRC)/batch_rewrite/batch_rewrite.cpp $(SRC)/separate_functions.cpp $(SRC)/observables.cpp -o ./bin/$@ -L. -L$(ADSTROOT)/lib $(OFFLINELIBS) $(ROOTCONF) -lMLP -lMinuit -lstdc++
 # -------------------------------------------------------------------
 
+# Batch analysis rules ----------------------------------------------
+#batch-analysis: $(SRC)/batch_analysis/batch_analysis.cpp
+#	@echo "\n# Creating the standalone batch analysis ------------------------------------"
+#	$(CXX) -I. -I$(IDIR) -I$(ROOTINC) $(SRC)/batch_analysis/batch_analysis.cpp $(SRC)/separate_functions.cpp -o ./bin/$@ -L. $(ROOTCONF) -lMLP -lMinuit -lstdc++
+# -------------------------------------------------------------------
+
 # MVA plotting rules ------------------------------------------------
 create_mva_plots: $(SRC)/additional_scripts/create_mva_plots.cpp
 	@echo "\n# Creating the standalone MVA plotting script -------------------------------"

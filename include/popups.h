@@ -9,6 +9,7 @@
 void ErrorPopup(std::string title, std::string descr);
 void InfoPopup(std::string title, std::string descr);
 void AlertPopup(std::string title, std::string descr);
+void YesNoPopup(std::string title, std::string descr);
 
 class NEDialog : public wxDialog
 {

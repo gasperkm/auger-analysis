@@ -23,6 +23,7 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    wxStaticText *temptext;
    vector<string> vstemp;
    vector<int> vitemp;
+   vector<int> vitemp2;
    vector<double> vdtemp;
    string stemp;
 
@@ -352,7 +353,17 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    vbox->Add(-1, 10);
 
    // Checkboxes for additional MVA settings
-   specialMva = new CheckList(rightmvapanel, true, wxT("Open MVA graphical interface after training and testing"), -1);
+   if(!vitemp.empty()) vitemp.erase(vitemp.begin(), vitemp.end());
+   if(!vitemp2.empty()) vitemp2.erase(vitemp2.begin(), vitemp2.end());
+   if(!vstemp.empty()) vstemp.erase(vstemp.begin(), vstemp.end());
+   vstemp.push_back("Automatically run analysis over all energy bins (word ENERGY is replaced by energy range)");
+   vitemp.push_back(0);
+   vitemp2.push_back(-1);
+   vstemp.push_back("Open MVA graphical interface after training and testing");
+   vitemp.push_back(1);
+   vitemp2.push_back(-1);
+//   specialMva = new CheckList(rightmvapanel, true, wxT("Open MVA graphical interface after training and testing"), -1);
+   specialMva = new CheckList(rightmvapanel, vitemp, vstemp, vitemp2, rwidth);
    vbox->Add(specialMva->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
 
    // Multiple buttons to start MVA analysis

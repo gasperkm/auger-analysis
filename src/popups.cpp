@@ -26,6 +26,12 @@ void AlertPopup(string title, string descr)
    dial.ShowModal();
 }
 
+void YesNoPopup(string title, string descr)
+{
+   wxMessageDialog dial(NULL, descr, title, wxYES_NO);
+   dial.ShowModal();
+}
+
 NEDialog::NEDialog(const wxString &title, const wxSize &size, string text, string label, double value, const int *numID) : wxDialog(NULL, wxID_ANY, title, wxDefaultPosition, size)
 {
    nevalue = value;

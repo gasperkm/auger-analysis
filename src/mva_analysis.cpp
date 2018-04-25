@@ -6,10 +6,8 @@
 #include <algorithm>
 
 // Add observables to the MVA analysis
-//int MyFrame::MvaAddObservables(TMVA::Factory *factory)
 int MyFrame::MvaNoteObservables(int count)
 {
-//   int count = 0;
    string *stemp;
 
    // Write out the number of different selected observables
@@ -167,7 +165,6 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
    stemp[0] = "TreeS" + ToString(type);
    if(DBGSIG > 0)
       cout << "# MvaSetTrees           #: " << stemp[0] << endl;
-//   outtree = new TTree(stemp[0].c_str(), treeName->c_str());
    for(int i = 0; i < nrobs; i++)
    {
       stemp[1] = observables[i];
@@ -900,174 +897,6 @@ int MyFrame::BookTheMethod(TMVA::Factory *factory)
    }
    else
       SetTmvaType(factory, itemp[0], &stemp[2]);
-/*      // Cut optimization
-      if(methods[itemp[0]].find("Cuts") != string::npos)
-         factory->BookMethod(TMVA::Types::kCuts, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
-      // 1D likelihood
-      if(methods[itemp[0]].find("Likelihood") != string::npos)
-         factory->BookMethod(TMVA::Types::kLikelihood, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
-      // Multidimensional likelihood
-      if(methods[itemp[0]].find("PDERS") != string::npos)
-         factory->BookMethod(TMVA::Types::kPDERS, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
-      // Likelihood estimator
-      if(methods[itemp[0]].find("PDEFoam") != string::npos)
-         factory->BookMethod(TMVA::Types::kPDEFoam, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
-      // Nearest neighbours
-      if(methods[itemp[0]].find("KNN") != string::npos)
-         factory->BookMethod(TMVA::Types::kKNN, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
-      // Linear discriminant
-      if(methods[itemp[0]].find("LD") != string::npos)
-         factory->BookMethod(TMVA::Types::kLD, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
-      // Fisher discriminants
-      if(methods[itemp[0]].find("Fisher") != string::npos)
-         factory->BookMethod(TMVA::Types::kFisher, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
-      // H-Matrix discriminant
-      if(methods[itemp[0]].find("HMatrix") != string::npos)
-         factory->BookMethod(TMVA::Types::kHMatrix, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
-      // Functional discriminant
-      if(methods[itemp[0]].find("FDA") != string::npos)
-         factory->BookMethod(TMVA::Types::kFDA, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
-      // Neural networks
-      if(methods[itemp[0]].find("MLP") != string::npos)
-         factory->BookMethod(TMVA::Types::kMLP, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
-      if(methods[itemp[0]].find("CFMlpANN") != string::npos)
-         factory->BookMethod(TMVA::Types::kCFMlpANN, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
-      if(methods[itemp[0]].find("TMlpANN") != string::npos)
-         factory->BookMethod(TMVA::Types::kTMlpANN, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
-      // Support vector machine
-      if(methods[itemp[0]].find("SVM") != string::npos)
-         factory->BookMethod(TMVA::Types::kSVM, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
-      // Boosted decision trees
-      if(methods[itemp[0]].find("BDT") != string::npos)
-         factory->BookMethod(TMVA::Types::kBDT, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());
-      // Friedman's rulefit
-      if(methods[itemp[0]].find("RuleFit") != string::npos)
-         factory->BookMethod(TMVA::Types::kRuleFit, methods[itemp[0]].c_str(), methodsOpt[itemp[0]].c_str());*/
-
-/*   if(GetMethodName(stemp[0]) == "Cuts")
-      factory->BookMethod(TMVA::Types::kCuts, (GetMethodName(stemp[0])).c_str(), "!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart");
-   else if(GetMethodName(stemp[0]) == "CutsD")
-      factory->BookMethod(TMVA::Types::kCuts, (GetMethodName(stemp[0])).c_str(), "!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart:VarTransform=Decorrelate");
-   else if(GetMethodName(stemp[0]) == "CutsPCA")
-      factory->BookMethod(TMVA::Types::kCuts, (GetMethodName(stemp[0])).c_str(), "!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart:VarTransform=PCA");
-   else if(GetMethodName(stemp[0]) == "CutsGA")
-      factory->BookMethod(TMVA::Types::kCuts, (GetMethodName(stemp[0])).c_str(), "H:!V:FitMethod=GA:CutRangeMin[0]=-10:CutRangeMax[0]=10:VarProp[1]=FMax:EffSel:Steps=30:Cycles=3:PopSize=400:SC_steps=10:SC_rate=5:SC_factor=0.95");
-   else if(GetMethodName(stemp[0]) == "CutsSA")
-      factory->BookMethod(TMVA::Types::kCuts, (GetMethodName(stemp[0])).c_str(), "!H:!V:FitMethod=SA:EffSel:MaxCalls=150000:KernelTemp=IncAdaptive:InitialTemp=1e+6:MinTemp=1e-6:Eps=1e-10:UseDefaultScale");
-   else if(GetMethodName(stemp[0]) == "Likelihood")
-      factory->BookMethod(TMVA::Types::kLikelihood, (GetMethodName(stemp[0])).c_str(), "H:!V:TransformOutput:PDFInterpol=Spline2:NSmoothSig[0]=20:NSmoothBkg[0]=20:NSmoothBkg[1]=10:NSmooth=1:NAvEvtPerBin=50");
-   else if(GetMethodName(stemp[0]) == "LikelihoodD")
-      factory->BookMethod(TMVA::Types::kLikelihood, (GetMethodName(stemp[0])).c_str(), "!H:!V:TransformOutput:PDFInterpol=Spline2:NSmoothSig[0]=20:NSmoothBkg[0]=20:NSmooth=5:NAvEvtPerBin=50:VarTransform=Decorrelate");
-   else if(GetMethodName(stemp[0]) == "LikelihoodPCA")
-      factory->BookMethod(TMVA::Types::kLikelihood, (GetMethodName(stemp[0])).c_str(), "!H:!V:!TransformOutput:PDFInterpol=Spline2:NSmoothSig[0]=20:NSmoothBkg[0]=20:NSmooth=5:NAvEvtPerBin=50:VarTransform=PCA"); 
-   else if(GetMethodName(stemp[0]) == "LikelihoodKDE")
-      factory->BookMethod(TMVA::Types::kLikelihood, (GetMethodName(stemp[0])).c_str(), "!H:!V:!TransformOutput:PDFInterpol=KDE:KDEtype=Gauss:KDEiter=Adaptive:KDEFineFactor=0.3:KDEborder=None:NAvEvtPerBin=50"); 
-   else if(GetMethodName(stemp[0]) == "LikelihoodMIX")
-      factory->BookMethod(TMVA::Types::kLikelihood, (GetMethodName(stemp[0])).c_str(), "!H:!V:!TransformOutput:PDFInterpolSig[0]=KDE:PDFInterpolBkg[0]=KDE:PDFInterpolSig[1]=KDE:PDFInterpolBkg[1]=KDE:PDFInterpolSig[2]=Spline2:PDFInterpolBkg[2]=Spline2:PDFInterpolSig[3]=Spline2:PDFInterpolBkg[3]=Spline2:KDEtype=Gauss:KDEiter=Nonadaptive:KDEborder=None:NAvEvtPerBin=50"); 
-   else if(GetMethodName(stemp[0]) == "PDERS")
-      factory->BookMethod(TMVA::Types::kPDERS, (GetMethodName(stemp[0])).c_str(), "!H:!V:NormTree=T:VolumeRangeMode=Adaptive:KernelEstimator=Gauss:GaussSigma=0.3:NEventsMin=400:NEventsMax=600");
-   else if(GetMethodName(stemp[0]) == "PDERSD")
-      factory->BookMethod(TMVA::Types::kPDERS, (GetMethodName(stemp[0])).c_str(), "!H:!V:VolumeRangeMode=Adaptive:KernelEstimator=Gauss:GaussSigma=0.3:NEventsMin=400:NEventsMax=600:VarTransform=Decorrelate");
-   else if(GetMethodName(stemp[0]) == "PDERSPCA")
-      factory->BookMethod(TMVA::Types::kPDERS, (GetMethodName(stemp[0])).c_str(), "!H:!V:VolumeRangeMode=Adaptive:KernelEstimator=Gauss:GaussSigma=0.3:NEventsMin=400:NEventsMax=600:VarTransform=PCA");
-   else if(GetMethodName(stemp[0]) == "PDEFoam")
-      factory->BookMethod(TMVA::Types::kPDEFoam, (GetMethodName(stemp[0])).c_str(), "!H:!V:SigBgSeparate=F:TailCut=0.001:VolFrac=0.0666:nActiveCells=500:nSampl=2000:nBin=5:Nmin=100:Kernel=None:Compress=T");
-   else if(GetMethodName(stemp[0]) == "PDEFoamBoost")
-      factory->BookMethod(TMVA::Types::kPDEFoam, (GetMethodName(stemp[0])).c_str(), "!H:!V:Boost_Num=30:Boost_Transform=linear:SigBgSeparate=F:MaxDepth=4:UseYesNoCell=T:DTLogic=MisClassificationError:FillFoamWithOrigWeights=F:TailCut=0:nActiveCells=500:nBin=20:Nmin=400:Kernel=None:Compress=T");
-   else if(GetMethodName(stemp[0]) == "KNN")
-      factory->BookMethod(TMVA::Types::kKNN, (GetMethodName(stemp[0])).c_str(), "H:nkNN=20:ScaleFrac=0.8:SigmaFact=1.0:Kernel=Gaus:UseKernel=F:UseWeight=T:!Trim");
-   else if(GetMethodName(stemp[0]) == "LD")
-      factory->BookMethod(TMVA::Types::kLD, (GetMethodName(stemp[0])).c_str(), "H:!V:VarTransform=None:CreateMVAPdfs:PDFInterpolMVAPdf=Spline2:NbinsMVAPdf=50:NsmoothMVAPdf=10");
-   else if(GetMethodName(stemp[0]) == "Fisher")
-      factory->BookMethod(TMVA::Types::kFisher, (GetMethodName(stemp[0])).c_str(), "H:!V:Fisher:VarTransform=None:CreateMVAPdfs:PDFInterpolMVAPdf=Spline2:NbinsMVAPdf=50:NsmoothMVAPdf=10");
-   else if(GetMethodName(stemp[0]) == "FisherG")
-      factory->BookMethod(TMVA::Types::kFisher, (GetMethodName(stemp[0])).c_str(), "H:!V:VarTransform=Gauss");
-   else if(GetMethodName(stemp[0]) == "BoostedFisher")
-      factory->BookMethod(TMVA::Types::kFisher, (GetMethodName(stemp[0])).c_str(), "H:!V:Boost_Num=20:Boost_Transform=log:Boost_Type=AdaBoost:Boost_AdaBoostBeta=0.2:!Boost_DetailedMonitoring");
-   else if(GetMethodName(stemp[0]) == "HMatrix")
-      factory->BookMethod(TMVA::Types::kHMatrix, (GetMethodName(stemp[0])).c_str(), "!H:!V:VarTransform=None");
-   else if(GetMethodName(stemp[0]) == "FDA_GA")
-   {
-      stemp[1] = "H:!V:Formula=" + stemp[2] + ":ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=GA:PopSize=300:Cycles=3:Steps=20:Trim=True:SaveBestGen=1";
-      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), stemp[1].c_str());
-   }
-   else if(GetMethodName(stemp[0]) == "FDA_SA")
-   {
-//      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), "H:!V:Formula=(0)+(1)*x0+(2)*x1+(3)*x2+(4)*x3:ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=SA:MaxCalls=15000:KernelTemp=IncAdaptive:InitialTemp=1e+6:MinTemp=1e-6:Eps=1e-10:UseDefaultScale");
-      stemp[1] = "H:!V:Formula=" + stemp[2] + ":ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=SA:MaxCalls=15000:KernelTemp=IncAdaptive:InitialTemp=1e+6:MinTemp=1e-6:Eps=1e-10:UseDefaultScale";
-      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), stemp[1].c_str());
-   }
-   else if(GetMethodName(stemp[0]) == "FDA_MC")
-   {
-//      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), "H:!V:Formula=(0)+(1)*x0+(2)*x1+(3)*x2+(4)*x3:ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=MC:SampleSize=100000:Sigma=0.1");
-      stemp[1] = "H:!V:Formula=" + stemp[2] + ":ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=MC:SampleSize=100000:Sigma=0.1";
-      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), stemp[1].c_str());
-   }
-   else if(GetMethodName(stemp[0]) == "FDA_MT")
-   {
-//      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), "H:!V:Formula=(0)+(1)*x0+(2)*x1+(3)*x2+(4)*x3:ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=MINUIT:ErrorLevel=1:PrintLevel=-1:FitStrategy=2:UseImprove:UseMinos:SetBatch");
-      stemp[1] = "H:!V:Formula=" + stemp[2] + ":ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=MINUIT:ErrorLevel=1:PrintLevel=-1:FitStrategy=2:UseImprove:UseMinos:SetBatch";
-      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), stemp[1].c_str());
-   }
-   else if(GetMethodName(stemp[0]) == "FDA_GAMT")
-   {
-//      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), "H:!V:Formula=(0)+(1)*x0+(2)*x1+(3)*x2+(4)*x3:ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=GA:Converger=MINUIT:ErrorLevel=1:PrintLevel=-1:FitStrategy=0:!UseImprove:!UseMinos:SetBatch:Cycles=1:PopSize=5:Steps=5:Trim");
-      stemp[1] = "H:!V:Formula=" + stemp[2] + ":ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=GA:Converger=MINUIT:ErrorLevel=1:PrintLevel=-1:FitStrategy=0:!UseImprove:!UseMinos:SetBatch:Cycles=1:PopSize=5:Steps=5:Trim";
-      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), stemp[1].c_str());
-   }
-   else if(GetMethodName(stemp[0]) == "FDA_MCMT")
-   {
-//      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), "H:!V:Formula=(0)+(1)*x0+(2)*x1+(3)*x2+(4)*x3:ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=MC:Converger=MINUIT:ErrorLevel=1:PrintLevel=-1:FitStrategy=0:!UseImprove:!UseMinos:SetBatch:SampleSize=20");
-      stemp[1] = "H:!V:Formula=" + stemp[2] + ":ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=MC:Converger=MINUIT:ErrorLevel=1:PrintLevel=-1:FitStrategy=0:!UseImprove:!UseMinos:SetBatch:SampleSize=20";
-      factory->BookMethod(TMVA::Types::kFDA, (GetMethodName(stemp[0])).c_str(), stemp[1].c_str());
-   }
-   else if(GetMethodName(stemp[0]) == "MLP")
-      factory->BookMethod(TMVA::Types::kMLP, (GetMethodName(stemp[0])).c_str(), "H:!V:NeuronType=tanh:VarTransform=N:NCycles=600:HiddenLayers=N+5:TestRate=5:!UseRegulator");
-   else if(GetMethodName(stemp[0]) == "MLPBFGS")
-      factory->BookMethod(TMVA::Types::kMLP, (GetMethodName(stemp[0])).c_str(), "H:!V:NeuronType=tanh:VarTransform=N:NCycles=600:HiddenLayers=N+5:TestRate=5:TrainingMethod=BFGS:!UseRegulator");
-   else if(GetMethodName(stemp[0]) == "MLPBNN")
-      factory->BookMethod(TMVA::Types::kMLP, (GetMethodName(stemp[0])).c_str(), "H:!V:NeuronType=tanh:VarTransform=N:NCycles=600:HiddenLayers=N+5:TestRate=5:TrainingMethod=BFGS:UseRegulator");
-   else if(GetMethodName(stemp[0]) == "CFMlpANN")
-      factory->BookMethod(TMVA::Types::kCFMlpANN, (GetMethodName(stemp[0])).c_str(), "!H:!V:NCycles=2000:HiddenLayers=N+1,N");
-   else if(GetMethodName(stemp[0]) == "TMlpANN")
-      factory->BookMethod(TMVA::Types::kTMlpANN, (GetMethodName(stemp[0])).c_str(), "!H:!V:NCycles=200:HiddenLayers=N+1,N:LearningMethod=BFGS:ValidationFraction=0.3");
-   else if(GetMethodName(stemp[0]) == "SVM")
-      factory->BookMethod(TMVA::Types::kSVM, (GetMethodName(stemp[0])).c_str(), "Gamma=0.25:Tol=0.001:VarTransform=Norm");
-   else if(GetMethodName(stemp[0]) == "BDT")
-      factory->BookMethod(TMVA::Types::kBDT, (GetMethodName(stemp[0])).c_str(), "!H:!V:NTrees=850:MinNodeSize=2.5%:MaxDepth=3:BoostType=AdaBoost:AdaBoostBeta=0.5:UseBaggedBoost:BaggedSampleFraction=0.5:SeparationType=GiniIndex:nCuts=20");
-   else if(GetMethodName(stemp[0]) == "BDTG")
-      factory->BookMethod(TMVA::Types::kBDT, (GetMethodName(stemp[0])).c_str(), "!H:!V:NTrees=1000:MinNodeSize=2.5%:BoostType=Grad:Shrinkage=0.10:UseBaggedBoost:BaggedSampleFraction=0.5:nCuts=20:MaxDepth=2");
-   else if(GetMethodName(stemp[0]) == "BDTB")
-      factory->BookMethod(TMVA::Types::kBDT, (GetMethodName(stemp[0])).c_str(), "!H:!V:NTrees=400:BoostType=Bagging:SeparationType=GiniIndex:nCuts=20");
-   else if(GetMethodName(stemp[0]) == "BDTD")
-      factory->BookMethod(TMVA::Types::kBDT, (GetMethodName(stemp[0])).c_str(), "!H:!V:NTrees=400:MinNodeSize=5%:MaxDepth=3:BoostType=AdaBoost:SeparationType=GiniIndex:nCuts=20:VarTransform=Decorrelate");
-   else if(GetMethodName(stemp[0]) == "BDTF")
-      factory->BookMethod(TMVA::Types::kBDT, "BDTMitFisher", "!H:!V:NTrees=50:MinNodeSize=2.5%:UseFisherCuts:MaxDepth=3:BoostType=AdaBoost:AdaBoostBeta=0.5:SeparationType=GiniIndex:nCuts=20");
-   else if(GetMethodName(stemp[0]) == "RuleFit")
-      factory->BookMethod(TMVA::Types::kRuleFit, (GetMethodName(stemp[0])).c_str(), "H:!V:RuleFitModule=RFTMVA:Model=ModRuleLinear:MinImp=0.001:RuleMinDist=0.001:NTrees=20:fEventsMin=0.01:fEventsMax=0.5:GDTau=-1.0:GDTauPrec=0.01:GDStep=0.01:GDNSteps=10000:GDErrScale=1.02");
-   else if(GetMethodName(stemp[0]) == "All")
-   {
-      factory->BookMethod(TMVA::Types::kCuts, "Cuts", "!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart");
-      factory->BookMethod(TMVA::Types::kCuts, "CutsD", "!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart:VarTransform=Decorrelate");
-      factory->BookMethod(TMVA::Types::kLikelihood, "Likelihood", "H:!V:TransformOutput:PDFInterpol=Spline2:NSmoothSig[0]=20:NSmoothBkg[0]=20:NSmoothBkg[1]=10:NSmooth=1:NAvEvtPerBin=50");
-      factory->BookMethod(TMVA::Types::kLikelihood, "LikelihoodPCA", "!H:!V:!TransformOutput:PDFInterpol=Spline2:NSmoothSig[0]=20:NSmoothBkg[0]=20:NSmooth=5:NAvEvtPerBin=50:VarTransform=PCA"); 
-      factory->BookMethod(TMVA::Types::kPDERS, "PDERS", "!H:!V:NormTree=T:VolumeRangeMode=Adaptive:KernelEstimator=Gauss:GaussSigma=0.3:NEventsMin=400:NEventsMax=600");
-      factory->BookMethod(TMVA::Types::kKNN, "KNN", "H:nkNN=20:ScaleFrac=0.8:SigmaFact=1.0:Kernel=Gaus:UseKernel=F:UseWeight=T:!Trim");
-      factory->BookMethod(TMVA::Types::kFisher, "Fisher", "H:!V:Fisher:VarTransform=None:CreateMVAPdfs:PDFInterpolMVAPdf=Spline2:NbinsMVAPdf=50:NsmoothMVAPdf=10");
-      factory->BookMethod(TMVA::Types::kLD, "LD", "H:!V:VarTransform=None:CreateMVAPdfs:PDFInterpolMVAPdf=Spline2:NbinsMVAPdf=50:NsmoothMVAPdf=10");
-      stemp[1] = "H:!V:Formula=" + stemp[2] + ":ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=GA:PopSize=300:Cycles=3:Steps=20:Trim=True:SaveBestGen=1";
-      factory->BookMethod(TMVA::Types::kFDA, "FDA_GA", stemp[1].c_str());
-//      factory->BookMethod(TMVA::Types::kFDA, "FDA_GA", "H:!V:Formula=(0)+(1)*x0+(2)*x1+(3)*x2+(4)*x3:ParRanges=(-1,1);(-10,10);(-10,10);(-10,10);(-10,10):FitMethod=GA:PopSize=300:Cycles=3:Steps=20:Trim=True:SaveBestGen=1");
-      factory->BookMethod(TMVA::Types::kMLP, "MLPBNN", "H:!V:NeuronType=tanh:VarTransform=N:NCycles=600:HiddenLayers=N+5:TestRate=5:TrainingMethod=BFGS:UseRegulator");
-      factory->BookMethod(TMVA::Types::kSVM, "SVM", "Gamma=0.25:Tol=0.001:VarTransform=Norm");
-      factory->BookMethod(TMVA::Types::kBDT, "BDT", "!H:!V:NTrees=850:MinNodeSize=2.5%:MaxDepth=3:BoostType=AdaBoost:AdaBoostBeta=0.5:UseBaggedBoost:BaggedSampleFraction=0.5:SeparationType=GiniIndex:nCuts=20");
-      factory->BookMethod(TMVA::Types::kRuleFit, "RuleFit", "H:!V:RuleFitModule=RFTMVA:Model=ModRuleLinear:MinImp=0.001:RuleMinDist=0.001:NTrees=20:fEventsMin=0.01:fEventsMax=0.5:GDTau=-1.0:GDTauPrec=0.01:GDStep=0.01:GDNSteps=10000:GDErrScale=1.02");
-   }
-   else
-   {
-      delete[] stemp;
-      return -1;
-   }*/
 
    delete[] stemp;
    delete[] itemp;
@@ -1087,8 +916,7 @@ int MyFrame::GetTrainingShift(string *mvafilename)
    GetCorrelations(mvafile);
    mvafile->Close();
 
-/*   // Check the stats used for the MVA training from file ./results/transformation_stats.dat and save them to vectors
-   stemp[0] = string(rootdir) + "/results/transformation_stats.dat";*/
+   // Check the stats used for the MVA training from file ./results/transformation_stats.dat and save them to vectors
    stemp[0] = (*currentAnalysisDir) + "/transformation_stats.dat";
    ifstream fstats;
    fstats.open(stemp[0].c_str(), ifstream::in);
@@ -1206,7 +1034,7 @@ void MyFrame::GetCorrelations(TFile *corfile)
       }
       cout << endl;
 
-      cout << "# GetCorrelations       #: " << "Bacnground correlation matrix: " << endl;
+      cout << "# GetCorrelations       #: " << "Background correlation matrix: " << endl;
 
       for(int i = 0; i < nrselobs; i++)
       {
@@ -1376,328 +1204,35 @@ void MyFrame::CreateOutput(TTree *app, TMVA::Reader *reader, string mvamethod, f
    delete[] backcount;
 }
 
-/*// Apply the MVA cut and create the MVA plots
-void MyFrame::CreateMVAPlots(TTree *app, TMVA::Reader *reader, string mvamethod, float *obsvars, string signalName, int curtree, bool application, int mean)
-{
-   // Prepare colors for signal, background and MVA cut line
-   static Int_t c_SignalLine     = TColor::GetColor("#0000ee");
-   static Int_t c_SignalFill     = TColor::GetColor("#7d99d1");
-   static Int_t c_AllLine        = TColor::GetColor("#ff0000");
-   static Int_t c_AllFill        = TColor::GetColor("#ff0000");
-   static Int_t c_MvaCut         = TColor::GetColor("#ffff66");
-
-   vector<string> obs;
-
-   cout << "Selected observables:" << endl;
-   for(int i = 0; i < nrobs; i++)
-   {
-      if(obssel[i])
-      {
-	 obs.push_back(observables[i]);
-         cout << "- " << observables[i] << endl;
-      }
-   }
-   nrselobs = obs.size();
-
-cout << "Number of events in the tree = " << app->GetEntries() << endl;
-   
-   // All additional things we need for plotting
-   TLegend *legend;
-   TLine *line;
-   TH1F *basesig[nrselobs+1];
-   TH1F *baseback[nrselobs+1];
-
-   string *stemp;
-   stemp = new string[2];
-
-   int legendFill = 1001;
-   float *yhistlimit;
-   yhistlimit = new float[2];
-   int cnt;
-   double *dtemp;
-   dtemp = new double[2];
-
-   float *max;
-   int *sigcount, *backcount;
-   max = new float[nrselobs+1];
-   sigcount = new int[nrselobs+1];
-   backcount = new int[nrselobs+1];
-
-   gStyle->SetOptStat(0);
-
-   TCanvas *c1 = new TCanvas("c1","",1200,900);
-   c1->SetGrid();
-   c1->SetRightMargin(0.05);
-   c1->SetTopMargin(0.05);
-
-   // Prepare the histograms
-   for(int i = 0; i <= nrselobs; i++)
-   {
-      if(i < nrselobs)
-      {
-         SetupBinning(obs[i], yhistlimit);
-         stemp[0] = "basesig" + ToString(i);
-         basesig[i] = new TH1F(stemp[0].c_str(), obs[i].c_str(), 100, yhistlimit[0], yhistlimit[1]);
-         basesig[i]->SetBit(TH1::kCanRebin);
-         stemp[0] = "baseback" + ToString(i);
-         baseback[i] = new TH1F(stemp[0].c_str(), obs[i].c_str(), 100, yhistlimit[0], yhistlimit[1]);
-         baseback[i]->SetBit(TH1::kCanRebin);
-      }
-      else
-      {
-         SetupBinning("MVA", yhistlimit);
-         stemp[0] = "basesig" + ToString(i);
-         basesig[i] = new TH1F(stemp[0].c_str(), "mva", 100, yhistlimit[0], yhistlimit[1]);
-         basesig[i]->SetBit(TH1::kCanRebin);
-         stemp[0] = "baseback" + ToString(i);
-         baseback[i] = new TH1F(stemp[0].c_str(), "mva", 100, yhistlimit[0], yhistlimit[1]);
-         baseback[i]->SetBit(TH1::kCanRebin);
-      }
-
-      max[i] = 0.0;
-      sigcount[i] = 0;
-      backcount[i] = 0;
-   }
-
-   if(!application)
-      GetErrors(app, obsvars, obs, curtree);
-
-   // Parse values into histograms
-   for(int ievt = 0; ievt < app->GetEntries(); ievt++)
-   {
-      app->GetEntry(ievt);
-      cnt = 0;
-
-      for(int i = 0; i <= nrselobs; i++)
-      {
-         if(i < nrselobs)
-	 {
-cout << "  Event = " << ievt << ": values = " << obsvars[3*i] << ", " << obsvars[3*i+1] << ", " << obsvars[3*i+2] << ", observable = " << obs[i] << endl;
-            if(reader->EvaluateMVA(mvamethod.c_str()) >= (cutMva->widgetNE[0])->GetValue())
-            {
-               basesig[i]->Fill(obsvars[3*i]);
-               sigcount[i]++;
-	    }
-	    else
-	    {
-               baseback[i]->Fill(obsvars[3*i]);
-	       backcount[i]++;
-	    }
-	 }
-	 else
-	 {
-cout << "  MVA Event = " << ievt << ": value = " << reader->EvaluateMVA(mvamethod.c_str()) << ", observable = " << "MVA" << endl;
-            if(reader->EvaluateMVA(mvamethod.c_str()) >= (cutMva->widgetNE[0])->GetValue())
-            {
-               basesig[i]->Fill(reader->EvaluateMVA(mvamethod.c_str()));
-               sigcount[i]++;
-	    }
-	    else
-	    {
-               baseback[i]->Fill(reader->EvaluateMVA(mvamethod.c_str()));
-	       backcount[i]++;
-	    }
-	 }
-      }
-   }
-
-   cout << "Signal vs. background (" << app->GetTitle() << "):" << endl;
-   for(int i = 0; i <= nrselobs; i++)
-   {
-      if(i < nrselobs)
-         cout << " - " << obs[i] << " = " << sigcount[i] << " vs. " << backcount[i] << endl;
-      else
-         cout << " - MVA = " << sigcount[i] << " vs. " << backcount[i] << endl;
-   }
-
-   cout << endl;
-   cutResults.push_back(sigcount[0]);
-   cutResults.push_back(backcount[0]);
-
-   if(mean == 0)
-   {
-      stemp[1] = "mkdir -p " + (*currentAnalysisDir) + "/mean";
-      system(stemp[1].c_str());
-   }
-   else if(mean == -1)
-   {
-      stemp[1] = "mkdir -p " + (*currentAnalysisDir) + "/negerror";
-      system(stemp[1].c_str());
-   }
-   else if(mean == 1)
-   {
-      stemp[1] = "mkdir -p " + (*currentAnalysisDir) + "/poserror";
-      system(stemp[1].c_str());
-   }
-
-   for(int i = 0; i <= nrselobs; i++)
-   {
-      if(basesig[i]->GetMaximum() > max[i])
-         max[i] = basesig[i]->GetMaximum();
-      if(baseback[i]->GetMaximum() > max[i])
-         max[i] = baseback[i]->GetMaximum();
-
-//      cout << "Maximum = " << max[i] << endl;
-
-      basesig[i]->SetLineColor(c_SignalLine);
-      basesig[i]->SetLineWidth(2);
-      basesig[i]->SetFillColor(c_SignalFill);
-      basesig[i]->SetFillStyle(1001);
-      baseback[i]->SetLineColor(c_AllLine);
-      baseback[i]->SetLineWidth(2);
-      baseback[i]->SetFillColor(c_AllFill);
-      baseback[i]->SetFillStyle(3554);
-
-      basesig[i]->Draw();
-      baseback[i]->Draw("same");
-
-      basesig[i]->GetYaxis()->SetRangeUser(0.,max[i]*1.2);
-      basesig[i]->SetMaximum(max[i]*1.2);
-
-      if(i < nrselobs)
-         SetupAxis(basesig[i], obs[i]);
-      else
-      {
-         SetupAxis(basesig[i], "MVA");
-         line = new TLine((cutMva->widgetNE[0])->GetValue(), 0., (cutMva->widgetNE[0])->GetValue(), basesig[i]->GetMaximum());
-         line->SetLineWidth(2);
-         line->SetLineStyle(7);
-         line->SetLineColor(kOrange+2);
-         line->Draw("same");
-      }
-
-      // Draw legend
-      TLegend *legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-.12, gPad->GetLeftMargin()+.28, 1-gPad->GetTopMargin());
-      legend->SetFillStyle(legendFill);
-      legend->SetFillColor(c_MvaCut);
-      stemp[0] = "MVA cut background events (" + ToString(backcount[i]) + ")";
-      legend->AddEntry(baseback[i],stemp[0].c_str(),"f");
-      stemp[0] = "MVA cut signal events (" + ToString(sigcount[i]) + ")";
-      legend->AddEntry(basesig[i],stemp[0].c_str(),"f");
-      legend->SetBorderSize(1);
-      legend->SetMargin(0.3);
-      legend->Draw("same");
-
-      if(i < nrselobs)
-      {
-         if(mean == 0)	// mean values
-	 {
-            stemp[1] = (*currentAnalysisDir) + "/mean/mva_analysis_" + signalName + "_" + obs[i] + ".pdf";
-            c1->SaveAs(stemp[1].c_str());
-	 }
-	 else if(mean == -1)	// negative errors
-	 {
-            stemp[1] = (*currentAnalysisDir) + "/negerror/mva_analysis_" + signalName + "_" + obs[i] + ".pdf";
-            c1->SaveAs(stemp[1].c_str());
-	 }
-	 else if(mean == 1)	// positive errors
-	 {
-            stemp[1] = (*currentAnalysisDir) + "/poserror/mva_analysis_" + signalName + "_" + obs[i] + ".pdf";
-            c1->SaveAs(stemp[1].c_str());
-	 }
-      }
-      else
-      {
-         if(mean == 0)	// mean values
-	 {
-            stemp[1] = (*currentAnalysisDir) + "/mean/mva_analysis_" + signalName + "_MVA.pdf";
-            c1->SaveAs(stemp[1].c_str());
-	 }
-	 else if(mean == -1)	// negative errors
-	 {
-            stemp[1] = (*currentAnalysisDir) + "/negerror/mva_analysis_" + signalName + "_MVA.pdf";
-            c1->SaveAs(stemp[1].c_str());
-	 }
-	 else if(mean == 1)	// positive errors
-	 {
-            stemp[1] = (*currentAnalysisDir) + "/poserror/mva_analysis_" + signalName + "_MVA.pdf";
-            c1->SaveAs(stemp[1].c_str());
-	 }
-      }
-
-      delete legend;
-   }
-
-   delete[] max;
-   delete[] sigcount;
-   delete[] backcount;
-   for(int i = 0; i <= nrselobs; i++)
-   {
-      delete basesig[i];
-      delete baseback[i];
-   }
-   delete c1;
-
-   delete[] dtemp;
-   delete[] stemp;
-   delete[] yhistlimit;
-}*/
-
-void MyFrame::SetupBinning(string obs, float *limit)
-{
-   if(obs == "MVA")
-   {
-      limit[0] = mvalimit[0];
-      limit[1] = mvalimit[1];
-   }
-   else
-   {
-      limit[0] = generalObservables->GetMin(obs);
-      limit[1] = generalObservables->GetMax(obs);
-   }
-}
-
-void MyFrame::SetupAxis(TH1F *hist, string obs)
-{
-   string *obsdesc;
-   obsdesc = new string;
-
-   if(obs == "MVA")
-      *obsdesc = "MVA variable";
-   else
-      *obsdesc = generalObservables->GetLabel(obs);
-
-   hist->GetYaxis()->SetTitle("Number of events");
-   hist->GetXaxis()->SetTitle(obsdesc->c_str());
-
-   hist->GetXaxis()->SetTitleOffset(1.2);
-   hist->GetXaxis()->CenterTitle(kTRUE);
-   hist->GetXaxis()->SetLabelSize(0.028);
-   hist->GetXaxis()->SetLabelOffset(0.015);
-   hist->GetYaxis()->SetTitleOffset(1.3);
-   hist->GetYaxis()->CenterTitle(kTRUE);
-   hist->GetYaxis()->SetLabelSize(0.028);
-   hist->GetYaxis()->SetLabelOffset(0.015);
-
-   hist->SetTitle("");
-
-   delete obsdesc;
-}
-
 void MyFrame::GetErrors(TTree *app, float *obsvars, vector<string> obs, int curtree)
 {
    string *stemp;
    stemp = new string[2];
-   ofstream outFile;
+//NG   ofstream outFile;
+   TFile *outFile;
    double *dtemp;
    dtemp = new double[2];
 
    int cnt = 0;
 
-   // Delete the old MVA error files
-   stemp[0] = "rm -fr " + (*currentAnalysisDir) + "/mva_error" + ToString(curtree) + ".dat";
-
-   if(DBGSIG > 0)
-      cout << "# GetErrors             #: " << "Deleting old mva_error file: " << stemp[0] << endl;
-   system(stemp[0].c_str());
-
    if(DBGSIG > 1)
       cout << "# GetErrors             #: " << "Current tree = " << curtree << ", Observables size = " << nrselobs << endl;
 
+   if(curtree == 1)
+      outFile = TFile::Open(((*currentAnalysisDir) + "/mva_error.root").c_str(), "RECREATE");
+   else
+      outFile = TFile::Open(((*currentAnalysisDir) + "/mva_error.root").c_str(), "UPDATE");
+   
+   vector<float> errObs;
+   float errVals[2];
+
+   TTree *outTree = new TTree(("mva_error" + ToString(curtree)).c_str(), "MVA errors");
+   outTree->Branch("obs_errors", &errObs);
+   outTree->Branch("mva_errors", &errVals, "mva_errors[2]/F");
+
    for(int ievt = 0; ievt < app->GetEntries(); ievt++)
    {
-      outFile.open(((*currentAnalysisDir) + "/mva_error" + ToString(curtree) + ".dat").c_str(), ofstream::out | ofstream::app);
-      outFile << nrselobs << "\t";
+      errObs.clear();
      
       app->GetEntry(ievt);
 
@@ -1707,7 +1242,7 @@ void MyFrame::GetErrors(TTree *app, float *obsvars, vector<string> obs, int curt
       {
          if(DBGSIG > 1)
             cout << "# GetErrors             #: " << "j = " << j << ": observable value = " << obsvars[j] << endl;
-	 outFile << obsvars[j] << "\t";
+         errObs.push_back(obsvars[j]);
       }
       cnt = 0;
 
@@ -1719,7 +1254,7 @@ void MyFrame::GetErrors(TTree *app, float *obsvars, vector<string> obs, int curt
       eigenValMatNeg = new TMatrixD(nrselobs,nrselobs);
       eigenValMatPos = new TMatrixD(nrselobs,nrselobs);
      
-      if(DBGSIG > 0)
+      if(DBGSIG > 1)
          cout << "# GetErrors             #: " << "Covariance matrix:" << endl;
 
       for(int i = 0; i < nrselobs; i++)
@@ -1727,7 +1262,7 @@ void MyFrame::GetErrors(TTree *app, float *obsvars, vector<string> obs, int curt
 	 norm1[0] = ((obsvars[3*i] - statsMin[i])/(statsMax[i] - statsMin[i]))*2 - 1;
 	 norm1[1] = ((obsvars[3*i] - obsvars[3*i+1] - statsMin[i])/(statsMax[i] - statsMin[i]))*2 - 1;
 	 norm1[2] = ((obsvars[3*i] + obsvars[3*i+2] - statsMin[i])/(statsMax[i] - statsMin[i]))*2 - 1;
-         if(DBGSIG > 0)
+         if(DBGSIG > 1)
    	    cout << "# GetErrors             #: " << "Normalized values (" << obs[i] << "): " << norm1[0] << ", " << norm1[1] << ", " << norm1[2] << endl;
 
          for(int j = 0; j < nrselobs; j++)
@@ -1735,7 +1270,7 @@ void MyFrame::GetErrors(TTree *app, float *obsvars, vector<string> obs, int curt
 	    norm2[0] = ((obsvars[3*j] - statsMin[j])/(statsMax[j] - statsMin[j]))*2 - 1;
 	    norm2[1] = ((obsvars[3*j] - obsvars[3*j+1] - statsMin[j])/(statsMax[j] - statsMin[j]))*2 - 1;
 	    norm2[2] = ((obsvars[3*j] + obsvars[3*j+2] - statsMin[j])/(statsMax[j] - statsMin[j]))*2 - 1;
-            if(DBGSIG > 0)
+            if(DBGSIG > 1)
 	    {
 	       cout << "# GetErrors             #: " << "Xmin and Xmax (" << obs[j] << "): " << statsMin[j] << ", " << statsMax[j] << endl;
 	       cout << "# GetErrors             #: " << "Original values (" << obs[j] << "): " << obsvars[3*j] << ", " << obsvars[3*j] - obsvars[3*j+1] << ", " << obsvars[3*j] + obsvars[3*j+2] << endl;
@@ -1746,25 +1281,25 @@ void MyFrame::GetErrors(TTree *app, float *obsvars, vector<string> obs, int curt
 	    {
                (*covMatNeg)(i,j) = (*sigCorMat)(i,j)*(norm1[0]-norm1[1])*(norm2[0]-norm2[1]);
                (*covMatPos)(i,j) = (*sigCorMat)(i,j)*(norm1[2]-norm1[0])*(norm2[2]-norm2[0]);
-               if(DBGSIG > 0)
+               if(DBGSIG > 1)
 	          cout << "# GetErrors             #: " << "Signal (neg: " << (*sigCorMat)(i,j) << ", " << (norm1[0]-norm1[1]) << ", " << (norm2[0]-norm2[1]) << " = " << (*covMatNeg)(i,j) << ")" << endl;
 	    }
 	    else if((backgroundSelect->widgetCB)->GetSelection() == curtree-1)
 	    {
                (*covMatNeg)(i,j) = (*backCorMat)(i,j)*(norm1[0]-norm1[1])*(norm2[0]-norm2[1]);
                (*covMatPos)(i,j) = (*backCorMat)(i,j)*(norm1[2]-norm1[0])*(norm2[2]-norm2[0]);
-               if(DBGSIG > 0)
+               if(DBGSIG > 1)
 	          cout << "# GetErrors             #: " << "Background (neg: " << (*backCorMat)(i,j) << ", " << (norm1[0]-norm1[1]) << ", " << (norm2[0]-norm2[1]) << " = " << (*covMatNeg)(i,j) << ")" << endl;
 	    }
 	    else
 	    {
                (*covMatNeg)(i,j) = (*otherCorMat[curtree-1])(i,j)*(norm1[0]-norm1[1])*(norm2[0]-norm2[1]);
                (*covMatPos)(i,j) = (*otherCorMat[curtree-1])(i,j)*(norm1[2]-norm1[0])*(norm2[2]-norm2[0]);
-               if(DBGSIG > 0)
+               if(DBGSIG > 1)
 	          cout << "# GetErrors             #: " << "Others (neg: " << (*otherCorMat[curtree-1])(i,j) << ", " << (norm1[0]-norm1[1]) << ", " << (norm2[0]-norm2[1]) << " = " << (*covMatNeg)(i,j) << ")" << endl;
 	    }
 
-            if(DBGSIG > 0)
+            if(DBGSIG > 1)
                cout << "# GetErrors             #: " << " | " << (*covMatNeg)(i,j) << " | " << endl;
 
 	    eigenCovMat = new TMatrixDEigen((const TMatrixD)*covMatNeg);
@@ -1775,50 +1310,50 @@ void MyFrame::GetErrors(TTree *app, float *obsvars, vector<string> obs, int curt
 	    delete eigenCovMat;
          }
 
-         if(DBGSIG > 0)
+         if(DBGSIG > 1)
 	    cout << endl;
       }
 
       dtemp[0] = 0;
 
-      if(DBGSIG > 0)
+      if(DBGSIG > 1)
          cout << "# GetErrors             #: " << "Diagonalized matrix (negative error): ";
       for(int i = 0; i < nrselobs; i++)
       {
 	 dtemp[0] += TMath::Power((*eigenValMatNeg)(i,i),2);
-         if(DBGSIG > 0)
+         if(DBGSIG > 1)
             cout << (*eigenValMatNeg)(i,i) << " ";
       }
       
-      if(DBGSIG > 0)
+      if(DBGSIG > 1)
          cout << endl;
 
       dtemp[1] = TMath::Sqrt(dtemp[0]);
-      if(DBGSIG > 0)
+      if(DBGSIG > 1)
          cout << "# GetErrors             #: " << "MVA variable error (negative error) = " << dtemp[1] << endl;
 
-      outFile << dtemp[1] << "\t";
+      errVals[0] = dtemp[1];
 
       dtemp[0] = 0;
 
-      if(DBGSIG > 0)
+      if(DBGSIG > 1)
          cout << "# GetErrors             #: " << "Diagonalized matrix (positive error): ";
       for(int i = 0; i < nrselobs; i++)
       {
 	 dtemp[0] += TMath::Power((*eigenValMatPos)(i,i),2);
-         if(DBGSIG > 0)
+         if(DBGSIG > 1)
             cout << (*eigenValMatPos)(i,i) << " ";
       }
       
-      if(DBGSIG > 0)
+      if(DBGSIG > 1)
          cout << endl;
 
       dtemp[1] = TMath::Sqrt(dtemp[0]);
-      if(DBGSIG > 0)
+      if(DBGSIG > 1)
          cout << "# GetErrors             #: " << "MVA variable error (positive error) = " << dtemp[1] << endl << endl;
 
-      outFile << dtemp[1] << endl;
-      outFile.close();
+      errVals[1] = dtemp[1];
+      outTree->Fill();
 
       delete covMatNeg;
       delete covMatPos;
@@ -1827,6 +1362,9 @@ void MyFrame::GetErrors(TTree *app, float *obsvars, vector<string> obs, int curt
       delete[] norm2;
       delete[] norm1;
    }
+
+   outFile->Write();
+   delete outFile;
 
    delete[] stemp;
    delete[] dtemp;
@@ -1843,41 +1381,28 @@ void MyFrame::GetMvaError(int selection, double *outvalue)
    string *stemp;
    stemp = new string;
 
-   *stemp = (*currentAnalysisDir) + string("/mva_error") + ToString(selection) + string(".dat");
+   *stemp = (*currentAnalysisDir) + string("/mva_error.root");
    if(DBGSIG > 1)
       cout << "# GetMvaError           #: " << "File: " << *stemp << endl;
 
-   ifstream infile;
-   infile.open(stemp->c_str(), ifstream::in);
-   int size, obssize;
-   infile >> obssize;
-   size = 3*obssize + 3;
-   infile.seekg(0, infile.beg);
-   double *readVal;
-   readVal = new double[size];
    int vrstica[] = {0,0,0,0};
 
    vector<double> negarray;
    vector<double> posarray;
    
-   if(infile.is_open())
+   float errVals[2];
+
+   TFile *inFile = TFile::Open(stemp->c_str(), "READ");
+   TTree *inTree = (TTree*)inFile->Get(("mva_error" + ToString(selection)).c_str());
+   inTree->SetBranchAddress("mva_errors", &errVals);
+
+   for(int i = 0; i < inTree->GetEntries(); i++)
    {
-      while(1)
-      {
-         if(infile.eof()) break;
-
-	 for(int i = 0; i < size; i++)
-            infile >> readVal[i];
-
-	 negarray.push_back(readVal[size-2]);
-	 posarray.push_back(readVal[size-1]);
-
-	 infile.ignore(1,' ');
-	 vrstica[0]++;
-      }
+      inTree->GetEntry(i);
+      negarray.push_back(errVals[0]);
+      posarray.push_back(errVals[1]);
+      vrstica[0]++;
    }
-
-   infile.close();
 
    if(DBGSIG > 1)
       cout << "# GetMvaError           #: " << "Lines read = " << vrstica[0] << endl;
@@ -1913,5 +1438,4 @@ void MyFrame::GetMvaError(int selection, double *outvalue)
 
    delete[] dtemp;
    delete stemp;
-   delete[] readVal;
 }

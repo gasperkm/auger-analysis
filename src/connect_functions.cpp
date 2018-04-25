@@ -91,40 +91,7 @@ void MyFrame::EnableMvaFile(wxCommandEvent& event)
 	    }
 	 }
       }
-      // Add mixed combinations for background trees
-/*      if(mixednum == 3)
-      {
-	 stemp[1] = backgroundType[0] + " + " + backgroundType[1];
-	 (backgroundSelect->widgetCB)->Append(stemp[1]);
-	 stemp[1] = backgroundType[0] + " + " + backgroundType[2];
-	 (backgroundSelect->widgetCB)->Append(stemp[1]);
-	 stemp[1] = backgroundType[1] + " + " + backgroundType[2];
-	 (backgroundSelect->widgetCB)->Append(stemp[1]);
-      }
-      else if(mixednum == 4)
-      {
-	 stemp[1] = backgroundType[0] + " + " + backgroundType[1];
-	 (backgroundSelect->widgetCB)->Append(stemp[1]);
-	 stemp[1] = backgroundType[0] + " + " + backgroundType[2];
-	 (backgroundSelect->widgetCB)->Append(stemp[1]);
-	 stemp[1] = backgroundType[0] + " + " + backgroundType[3];
-	 (backgroundSelect->widgetCB)->Append(stemp[1]);
-	 stemp[1] = backgroundType[1] + " + " + backgroundType[2];
-	 (backgroundSelect->widgetCB)->Append(stemp[1]);
-	 stemp[1] = backgroundType[1] + " + " + backgroundType[3];
-	 (backgroundSelect->widgetCB)->Append(stemp[1]);
-	 stemp[1] = backgroundType[2] + " + " + backgroundType[3];
-	 (backgroundSelect->widgetCB)->Append(stemp[1]);
-
-	 stemp[1] = backgroundType[0] + " + " + backgroundType[1] + " + " + backgroundType[2];
-	 (backgroundSelect->widgetCB)->Append(stemp[1]);
-	 stemp[1] = backgroundType[0] + " + " + backgroundType[1] + " + " + backgroundType[3];
-	 (backgroundSelect->widgetCB)->Append(stemp[1]);
-	 stemp[1] = backgroundType[0] + " + " + backgroundType[2] + " + " + backgroundType[3];
-	 (backgroundSelect->widgetCB)->Append(stemp[1]);
-	 stemp[1] = backgroundType[1] + " + " + backgroundType[2] + " + " + backgroundType[3];
-	 (backgroundSelect->widgetCB)->Append(stemp[1]);
-      }*/
+      // TODO - Add mixed combinations for background trees
 
       // Select the signal tree
       if(oldselect[0] >= cnt)
@@ -1229,7 +1196,7 @@ void MyFrame::CreateTempEventFile(wxCommandEvent& event)
 void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
 {
    string *mvafile;
-   mvafile = new string[2];
+   mvafile = new string[3];
    string *stemp;
    stemp = new string[4];
    int *nrTreeEvents;
@@ -1241,302 +1208,332 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
 
    mvafile[0] = SelectMva();
 
-   if(!mvafile[0].empty())
+   if((cutEnergyBins->widgetNE[0])->GetValue() > 1)
    {
-      itemp[0] = 9;
-      itemp[1] = 0;
-
-      stemp[2] = "Currently performing the MVA analysis, please wait for it to finish.";
-      ShowProgress(wxT("Performing MVA analysis"), stemp[2], itemp[0]);
-
-/*      // DELETE
-      // Deleting all unneeded files
-      stemp[2] = "rm -fr " + RemoveFilename(&mvafile[0]) + "/mva_error*.dat " + RemoveFilename(&mvafile[0]) + "/mean " + RemoveFilename(&mvafile[0]) + "/negerror " + RemoveFilename(&mvafile[0]) + "/poserror ";//+ RemoveFilename(&mvafile[0]) + "/weights " + RemoveFilename(&mvafile[0]) + "/temporary_mvatree_file.root " + mvafile[0];
-      cout << stemp[2] << endl;
-      system(stemp[2].c_str());
-//      cin >> stemp[2];
-      // DELETE*/
-
-      cout << "# StartMvaAnalysis      #: " << "Opening file " << mvafile[0] << " for MVA analysis." << endl;
-
-      mvafile[1] = (selectedMva->widgetTE)->GetLineText(0);
-      tempAnalysisFile = RemoveFilename(&mvafile[0]) + "/temporary_mvatree_file.root";
-      nrTreeEvents = new int[nrkeys];
-      ret = MvaTreeFile(&mvafile[1], &tempAnalysisFile, nrTreeEvents);
-      if(ret == -1)
-      {
-	 progress->Update(itemp[0]);
-         AlertPopup("Invalid selection of signal and background trees", "The selected signal or background trees are invalid. Please make sure to correctly select them and that they are present inside the input file.");
-         delete[] mvafile;
-         delete[] stemp;
-         delete[] nrTreeEvents;
-         delete[] itemp;
-	 return;
-      }
-      itemp[1]++;
-      progress->Update(itemp[1]);
-
-      TFile *ifile = TFile::Open(tempAnalysisFile.c_str(), "READ");
-
-      // Open the file to write out to
-      TFile *ofile = TFile::Open(mvafile[0].c_str(), "RECREATE");
-      // Prepare the MVA Factory
-      // Factory usage:
-      // - user-defined job name, reappearing in names of weight files for training results ("TMVAClassification")
-      // - pointer to an output file (ofile)
-      // - options
-      // Factory has the following options:
-      //        V = verbose
-      //        Silent = batch mode
-      //        Color = colored screen output
-      //        DrawProgressBar = progress bar display during training and testing
-      //        Transformations = the transformations to make (identity, decorrelation, PCA, uniform, gaussian, gaussian decorrelation)
-      //        AnalysisType = setting the analysis type (Classification, Regression, Multiclass, Auto)
-      // Default values = !V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Auto
-      TMVA::Factory *factory = new TMVA::Factory("TMVAClassification",ofile,"!V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Classification");
-
-      // Selecting the weights directory
-      (TMVA::gConfig().GetIONames()).fWeightFileDir = ((*currentAnalysisDir) + "/weights").c_str();
-      cout << "# StartMvaAnalysis      #: " << "Weights directory after = " << (TMVA::gConfig().GetIONames()).fWeightFileDir << endl;
-      itemp[1]++;
-      progress->Update(itemp[1]);
-
-      // Adding observables to the Factory
-      nrTreeEvents[0] = 0;
-      for(int i = 0; i < nrobs; i++)
-      {
-         if(obssel[i])
-         {
-            factory->AddVariable(observables[i].c_str(), 'F');
-            cout << "# StartMvaAnalysis      #: " << "Adding variable: " << observables[i] << " (" << (int)obssel[i] << ")" << endl;
-            nrTreeEvents[0]++;
-         }
-      }
-      nrselobs = MvaNoteObservables(nrTreeEvents[0]);
-      itemp[1]++;
-      progress->Update(itemp[1]);
-
-      // Select signal and background trees (from the temporary input file)
-      TTree *signalTree, *backgroundTree[mixednum];
-      itemp[2] = 0;
-
-      nrTreeEvents[0] = -1;
-      nrTreeEvents[1] = -1;
-      TList *tempkeyslist = (TList*) ifile->GetListOfKeys();
-      for(int j = 1; j <= ifile->GetNkeys(); j++)
-      {
-         stemp[0] = string((tempkeyslist->At(j-1))->GetName());
-         stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
-         stemp[1] = RemovePath(&stemp[1]);
-
-	 // Signal tree setup
-         if( string((signalSelect->widgetCB)->GetStringSelection()) == stemp[1] )
-	 {
-            cout << "# StartMvaAnalysis      #: " << "Using signal tree: " << stemp[1] << endl;
-	    signalTree = (TTree*)ifile->Get(stemp[0].c_str());
-            nrTreeEvents[0] = signalTree->GetEntries();
-/*            itemp[1]++;
-            progress->Update(itemp[1]);*/
-	 }
-
-	 // Background tree setup
-	 stemp[3] = string((backgroundSelect->widgetCB)->GetStringSelection());
-	 if( stemp[3].find(stemp[1]) != string::npos )
-	 {
-            cout << "# StartMvaAnalysis      #: " << "Using background tree " << itemp[2] << ": " << stemp[1] << endl;
-	    backgroundTree[itemp[2]] = (TTree*)ifile->Get(stemp[0].c_str());
-            nrTreeEvents[1] = backgroundTree[itemp[2]]->GetEntries();
-	    itemp[2]++;
-	 }
-      }
-
-      itemp[1]++;
-      progress->Update(itemp[1]);
-
-      cout << "# StartMvaAnalysis      #: " << "Number of entries in signal tree = " << nrTreeEvents[0] << endl;
-      cout << "# StartMvaAnalysis      #: " << "Number of entries in background tree = " << nrTreeEvents[1] << endl;
-
-      // Add signal and background tree
-      factory->AddSignalTree(signalTree, 1.0);
-      for(int i = 0; i < itemp[2]; i++)
-         factory->AddBackgroundTree(backgroundTree[i], 1.0);
-
-      // Preparing and training from the trees:
-      // - preselection cuts make cuts on input variables, before even starting the MVA
-      // - options
-      // These are the possible options:
-      //        nTrain_Signal = number of training events of class Signal (0 takes all)
-      //        nTrain_Background = number of training events of class Background (0 takes all)
-      //        nTest_Signal = number of test events of class Signal (0 takes all)
-      //        nTest_Background = number of test events of class Background (0 takes all)
-      //        SplitMode = method of choosing training and testing events (Random, Alternate, Block)
-      //        NormMode = renormalisation of event-by-event weights for training (NumEvents: average weight of 1 per event for signal and background, EqualNumEvents: average weight of 1 per event for signal and sum of weights for background equal to sum of weights for signal, None)
-      //        V = verbose
-      //        MixMode = method of mixing events of different classes into one dataset (SameAsSplitMode, Random, Alternate, Block)
-      //        SplitSeed = seed for random event shuffling (default = 100)
-      //        VerboseLevel = level of verbose (Debug, Verbose, Info)
-      factory->PrepareTrainingAndTestTree("", "", "nTrain_Signal=0:nTrain_Background=0:SplitMode=Random:NormMode=NumEvents:!V");
-      itemp[1]++;
-      progress->Update(itemp[1]);
-
-      // Booking MVA methods:
-      // - type of MVA method to be used (all defined in src/Types.h)
-      // - the unique name for the MVA method suplied by the user
-      // - options
-      // The possible options for each method are defined here: http://tmva.sourceforge.net/optionRef.html
-      // For example:
-      //        H = print method-specific help message
-      //        V = verbose
-      //        NeuronType = neuron activation function type (default = sigmoid)
-      //        VarTransform = list of variable transformations to do before training (D_Background,P_Signal,G,N_AllClasses -> N = Normalization for all classes)
-      //        NCycles = number of training cycles
-      //        HiddenLayers = hidden layer architecture (default = N,N-1)
-      //        TestRate = test for overtraining at each #th epoch (default = 10)
-      //        TrainingMethod = train with back propagation (BP), BFGS algorithm (BFGS) or generic algorithm (GA)
-      //        UseRegulator = use regulator to avoid overtraining
-      if(BookTheMethod(factory) == -1)
-      {
-         progress->Update(itemp[0]);
-         ifile->Close();
-         delete factory;
-         ofile->Close();
-         AlertPopup("Invalid MVA method", "The selected MVA method is invalid. Please make sure it is correctly defined.");
-         delete[] mvafile;
-         delete[] stemp;
-         delete[] nrTreeEvents;
-         delete[] itemp;
-	 return;
-      }
-      itemp[1]++;
-      progress->Update(itemp[1]);
-
-      // Train the selected methods and save them to the weights folder
-      factory->TrainAllMethods();
-      itemp[1]++;
-      progress->Update(itemp[1]);
-      // Test the selected methods by applying the trained data to the test data set -> outputs saved to TestTree output file and then to the output ROOT file
-      factory->TestAllMethods();
-      itemp[1]++;
-      progress->Update(itemp[1]);
-      // Evaluation of methods printed to stdout
-      factory->EvaluateAllMethods();
-      itemp[1]++;
-      progress->Update(itemp[1]);
-
-      // Close the open files
-      ifile->Close();
-      delete factory;
-      ofile->Close();
-
-      // Copy the training values from results/transformation_stats.dat to the current analysis directory
-      stemp[3] = "cp -r " + string(rootdir) + "/results/transformation_stats.dat " + (*currentAnalysisDir) + "/";
-      system(stemp[3].c_str());
-
-      // Get MVA training values and variable correlations
-      sigCorMat = new TMatrixD(nrselobs, nrselobs);
-      backCorMat = new TMatrixD(nrselobs, nrselobs);
-      ret = GetTrainingShift(&mvafile[0]);
-      for(int i = 0; i < nrkeys; i++)
-         otherCorMat[i] = new TMatrixD(nrselobs, nrselobs);
-      GetApplyCorrelations(&tempAnalysisFile);
-
-      // Open the MVA GUI to review the training and testing procedure
       if((specialMva->widgetChBox[0])->IsChecked())
+         mvafile[2] = mvafile[0];
+   }
+
+   for(int imva = 0; imva < (cutEnergyBins->widgetNE[0])->GetValue(); imva++)
+   {
+      if(!mvafile[0].empty())
       {
-         TString *inname = new TString;
-	 *inname = (TString)mvafile[0];
-
-	 MvaEfficiency *effplot = new MvaEfficiency(nrTreeEvents[0], nrTreeEvents[1], currentAnalysisDir);
-	 effplot->RunMvaEfficiency(inname);
-
-         stemp[2] = "Finished running MVA analysis. For Signal/Background values of: [" + ToString(nrTreeEvents[0]) + "/" + ToString(nrTreeEvents[1]) + "] best cuts are (sig/bgd/pur/SNR):\n";
-	 stemp[2] = stemp[2] + "- Optimal cut: " + ToString(effplot->optimalCut, 4) + " (" + ToString(100.*(effplot->GetHistValue(0, 0)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(0, 1)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(0, 2)), 2) + "%/" + ToString(effplot->GetHistValue(0, 3), 4) + ")\n";
-	 stemp[2] = stemp[2] + "- Cut with equal Signal/Background: " + ToString(effplot->sigbgdCut, 4) + " (" + ToString(100.*(effplot->GetHistValue(1, 0)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(1, 1)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(1, 2)), 2) + "%/" + ToString(effplot->GetHistValue(1, 3), 4) + ")\n";
-	 stemp[2] = stemp[2] + "- Cut with equal Signal/Purity: " + ToString(effplot->sigpurCut, 4) + " (" + ToString(100.*(effplot->GetHistValue(2, 0)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(2, 1)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(2, 2)), 2) + "%/" + ToString(effplot->GetHistValue(2, 3), 4) + ")\n";
-
-         NEDialog cutMvaDialog(wxT("MVA cut"), wxSize(600,200), stemp[2], "Set MVA cut:", effplot->sigpurCut, &ID_MVACUTDIALOG);
-         cutMvaDialog.SetNEntryFormat(cutMvaDialog.widgetNE, 4, 0.0001, 0, 0., 0.);
-	 if(cutMvaDialog.ShowModal() == wxID_OK)
-            (cutMva->widgetNE[0])->SetValue(cutMvaDialog.GetNEValue());
-	 else
+         if(((cutEnergyBins->widgetNE[0])->GetValue() > 1) && ((specialMva->widgetChBox[0])->IsChecked()))
 	 {
+            mvafile[0] = mvafile[2];
+
+            stemp[2] = RemoveExtension(&mvafile[0]);
+            stemp[3] = ToString(TMath::Log10(ecutBins[imva]),2) + "-" + ToString(TMath::Log10(ecutBins[imva+1]),2);
+            ReplacePart(&stemp[2], "ENERGY", stemp[3]);
+            *currentAnalysisDir = stemp[2];
+            stemp[2] = "mkdir " + stemp[2];
+            cout << "Creating directory: " << stemp[2] << endl;
+            system(stemp[2].c_str());
+
+            ReplacePart(&mvafile[0], "ENERGY", stemp[3]);
+            mvafile[0] = (*currentAnalysisDir) + "/" + RemovePath(&mvafile[0]);
+            cout << "Running analysis with output: " << mvafile[0] << endl;
+
+	    (cutEnergyBins->widgetCB)->SetSelection(imva);
+	 }
+
+         itemp[0] = 9;
+         itemp[1] = 0;
+
+         stemp[2] = "Currently performing the MVA analysis, please wait for it to finish.";
+         ShowProgress(wxT("Performing MVA analysis"), stemp[2], itemp[0]);
+
+         cout << "# StartMvaAnalysis      #: " << "Opening file " << mvafile[0] << " for MVA analysis." << endl;
+
+         mvafile[1] = (selectedMva->widgetTE)->GetLineText(0);
+         tempAnalysisFile = RemoveFilename(&mvafile[0]) + "/temporary_mvatree_file.root";
+         nrTreeEvents = new int[nrkeys];
+         ret = MvaTreeFile(&mvafile[1], &tempAnalysisFile, nrTreeEvents);
+         if(ret == -1)
+         {
+            progress->Update(itemp[0]);
+            AlertPopup("Invalid selection of signal and background trees", "The selected signal or background trees are invalid. Please make sure to correctly select them and that they are present inside the input file.");
             delete[] mvafile;
             delete[] stemp;
             delete[] nrTreeEvents;
             delete[] itemp;
-	    delete effplot;
-	    delete inname;
-	    return;
+            return;
+         }
+         itemp[1]++;
+         progress->Update(itemp[1]);
+
+         TFile *ifile = TFile::Open(tempAnalysisFile.c_str(), "READ");
+
+         // Open the file to write out to
+         TFile *ofile = TFile::Open(mvafile[0].c_str(), "RECREATE");
+         // Prepare the MVA Factory
+         // Factory usage:
+         // - user-defined job name, reappearing in names of weight files for training results ("TMVAClassification")
+         // - pointer to an output file (ofile)
+         // - options
+         // Factory has the following options:
+         //        V = verbose
+         //        Silent = batch mode
+         //        Color = colored screen output
+         //        DrawProgressBar = progress bar display during training and testing
+         //        Transformations = the transformations to make (identity, decorrelation, PCA, uniform, gaussian, gaussian decorrelation)
+         //        AnalysisType = setting the analysis type (Classification, Regression, Multiclass, Auto)
+         // Default values = !V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Auto
+         TMVA::Factory *factory = new TMVA::Factory("TMVAClassification",ofile,"!V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Classification");
+
+         // Selecting the weights directory
+         (TMVA::gConfig().GetIONames()).fWeightFileDir = ((*currentAnalysisDir) + "/weights").c_str();
+         cout << "# StartMvaAnalysis      #: " << "Weights directory after = " << (TMVA::gConfig().GetIONames()).fWeightFileDir << endl;
+         itemp[1]++;
+         progress->Update(itemp[1]);
+
+         // Adding observables to the Factory
+         nrTreeEvents[0] = 0;
+         for(int i = 0; i < nrobs; i++)
+         {
+            if(obssel[i])
+            {
+               factory->AddVariable(observables[i].c_str(), 'F');
+               cout << "# StartMvaAnalysis      #: " << "Adding variable: " << observables[i] << " (" << (int)obssel[i] << ")" << endl;
+               nrTreeEvents[0]++;
+            }
+         }
+         nrselobs = MvaNoteObservables(nrTreeEvents[0]);
+         itemp[1]++;
+         progress->Update(itemp[1]);
+
+         // Select signal and background trees (from the temporary input file)
+         TTree *signalTree, *backgroundTree[mixednum];
+         itemp[2] = 0;
+
+         nrTreeEvents[0] = -1;
+         nrTreeEvents[1] = -1;
+         TList *tempkeyslist = (TList*) ifile->GetListOfKeys();
+         for(int j = 1; j <= ifile->GetNkeys(); j++)
+         {
+            stemp[0] = string((tempkeyslist->At(j-1))->GetName());
+            stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
+            stemp[1] = RemovePath(&stemp[1]);
+
+            // Signal tree setup
+            if( string((signalSelect->widgetCB)->GetStringSelection()) == stemp[1] )
+            {
+               cout << "# StartMvaAnalysis      #: " << "Using signal tree: " << stemp[1] << endl;
+               signalTree = (TTree*)ifile->Get(stemp[0].c_str());
+               nrTreeEvents[0] = signalTree->GetEntries();
+/*               itemp[1]++;
+               progress->Update(itemp[1]);*/
+            }
+
+            // Background tree setup
+            stemp[3] = string((backgroundSelect->widgetCB)->GetStringSelection());
+            if( stemp[3].find(stemp[1]) != string::npos )
+            {
+               cout << "# StartMvaAnalysis      #: " << "Using background tree " << itemp[2] << ": " << stemp[1] << endl;
+               backgroundTree[itemp[2]] = (TTree*)ifile->Get(stemp[0].c_str());
+               nrTreeEvents[1] = backgroundTree[itemp[2]]->GetEntries();
+               itemp[2]++;
+            }
+         }
+
+         itemp[1]++;
+         progress->Update(itemp[1]);
+
+         cout << "# StartMvaAnalysis      #: " << "Number of entries in signal tree = " << nrTreeEvents[0] << endl;
+         cout << "# StartMvaAnalysis      #: " << "Number of entries in background tree = " << nrTreeEvents[1] << endl;
+
+         // Add signal and background tree
+         factory->AddSignalTree(signalTree, 1.0);
+         for(int i = 0; i < itemp[2]; i++)
+            factory->AddBackgroundTree(backgroundTree[i], 1.0);
+
+         // Preparing and training from the trees:
+         // - preselection cuts make cuts on input variables, before even starting the MVA
+         // - options
+         // These are the possible options:
+         //        nTrain_Signal = number of training events of class Signal (0 takes all)
+         //        nTrain_Background = number of training events of class Background (0 takes all)
+         //        nTest_Signal = number of test events of class Signal (0 takes all)
+         //        nTest_Background = number of test events of class Background (0 takes all)
+         //        SplitMode = method of choosing training and testing events (Random, Alternate, Block)
+         //        NormMode = renormalisation of event-by-event weights for training (NumEvents: average weight of 1 per event for signal and background, EqualNumEvents: average weight of 1 per event for signal and sum of weights for background equal to sum of weights for signal, None)
+         //        V = verbose
+         //        MixMode = method of mixing events of different classes into one dataset (SameAsSplitMode, Random, Alternate, Block)
+         //        SplitSeed = seed for random event shuffling (default = 100)
+         //        VerboseLevel = level of verbose (Debug, Verbose, Info)
+         factory->PrepareTrainingAndTestTree("", "", "nTrain_Signal=0:nTrain_Background=0:SplitMode=Random:NormMode=NumEvents:!V");
+         itemp[1]++;
+         progress->Update(itemp[1]);
+
+         // Booking MVA methods:
+         // - type of MVA method to be used (all defined in src/Types.h)
+         // - the unique name for the MVA method suplied by the user
+         // - options
+         // The possible options for each method are defined here: http://tmva.sourceforge.net/optionRef.html
+         // For example:
+         //        H = print method-specific help message
+         //        V = verbose
+         //        NeuronType = neuron activation function type (default = sigmoid)
+         //        VarTransform = list of variable transformations to do before training (D_Background,P_Signal,G,N_AllClasses -> N = Normalization for all classes)
+         //        NCycles = number of training cycles
+         //        HiddenLayers = hidden layer architecture (default = N,N-1)
+         //        TestRate = test for overtraining at each #th epoch (default = 10)
+         //        TrainingMethod = train with back propagation (BP), BFGS algorithm (BFGS) or generic algorithm (GA)
+         //        UseRegulator = use regulator to avoid overtraining
+         if(BookTheMethod(factory) == -1)
+         {
+            progress->Update(itemp[0]);
+            ifile->Close();
+            delete factory;
+            ofile->Close();
+            AlertPopup("Invalid MVA method", "The selected MVA method is invalid. Please make sure it is correctly defined.");
+            delete[] mvafile;
+            delete[] stemp;
+            delete[] nrTreeEvents;
+            delete[] itemp;
+            return;
+         }
+         itemp[1]++;
+         progress->Update(itemp[1]);
+
+         // Train the selected methods and save them to the weights folder
+         factory->TrainAllMethods();
+         itemp[1]++;
+         progress->Update(itemp[1]);
+         // Test the selected methods by applying the trained data to the test data set -> outputs saved to TestTree output file and then to the output ROOT file
+         factory->TestAllMethods();
+         itemp[1]++;
+         progress->Update(itemp[1]);
+         // Evaluation of methods printed to stdout
+         factory->EvaluateAllMethods();
+         itemp[1]++;
+         progress->Update(itemp[1]);
+
+         // Close the open files
+         ifile->Close();
+         delete factory;
+         ofile->Close();
+
+         // Copy the training values from results/transformation_stats.dat to the current analysis directory
+         stemp[3] = "cp -r " + string(rootdir) + "/results/transformation_stats.dat " + (*currentAnalysisDir) + "/";
+         system(stemp[3].c_str());
+
+         // Get MVA training values and variable correlations
+         sigCorMat = new TMatrixD(nrselobs, nrselobs);
+         backCorMat = new TMatrixD(nrselobs, nrselobs);
+         ret = GetTrainingShift(&mvafile[0]);
+         for(int i = 0; i < nrkeys; i++)
+            otherCorMat[i] = new TMatrixD(nrselobs, nrselobs);
+         GetApplyCorrelations(&tempAnalysisFile);
+
+	 // Skip the GUI interface for best cut and automatically select signal/background
+         if(((cutEnergyBins->widgetNE[0])->GetValue() > 1) && ((specialMva->widgetChBox[0])->IsChecked()))
+	 {
+            TString *inname = new TString;
+            *inname = (TString)mvafile[0];
+
+            MvaEfficiency *effplot = new MvaEfficiency(nrTreeEvents[0], nrTreeEvents[1], currentAnalysisDir);
+            effplot->RunMvaEfficiency(inname);
+            // Selecting the signal/purity cut (not using signal/background or optimal)
+            (cutMva->widgetNE[0])->SetValue(effplot->sigpurCut);
+
+            delete effplot;
+            delete inname;
+	 }
+         // Open the MVA GUI to review the training and testing procedure
+	 else
+	 {
+            if((specialMva->widgetChBox[1])->IsChecked())
+            {
+               TString *inname = new TString;
+               *inname = (TString)mvafile[0];
+
+               MvaEfficiency *effplot = new MvaEfficiency(nrTreeEvents[0], nrTreeEvents[1], currentAnalysisDir);
+               effplot->RunMvaEfficiency(inname);
+
+               stemp[2] = "Finished running MVA analysis. For Signal/Background values of: [" + ToString(nrTreeEvents[0]) + "/" + ToString(nrTreeEvents[1]) + "] best cuts are (sig/bgd/pur/SNR):\n";
+               stemp[2] = stemp[2] + "- Optimal cut: " + ToString(effplot->optimalCut, 4) + " (" + ToString(100.*(effplot->GetHistValue(0, 0)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(0, 1)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(0, 2)), 2) + "%/" + ToString(effplot->GetHistValue(0, 3), 4) + ")\n";
+               stemp[2] = stemp[2] + "- Cut with equal Signal/Background: " + ToString(effplot->sigbgdCut, 4) + " (" + ToString(100.*(effplot->GetHistValue(1, 0)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(1, 1)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(1, 2)), 2) + "%/" + ToString(effplot->GetHistValue(1, 3), 4) + ")\n";
+               stemp[2] = stemp[2] + "- Cut with equal Signal/Purity: " + ToString(effplot->sigpurCut, 4) + " (" + ToString(100.*(effplot->GetHistValue(2, 0)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(2, 1)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(2, 2)), 2) + "%/" + ToString(effplot->GetHistValue(2, 3), 4) + ")\n";
+
+               NEDialog cutMvaDialog(wxT("MVA cut"), wxSize(600,200), stemp[2], "Set MVA cut:", effplot->sigpurCut, &ID_MVACUTDIALOG);
+               cutMvaDialog.SetNEntryFormat(cutMvaDialog.widgetNE, 4, 0.0001, 0, 0., 0.);
+               if(cutMvaDialog.ShowModal() == wxID_OK)
+                  (cutMva->widgetNE[0])->SetValue(cutMvaDialog.GetNEValue());
+               else
+               {
+                  delete[] mvafile;
+                  delete[] stemp;
+                  delete[] nrTreeEvents;
+                  delete[] itemp;
+                  delete effplot;
+                  delete inname;
+                  return;
+               }
+
+               delete effplot;
+               delete inname;
+            }
 	 }
 
-	 delete effplot;
-	 delete inname;
-/*         stemp[2] = "Finished running MVA analysis. Currently the cut is set to: " + ToString((cutMva->widgetNE[0])->GetValue(), 4) + "\nMake sure that the MVA cut is correct. Check for correct cuts by plotting \"(5a) Classifier Cut Efficiency\" at S/B values of: [" + ToString(nrTreeEvents[0]) + "/" + ToString(nrTreeEvents[1]) + "].\n";
-	 InfoPopup("MVA cut", stemp[2]);
+         stemp[2] = (methodsSelect->widgetCB)->GetStringSelection();
+         applymva = GetMethodName(stemp[2]);
 
-	 stemp[2] = string(rootdir) + "/bin/tmvagui " + mvafile[0];
-	 system(stemp[2].c_str());
+         if( applymva == "All" )
+         {
+            AlertPopup("Multiple MVA methods", "Multiple MVA methods selected. To continue applying MVA cuts, please select only one method and rerun the analysis.");
+            delete[] mvafile;
+            delete[] stemp;
+            delete[] nrTreeEvents;
+            delete[] itemp;
+            return;
+         }
 
-         NEDialog cutMvaDialog(wxT("MVA cut"), wxSize(250,110), "Set MVA cut:", (cutMva->widgetNE[0])->GetValue(), &ID_MVACUTDIALOG);
-         cutMvaDialog.SetNEntryFormat(cutMvaDialog.widgetNE, 4, 0.0001, 0, 0., 0.);
-	 if(cutMvaDialog.ShowModal() == wxID_OK)
-            (cutMva->widgetNE[0])->SetValue(cutMvaDialog.GetNEValue());*/
-      }
+         dtemp = new double[3];
+         dtemp[0] = (cutMva->widgetNE[0])->GetValue();
+         dtemp[1] = 0;
+         dtemp[2] = 0;
+         mvaresults = mvaresults + "\n\nResults for mean cut (" + ToString(dtemp[0], 4) + ")\n";
+         int selectedBin = (cutEnergyBins->widgetCB)->GetSelection();
+         mvaprintout = ToSciString(ecutBins[selectedBin], 4) + "\t" + ToSciString(ecutBins[selectedBin+1], 4) + "\n";
+         mvaprintout = mvaprintout + ToString(0) + "\t" + ToString(dtemp[0],4) + "\t";
+         MvaApplication(&tempAnalysisFile, false, 0);
 
-      stemp[2] = (methodsSelect->widgetCB)->GetStringSelection();
-      applymva = GetMethodName(stemp[2]);
+         freshAnalysis = true;
 
-      if( applymva == "All" )
-      {
-         AlertPopup("Multiple MVA methods", "Multiple MVA methods selected. To continue applying MVA cuts, please select only one method and rerun the analysis.");
-         delete[] mvafile;
-         delete[] stemp;
+         GetMvaError((dataSelect->widgetCB)->GetSelection()+1, dtemp);
+         (cutMva->widgetNE[0])->SetValue(dtemp[1]);
+         mvaresults = mvaresults + "\nResults for negative error cut (" + ToString(dtemp[1], 4) + ")\n";
+         mvaprintout = mvaprintout + ToString(-1) + "\t" + ToString(dtemp[1],4) + "\t";
+         MvaApplication(&tempAnalysisFile, freshAnalysis, -1);
+
+         (cutMva->widgetNE[0])->SetValue(dtemp[2]);
+         mvaresults = mvaresults + "\nResults for positive error cut (" + ToString(dtemp[2], 4) + ")\n";
+         mvaprintout = mvaprintout + ToString(1) + "\t" + ToString(dtemp[2],4) + "\t";
+         MvaApplication(&tempAnalysisFile, freshAnalysis, 1);
+
+         (cutMva->widgetNE[0])->SetValue(dtemp[0]);
+
+         // Show the results popup (only if running manually)
+         if(((cutEnergyBins->widgetNE[0])->GetValue() == 1) || (!(specialMva->widgetChBox[0])->IsChecked()))
+            InfoPopup("Finished applying MVA cut", mvaresults);
+
+         cout << "# StartMvaAnalysis      #: " << "MVA results:" << endl << mvaresults << endl;
+         cout << "# StartMvaAnalysis      #: " << "MVA printout:" << endl << mvaprintout << endl;
+
+         ofstream printoutFile;
+         printoutFile.open(((*currentAnalysisDir) + "/application_results.txt").c_str(), ofstream::out | ofstream::trunc );
+         printoutFile << mvaprintout;
+         printoutFile.close();
+
+         delete[] dtemp;
          delete[] nrTreeEvents;
-         delete[] itemp;
-	 return;
+
+         delete sigCorMat;
+         delete backCorMat;
+         for(int i = 0; i < nrkeys; i++)
+            delete otherCorMat[i];
       }
-
-      dtemp = new double[3];
-      dtemp[0] = (cutMva->widgetNE[0])->GetValue();
-      dtemp[1] = 0;
-      dtemp[2] = 0;
-      mvaresults = mvaresults + "\n\nResults for mean cut (" + ToString(dtemp[0], 4) + ")\n";
-      int selectedBin = (cutEnergyBins->widgetCB)->GetSelection();
-      mvaprintout = ToSciString(ecutBins[selectedBin], 4) + "\t" + ToSciString(ecutBins[selectedBin+1], 4) + "\n";
-      mvaprintout = mvaprintout + ToString(0) + "\t" + ToString(dtemp[0],4) + "\t";
-      MvaApplication(&tempAnalysisFile, false, 0);
-
-      freshAnalysis = true;
-
-      GetMvaError((dataSelect->widgetCB)->GetSelection()+1, dtemp);
-      (cutMva->widgetNE[0])->SetValue(dtemp[1]);
-      mvaresults = mvaresults + "\nResults for negative error cut (" + ToString(dtemp[1], 4) + ")\n";
-      mvaprintout = mvaprintout + ToString(-1) + "\t" + ToString(dtemp[1],4) + "\t";
-      MvaApplication(&tempAnalysisFile, freshAnalysis, -1);
-
-      (cutMva->widgetNE[0])->SetValue(dtemp[2]);
-      mvaresults = mvaresults + "\nResults for positive error cut (" + ToString(dtemp[2], 4) + ")\n";
-      mvaprintout = mvaprintout + ToString(1) + "\t" + ToString(dtemp[2],4) + "\t";
-      MvaApplication(&tempAnalysisFile, freshAnalysis, 1);
-
-      (cutMva->widgetNE[0])->SetValue(dtemp[0]);
-      InfoPopup("Finished applying MVA cut", mvaresults);
-
-      cout << "# StartMvaAnalysis      #: " << "MVA results:" << endl << mvaresults << endl;
-      cout << "# StartMvaAnalysis      #: " << "MVA printout:" << endl << mvaprintout << endl;
-
-      ofstream printoutFile;
-      printoutFile.open(((*currentAnalysisDir) + "/application_results.txt").c_str(), ofstream::out | ofstream::trunc );
-      printoutFile << mvaprintout;
-      printoutFile.close();
-
-      delete[] dtemp;
-      delete[] nrTreeEvents;
-
-      delete sigCorMat;
-      delete backCorMat;
-      for(int i = 0; i < nrkeys; i++)
-         delete otherCorMat[i];
    }
 
    delete[] mvafile;
@@ -1643,7 +1640,6 @@ void MyFrame::MvaApplication(string *infilename, bool application, int mean)
    else
       ifile = TFile::Open(infilename->c_str(), "READ");
 
-
    if(!(cutResults.empty()))
       cutResults.erase(cutResults.begin(), cutResults.end());
 
@@ -1661,13 +1657,10 @@ void MyFrame::MvaApplication(string *infilename, bool application, int mean)
       cout << string((backgroundSelect->widgetCB)->GetStringSelection()) << endl;
       cout << string((dataSelect->widgetCB)->GetStringSelection()) << endl;
 
-//      if( stemp[4].find(string((signalSelect->widgetCB)->GetStringSelection())) != string::npos )
       if( string((signalSelect->widgetCB)->GetStringSelection()).find(stemp[4]) != string::npos )
          mvaprintout = mvaprintout + ToString(1) + "\t";
-//      else if( stemp[4].find(string((backgroundSelect->widgetCB)->GetStringSelection())) != string::npos )
       else if( string((backgroundSelect->widgetCB)->GetStringSelection()).find(stemp[4]) != string::npos )
          mvaprintout = mvaprintout + ToString(2) + "\t";
-//      else if( stemp[4].find(string((dataSelect->widgetCB)->GetStringSelection())) != string::npos )
       else if( string((dataSelect->widgetCB)->GetStringSelection()).find(stemp[4]) != string::npos )
          mvaprintout = mvaprintout + ToString(3) + "\t";
       else
@@ -1756,7 +1749,8 @@ void MyFrame::SetDefaultMva(wxCommandEvent& event)
    (cutRisetime->widgetNE[0])->SetValue(0.3);
    (eyeSelection->widgetCB)->SetSelection(0);
 
-   (specialMva->widgetChBox[0])->SetValue(true);
+   (specialMva->widgetChBox[0])->SetValue(false);
+   (specialMva->widgetChBox[1])->SetValue(true);
 
    freshAnalysis = false;
 }
@@ -2138,212 +2132,6 @@ int MyFrame::StartFileSplit(string infile)
    delete obser_pos;
 
    return 0;
-
-/*   float *ftemp;
-   int *itemp;
-   string *stemp;
-   float *obsvars;
-   int rewritecode;
-   // Set the random seed
-   unsigned int randSeed = (unsigned int)chrono::system_clock::now().time_since_epoch().count();
-
-   ftemp = new float[2];
-   itemp = new int[4];
-   stemp = new string[5];
-
-   // Prepare the output filenames
-   stemp[0] = RemoveExtension(&infile) + "_split-1.root";
-   stemp[1] = RemoveExtension(&infile) + "_split-2.root";
-   
-   // Get the value for splitting (either fraction of events or number of events)
-   ftemp[0] = (startSplitting->widgetNE[0])->GetValue();
-   
-   // Open input file and save All Tree and list of keys
-   TFile *input = TFile::Open(infile.c_str(), "READ");
-   TTree *tempTree = (TTree*)input->Get("TreeA");
-   TList *tempkeyslist = (TList*)input->GetListOfKeys();
-   TTree *readTree;
-   TTree *writeTree;
-   
-   // Set the number of all events (itemp[0]), events in one output file (itemp[1]) and events in other output file (itemp[2])
-   itemp[0] = tempTree->GetEntries();
-   if(ftemp[0] < 1)
-      itemp[1] = (int)TMath::Ceil(itemp[0]*ftemp[0]);
-   else
-      itemp[1] = (int)TMath::Ceil(ftemp[0]);
-   itemp[2] = (int)(itemp[0]-itemp[1]);
-   
-   // If any of these are 0, cancel splitting
-   if( (itemp[0] == 0) || (itemp[1] == 0) || (itemp[2] <= 0) )
-   {
-      AlertPopup("No events in split file", "One of the split files will have no events (" + ToString(itemp[1]) + "/" + ToString(itemp[2]) + "). Total number of events is " + ToString(itemp[0]) + ". Please adjust the split setting accordingly and restart.");
-
-      delete[] ftemp;
-      delete[] itemp;
-      delete[] stemp;
-      input->Close();
-
-      return 1;
-   }
-   else
-   {
-      // Open a dialog to select the random seed
-      stemp[2] = "Selecting random seed for splitting the rewritten ADST file into two parts.\nThe current seed is selected randomly based on time.\n";
-      cout << "# Random seed = " << randSeed << endl;
-      NEDialog randomseedDialog(wxT("Random seed"), wxSize(500,200), stemp[2], "Set MVA cut:", randSeed, &ID_RANDSEEDDIALOG);
-      randomseedDialog.SetNEntryFormat(randomseedDialog.widgetNE, 0, 1, 2, 0, 10000000000);
-      if(randomseedDialog.ShowModal() == wxID_OK)
-      {
-         randSeed = (unsigned int)randomseedDialog.GetNEValue();
-         cout << "# Selected random seed is: " << randSeed << endl;
-      }
-      else
-      {
-         delete[] ftemp;
-         delete[] itemp;
-         delete[] stemp;
-         input->Close();
-
-         return 1;
-      }
-
-      // Printout some information about splitting the files
-      itemp[3] = 0;
-      stemp[2] = "Currently splitting file\n   " + RemovePath(&infile) + "        \t" + ToString(itemp[0]) + " events\ninto two files:\n   " + RemovePath(&stemp[0]) + "\t" + ToString(itemp[1]) + " events\n   " + RemovePath(&stemp[1])+ "\t" + ToString(itemp[2]) + " events\n\nPlease wait for it to finish.";
-      ShowProgress(wxT("Splitting rewritten ADST file"), stemp[2].c_str(), 2*(input->GetNkeys())*itemp[0]);
-
-      cout << "# Will start splitting file " << RemovePath(&infile) << " into:" << endl;
-      cout << "# - First file:  " << RemovePath(&stemp[0]) << " (" << itemp[1] << " of " << itemp[0] << " total events)" << endl;
-      cout << "# - Second file: " << RemovePath(&stemp[1]) << " (" << itemp[2] << " of " << itemp[0] << " total events)" << endl;
-   
-      // Preparing shuffled list for sampling (saving to two vectors with event numbers)
-      vector<int> shuflist;
-      for(int i = 0; i < itemp[0]; i++)
-         shuflist.push_back(i);
-   
-      shuffle(shuflist.begin(), shuflist.end(), default_random_engine(randSeed));
-//      shuffle(shuflist.begin(), shuflist.end(), default_random_engine((unsigned int)chrono::system_clock::now().time_since_epoch().count()));
-
-      vector<int> split1list;
-      vector<int> split2list;
-      vector<int> seleye;
-
-      for(int i = 0; i < itemp[0]; i++)
-      {
-         if(i < itemp[1])
-            split1list.push_back(shuflist[i]);
-	 else
-            split2list.push_back(shuflist[i]);
-      }
-
-      // Determine the type of observables to cut on (SD or FD)
-      selcuttype = (cutObservables->widgetCB)->GetSelection();
-      // Determine how eye selection should be handled (any eye inside selection or average)
-      seleyetype = (eyeSelection->widgetCB)->GetSelection();
-
-      // Loop over the two split files
-      TFile *output;
-      for(int i = 0; i < 2; i++)
-      {
-         cout << "# Currently writing out to: " << stemp[i] << endl;
-         output = TFile::Open(stemp[i].c_str(), "RECREATE");
-
-         // Loop over all trees
-         for(int k = 0; k < input->GetNkeys(); k++)
-         {
-            // Prepare observables for reading and writing
-            Observables *obser = new Observables(observables);
-            Observables *obser_neg = new Observables(observables);
-            Observables *obser_pos = new Observables(observables);
-
-            // Name and title of the current tree
-            stemp[2] = string((tempkeyslist->At(k))->GetName());
-            stemp[3] = string((tempkeyslist->At(k))->GetTitle());
-
-            cout << "#   Currently selected tree: " << stemp[2] << "; " << stemp[3] << endl;
-
-            // Prepare tree for reading
-            readTree = (TTree*)input->Get(stemp[2].c_str());
-            readTree->SetBranchAddress("rewritecode", &rewritecode);
-            for(int j = 0; j < nrobs; j++)
-            {
-               readTree->SetBranchAddress((obser->GetName(j)).c_str(), obser->obsstruct[j].value);
-               readTree->SetBranchAddress((obser->GetName(j) + "_neg").c_str(), obser_neg->obsstruct[j].value);
-               readTree->SetBranchAddress((obser->GetName(j) + "_pos").c_str(), obser_pos->obsstruct[j].value);
-            }
-
-            // Prepare tree for writing
-	    if( (stemp[3].compare("Signal tree from old file.") == 0) || (stemp[3].compare("Signal tree from new file.") == 0) || (stemp[3].compare("Background tree with all events, including signal events.") == 0) )
-	       stemp[4] = stemp[3];
-	    else
-               stemp[4] = stemp[3] + "-split" + ToString(i+1);
-            writeTree = new TTree(stemp[2].c_str(), stemp[4].c_str());
-            writeTree->Branch("rewritecode", &rewritecode, "rewritecode/I");
-            for(int j = 0; j < nrobs; j++)
-            {
-               writeTree->Branch((obser->GetName(j)).c_str(), &(obser->obsstruct[j].value), (obser->GetName(j) + "[" + ToString(ALLEYES) + "]/F").c_str());
-               writeTree->Branch((obser->GetName(j) + "_neg").c_str(), &(obser_neg->obsstruct[j].value), (obser->GetName(j) + "_neg[" + ToString(ALLEYES) + "]/F").c_str());
-               writeTree->Branch((obser->GetName(j) + "_pos").c_str(), &(obser_pos->obsstruct[j].value), (obser->GetName(j) + "_pos[" + ToString(ALLEYES) + "]/F").c_str());
-            }
-
-	    // Check if the values in this tree are valid
-	    if( (stemp[3].compare("Signal tree from old file.") == 0) || (stemp[3].compare("Signal tree from new file.") == 0) )
-	    {
-	       // Update the progress bar
-	       itemp[3]+=itemp[0];
-               progress->Update(itemp[3]);
-	    }
-	    else
-	    {
-               // Loop over all events 
-               for(int j = 0; j < itemp[0]; j++)
-               {
-                  readTree->GetEntry(j);
-
-                  // Check if event is inside the selected cuts
-                  if(!seleye.empty()) seleye.erase(seleye.begin(), seleye.end());
-
-                  if(DBGSIG > 1)
-                     cout << "# MvaSetTrees           #: " << "Event = " << j << endl;
-                  ret = IsInsideCuts(obser, obser_neg, obser_pos, &seleye, true);
-
-                  // Select the correct tree to write to
-		  if(ret != -1)
-		  {
-                     if( (find(split1list.begin(), split1list.end(), j) != split1list.end()) && (i == 0) )
-                        writeTree->Fill();
-                     if( (find(split2list.begin(), split2list.end(), j) != split2list.end()) && (i == 1) )
-                        writeTree->Fill();
-		  }
-		  else
-                     cout << "# MvaSetTrees           #: " << "Event = " << j << " is outside the selected cuts." << endl;
-
-	          // Update the progress bar
-	          itemp[3]++;
-	          if(itemp[3]%((int)(2*(input->GetNkeys())*itemp[0]*0.05)) == 0)
-                     progress->Update(itemp[3]);
-               }
-	    }
-
-	    writeTree->Write();
-
-	    delete obser;
-	    delete obser_neg;
-	    delete obser_pos;
-	    delete writeTree;
-         }
-
-	 output->Close();
-      }
-
-      progress->Update(2*(input->GetNkeys())*itemp[0]);
-   }
-
-   delete[] ftemp;
-   delete[] itemp;
-   delete[] stemp;
-
-   return 0;*/
 }
 
 // Combine the observables from multiple ADST files into a single root file

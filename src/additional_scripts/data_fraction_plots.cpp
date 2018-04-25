@@ -19,6 +19,90 @@ void SetColor(TGraphAsymmErrors *gr, int cur, int nrbins)
    gr->SetLineWidth(2);
 }
 
+void NormalizeFrac(int nr, float **sig, float **back, float **data, double *dtemp)
+{
+   cerr << nr << ", Mean: x_sig = " << sig[0][nr] << ", x_back = "  << back[0][nr] << ", x_d = " << data[0][nr] << endl;
+   cerr << nr << ", Neg:  x_sig = " << sig[1][nr] << ", x_back = "  << back[1][nr] << ", x_d = " << data[1][nr] << endl;
+   cerr << nr << ", Pos:  x_sig = " << sig[2][nr] << ", x_back = "  << back[2][nr] << ", x_d = " << data[2][nr] << endl;
+
+//   dtemp[0] = 1. - back[0][nr];
+   // calculate the normalized fraction
+   dtemp[0] = (data[0][nr] - back[0][nr])/(sig[0][nr] - back[0][nr]);
+   cout << "Step 1 = " << dtemp[0] << endl;
+   // calculate neg propagation error with respect to x_d (d(x_d,norm)/d(x_d))*delta(x_d)
+   dtemp[1] = TMath::Power(data[1][nr]/(sig[0][nr] - back[0][nr]), 2);
+   cout << "Step 2 = " << TMath::Power(data[1][nr]/(sig[0][nr] - back[0][nr]), 2) << endl;
+   // calculate neg propagation error with respect to x_sig (d(x_d,norm)/d(x_sig))*delta(x_sig)
+   dtemp[1] += TMath::Power(sig[1][nr]*(data[0][nr] - back[0][nr])/TMath::Power(sig[0][nr] - back[0][nr], 2), 2);
+   cout << "Step 3 = " << TMath::Power(sig[1][nr]*(data[0][nr] - back[0][nr])/TMath::Power(sig[0][nr] - back[0][nr], 2), 2) << endl;
+   // calculate neg propagation error with respect to x_back (d(x_d,norm)/d(x_back))*delta(x_back)
+   dtemp[1] += TMath::Power(back[1][nr]*(data[0][nr] - sig[0][nr])/TMath::Power(sig[0][nr] - back[0][nr], 2), 2);
+   cout << "Step 4 = " << TMath::Power(back[1][nr]*(data[0][nr] - sig[0][nr])/TMath::Power(sig[0][nr] - back[0][nr], 2), 2) << endl;
+   dtemp[1] = TMath::Sqrt(dtemp[1]);
+   cout << "Step 5 = " << TMath::Sqrt(dtemp[1]) << endl;
+   // calculate pos propagation error with respect to x_d (d(x_d,norm)/d(x_d))*delta(x_d)
+   dtemp[2] = TMath::Power(data[2][nr]/(sig[0][nr] - back[0][nr]), 2);
+   // calculate pos propagation error with respect to x_sig (d(x_d,norm)/d(x_sig))*delta(x_sig)
+   dtemp[2] += TMath::Power(sig[2][nr]*(data[0][nr] - back[0][nr])/TMath::Power(sig[0][nr] - back[0][nr], 2), 2);
+   // calculate pos propagation error with respect to x_back (d(x_d,norm)/d(x_back))*delta(x_back)
+   dtemp[2] += TMath::Power(back[2][nr]*(data[0][nr] - sig[0][nr])/TMath::Power(sig[0][nr] - back[0][nr], 2), 2);
+   dtemp[2] = TMath::Sqrt(dtemp[2]);
+   
+   cout << nr << ": Normfrac = " << dtemp[0] << ", Normfrac neg error = " << dtemp[1] << ", Normfrac pos error = " << dtemp[2] << endl;
+}
+
+// Read published lnA results to add them to the plot (type: 0 = EPOS, 1 = QGSJETII, 2 = SIBYLL)
+int ReadLnaResults(vector<float> *val, int type)
+{
+   ifstream infile;
+   char ctemp[1024];
+   float *ftemp;
+   int nrp = 0;
+
+   string stemp;
+   if(type == 0)
+      stemp = string(rootdir) + "/input/lnA_moments_epos.txt";
+   else if(type == 1)
+      stemp = string(rootdir) + "/input/lnA_moments_qgs.txt";
+   else if(type == 2)
+      stemp = string(rootdir) + "/input/lnA_moments_sib.txt";
+   else
+      return -1;
+
+   ftemp = new float[10];
+
+   infile.open(stemp.c_str(), ifstream::in);
+
+   if(infile.is_open())
+   {
+      infile.getline(ctemp, 1024, '\n');
+      
+      while(1)
+      {
+	 for(int i = 0; i < 10; i++)
+            infile >> ftemp[i];
+
+	 if(ftemp[0] > 18.40)
+	 {
+            val->push_back(ftemp[0]);
+            val->push_back(ftemp[1]);
+            val->push_back(ftemp[2]);
+
+	    nrp++;
+	 }
+
+	 infile.ignore(1,' ');
+	 if(infile.eof()) break;
+      }
+   }
+
+   infile.close();
+
+   delete[] ftemp;
+
+   return nrp;
+}
+
 int main(int argc, char **argv)
 {
    float yrange[2];
@@ -31,6 +115,7 @@ int main(int argc, char **argv)
    double *dtemp;
    bool runnorm;
    bool autoFrac;
+   bool simplNorm;
    bool xErrors;
    string plotInstr[2];
 
@@ -41,11 +126,11 @@ int main(int argc, char **argv)
    string filename;
    if(argc > 1)
    {
-      ftemp = new float[3];
+      ftemp = new float[4];
       ctemp = new char;
       stemp = new string[3];
       itemp = new int[2];
-      dtemp = new double[2];
+      dtemp = new double[3];
 
       bool plottest[2] = {false, false};
 
@@ -113,6 +198,25 @@ int main(int argc, char **argv)
 	 else
             autoFrac = false;
 
+	 if(fraction == -1)
+	 {
+            cout << "Use a simplified normalization approach, without knowing signal fraction (1 = yes, 0 = no): ";
+            cin >> itemp[0];
+	    while( (itemp[0] != 0) && (itemp[0] != 1) )
+	    {
+               cout << "Use a simplified normalization approach, without knowing signal fraction (1 = yes, 0 = no): ";
+               cin >> itemp[0];
+	    }
+	    if(itemp[0] == 1)
+               simplNorm = true;
+	    else if(itemp[0] == 0)
+               simplNorm = false;
+	    else
+               return 1;
+	 }
+	 else
+            simplNorm = false;
+
          nrbins = argc-1;
          cout << "Number of bins on the plot = " << nrbins << endl;
 
@@ -121,6 +225,7 @@ int main(int argc, char **argv)
          float *ybinSig[3];
          float *ybinSigNorm[3];
          float *ybinBack[3];
+	 float *ybinBackInv[3];
          float *ybinBackNorm[3];
          float *ybinData[3];
          float *ybinDataNorm[3];
@@ -130,6 +235,10 @@ int main(int argc, char **argv)
 	 float *ylowlimitfrac, *yhighlimitfrac;
 
 	 vector<string> treeName;
+	 vector<int> treeId;
+
+	 double sigType;
+	 double backType;
 
          for(int i = 0; i < 3; i++)
          {
@@ -137,20 +246,21 @@ int main(int argc, char **argv)
             ybinSig[i] = new float[nrbins];
             ybinSigNorm[i] = new float[nrbins];
             ybinBack[i] = new float[nrbins];
+            ybinBackInv[i] = new float[nrbins];
             ybinBackNorm[i] = new float[nrbins];
             ybinData[i] = new float[nrbins];
             ybinDataNorm[i] = new float[nrbins];
             ybinDataLna[i] = new float[nrbins];
             ybinDataLnaNorm[i] = new float[nrbins];
 
-	    if(autoFrac)
+	    if(autoFrac && !simplNorm)
 	    {
 	       ylowfractest[i] = new float[nrbins];
 	       yhighfractest[i] = new float[nrbins];
 	    }
          }
 
-	 if(autoFrac)
+	 if(autoFrac && !simplNorm)
          {
             ylowlimitfrac = new float[nrbins];
             yhighlimitfrac = new float[nrbins];
@@ -162,8 +272,18 @@ int main(int argc, char **argv)
             filename = string(argv[i+1]);
             analRes->ReadFile(filename);
 
-	    // Get tree name
-	    treeName.push_back(analRes->GetTreeName(i));
+	    if(i == 0)
+	    {
+               for(int j = 0; j < analRes->GetNrTrees(0); j++)
+	       {
+	          // Get tree name and type
+                  if(analRes->GetTreeType(j) > 0)
+		  {
+                     treeName.push_back(analRes->GetTreeName(j));
+	             treeId.push_back(analRes->GetTreeType(j));
+		  }
+	       }
+	    }
 
             // Getting xbin values
             xbin[0][i] = analRes->GetEnergy();
@@ -190,6 +310,11 @@ int main(int argc, char **argv)
             analRes->GetFractionError(ftemp);
             ybinBack[1][i] = ftemp[0];
             ybinBack[2][i] = ftemp[1];
+
+            // Inverted background values (get fraction instead of purity)
+            ybinBackInv[0][i] = 1. - ybinBack[0][i];
+            ybinBackInv[1][i] = ybinBack[1][i];
+            ybinBackInv[2][i] = ybinBack[2][i];
 
             // Getting data ybin values
             ybinData[0][i] = analRes->GetFraction(2, -1);
@@ -219,36 +344,98 @@ int main(int argc, char **argv)
             }
 	    else
 	    {
-	       // Getting the extreme value of normalization for data -> fraction is 0
-               ylowfractest[0][i] = analRes->GetFraction(2, 0.);
-               analRes->GetFractionError(ftemp);
-               ylowfractest[1][i] = ftemp[0];
-               ylowfractest[2][i] = ftemp[1];
+               if(simplNorm)
+	       {
+/*                  // x_d,norm = (x_d - x_back)/(x_sig - x_back)
+                  ybinSigNorm[0][i] = analRes->GetFraction(1, -1);
+                  analRes->GetFractionError(ftemp);
+                  ybinSigNorm[1][i] = ftemp[0];
+                  ybinSigNorm[2][i] = ftemp[1];
 
-	       // Getting the extreme value of normalization for data -> fraction is 1
-               yhighfractest[0][i] = analRes->GetFraction(2, 1.);
-               analRes->GetFractionError(ftemp);
-               yhighfractest[1][i] = ftemp[0];
-               yhighfractest[2][i] = ftemp[1];
+                  ybinBackNorm[0][i] = analRes->GetFraction(0, -1);
+                  analRes->GetFractionError(ftemp);
+                  ybinBackNorm[1][i] = ftemp[0];
+                  ybinBackNorm[2][i] = ftemp[1];
 
-	       ybinSigNorm[0][i] = 0.;
-	       ybinSigNorm[1][i] = 0.;
-	       ybinSigNorm[2][i] = 0.;
+                  // Getting data ybin values (normalized)
+                  ybinDataNorm[0][i] = analRes->GetFraction(2, -1);
+                  analRes->GetFractionError(ftemp);
+                  ybinDataNorm[1][i] = ftemp[0];
+                  ybinDataNorm[2][i] = ftemp[1];*/
 
-	       ybinBackNorm[0][i] = 0.;
-	       ybinBackNorm[1][i] = 0.;
-	       ybinBackNorm[2][i] = 0.;
+		  NormalizeFrac(i, ybinSig, ybinBackInv, ybinSig, dtemp);
 
-	       ybinDataNorm[0][i] = 0.;
-	       ybinDataNorm[1][i] = 0.;
-	       ybinDataNorm[2][i] = 0.;
+		  ybinSigNorm[0][i] = dtemp[0];
+                  ybinSigNorm[1][i] = dtemp[1];
+                  ybinSigNorm[2][i] = dtemp[2];
 
-	       runnorm = false;
+		  NormalizeFrac(i, ybinSig, ybinBackInv, ybinBackInv, dtemp);
+
+		  ybinBackNorm[0][i] = dtemp[0];
+                  ybinBackNorm[1][i] = dtemp[1];
+                  ybinBackNorm[2][i] = dtemp[2];
+
+		  NormalizeFrac(i, ybinSig, ybinBackInv, ybinData, dtemp);
+
+		  ybinDataNorm[0][i] = dtemp[0];
+                  ybinDataNorm[1][i] = dtemp[1];
+                  ybinDataNorm[2][i] = dtemp[2];
+/*
+	          ftemp[0] = 1. - ybinBackNorm[0][i];
+                  // calculate the normalized fraction
+	          ftemp[1] = (ybinDataNorm[0][i] - ftemp[0])/(ybinSigNorm[0][i] - ftemp[0]);
+	          // calculate neg propagation error with respect to x_d (d(x_d,norm)/d(x_d))*delta(x_d)
+	          ftemp[2] = TMath::Power(ybinDataNorm[1][i]/(ybinSigNorm[0][i] - ftemp[0]), 2);
+	          // calculate neg propagation error with respect to x_sig (d(x_d,norm)/d(x_sig))*delta(x_sig)
+	          ftemp[2] += TMath::Power(ybinSigNorm[1][i]*(ybinDataNorm[0][i] - ftemp[0])/TMath::Power(ybinSigNorm[0][i] - ftemp[0], 2), 2);
+	          // calculate neg propagation error with respect to x_back (d(x_d,norm)/d(x_back))*delta(x_back)
+	          ftemp[2] += TMath::Power(ybinBackNorm[1][i]*(ybinDataNorm[0][i] - ybinSigNorm[0][i])/TMath::Power(ybinSigNorm[0][i] - ftemp[0], 2), 2);
+	          ftemp[2] = TMath::Sqrt(ftemp[2]);
+	          // calculate pos propagation error with respect to x_d (d(x_d,norm)/d(x_d))*delta(x_d)
+	          ftemp[3] = TMath::Power(ybinDataNorm[2][i]/(ybinSigNorm[0][i] - ftemp[0]), 2);
+	          // calculate pos propagation error with respect to x_sig (d(x_d,norm)/d(x_sig))*delta(x_sig)
+	          ftemp[3] += TMath::Power(ybinSigNorm[2][i]*(ybinDataNorm[0][i] - ftemp[0])/TMath::Power(ybinSigNorm[0][i] - ftemp[0], 2), 2);
+	          // calculate pos propagation error with respect to x_back (d(x_d,norm)/d(x_back))*delta(x_back)
+	          ftemp[3] += TMath::Power(ybinBackNorm[2][i]*(ybinDataNorm[0][i] - ybinSig[0][i])/TMath::Power(ybinSigNorm[0][i] - ftemp[0], 2), 2);
+	          ftemp[3] = TMath::Sqrt(ftemp[3]);
+
+	          cout << i << ": Back = " << ftemp[0] << ", Normfrac = " << ftemp[1] << ", Normfrac neg error = " << ftemp[2] << ", Normfrac pos error = " << ftemp[3] << endl;
+*/
+	          runnorm = true;
+	       }
+	       else
+	       {
+	          // Getting the extreme value of normalization for data -> fraction is 0
+                  ylowfractest[0][i] = analRes->GetFraction(2, 0.);
+                  analRes->GetFractionError(ftemp);
+                  ylowfractest[1][i] = ftemp[0];
+                  ylowfractest[2][i] = ftemp[1];
+
+	          // Getting the extreme value of normalization for data -> fraction is 1
+                  yhighfractest[0][i] = analRes->GetFraction(2, 1.);
+                  analRes->GetFractionError(ftemp);
+                  yhighfractest[1][i] = ftemp[0];
+                  yhighfractest[2][i] = ftemp[1];
+
+	          ybinSigNorm[0][i] = 0.;
+	          ybinSigNorm[1][i] = 0.;
+	          ybinSigNorm[2][i] = 0.;
+
+	          ybinBackNorm[0][i] = 0.;
+	          ybinBackNorm[1][i] = 0.;
+	          ybinBackNorm[2][i] = 0.;
+
+	          ybinDataNorm[0][i] = 0.;
+	          ybinDataNorm[1][i] = 0.;
+	          ybinDataNorm[2][i] = 0.;
+
+	          runnorm = false;
+	       }
 	    }
          }
 
 	 // Set normalization for data
-	 if(autoFrac)
+	 if(autoFrac && !simplNorm)
 	 {
             // Printout original signal fraction for data and the two extreme normalizations (0 and 1)
 	    cout << "Low and high fraction tests: " << endl;
@@ -359,64 +546,100 @@ int main(int argc, char **argv)
 	 for(int i = 0; i < nrbins; i++)
 	 {
 	    // Old calculation
-            // Raw data (mean + propagation of errors)
-            ybinDataLna[0][i] = TMath::Log(56)*(ybinSig[0][i] - ybinData[0][i])/(ybinSig[0][i] - (1.-ybinBack[0][i]));
-	    ftemp[0] = ybinSig[1][i] + ybinData[1][i];
-	    ftemp[1] = ybinSig[1][i] + ybinBack[1][i];
-	    ybinDataLna[1][i] = (TMath::Log(56)*ftemp[0]*ftemp[1])/(ftemp[0] + ftemp[1]);
-	    ftemp[0] = ybinSig[2][i] + ybinData[2][i];
-	    ftemp[1] = ybinSig[2][i] + ybinBack[2][i];
-	    ybinDataLna[2][i] = (TMath::Log(56)*ftemp[0]*ftemp[1])/(ftemp[0] + ftemp[1]);
+	    if(!simplNorm)
+	    {
+               // Raw data (mean + propagation of errors)
+               ybinDataLna[0][i] = TMath::Log(56)*(ybinSig[0][i] - ybinData[0][i])/(ybinSig[0][i] - (1.-ybinBack[0][i]));
+	       ftemp[0] = ybinSig[1][i] + ybinData[1][i];
+	       ftemp[1] = ybinSig[1][i] + ybinBack[1][i];
+	       ybinDataLna[1][i] = (TMath::Log(56)*ftemp[0]*ftemp[1])/(ftemp[0] + ftemp[1]);
+	       ftemp[0] = ybinSig[2][i] + ybinData[2][i];
+	       ftemp[1] = ybinSig[2][i] + ybinBack[2][i];
+	       ybinDataLna[2][i] = (TMath::Log(56)*ftemp[0]*ftemp[1])/(ftemp[0] + ftemp[1]);
 
-//	    cerr << i << ": Raw = " << ybinDataLna[0][i] << "\t"  << ybinDataLna[1][i] << "\t" << ybinDataLna[2][i] << endl;
+//	       cerr << i << ": Raw = " << ybinDataLna[0][i] << "\t"  << ybinDataLna[1][i] << "\t" << ybinDataLna[2][i] << endl;
 
-	    // Normalized data (mean + propagation of errors)
-            ybinDataLnaNorm[0][i] = TMath::Log(56)*(1. - ybinDataNorm[0][i]);
-            ybinDataLnaNorm[1][i] = TMath::Log(56)*(1. - (ybinDataNorm[0][i]-ybinDataNorm[1][i]));
-            ybinDataLnaNorm[1][i] = TMath::Abs(ybinDataLnaNorm[0][i] - ybinDataLnaNorm[1][i]);
-            ybinDataLnaNorm[2][i] = TMath::Log(56)*(1. - (ybinDataNorm[0][i]+ybinDataNorm[2][i]));
-            ybinDataLnaNorm[2][i] = TMath::Abs(ybinDataLnaNorm[0][i] - ybinDataLnaNorm[2][i]);
-
-/*            // New calculation
-            // Raw data (mean + propagation of errors)
-            ybinDataLna[0][i] = TMath::Log(56)*(ybinSig[0][i] - ybinData[0][i])/(ybinSig[0][i] - (1.-ybinBack[0][i]));
-	    ftemp[0] = ybinSig[1][i] + ybinData[1][i];
-	    ftemp[1] = ybinSig[1][i] + ybinBack[1][i];
-	    ybinDataLna[1][i] = (TMath::Log(56)*ftemp[0]*ftemp[1])/(ftemp[0] + ftemp[1]);
-	    ftemp[0] = ybinSig[2][i] + ybinData[2][i];
-	    ftemp[1] = ybinSig[2][i] + ybinBack[2][i];
-	    ybinDataLna[2][i] = (TMath::Log(56)*ftemp[0]*ftemp[1])/(ftemp[0] + ftemp[1]);
-
-//	    cerr << i << ": Raw = " << ybinDataLna[0][i] << "\t"  << ybinDataLna[1][i] << "\t" << ybinDataLna[2][i] << endl;
-
-	    // Normalized data (mean + propagation of errors)
-	    if(ybinDataNorm[0][i] <= 1.)
-               ybinDataLnaNorm[0][i] = TMath::Log(56)*TMath::Sqrt(1. - ybinDataNorm[0][i]);
-	    else
+	       // Normalized data (mean + propagation of errors)
                ybinDataLnaNorm[0][i] = TMath::Log(56)*(1. - ybinDataNorm[0][i]);
-
-	    if(ybinDataNorm[1][i] <= 1.)
-               ybinDataLnaNorm[1][i] = TMath::Log(56)*TMath::Sqrt(1. - (ybinDataNorm[0][i]-ybinDataNorm[1][i]));
-	    else
                ybinDataLnaNorm[1][i] = TMath::Log(56)*(1. - (ybinDataNorm[0][i]-ybinDataNorm[1][i]));
-            ybinDataLnaNorm[1][i] = TMath::Abs(ybinDataLnaNorm[0][i] - ybinDataLnaNorm[1][i]);
-
-	    if(ybinDataNorm[2][i] <= 1.)
-               ybinDataLnaNorm[2][i] = TMath::Log(56)*TMath::Sqrt(1. - (ybinDataNorm[0][i]+ybinDataNorm[2][i]));
-	    else
+               ybinDataLnaNorm[1][i] = TMath::Abs(ybinDataLnaNorm[0][i] - ybinDataLnaNorm[1][i]);
                ybinDataLnaNorm[2][i] = TMath::Log(56)*(1. - (ybinDataNorm[0][i]+ybinDataNorm[2][i]));
-            ybinDataLnaNorm[2][i] = TMath::Abs(ybinDataLnaNorm[0][i] - ybinDataLnaNorm[2][i]);*/
+               ybinDataLnaNorm[2][i] = TMath::Abs(ybinDataLnaNorm[0][i] - ybinDataLnaNorm[2][i]);
 
-/*            ybinDataLnaNorm[1][i] = TMath::Log(56)*(ybinSigNorm[0][i] - (ybinDataNorm[0][i]-ybinDataNorm[1][i])/(ybinSigNorm[0][i] - (1.-ybinBackNorm[0][i]));
-            ybinDataLnaNorm[2][i] = TMath::Log(56)*(ybinSigNorm[0][i] - ybinDataNorm[0][i])/(ybinSigNorm[0][i] - (1.-ybinBackNorm[0][i]));*/
-/*	    ftemp[0] = ybinSigNorm[1][i] + ybinDataNorm[1][i];
-	    ftemp[1] = ybinSigNorm[1][i] + ybinBackNorm[1][i];
-	    ybinDataLnaNorm[1][i] = (TMath::Log(56)*ftemp[0]*ftemp[1])/(ftemp[0] + ftemp[1]);
-	    ftemp[0] = ybinSigNorm[2][i] + ybinDataNorm[2][i];
-	    ftemp[1] = ybinSigNorm[2][i] + ybinBackNorm[2][i];
-	    ybinDataLnaNorm[2][i] = (TMath::Log(56)*ftemp[0]*ftemp[1])/(ftemp[0] + ftemp[1]);*/
+//	       cerr << i << ": Norm = " << ybinDataLnaNorm[0][i] << "\t"  << ybinDataLnaNorm[1][i] << "\t" << ybinDataLnaNorm[2][i] << endl;
+            }
+            // New calculation (Only for a single background tree)
+	    else
+	    {
+	       if(i == 0)
+	       {
+	          for(int j = 0; j < treeName.size(); j++)
+	          {
+	             cout << "Tree name = " << treeName[j] << endl;
+	             cout << "Tree ID = " << treeId[j] << endl;
 
-//	    cerr << i << ": Normalized = " << ybinDataLnaNorm[0][i] << "\t"  << ybinDataLnaNorm[1][i] << "\t" << ybinDataLnaNorm[2][i] << endl;
+	             itemp[0] = treeName[j].find("Proton");
+	             if(itemp[0] != string::npos)
+                        dtemp[0] = TMath::Log(1);
+
+	             itemp[0] = treeName[j].find("Helium");
+	             if(itemp[0] != string::npos)
+                        dtemp[0] = TMath::Log(4);
+
+	             itemp[0] = treeName[j].find("Oxygen");
+	             if(itemp[0] != string::npos)
+                        dtemp[0] = TMath::Log(16);
+
+	             itemp[0] = treeName[j].find("Iron");
+	             if(itemp[0] != string::npos)
+                        dtemp[0] = TMath::Log(56);
+	             
+	             if(treeId[j] == 1)
+                        sigType = dtemp[0];
+	             else if(treeId[j] == 2)
+                        backType = dtemp[0];
+	          }
+	       }
+
+               // Raw data (mean + errors): lnA = (x_d,sig)*lnA_sig + (1-x_d,sig)*lnA_back
+	       ybinDataLna[0][i] = ybinData[0][i]*sigType + (1-ybinData[0][i])*backType;
+	       ybinDataLna[1][i] = (ybinData[0][i]-ybinData[1][i])*sigType + (1-(ybinData[0][i]-ybinData[1][i]))*backType;
+               ybinDataLna[1][i] = TMath::Abs(ybinDataLna[0][i] - ybinDataLna[1][i]);
+	       ybinDataLna[2][i] = (ybinData[0][i]-ybinData[2][i])*sigType + (1-(ybinData[0][i]-ybinData[2][i]))*backType;
+               ybinDataLna[2][i] = TMath::Abs(ybinDataLna[0][i] - ybinDataLna[2][i]);
+
+	       cerr << i << ": Raw = " << ybinDataLna[0][i] << "\t"  << ybinDataLna[1][i] << "\t" << ybinDataLna[2][i] << endl;
+
+	       // Normalized data (mean + propagation of errors): x_d,norm = (x_d - x_back)/(x_sig - x_back)
+/*	       // change background purity to fraction
+	       ftemp[0] = 1. - ybinBack[0][i];
+               // calculate the normalized fraction
+	       ftemp[1] = (ybinData[0][i] - ftemp[0])/(ybinSig[0][i] - ftemp[0]);
+	       // calculate neg propagation error with respect to x_d (d(x_d,norm)/d(x_d))*delta(x_d)
+	       ftemp[2] = TMath::Power(ybinData[1][i]/(ybinSig[0][i] - ftemp[0]), 2);
+	       // calculate neg propagation error with respect to x_sig (d(x_d,norm)/d(x_sig))*delta(x_sig)
+	       ftemp[2] += TMath::Power(ybinSig[1][i]*(ybinData[0][i] - ftemp[0])/TMath::Power(ybinSig[0][i] - ftemp[0], 2), 2);
+	       // calculate neg propagation error with respect to x_back (d(x_d,norm)/d(x_back))*delta(x_back)
+	       ftemp[2] += TMath::Power(ybinBack[1][i]*(ybinData[0][i] - ybinSig[0][i])/TMath::Power(ybinSig[0][i] - ftemp[0], 2), 2);
+	       ftemp[2] = TMath::Sqrt(ftemp[2]);
+	       // calculate pos propagation error with respect to x_d (d(x_d,norm)/d(x_d))*delta(x_d)
+	       ftemp[3] = TMath::Power(ybinData[2][i]/(ybinSig[0][i] - ftemp[0]), 2);
+	       // calculate pos propagation error with respect to x_sig (d(x_d,norm)/d(x_sig))*delta(x_sig)
+	       ftemp[3] += TMath::Power(ybinSig[2][i]*(ybinData[0][i] - ftemp[0])/TMath::Power(ybinSig[0][i] - ftemp[0], 2), 2);
+	       // calculate pos propagation error with respect to x_back (d(x_d,norm)/d(x_back))*delta(x_back)
+	       ftemp[3] += TMath::Power(ybinBack[2][i]*(ybinData[0][i] - ybinSig[0][i])/TMath::Power(ybinSig[0][i] - ftemp[0], 2), 2);
+	       ftemp[3] = TMath::Sqrt(ftemp[3]);
+
+	       cout << i << ": Back = " << ftemp[0] << ", Normfrac = " << ftemp[1] << ", Normfrac neg error = " << ftemp[2] << ", Normfrac pos error = " << ftemp[3] << endl;*/
+
+	       ybinDataLnaNorm[0][i] = ybinDataNorm[0][i]*sigType + (1-ybinDataNorm[0][i])*backType;
+	       ybinDataLnaNorm[1][i] = (ybinDataNorm[0][i]-ybinDataNorm[1][i])*sigType + (1-(ybinDataNorm[0][i]-ybinDataNorm[1][i]))*backType;
+               ybinDataLnaNorm[1][i] = TMath::Abs(ybinDataLnaNorm[0][i] - ybinDataLnaNorm[1][i]);
+	       ybinDataLnaNorm[2][i] = (ybinDataNorm[0][i]+ybinDataNorm[2][i])*sigType + (1-(ybinDataNorm[0][i]+ybinDataNorm[2][i]))*backType;
+               ybinDataLnaNorm[2][i] = TMath::Abs(ybinDataLnaNorm[0][i] - ybinDataLnaNorm[2][i]);
+
+	       cerr << i << ": Norm = " << ybinDataLnaNorm[0][i] << "\t"  << ybinDataLnaNorm[1][i] << "\t" << ybinDataLnaNorm[2][i] << endl;
+            }
 	 }
 
 	 cout << endl << "Point printout:" << endl;
@@ -557,8 +780,8 @@ int main(int argc, char **argv)
             grDataNorm->GetYaxis()->SetRangeUser(yrange[0], yrange[1]);
          }
 
-	 // LnA graphs for data and normalized data
-	 TGraphAsymmErrors *grDataLna, *grDataLnaNorm;
+	 // LnA graphs for data, normalized data and published data
+	 TGraphAsymmErrors *grDataLna, *grDataLnaNorm, *grPubLna;
          grDataLna = new TGraphAsymmErrors(nrbins, xbin[0], ybinDataLna[0], xbin[1], xbin[2], ybinDataLna[1], ybinDataLna[2]);
          mystyle->SetGraphColor(grDataLna, 2);
          grDataLna->GetYaxis()->SetRangeUser(-0.7, 5.);
@@ -568,6 +791,34 @@ int main(int argc, char **argv)
             mystyle->SetGraphColor(grDataLnaNorm, 3);
             grDataLnaNorm->GetYaxis()->SetRangeUser(-0.7, 5.);
          }
+
+	 vector<float> returnVal;
+	 itemp[1] = ReadLnaResults(&returnVal, 0);
+	 cout << "Number of points = " << itemp[1] << endl;
+	 float *xbinPub[3];
+	 float *ybinPubLna[3];
+
+	 for(int i = 0; i < 3; i++)
+	 {
+            xbinPub[i] = new float[itemp[1]];
+            ybinPubLna[i] = new float[itemp[1]];
+	 }
+
+	 for(int i = 0; i < itemp[1]; i++)
+	 {
+            xbinPub[0][i] = returnVal[3*i];
+	    xbinPub[1][i] = 0;
+	    xbinPub[2][i] = 0;
+	    ybinPubLna[0][i] = returnVal[3*i+1];
+	    ybinPubLna[1][i] = returnVal[3*i+2];
+	    ybinPubLna[2][i] = returnVal[3*i+2];
+
+	    cout << i+1 << ", data: " << xbinPub[0][i] << "\t" << ybinPubLna[0][i] << "\t" << ybinPubLna[1][i] << endl;
+	 }
+
+         grPubLna = new TGraphAsymmErrors(itemp[1], xbinPub[0], ybinPubLna[0], xbinPub[1], xbinPub[2], ybinPubLna[1], ybinPubLna[2]);
+         mystyle->SetGraphColor(grPubLna, 0);
+         grPubLna->GetYaxis()->SetRangeUser(-0.7, 5.);
 
          // Plotting each graph separately
 	 // Signal only
@@ -582,7 +833,12 @@ int main(int argc, char **argv)
          else if(itemp[0] == 1)
          {
             if(autoFrac)
-	       stemp[1] = "frac-auto";
+	    {
+               if(simplNorm)
+	          stemp[1] = "frac-simple";
+	       else
+	          stemp[1] = "frac-auto";
+	    }
 	    else
                stemp[1] = "frac-" + ToString(fraction, 3);
             stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_sig-only.pdf";
@@ -602,7 +858,12 @@ int main(int argc, char **argv)
          else if(itemp[0] == 1)
          {
             if(autoFrac)
-	       stemp[1] = "frac-auto";
+	    {
+               if(simplNorm)
+	          stemp[1] = "frac-simple";
+	       else
+	          stemp[1] = "frac-auto";
+	    }
 	    else
                stemp[1] = "frac-" + ToString(fraction, 3);
             stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_back-only.pdf";
@@ -622,7 +883,12 @@ int main(int argc, char **argv)
          else if(itemp[0] == 1)
          {
             if(autoFrac)
-	       stemp[1] = "frac-auto";
+	    {
+               if(simplNorm)
+	          stemp[1] = "frac-simple";
+	       else
+	          stemp[1] = "frac-auto";
+	    }
 	    else
                stemp[1] = "frac-" + ToString(fraction, 3);
             stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_data-only.pdf";
@@ -644,7 +910,12 @@ int main(int argc, char **argv)
             else if(itemp[0] == 1)
             {
                if(autoFrac)
-	          stemp[1] = "frac-auto";
+	       {
+                  if(simplNorm)
+	             stemp[1] = "frac-simple";
+	          else
+	             stemp[1] = "frac-auto";
+	       }
 	       else
                   stemp[1] = "frac-" + ToString(fraction, 3);
                stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_sig-only_normalized.pdf";
@@ -664,7 +935,12 @@ int main(int argc, char **argv)
             else if(itemp[0] == 1)
             {
                if(autoFrac)
-	          stemp[1] = "frac-auto";
+	       {
+                  if(simplNorm)
+	             stemp[1] = "frac-simple";
+	          else
+	             stemp[1] = "frac-auto";
+	       }
 	       else
                   stemp[1] = "frac-" + ToString(fraction, 3);
                stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_back-only_normalized.pdf";
@@ -684,7 +960,12 @@ int main(int argc, char **argv)
             else if(itemp[0] == 1)
             {
                if(autoFrac)
-	          stemp[1] = "frac-auto";
+	       {
+                  if(simplNorm)
+	             stemp[1] = "frac-simple";
+	          else
+	             stemp[1] = "frac-auto";
+	       }
 	       else
                   stemp[1] = "frac-" + ToString(fraction, 3);
                stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_data-only_normalized.pdf";
@@ -773,23 +1054,26 @@ int main(int argc, char **argv)
             }
 //	    grData->SetLineStyle(1);
 
-	    // LnA data/data-norm
+/*	    // LnA data/data-norm
+	    nrfigs = 3;
             mystyle->SetAxisTitles(grDataLna, "FD energy [log(E/eV)]", "<lnA> of data events");
 //	    grDataLna->SetLineStyle(9);
             grDataLna->Draw(plotInstr[0].c_str());
             grDataLnaNorm->Draw(plotInstr[1].c_str());
+            grPubLna->Draw(plotInstr[1].c_str());
 	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
 	    legend->SetFillStyle(1001);
 	    legend->SetFillColor(c_Legend);
 	    legend->AddEntry(grDataLna, "Data (raw)", "lp");
 	    legend->AddEntry(grDataLnaNorm, "Data (normalized)", "lp");
+	    legend->AddEntry(grPubLna, "Data (Auger published)", "lp");
             legend->SetBorderSize(1);
             legend->SetMargin(0.3);
             legend->Draw("same");
             if(itemp[0] == 0)
             {
                stemp[1] = analRes->GetObservableType();
-               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_lnA_" + stemp[1] + "_data-data_normalized.pdf";
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_" + stemp[1] + "_lnA_data-data_normalized.pdf";
                c1->SaveAs(stemp[2].c_str());
             }
             else if(itemp[0] == 1)
@@ -797,7 +1081,7 @@ int main(int argc, char **argv)
                stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_lnA_data-data_normalized.pdf";
                c1->SaveAs(stemp[2].c_str());
             }
-//	    grDataLna->SetLineStyle(1);
+//	    grDataLna->SetLineStyle(1);*/
 	 }
 
          // Collections of three (signal/background/data, signal/background/data-norm, signal-norm/background-norm/data, signal-norm/background-norm/data-norm, signal/background/data/data-norm)
@@ -954,6 +1238,15 @@ int main(int argc, char **argv)
 	 // LnA raw data only
          mystyle->SetAxisTitles(grDataLna, "FD energy [log(E/eV)]", "<lnA> of data events");
          grDataLna->Draw(plotInstr[0].c_str());
+         grPubLna->Draw(plotInstr[1].c_str());
+	 legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	 legend->SetFillStyle(1001);
+	 legend->SetFillColor(c_Legend);
+	 legend->AddEntry(grDataLna, "Data (raw)", "lp");
+	 legend->AddEntry(grPubLna, "Data (Auger published)", "lp");
+         legend->SetBorderSize(1);
+         legend->SetMargin(0.3);
+         legend->Draw("same");
 
 	 // Right side markings
          c1->Update();
@@ -972,7 +1265,7 @@ int main(int argc, char **argv)
          if(itemp[0] == 0)
          {
             stemp[1] = analRes->GetObservableType();
-            stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_lnA_" + stemp[1] + "_data-only.pdf";
+            stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_" + stemp[1] + "_lnA_data-only.pdf";
             c1->SaveAs(stemp[2].c_str());
          }
          else if(itemp[0] == 1)
@@ -991,48 +1284,12 @@ int main(int argc, char **argv)
 	    // LnA normalized data only
             mystyle->SetAxisTitles(grDataLnaNorm, "FD energy [log(E/eV)]", "<lnA> of data events");
             grDataLnaNorm->Draw(plotInstr[0].c_str());
-
-	    // Right side markings
-            c1->Update();
-            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(1),  "p");
-            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(4),  "He");
-            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(14), "N");
-            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(16), "O");
-            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(56), "Fe");
-            // Draw lines marking the particle types
-            l->DrawLine(gPad->GetUxmin(), TMath::Log(1), gPad->GetUxmax(), TMath::Log(1));
-            l->DrawLine(gPad->GetUxmin(), TMath::Log(4), gPad->GetUxmax(), TMath::Log(4));
-            l->DrawLine(gPad->GetUxmin(), TMath::Log(14), gPad->GetUxmax(), TMath::Log(14));
-            l->DrawLine(gPad->GetUxmin(), TMath::Log(16), gPad->GetUxmax(), TMath::Log(16));
-            l->DrawLine(gPad->GetUxmin(), TMath::Log(56), gPad->GetUxmax(), TMath::Log(56));
-
-            if(itemp[0] == 0)
-            {
-               stemp[1] = analRes->GetObservableType();
-               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_lnA_" + stemp[1] + "_data-only_normalized.pdf";
-               c1->SaveAs(stemp[2].c_str());
-            }
-            else if(itemp[0] == 1)
-            {
-/*               if(autoFrac)
-	          stemp[1] = "frac-auto";
-	       else
-                  stemp[1] = "frac-" + ToString(fraction, 3);*/
-               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_lnA_data-only_normalized.pdf";
-               c1->SaveAs(stemp[2].c_str());
-            }
-//            grDataLnaNorm->Write(("datalnanorm_" + stemp[1]).c_str());
-
-	    // LnA data/data-norm
-            mystyle->SetAxisTitles(grDataLna, "FD energy [log(E/eV)]", "<lnA> of data events");
-//	    grDataLna->SetLineStyle(9);
-            grDataLna->Draw(plotInstr[0].c_str());
-            grDataLnaNorm->Draw(plotInstr[1].c_str());
+            grPubLna->Draw(plotInstr[1].c_str());
 	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
 	    legend->SetFillStyle(1001);
 	    legend->SetFillColor(c_Legend);
-	    legend->AddEntry(grDataLna, "Data (raw)", "lp");
-	    legend->AddEntry(grDataLnaNorm, "Data (normalized)", "lp");
+	    legend->AddEntry(grDataLnaNorm, "Data (raw)", "lp");
+	    legend->AddEntry(grPubLna, "Data (Auger published)", "lp");
             legend->SetBorderSize(1);
             legend->SetMargin(0.3);
             legend->Draw("same");
@@ -1054,7 +1311,55 @@ int main(int argc, char **argv)
             if(itemp[0] == 0)
             {
                stemp[1] = analRes->GetObservableType();
-               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_lnA_" + stemp[1] + "_data-data_normalized.pdf";
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_" + stemp[1] + "_lnA_data-only_normalized.pdf";
+               c1->SaveAs(stemp[2].c_str());
+            }
+            else if(itemp[0] == 1)
+            {
+/*               if(autoFrac)
+	          stemp[1] = "frac-auto";
+	       else
+                  stemp[1] = "frac-" + ToString(fraction, 3);*/
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fraction_plot_lnA_data-only_normalized.pdf";
+               c1->SaveAs(stemp[2].c_str());
+            }
+//            grDataLnaNorm->Write(("datalnanorm_" + stemp[1]).c_str());
+
+	    // LnA data/data-norm
+	    nrfigs = 3;
+            mystyle->SetAxisTitles(grDataLna, "FD energy [log(E/eV)]", "<lnA> of data events");
+//	    grDataLna->SetLineStyle(9);
+            grDataLna->Draw(plotInstr[0].c_str());
+            grDataLnaNorm->Draw(plotInstr[1].c_str());
+            grPubLna->Draw(plotInstr[1].c_str());
+	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	    legend->SetFillStyle(1001);
+	    legend->SetFillColor(c_Legend);
+	    legend->AddEntry(grDataLna, "Data (raw)", "lp");
+	    legend->AddEntry(grDataLnaNorm, "Data (normalized)", "lp");
+	    legend->AddEntry(grPubLna, "Data (Auger published)", "lp");
+            legend->SetBorderSize(1);
+            legend->SetMargin(0.3);
+            legend->Draw("same");
+
+	    // Right side markings
+            c1->Update();
+            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(1),  "p");
+            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(4),  "He");
+            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(14), "N");
+            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(16), "O");
+            t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(56), "Fe");
+            // Draw lines marking the particle types
+            l->DrawLine(gPad->GetUxmin(), TMath::Log(1), gPad->GetUxmax(), TMath::Log(1));
+            l->DrawLine(gPad->GetUxmin(), TMath::Log(4), gPad->GetUxmax(), TMath::Log(4));
+            l->DrawLine(gPad->GetUxmin(), TMath::Log(14), gPad->GetUxmax(), TMath::Log(14));
+            l->DrawLine(gPad->GetUxmin(), TMath::Log(16), gPad->GetUxmax(), TMath::Log(16));
+            l->DrawLine(gPad->GetUxmin(), TMath::Log(56), gPad->GetUxmax(), TMath::Log(56));
+
+            if(itemp[0] == 0)
+            {
+               stemp[1] = analRes->GetObservableType();
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fraction_plot_" + stemp[1] + "_lnA_data-data_normalized.pdf";
                c1->SaveAs(stemp[2].c_str());
             }
             else if(itemp[0] == 1)
@@ -1073,20 +1378,24 @@ int main(int argc, char **argv)
             delete[] ybinSig[i];
             delete[] ybinSigNorm[i];
             delete[] ybinBack[i];
+            delete[] ybinBackInv[i];
             delete[] ybinBackNorm[i];
             delete[] ybinData[i];
             delete[] ybinDataNorm[i];
             delete[] ybinDataLna[i];
             delete[] ybinDataLnaNorm[i];
 
-            if(autoFrac)
+            delete[] xbinPub[i];
+            delete[] ybinPubLna[i];
+
+            if(autoFrac && !simplNorm)
             {
                delete[] ylowfractest[i];
                delete[] yhighfractest[i];
             }
          }      
 
-         if(autoFrac)
+         if(autoFrac && !simplNorm)
          {
             delete[] ylowlimitfrac;
             delete[] yhighlimitfrac;

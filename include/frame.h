@@ -180,8 +180,6 @@ public:
     void MvaApplication(string *infilename, bool application, int mean);
     void CreateMVAPlots(TTree *app, TMVA::Reader *reader, string mvamethod, float *obsvars, string signalName, int curtree, bool application, int mean);
     void CreateOutput(TTree *app, TMVA::Reader *reader, string mvamethod, float *obsvars, string signalName, int curtree, bool application, int mean);
-    void SetupBinning(string obs, float *limit);
-    void SetupAxis(TH1F *hist, string obs);
     void GetErrors(TTree *app, float *obsvars, vector<string> obs, int curtree);
     void GetMvaError(int selection, double *outvalue);
 };
