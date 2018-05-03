@@ -16,7 +16,7 @@ public:
     // Single NEntry constructor
     LabelNEntry(wxPanel *parent, wxString label, double numval, const int nentryID, int maxsize);
     // Multiple NEntry constructors
-    LabelNEntry(wxPanel *parent, wxString label, vector<double> numval, vector<int> nentryID, int maxsize);
+    LabelNEntry(wxPanel *parent, wxString label, vector<double> *numval, vector<int> *nentryID, int maxsize);
 
     wxStaticText *widgetLabel;
     wxSpinCtrlDouble *widgetNE[2];

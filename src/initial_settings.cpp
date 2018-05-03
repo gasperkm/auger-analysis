@@ -4,19 +4,24 @@
 
 void MyFrame::InitObservables()
 {
-   ifstream ifs;
+   ifstream *ifs = new ifstream;
    string *stemp = new string[3];
    int *itemp = new int;
    float *ftemp = new float[2];
    char *ctemp = new char[1024];
+
    stemp[0] = string(rootdir) + "/input/observables.txt";
-   ifs.open(stemp[0].c_str(), ifstream::in);
+   ifs->open(stemp[0].c_str(), ifstream::in);
 
-   vector<float> tempmin;
-   vector<float> tempmax;
-   vector<string> tempdesc;
+   vector<float> *tempmin;
+   vector<float> *tempmax;
+   vector<string> *tempdesc;
 
-   if(ifs.is_open())
+   tempmin = new vector<float>;
+   tempmax = new vector<float>;
+   tempdesc = new vector<string>;
+
+   if(ifs->is_open())
    {
       if(!observables.empty())
          observables.erase(observables.begin(), observables.end());
@@ -24,34 +29,34 @@ void MyFrame::InitObservables()
          obssel.erase(obssel.begin(), obssel.end());
       if(!obsorigsel.empty())
          obsorigsel.erase(obsorigsel.begin(), obsorigsel.end());
-      if(!tempmin.empty())
-         tempmin.erase(tempmin.begin(), tempmin.end());
-      if(!tempmax.empty())
-         tempmax.erase(tempmax.begin(), tempmax.end());
-      if(!tempdesc.empty())
-         tempdesc.erase(tempdesc.begin(), tempdesc.end());
+      if(!tempmin->empty())
+         tempmin->erase(tempmin->begin(), tempmin->end());
+      if(!tempmax->empty())
+         tempmax->erase(tempmax->begin(), tempmax->end());
+      if(!tempdesc->empty())
+         tempdesc->erase(tempdesc->begin(), tempdesc->end());
 
       while(1)
       {
-	 if(ifs.peek() == '#')
+	 if(ifs->peek() == '#')
 	 {
-            ifs.getline(ctemp, 1024);
+            ifs->getline(ctemp, 1024);
 	    if(DBGSIG > 1)
                cout << "Line: " << ctemp << endl;
 	 }
 	 else
 	 {
-            ifs >> stemp[1] >> *itemp >> ftemp[0] >> ftemp[1];
-            if(ifs.eof()) break;
+            *ifs >> stemp[1] >> *itemp >> ftemp[0] >> ftemp[1];
+            if(ifs->eof()) break;
             observables.push_back(stemp[1]);
 	    obssel.push_back((bool)*itemp);
 	    obsorigsel.push_back((bool)*itemp);
-	    tempmin.push_back(ftemp[0]);
-	    tempmax.push_back(ftemp[1]);
+	    tempmin->push_back(ftemp[0]);
+	    tempmax->push_back(ftemp[1]);
 
-            ifs.getline(ctemp, 1024);
+            ifs->getline(ctemp, 1024);
 	    stemp[2] = string(ctemp);
-            tempdesc.push_back(stemp[2]);
+            tempdesc->push_back(stemp[2]);
 
 	    if(DBGSIG > 0)
                cout << "Values: " << stemp[1] << "\t" << *itemp << "\t" << ftemp[0] << "\t" << ftemp[1] << "\t" << stemp[2] << endl;
@@ -70,15 +75,20 @@ void MyFrame::InitObservables()
    generalObservables = new Observables(observables);
    for(int i = 0; i < nrobs; i++)
    {
-      generalObservables->SetMin(i, tempmin[i]);
-      generalObservables->SetMax(i, tempmax[i]);
-      generalObservables->SetLabel(i, tempdesc[i]);
+      generalObservables->SetMin(i, tempmin->at(i));
+      generalObservables->SetMax(i, tempmax->at(i));
+      generalObservables->SetLabel(i, tempdesc->at(i));
    }
 
    mvalimit[0] = -2.;
    mvalimit[1] = 2.;
 
-   ifs.close();
+   ifs->close();
+
+   delete tempmin;
+   delete tempmax;
+   delete tempdesc;
+   delete ifs;
    delete[] stemp;
    delete itemp;
    delete[] ftemp;
@@ -87,13 +97,13 @@ void MyFrame::InitObservables()
 
 void MyFrame::InitMethods()
 {
-   ifstream ifs;
+   ifstream *ifs = new ifstream;
    string *stemp = new string[4];
    char *ctemp = new char[1024];
    stemp[0] = string(rootdir) + "/input/mva_options.txt";
-   ifs.open(stemp[0].c_str(), ifstream::in);
+   ifs->open(stemp[0].c_str(), ifstream::in);
 
-   if(ifs.is_open())
+   if(ifs->is_open())
    {
       if(!methods.empty())
          methods.erase(methods.begin(), methods.end());
@@ -108,28 +118,30 @@ void MyFrame::InitMethods()
 
       while(1)
       {
-         if(ifs.peek() == '#')
+         if(ifs->peek() == '#')
          {
-            ifs.getline(ctemp, 1024);
+            ifs->getline(ctemp, 1024);
             if(DBGSIG > 1)
                cout << "Line: " << ctemp << endl;
          }
          else
          {
-            ifs >> stemp[1] >> stemp[2] >> stemp[3];
+            *ifs >> stemp[1] >> stemp[2] >> stemp[3];
 //	    cout << "Method:" << endl << "  " << stemp[1] << endl << "  " << stemp[2] << endl << "  " << stemp[3] << endl;
             methods.push_back(stemp[1]);
             methodsDesc.push_back(stemp[2]);
             methodsOpt.push_back(stemp[3]);
-	    ifs.ignore(1,' ');
-            if(ifs.eof()) break;
+	    ifs->ignore(1,' ');
+            if(ifs->eof()) break;
          }
       }
 
       nrmethods = methods.size();
    }
 
-   ifs.close();
+   ifs->close();
+
+   delete ifs;
    delete[] stemp;
    delete[] ctemp;
 }

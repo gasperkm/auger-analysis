@@ -14,16 +14,20 @@ void YesNoPopup(std::string title, std::string descr);
 class NEDialog : public wxDialog
 {
 private:
-   double nevalue;
+   double *nevalue;
 public:
    NEDialog(const wxString &title, const wxSize &size, std::string text, std::string label, double value, const int *numID);
    virtual ~NEDialog();
 
-   wxSpinCtrlDouble *widgetNE;
-
    void SetNEntryFormat(wxSpinCtrlDouble *sc, int nrdig, double incr, int limit, double minlim, double maxlim);
    void UpdateNEValue(wxSpinDoubleEvent &event);
    double GetNEValue();
+
+   wxPanel *panel;
+   wxBoxSizer *vbox, *hbox, *hbox2;
+   wxStaticText *widgetText, *widgetLabel;
+   wxSpinCtrlDouble *widgetNE;
+   wxButton *okButton, *cancelButton;
 };	
 
 #endif

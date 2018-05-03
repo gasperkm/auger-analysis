@@ -3,7 +3,7 @@
 #include "workstation.h"
 #include <iostream>
 
-LabelListEdit::LabelListEdit(wxPanel *parent, wxString label, int width, int height, int multi, const int listID, vector<int> butID)
+LabelListEdit::LabelListEdit(wxPanel *parent, wxString label, int width, int height, int multi, const int listID, vector<int> *butID)
 {
     subsizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer *vbox = new wxBoxSizer(wxVERTICAL);
@@ -17,7 +17,7 @@ LabelListEdit::LabelListEdit(wxPanel *parent, wxString label, int width, int hei
     widgetBM = new wxBitmap();
     for(int i = 0; i < 4; i++)
     {
-       widgetTB[i] = new wxButton(parent, butID[i], "", wxDefaultPosition, wxSize(28,28));
+       widgetTB[i] = new wxButton(parent, butID->at(i), "", wxDefaultPosition, wxSize(28,28));
 
        if(i == 0)
           widgetBM->LoadFile(string(rootdir) + "/input/delete.png");

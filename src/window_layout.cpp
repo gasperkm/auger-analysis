@@ -4,49 +4,54 @@
 // Function for reading the layout
 void MyFrame::ReadLayout(int *width, int *height)
 {
-   ifstream ilayout;
+   ifstream *ilayout;
    string *stemp;
-   stemp = new string[2];
    int *itemp;
+   char *readTemp;
+
+   ilayout = new ifstream;
+   stemp = new string[2];
    itemp = new int[2];
-   char readTemp[1024];
+   readTemp = new char[1024];
 
    // Check for the last used layout file
    stemp[0] = string(rootdir) + "/layout/selected_layout.txt";
-   ilayout.open(stemp[0].c_str(), ifstream::in);
-   if(ilayout.is_open())
+   ilayout->open(stemp[0].c_str(), ifstream::in);
+   if(ilayout->is_open())
    {
-      ilayout >> stemp[1];
+      *ilayout >> stemp[1];
    }
-   ilayout.close();
+   ilayout->close();
    if(DBGSIG > 1)
       cout << "# ReadLayout            #: " << "Loaded layout file is: " << stemp[1] << endl;
 
    // Read the current layout
    stemp[0] = string(rootdir) + "/layout/" + stemp[1];
-   ilayout.open(stemp[0].c_str(), ifstream::in);
-   if(ilayout.is_open())
+   ilayout->open(stemp[0].c_str(), ifstream::in);
+   if(ilayout->is_open())
    {
       while(1)
       {
-         if(ilayout.peek() == '#')
-	    ilayout.getline(readTemp, 1024, '\n');
-	 else if(ilayout.peek() == '\n')
-	    ilayout.ignore(1, '\n');
+         if(ilayout->peek() == '#')
+	    ilayout->getline(readTemp, 1024, '\n');
+	 else if(ilayout->peek() == '\n')
+	    ilayout->ignore(1, '\n');
 	 else
 	 {
-	    ilayout >> itemp[0] >> itemp[1] >> readTemp;
-	    ilayout.ignore(1, '\n');
+	    *ilayout >> itemp[0] >> itemp[1] >> readTemp;
+	    ilayout->ignore(1, '\n');
 	    break;
 	 }
       }
    }
-   ilayout.close();
+   ilayout->close();
 
    // Set the window width and height
    *width = itemp[0];
    *height = itemp[1];
 
+   delete[] readTemp;
+   delete ilayout;
    delete[] stemp;
    delete[] itemp;
 }
@@ -54,8 +59,10 @@ void MyFrame::ReadLayout(int *width, int *height)
 // Function for setting a saved layout
 void MyFrame::SetLayout(wxCommandEvent& event)
 {
-   ofstream olayout;
+   ofstream *olayout;
    string *stemp;
+
+   olayout = new ofstream;
    stemp = new string[3];
 
    // Select the layout file and save this to selected_layout.txt file for future use
@@ -68,27 +75,26 @@ void MyFrame::SetLayout(wxCommandEvent& event)
       if(!stemp[1].empty())
       {
          stemp[2] = string(rootdir) + "/layout/selected_layout.txt";
-         olayout.open(stemp[2].c_str(), ofstream::out | ofstream::trunc);
+         olayout->open(stemp[2].c_str(), ofstream::out | ofstream::trunc);
          stemp[0] = RemovePath(&stemp[1]);
-	 olayout << stemp[0];
-	 olayout.close();
+	 *olayout << stemp[0];
+	 olayout->close();
       }
-
-//      wxMessageDialog *dial = new wxMessageDialog(NULL, wxT("Please restart the program to enable the selected layout for future use."), wxT("Setting new layout"), wxOK);
-//      dial->ShowModal();
    }
 
+   delete olayout;
+   delete openFileDlg;
    delete[] stemp;
 }
 
 // Function for saving the current layout
 void MyFrame::SaveLayout(wxCommandEvent& event)
 {
-   ofstream olayout;
+   ofstream *olayout;
    string *stemp;
-   stemp = new string[2];
    int *itemp;
-   itemp = new int[2];
+
+   stemp = new string[2];
 
    // Select the file to save the new layout
    stemp[0] = string(rootdir) + "/layout";
@@ -97,28 +103,33 @@ void MyFrame::SaveLayout(wxCommandEvent& event)
    if(saveFileDlg->ShowModal() == wxID_CANCEL)
    {
       delete[] stemp;
-      delete[] itemp;
+      delete saveFileDlg;
       return;
    }
+
+   olayout = new ofstream;
+   itemp = new int[2];
    
    stemp[1] = saveFileDlg->GetPath();
    stemp[1] = CheckExtension(&stemp[1], "layout");
    if(!stemp[1].empty())
    {
       this->GetSize(&itemp[0], &itemp[1]);
-      olayout.open(stemp[1].c_str(), ofstream::out);
-      if(olayout.is_open())
+      olayout->open(stemp[1].c_str(), ofstream::out);
+      if(olayout->is_open())
       {
-         olayout << "# Whole window width and height" << std::endl;
-	 olayout << itemp[0] << "\t" << itemp[1] << endl;
+         *olayout << "# Whole window width and height" << std::endl;
+	 *olayout << itemp[0] << "\t" << itemp[1] << endl;
       }
       else
          cout << "# SaveLayout            #: " << "Error! Save file can not be opened (please do not use default.layout since it is write protected)." << endl;
-      olayout.close();
+      olayout->close();
    }
 
+   delete olayout;
    delete[] stemp;
    delete[] itemp;
+   delete saveFileDlg;
 }
 
 // Function for creating a title
@@ -148,3 +159,5 @@ void MyFrame::ShowProgress(wxString title, wxString message, int maxval)
    progress = new wxProgressDialog(title, message, maxval, NULL, wxPD_APP_MODAL | wxPD_AUTO_HIDE | wxPD_ELAPSED_TIME | wxPD_SMOOTH);
    progress->Update(0);
 }
+
+// TODO: Add function to also destroy the progress bar

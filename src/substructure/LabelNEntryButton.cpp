@@ -52,7 +52,7 @@ LabelNEntryButton::LabelNEntryButton(wxPanel *parent, wxString label, double num
 }
 
 // Multiple NEntry + single button
-LabelNEntryButton::LabelNEntryButton(wxPanel *parent, wxString label, vector<double> numval, vector<int> nentryID, wxString buttext, const int butID, int maxsize)
+LabelNEntryButton::LabelNEntryButton(wxPanel *parent, wxString label, vector<double> *numval, vector<int> *nentryID, wxString buttext, const int butID, int maxsize)
 {
     subsizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer *vbox = new wxBoxSizer(wxVERTICAL);
@@ -63,10 +63,10 @@ LabelNEntryButton::LabelNEntryButton(wxPanel *parent, wxString label, vector<dou
        cout << "# LabelNEntryButton     #: " << "Label text width = " << GetLabelWidth(widgetLabel) << ", Label text height = " << GetLabelHeight(widgetLabel) << endl;
     // Create a number entry
     int nesize = 0;
-    for(int i = 0; i < numval.size(); i++)
+    for(int i = 0; i < numval->size(); i++)
     {
-       widgetNE[i] = new wxSpinCtrlDouble(parent, (const int)nentryID[i]);
-       widgetNE[i]->SetValue(numval[i]);
+       widgetNE[i] = new wxSpinCtrlDouble(parent, (const int)nentryID->at(i));
+       widgetNE[i]->SetValue(numval->at(i));
        if(DBGSIG > 1)
           cout << "# LabelNEntryButton     #: " << "Number entry " << i+1 << " width = " << GetNumEntryWidth(widgetNE[i]) << ", Number entry " << i+1 << " height = " << GetNumEntryHeight(widgetNE[i]) << endl;
        nesize += GetNumEntryWidth(widgetNE[i]) + 2*padding;
@@ -87,7 +87,7 @@ LabelNEntryButton::LabelNEntryButton(wxPanel *parent, wxString label, vector<dou
 
        wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
 
-       for(int i = 0; i < numval.size(); i++)
+       for(int i = 0; i < numval->size(); i++)
           hbox->Add(widgetNE[i], 0, wxLEFT | wxRIGHT, padding);
        hbox->Add(widgetTB[0], 0, wxLEFT | wxRIGHT, padding);
 
@@ -97,7 +97,7 @@ LabelNEntryButton::LabelNEntryButton(wxPanel *parent, wxString label, vector<dou
     else
     {
        subsizer->Add(widgetLabel, 0, wxLEFT | wxTOP, padding);
-       for(int i = 0; i < numval.size(); i++)
+       for(int i = 0; i < numval->size(); i++)
           subsizer->Add(widgetNE[i], 0, wxLEFT | wxRIGHT, padding);
        subsizer->Add(widgetTB[0], 0, wxLEFT | wxRIGHT, padding);
     }
@@ -107,7 +107,7 @@ LabelNEntryButton::LabelNEntryButton(wxPanel *parent, wxString label, vector<dou
 }
 
 // Single NEntry + multiple buttons
-LabelNEntryButton::LabelNEntryButton(wxPanel *parent, wxString label, double numval, const int nentryID, vector<string> buttext, vector<int> butID, int maxsize)
+LabelNEntryButton::LabelNEntryButton(wxPanel *parent, wxString label, double numval, const int nentryID, vector<string> *buttext, vector<int> *butID, int maxsize)
 {
     subsizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer *vbox = new wxBoxSizer(wxVERTICAL);
@@ -123,9 +123,9 @@ LabelNEntryButton::LabelNEntryButton(wxPanel *parent, wxString label, double num
        cout << "# LabelNEntryButton     #: " << "Number entry width = " << GetNumEntryWidth(widgetNE[0]) << ", Number entry height = " << GetNumEntryHeight(widgetNE[0]) << endl;
     // Create all button
     int butsize = 0;
-    for(int i = 0; i < buttext.size(); i++)
+    for(int i = 0; i < buttext->size(); i++)
     {
-       widgetTB[i] = new wxButton(parent, (const int)butID[i], buttext[i]);
+       widgetTB[i] = new wxButton(parent, (const int)butID->at(i), buttext->at(i));
        if(DBGSIG > 1)
           cout << "# LabelNEntryButton     #: " << "TextButton " << i+1 << " text width = " << GetButtonWidth(widgetTB[i]) << ", TextButton " << i+1 << " text height = " << GetButtonHeight(widgetTB[i]) << endl;
        butsize += GetButtonWidth(widgetTB[i]) + 2*padding;
@@ -142,7 +142,7 @@ LabelNEntryButton::LabelNEntryButton(wxPanel *parent, wxString label, double num
 
        wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
        hbox->Add(widgetNE[0], 0, wxLEFT | wxRIGHT, padding);
-       for(int i = 0; i < buttext.size(); i++)
+       for(int i = 0; i < buttext->size(); i++)
           hbox->Add(widgetTB[i], 0, wxLEFT | wxRIGHT, padding);
        vbox->Add(hbox, 1);
        subsizer->Add(vbox, 1);
@@ -151,7 +151,7 @@ LabelNEntryButton::LabelNEntryButton(wxPanel *parent, wxString label, double num
     {
        subsizer->Add(widgetLabel, 0, wxLEFT | wxTOP, padding);
        subsizer->Add(widgetNE[0], 0, wxLEFT | wxRIGHT, padding);
-       for(int i = 0; i < buttext.size(); i++)
+       for(int i = 0; i < buttext->size(); i++)
           subsizer->Add(widgetTB[i], 0, wxLEFT | wxRIGHT, padding);
     }
 
@@ -160,7 +160,7 @@ LabelNEntryButton::LabelNEntryButton(wxPanel *parent, wxString label, double num
 }
 
 // Multiple NEntry + multiple buttons
-LabelNEntryButton::LabelNEntryButton(wxPanel *parent, wxString label, vector<double> numval, vector<int> nentryID, vector<string> buttext, vector<int> butID, int maxsize)
+LabelNEntryButton::LabelNEntryButton(wxPanel *parent, wxString label, vector<double> *numval, vector<int> *nentryID, vector<string> *buttext, vector<int> *butID, int maxsize)
 {
     subsizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer *vbox = new wxBoxSizer(wxVERTICAL);
@@ -171,19 +171,19 @@ LabelNEntryButton::LabelNEntryButton(wxPanel *parent, wxString label, vector<dou
        cout << "# LabelNEntryButton     #: " << "Label text width = " << GetLabelWidth(widgetLabel) << ", Label text height = " << GetLabelHeight(widgetLabel) << endl;
     // Create a number entry
     int nesize = 0;
-    for(int i = 0; i < numval.size(); i++)
+    for(int i = 0; i < numval->size(); i++)
     {
-       widgetNE[i] = new wxSpinCtrlDouble(parent, (const int)nentryID[i]);
-       widgetNE[i]->SetValue(numval[i]);
+       widgetNE[i] = new wxSpinCtrlDouble(parent, (const int)nentryID->at(i));
+       widgetNE[i]->SetValue(numval->at(i));
        if(DBGSIG > 1)
           cout << "# LabelNEntryButton     #: " << "Number entry " << i+1 << " width = " << GetNumEntryWidth(widgetNE[i]) << ", Number entry " << i+1 << " height = " << GetNumEntryHeight(widgetNE[i]) << endl;
        nesize += GetNumEntryWidth(widgetNE[i]) + 2*padding;
     }
     // Create all button
     int butsize = 0;
-    for(int i = 0; i < buttext.size(); i++)
+    for(int i = 0; i < buttext->size(); i++)
     {
-       widgetTB[i] = new wxButton(parent, (const int)butID[i], buttext[i]);
+       widgetTB[i] = new wxButton(parent, (const int)butID->at(i), buttext->at(i));
        if(DBGSIG > 1)
           cout << "# LabelNEntryButton     #: " << "TextButton " << i+1 << " text width = " << GetButtonWidth(widgetTB[i]) << ", TextButton " << i+1 << " text height = " << GetButtonHeight(widgetTB[i]) << endl;
        butsize += GetButtonWidth(widgetTB[i]) + 2*padding;
@@ -199,9 +199,9 @@ LabelNEntryButton::LabelNEntryButton(wxPanel *parent, wxString label, vector<dou
           vbox->Add(-1, GetLabelHeight(widgetLabel));
 
        wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
-       for(int i = 0; i < numval.size(); i++)
+       for(int i = 0; i < numval->size(); i++)
           hbox->Add(widgetNE[i], 0, wxLEFT | wxRIGHT, padding);
-       for(int i = 0; i < buttext.size(); i++)
+       for(int i = 0; i < buttext->size(); i++)
           hbox->Add(widgetTB[i], 0, wxLEFT | wxRIGHT, padding);
        vbox->Add(hbox, 1);
        subsizer->Add(vbox, 1);
@@ -209,9 +209,9 @@ LabelNEntryButton::LabelNEntryButton(wxPanel *parent, wxString label, vector<dou
     else
     {
        subsizer->Add(widgetLabel, 0, wxLEFT | wxTOP, padding);
-       for(int i = 0; i < numval.size(); i++)
+       for(int i = 0; i < numval->size(); i++)
           subsizer->Add(widgetNE[i], 0, wxLEFT | wxRIGHT, padding);
-       for(int i = 0; i < buttext.size(); i++)
+       for(int i = 0; i < buttext->size(); i++)
           subsizer->Add(widgetTB[i], 0, wxLEFT | wxRIGHT, padding);
     }
 

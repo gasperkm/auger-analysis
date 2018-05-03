@@ -81,8 +81,9 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
 #endif
 {
    string *stemp;
-   stemp = new string[4];
    int *itemp;
+
+   stemp = new string[4];
    itemp = new int[2];
 
    cout << "# RewriteObservables    #: " << "# New input file (" << inname << ") ---------------------------------" << endl;
@@ -141,6 +142,8 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
 #if _STANDALONE_ == 0
       progress->Update(100);
 #endif
+      delete[] stemp;
+      delete[] itemp;
       return -1;
    }
    fFile->SetBuffers(&fRecEvent);
@@ -151,15 +154,23 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
 #endif
 
    // Prepare vector to determine if reconstruction has failed at some stage
-   vector<int> recfail;
+   vector<int> *recfail = new vector<int>;
    for(int i = 0; i < 10; i++)
-      recfail.push_back(0);
+      recfail->push_back(0);
 
    // Go over all events in the ADST file and write them out to the output file
    for(int j = 0; j < itemp[0]; j++)
    {
       // Update the progress bar
-      if(itemp[0] >= 50)
+      if(itemp[0] < 10)
+      {
+#if _STANDALONE_ == 0
+         progress->Update(j);
+#elif _STANDALONE_ == 1
+	 cerr << "Currently at " << j << "/" << itemp[0] << endl;
+#endif
+      }
+      else if(itemp[0] >= 50)
       {
          if(j%((int)(itemp[0]*0.05)) == 0)
 	 {
@@ -224,7 +235,7 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
       {
          if(DBGSIG > 0)
             cout << "# RewriteObservables    #: " << "Error! No triggered stations in SD reconstruction." << endl;
-         if(goodrec) recfail[3]++;
+         if(goodrec) (recfail->at(3))++;
          goodrec = false;
       }
 
@@ -233,7 +244,7 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
       {
          if(DBGSIG > 0)
             cout << "# RewriteObservables    #: " << "Error! No stations in SD reconstruction." << endl;
-         if(goodrec) recfail[4]++;
+         if(goodrec) (recfail->at(4))++;
          goodrec = false;
       }
 
@@ -242,7 +253,7 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
       {
          if(DBGSIG > 0)
             cout << "# RewriteObservables    #: " << "Error! No VEM traces in SD tanks." << endl;
-         if(goodrec) recfail[5]++;
+         if(goodrec) (recfail->at(5))++;
          goodrec = false;
       }
 
@@ -260,7 +271,7 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
          if(DBGSIG > 0)
             cout << "# RewriteObservables    #: " << "   Error! No reconstructed eyes for this event." << endl;
          if(goodrec)
-	    recfail[0]++;
+	    (recfail->at(0))++;
          goodrec = false;
       }
       else
@@ -291,7 +302,7 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
          }
 
          if(!goodrec)
-	    recfail[1]++;
+	    (recfail->at(1))++;
 
          if(goodrec)
 	 {
@@ -316,19 +327,20 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
    cerr << "Finished rewriting" << endl;
 #endif
 
-   cout << "# RewriteObservables    #: " << recfail[0]+recfail[1]+recfail[2]+recfail[3]+recfail[4]+recfail[5]+recfail[6]+recfail[7] << " events have been removed:" << endl;
-   cout << "# RewriteObservables    #: " << " - No reconstructed FD eyes:      " << recfail[0] << " events" << endl;
-   cout << "# RewriteObservables    #: " << " - Not a hybrid event:            " << recfail[1] << " events" << endl;
-   cout << "# RewriteObservables    #: " << " - No valid FD reconstructions:   " << recfail[2] << " events" << endl;
-   cout << "# RewriteObservables    #: " << " - No triggered SD stations:      " << recfail[3] << " events" << endl;
-   cout << "# RewriteObservables    #: " << " - No reconstructed SD stations:  " << recfail[4] << " events" << endl;
-   cout << "# RewriteObservables    #: " << " - No reconstructed VEM traces:   " << recfail[5] << " events" << endl;
-   cout << "# RewriteObservables    #: " << " - No reconstructed risetime:     " << recfail[6] << " events" << endl;
-   cout << "# RewriteObservables    #: " << " - No Area-over-Peak calculation: " << recfail[7] << " events" << endl;
+   cout << "# RewriteObservables    #: " << (recfail->at(0))+(recfail->at(1))+(recfail->at(2))+(recfail->at(3))+(recfail->at(4))+(recfail->at(5))+(recfail->at(6))+(recfail->at(7)) << " events have been removed:" << endl;
+   cout << "# RewriteObservables    #: " << " - No reconstructed FD eyes:      " << recfail->at(0) << " events" << endl;
+   cout << "# RewriteObservables    #: " << " - Not a hybrid event:            " << recfail->at(1) << " events" << endl;
+   cout << "# RewriteObservables    #: " << " - No valid FD reconstructions:   " << recfail->at(2) << " events" << endl;
+   cout << "# RewriteObservables    #: " << " - No triggered SD stations:      " << recfail->at(3) << " events" << endl;
+   cout << "# RewriteObservables    #: " << " - No reconstructed SD stations:  " << recfail->at(4) << " events" << endl;
+   cout << "# RewriteObservables    #: " << " - No reconstructed VEM traces:   " << recfail->at(5) << " events" << endl;
+   cout << "# RewriteObservables    #: " << " - No reconstructed risetime:     " << recfail->at(6) << " events" << endl;
+   cout << "# RewriteObservables    #: " << " - No Area-over-Peak calculation: " << recfail->at(7) << " events" << endl;
 
    sig_tree->Write();
    fFile->Close();
 
+   delete recfail;
    delete fFile;
    delete sig_tree;
    delete[] stemp;

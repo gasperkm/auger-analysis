@@ -3,7 +3,7 @@
 class LabelListEdit : public Subheader
 {
 public:
-    LabelListEdit(wxPanel *parent, wxString label, int width, int height, int multi, const int listID, vector<int> butID);
+    LabelListEdit(wxPanel *parent, wxString label, int width, int height, int multi, const int listID, vector<int> *butID);
 
     wxStaticText *widgetLabel;
 //    wxEditableListBox *widgetLB;

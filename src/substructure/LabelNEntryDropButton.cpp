@@ -4,7 +4,7 @@
 #include <iostream>
 
 // Single NEntry and single button
-LabelNEntryDropButton::LabelNEntryDropButton(wxPanel *parent, wxString label, double numval, const int nentryID, vector<string> entrytext, string selecttext, const int dropID, wxString buttext, const int butID, int maxsize)
+LabelNEntryDropButton::LabelNEntryDropButton(wxPanel *parent, wxString label, double numval, const int nentryID, vector<string> *entrytext, string selecttext, const int dropID, wxString buttext, const int butID, int maxsize)
 {
     subsizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer *vbox = new wxBoxSizer(wxVERTICAL);
@@ -22,8 +22,8 @@ LabelNEntryDropButton::LabelNEntryDropButton(wxPanel *parent, wxString label, do
     widgetCB = new wxChoice(parent, dropID);
     if(DBGSIG > 1)
        cout << "# LabelNEntryDropButton #: " << "DropBox width = " << GetDropBoxWidth(widgetCB) << ", DropBox height = " << GetDropBoxHeight(widgetCB) << endl;
-    for(int i = 0; i < entrytext.size(); i++)
-       widgetCB->Append(entrytext[i]);
+    for(int i = 0; i < entrytext->size(); i++)
+       widgetCB->Append(entrytext->at(i));
     // Create a button
     widgetTB[0] = new wxButton(parent, butID, buttext);
     if(DBGSIG > 1)

@@ -57,7 +57,7 @@ LabelButton::LabelButton(wxPanel *parent, wxString label, wxString buttext, cons
 }
 
 // Multiple buttons
-LabelButton::LabelButton(wxPanel *parent, wxString label, vector<string> buttext, vector<int> butID, int maxsize)
+LabelButton::LabelButton(wxPanel *parent, wxString label, vector<string> *buttext, vector<int> *butID, int maxsize)
 {
     bool nolabel = false;
     if(label.IsEmpty())
@@ -70,9 +70,9 @@ LabelButton::LabelButton(wxPanel *parent, wxString label, vector<string> buttext
     {
        // Create all buttons
        int butsize = 0;
-       for(int i = 0; i < buttext.size(); i++)
+       for(int i = 0; i < buttext->size(); i++)
        {
-          widgetTB[i] = new wxButton(parent, (const int)butID[i], buttext[i]);
+          widgetTB[i] = new wxButton(parent, (const int)butID->at(i), buttext->at(i));
           if(DBGSIG > 1)
              cout << "# LabelButton           #: " << "TextButton " << i+1 << " text width = " << GetButtonWidth(widgetTB[i]) << ", TextButton " << i+1 << " text height = " << GetButtonHeight(widgetTB[i]) << endl;
           butsize += GetButtonWidth(widgetTB[i]) + 2*padding;
@@ -88,9 +88,9 @@ LabelButton::LabelButton(wxPanel *parent, wxString label, vector<string> buttext
           cout << "# LabelButton           #: " << "Label text width = " << GetLabelWidth(widgetLabel) << ", Label text height = " << GetLabelHeight(widgetLabel) << endl;
        // Create all buttons
        int butsize = 0;
-       for(int i = 0; i < buttext.size(); i++)
+       for(int i = 0; i < buttext->size(); i++)
        {
-          widgetTB[i] = new wxButton(parent, (const int)butID[i], buttext[i]);
+          widgetTB[i] = new wxButton(parent, (const int)butID->at(i), buttext->at(i));
           if(DBGSIG > 1)
              cout << "# LabelButton           #: " << "TextButton " << i+1 << " text width = " << GetButtonWidth(widgetTB[i]) << ", TextButton " << i+1 << " text height = " << GetButtonHeight(widgetTB[i]) << endl;
           butsize += GetButtonWidth(widgetTB[i]) + 2*padding;
@@ -107,7 +107,7 @@ LabelButton::LabelButton(wxPanel *parent, wxString label, vector<string> buttext
 
           wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
 
-          for(int i = 0; i < buttext.size(); i++)
+          for(int i = 0; i < buttext->size(); i++)
              hbox->Add(widgetTB[i], 0, wxLEFT | wxRIGHT, padding);
 
           vbox->Add(hbox, 1);
@@ -116,7 +116,7 @@ LabelButton::LabelButton(wxPanel *parent, wxString label, vector<string> buttext
        else
        {
           subsizer->Add(widgetLabel, 0, wxLEFT | wxTOP, padding);
-          for(int i = 0; i < buttext.size(); i++)
+          for(int i = 0; i < buttext->size(); i++)
              subsizer->Add(widgetTB[i], 0, wxLEFT | wxRIGHT, padding);
        }
     }

@@ -50,22 +50,22 @@ int ResultRead::ReadFile(string inname)
    fraction[1] = -1;
    fraction[2] = -1;
 
-   ifstream ifile;
-   ifile.open(inname.c_str(), ifstream::in);
+   ifstream *ifile = new ifstream;
+   ifile->open(inname.c_str(), ifstream::in);
 
    filename = inname;
 
-   if(ifile.is_open())
+   if(ifile->is_open())
    {
-      ifile >> ebin[0] >> ebin[1];
+      *ifile >> ebin[0] >> ebin[1];
 
       for(int i = 0; i < 3; i++)
       {
-         ifile >> valtype[i] >> mvacut[i] >> nrtrees[i];
+         *ifile >> valtype[i] >> mvacut[i] >> nrtrees[i];
 
          for(int j = 0; j < *nrtrees; j++)
          {
-            ifile >> itemp[0] >> itemp[1] >> itemp[2] >> itemp[3] >> stemp[0];
+            *ifile >> itemp[0] >> itemp[1] >> itemp[2] >> itemp[3] >> stemp[0];
 
 /*            if(itemp[0] > 0)
             {*/
@@ -78,11 +78,15 @@ int ResultRead::ReadFile(string inname)
          }
       }
 
-      ifile.close();
+      ifile->close();
+      delete ifile;
       return 0;
    }
    else
+   {
+      delete ifile;
       return 1;
+   }
 }
 
 float ResultRead::GetEnergy()

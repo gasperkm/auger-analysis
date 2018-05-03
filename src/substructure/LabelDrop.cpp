@@ -2,7 +2,7 @@
 #include "substructure/LabelDrop.h"
 #include "workstation.h"
 
-LabelDrop::LabelDrop(wxPanel *parent, wxString label, vector<string> entrytext, string selecttext, const int dropID, int maxsize)
+LabelDrop::LabelDrop(wxPanel *parent, wxString label, vector<string> *entrytext, string selecttext, const int dropID, int maxsize)
 {
     subsizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer *vbox = new wxBoxSizer(wxVERTICAL);
@@ -14,8 +14,8 @@ LabelDrop::LabelDrop(wxPanel *parent, wxString label, vector<string> entrytext, 
     widgetCB = new wxChoice(parent, dropID);
     if(DBGSIG > 1)
        cout << "# LabelDrop             #: " << "DropBox width = " << GetDropBoxWidth(widgetCB) << ", DropBox height = " << GetDropBoxHeight(widgetCB) << endl;
-    for(int i = 0; i < entrytext.size(); i++)
-       widgetCB->Append(entrytext[i]);
+    for(int i = 0; i < entrytext->size(); i++)
+       widgetCB->Append(entrytext->at(i));
 
     // Determine their sizes and arrange them accordingly
     if(GetLabelWidth(widgetLabel) + GetDropBoxWidth(widgetCB) + 4*padding > maxsize)

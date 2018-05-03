@@ -3,6 +3,7 @@
 #include "adst_mva.h"
 #include "popups.h"
 #include "combine.h"
+#include "mvaefficiency.h"
 #include <algorithm>
 
 // Add observables to the MVA analysis
@@ -15,12 +16,13 @@ int MyFrame::MvaNoteObservables(int count)
    if(DBGSIG > 0)
       cout << "# MvaNoteObservables    #: " << "Number of different selected observables: " << count << endl;
    *stemp = string(rootdir) + "/results/observables_nr.dat";
-   ofstream fobser;
-   fobser.open(stemp->c_str(), ofstream::out | ofstream::trunc);
-   if(fobser.is_open())
-      fobser << count << endl;
-   fobser.close();
+   ofstream *fobser = new ofstream;
+   fobser->open(stemp->c_str(), ofstream::out | ofstream::trunc);
+   if(fobser->is_open())
+      *fobser << count << endl;
+   fobser->close();
 
+   delete fobser;
    delete stemp;
    return count;
 }
@@ -35,9 +37,9 @@ int MyFrame::MvaTreeFile(string *infilename, string *outfilename, int *nrEvents)
 
    TTree *signalTempTree[nrkeys];
 
-   int selectedBin[2];
+/*   int selectedBin[2];
    selectedBin[0] = (cutEnergyBins->widgetCB)->GetSelection();
-   selectedBin[1] = (cutZenithBins->widgetCB)->GetSelection();
+   selectedBin[1] = (cutZenithBins->widgetCB)->GetSelection();*/
 
    if( (signalSelect->widgetCB)->GetSelection() == (backgroundSelect->widgetCB)->GetSelection() )
    {
@@ -79,6 +81,8 @@ int MyFrame::MvaTreeFile(string *infilename, string *outfilename, int *nrEvents)
          return -1;
       }
       signalTempTree[j-1]->Write();
+
+      delete signalTempTree[j-1];
    }
 
    ofile->Close();
@@ -92,11 +96,11 @@ int MyFrame::MvaTreeFile(string *infilename, string *outfilename, int *nrEvents)
 int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
 {
    string *stemp;
-   stemp = new string[3];
-   vector<int> seleye;
    int *itemp;
-   itemp = new int[4];
    float *ftemp;
+
+   stemp = new string[3];
+   itemp = new int[4];
    ftemp = new float[9];
 
    // SD observables for cut
@@ -189,7 +193,8 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
    // Prepare the input tree (temporary tree) and observables to read them
    if(DBGSIG > 1)
       cout << "# MvaSetTrees           #: " << "Tree name = " << stemp[0] << endl;
-   TTree *tempTree = (TTree*)ifile->Get(stemp[0].c_str());
+   TTree *tempTree = new TTree;
+   tempTree = (TTree*)ifile->Get(stemp[0].c_str());
 
    Observables *invalues = new Observables(observables);
    Observables *invalues_neg = new Observables(observables);
@@ -213,16 +218,19 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
    itemp[2] = 0;
    itemp[3] = 0;
 
+   vector<int> *seleye;
+   seleye = new vector<int>;
+
    for(int j = 0; j < tempTree->GetEntries(); j++)
    {
       tempTree->GetEntry(j);
 
       // Check if event is inside the selected cuts
-      if(!seleye.empty()) seleye.erase(seleye.begin(), seleye.end());
+      if(!seleye->empty()) seleye->erase(seleye->begin(), seleye->end());
 
       if(DBGSIG > 1)
          cout << "# MvaSetTrees           #: " << "Event = " << j << endl;
-      ret = IsInsideCuts(invalues, invalues_neg, invalues_pos, &seleye, false);
+      ret = IsInsideCuts(invalues, invalues_neg, invalues_pos, seleye, false);
 
       // Combine stereo FD events
       if(ret == 0)
@@ -243,7 +251,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
 	    itemp[2] = 0;
 	    itemp[3] = 0;
 
-            for(int k = 0; k < seleye.size(); k++)
+            for(int k = 0; k < seleye->size(); k++)
             {
 	       itemp[2]++;
 	       if(invalues->GetValue(i, k) != -1)
@@ -331,30 +339,30 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
       else if(ret == 1)
       {
          if(DBGSIG > 1)
-	    cout << "# MvaSetTrees           #: " << "Event " << j << " IsInsideCuts (" << seleye.size() << ")" << endl;
-         itemp[2] = seleye[0];
+	    cout << "# MvaSetTrees           #: " << "Event " << j << " IsInsideCuts (" << seleye->size() << ")" << endl;
+         itemp[2] = seleye->at(0);
 
          itemp[0]++;
-         if(seleye.size() > 1)
+         if(seleye->size() > 1)
          {
             itemp[1]++;
 
             if(DBGSIG > 1)
 	    {
                cout << "# MvaSetTrees           #: " << "Event " << j << " has multiple eyes inside the cuts = ";
-               for(int i = 0; i < seleye.size(); i++)
-                  cout << seleye[i] << " ";
+               for(int i = 0; i < seleye->size(); i++)
+                  cout << seleye->at(i) << " ";
                cout << endl;
             }
 
             // Determine which FD eye has the smallest error on xmax
             ftemp[3] = 100.;
 
-	    for(int k = 0; k < seleye.size(); k++)
+	    for(int k = 0; k < seleye->size(); k++)
 	    {
                // Get error on xmax value (relative)
-               ftemp[0] = invalues->GetValue(generalObservables->GetInt("xmax"), seleye[k]);
-               ftemp[1] = invalues_neg->GetValue(generalObservables->GetInt("xmax"), seleye[k]);
+               ftemp[0] = invalues->GetValue(generalObservables->GetInt("xmax"), seleye->at(k));
+               ftemp[1] = invalues_neg->GetValue(generalObservables->GetInt("xmax"), seleye->at(k));
 
             if(DBGSIG > 1)
 	       cout << "# MvaSetTrees           #: " << "Values: " << ftemp[0] << ", " << ftemp[1] << endl;
@@ -369,7 +377,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
 	       if(ftemp[0] < ftemp[3])
 	       {
                   ftemp[3] = ftemp[0];
-		  itemp[2] = seleye[k];
+		  itemp[2] = seleye->at(k);
 	       }
 	    }
 	    
@@ -394,7 +402,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
          for(int i = 0; i < nrobs; i++)
 	 {
 	    outobs[i] = 0;
-            for(int k = 0; k < seleye.size(); k++)
+            for(int k = 0; k < seleye->size(); k++)
             {
 	       if(invalues->GetValue(i, k) != -1)
 	       {
@@ -404,9 +412,9 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
 	       }
 	    }
 
-	    outobs[i] = outobs[i]/(seleye.size());
-	    outobs_neg[i] = outobs_neg[i]/(seleye.size());
-	    outobs_pos[i] = outobs_pos[i]/(seleye.size());
+	    outobs[i] = outobs[i]/(seleye->size());
+	    outobs_neg[i] = outobs_neg[i]/(seleye->size());
+	    outobs_pos[i] = outobs_pos[i]/(seleye->size());
 
 	    if(DBGSIG > 0)
                cout << "# MvaSetTrees           #: " << "Writeout values (average): " << outobs[i] << ", " << outobs_neg[i] << ", " << outobs_pos[i] << endl;
@@ -420,6 +428,8 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
 
    ret = itemp[0];
 
+   delete seleye;
+   delete tempTree;
    delete[] outobs;
    delete[] outobs_neg;
    delete[] outobs_pos;
@@ -435,26 +445,29 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
 
 int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, vector<int> *seleye, bool split)
 {
-   bool *sepcut, isinside;
-   sepcut = new bool[3];
+   bool *sepcut, *isinside;
    bool *btemp;
-   btemp = new bool[2];
    float *ftemp;
-   ftemp = new float[4];
    float *ftempaver;
-   ftempaver = new float[2];
    float *wQuantity, *quantitySum, *wQuantitySum;
+   int *avercount;
+
+   sepcut = new bool[3];
+   isinside = new bool;
+   btemp = new bool[2];
+   ftemp = new float[4];
+   ftempaver = new float[2];
    wQuantity = new float[2];
    quantitySum = new float[2];
    wQuantitySum = new float[2];
-   int *avercount;
    avercount = new int[2];
-   isinside = false;
+
+   *isinside = false;
    sepcut[0] = false;
    sepcut[1] = false;
    sepcut[2] = false;
 
-   int selectedBin[2];
+   int *selectedBin = new int[2];
    selectedBin[0] = (cutEnergyBins->widgetCB)->GetSelection();
    selectedBin[1] = (cutZenithBins->widgetCB)->GetSelection();
 
@@ -774,22 +787,25 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
       else
          sepcut[2] = true;
 
-      isinside = sepcut[0] & sepcut[1] & sepcut[2];
+      *isinside = sepcut[0] & sepcut[1] & sepcut[2];
 
       if(DBGSIG > 1)
-         cout << endl << "# IsInsideCuts          #: " << "isinside = " << (int)isinside << ", sepcut[0] = " << (int)sepcut[0] << ", sepcut[1] = " << (int)sepcut[1] << ", sepcut[2] = " << (int)sepcut[2] << endl;
+         cout << endl << "# IsInsideCuts          #: " << "isinside = " << (int)*isinside << ", sepcut[0] = " << (int)sepcut[0] << ", sepcut[1] = " << (int)sepcut[1] << ", sepcut[2] = " << (int)sepcut[2] << endl;
 
-      if(isinside)
+      if(*isinside)
          seleye->push_back(i);
    }
 
    delete[] sepcut;
+   delete isinside;
+   delete[] btemp;
    delete[] ftemp;
    delete[] ftempaver;
    delete[] avercount;
    delete[] wQuantity;
    delete[] quantitySum;
    delete[] wQuantitySum;
+   delete[] selectedBin;
 
    if(DBGSIG > 1)
       cout << "# IsInsideCuts          #: " << "return code = " << seleyetype << endl;
@@ -803,6 +819,253 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
    }
    else
       return -1;
+}
+
+// Perform the MVA analysis on a collection of observables
+int MyFrame::PerformMvaAnalysis(string *infilename, string *outfilename, int type)
+{
+   int *nrTreeEvents;
+   string *stemp;
+   int *itemp;
+
+   nrTreeEvents = new int[nrkeys];
+   stemp = new string[4];
+   itemp = new int[3];
+
+   TFile *ifile = TFile::Open(infilename->c_str(), "READ");
+   // Open the file to write out to
+   TFile *ofile = TFile::Open(outfilename->c_str(), "RECREATE");
+   // Prepare the MVA Factory
+   // Factory usage:
+   // - user-defined job name, reappearing in names of weight files for training results ("TMVAClassification")
+   // - pointer to an output file (ofile)
+   // - options
+   // Factory has the following options:
+   //        V = verbose
+   //        Silent = batch mode
+   //        Color = colored screen output
+   //        DrawProgressBar = progress bar display during training and testing
+   //        Transformations = the transformations to make (identity, decorrelation, PCA, uniform, gaussian, gaussian decorrelation)
+   //        AnalysisType = setting the analysis type (Classification, Regression, Multiclass, Auto)
+   // Default values = !V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Auto
+   TMVA::Factory *factory = new TMVA::Factory("TMVAClassification",ofile,"!V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Classification");
+
+   // Selecting the weights directory
+   (TMVA::gConfig().GetIONames()).fWeightFileDir = ((*currentAnalysisDir) + "/weights").c_str();
+   cout << "# StartMvaAnalysis      #: " << "Weights directory after = " << (TMVA::gConfig().GetIONames()).fWeightFileDir << endl;
+//   itemp[1]++;
+//   progress->Update(itemp[1]);
+
+   // Adding observables to the Factory
+   nrTreeEvents[0] = 0;
+   for(int i = 0; i < nrobs; i++)
+   {
+      if(obssel[i])
+      {
+         factory->AddVariable(observables[i].c_str(), 'F');
+         cout << "# StartMvaAnalysis      #: " << "Adding variable: " << observables[i] << " (" << (int)obssel[i] << ")" << endl;
+         nrTreeEvents[0]++;
+      }
+   }
+   nrselobs = MvaNoteObservables(nrTreeEvents[0]);
+//   itemp[1]++;
+//   progress->Update(itemp[1]);
+
+   // Select signal and background trees (from the temporary input file)
+   TTree *signalTree = new TTree;
+   TTree *backgroundTree[mixednum];
+   for(int j = 0; j < mixednum; j++)
+      backgroundTree[j] = new TTree;
+   itemp[2] = 0;
+
+   nrTreeEvents[0] = -1;
+   nrTreeEvents[1] = -1;
+   TList *tempkeyslist = (TList*) ifile->GetListOfKeys();
+   for(int j = 1; j <= ifile->GetNkeys(); j++)
+   {
+      stemp[0] = string((tempkeyslist->At(j-1))->GetName());
+      stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
+      stemp[1] = RemovePath(&stemp[1]);
+
+      // Signal tree setup
+      if( string((signalSelect->widgetCB)->GetStringSelection()) == stemp[1] )
+      {
+         cout << "# StartMvaAnalysis      #: " << "Using signal tree: " << stemp[1] << endl;
+         signalTree = (TTree*)ifile->Get(stemp[0].c_str());
+         nrTreeEvents[0] = signalTree->GetEntries();
+/*         itemp[1]++;
+         progress->Update(itemp[1]);*/
+      }
+
+      // Background tree setup
+      stemp[3] = string((backgroundSelect->widgetCB)->GetStringSelection());
+      if( stemp[3].find(stemp[1]) != string::npos )
+      {
+         cout << "# StartMvaAnalysis      #: " << "Using background tree " << itemp[2] << ": " << stemp[1] << endl;
+         backgroundTree[itemp[2]] = (TTree*)ifile->Get(stemp[0].c_str());
+         nrTreeEvents[1] = backgroundTree[itemp[2]]->GetEntries();
+         itemp[2]++;
+      }
+   }
+
+//   itemp[1]++;
+//   progress->Update(itemp[1]);
+
+   cout << "# StartMvaAnalysis      #: " << "Number of entries in signal tree = " << nrTreeEvents[0] << endl;
+   cout << "# StartMvaAnalysis      #: " << "Number of entries in background tree = " << nrTreeEvents[1] << endl;
+
+   // Add signal and background tree
+   factory->AddSignalTree(signalTree, 1.0);
+   for(int i = 0; i < itemp[2]; i++)
+      factory->AddBackgroundTree(backgroundTree[i], 1.0);
+
+   // Preparing and training from the trees:
+   // - preselection cuts make cuts on input variables, before even starting the MVA
+   // - options
+   // These are the possible options:
+   //        nTrain_Signal = number of training events of class Signal (0 takes all)
+   //        nTrain_Background = number of training events of class Background (0 takes all)
+   //        nTest_Signal = number of test events of class Signal (0 takes all)
+   //        nTest_Background = number of test events of class Background (0 takes all)
+   //        SplitMode = method of choosing training and testing events (Random, Alternate, Block)
+   //        NormMode = renormalisation of event-by-event weights for training (NumEvents: average weight of 1 per event for signal and background, EqualNumEvents: average weight of 1 per event for signal and sum of weights for background equal to sum of weights for signal, None)
+   //        V = verbose
+   //        MixMode = method of mixing events of different classes into one dataset (SameAsSplitMode, Random, Alternate, Block)
+   //        SplitSeed = seed for random event shuffling (default = 100)
+   //        VerboseLevel = level of verbose (Debug, Verbose, Info)
+   factory->PrepareTrainingAndTestTree("", "", "nTrain_Signal=0:nTrain_Background=0:SplitMode=Random:NormMode=NumEvents:!V");
+//   itemp[1]++;
+//   progress->Update(itemp[1]);
+
+   // Booking MVA methods:
+   // - type of MVA method to be used (all defined in src/Types.h)
+   // - the unique name for the MVA method suplied by the user
+   // - options
+   // The possible options for each method are defined here: http://tmva.sourceforge.net/optionRef.html
+   // For example:
+   //        H = print method-specific help message
+   //        V = verbose
+   //        NeuronType = neuron activation function type (default = sigmoid)
+   //        VarTransform = list of variable transformations to do before training (D_Background,P_Signal,G,N_AllClasses -> N = Normalization for all classes)
+   //        NCycles = number of training cycles
+   //        HiddenLayers = hidden layer architecture (default = N,N-1)
+   //        TestRate = test for overtraining at each #th epoch (default = 10)
+   //        TrainingMethod = train with back propagation (BP), BFGS algorithm (BFGS) or generic algorithm (GA)
+   //        UseRegulator = use regulator to avoid overtraining
+   if(BookTheMethod(factory) == -1)
+   {
+      progress->Update(itemp[0]);
+      delete signalTree;
+      for(int j = 0; j < mixednum; j++)
+         delete backgroundTree[j];
+      ifile->Close();
+      delete factory;
+      ofile->Close();
+
+      AlertPopup("Invalid MVA method", "The selected MVA method is invalid. Please make sure it is correctly defined.");
+      delete[] stemp;
+      delete[] nrTreeEvents;
+      delete[] itemp;
+      return -1;
+   }
+//   itemp[1]++;
+//   progress->Update(itemp[1]);
+
+   // Train the selected methods and save them to the weights folder
+   factory->TrainAllMethods();
+//   itemp[1]++;
+//   progress->Update(itemp[1]);
+   // Test the selected methods by applying the trained data to the test data set -> outputs saved to TestTree output file and then to the output ROOT file
+   factory->TestAllMethods();
+//   itemp[1]++;
+//   progress->Update(itemp[1]);
+   // Evaluation of methods printed to stdout
+   factory->EvaluateAllMethods();
+//   itemp[1]++;
+//   progress->Update(itemp[1]);
+
+   // Close the open files
+   delete signalTree;
+   for(int j = 0; j < mixednum; j++)
+      delete backgroundTree[j];
+   ifile->Close();
+   delete factory;
+   ofile->Close();
+
+   // Copy the training values from results/transformation_stats.dat to the current analysis directory
+   stemp[3] = "cp -r " + string(rootdir) + "/results/transformation_stats.dat " + (*currentAnalysisDir) + "/";
+   system(stemp[3].c_str());
+
+   // Skip the GUI interface for best cut and automatically select signal/background
+   if(((cutEnergyBins->widgetNE[0])->GetValue() > 1) && ((specialMva->widgetChBox[0])->IsChecked()))
+   {
+      TString *inname = new TString;
+      *inname = (TString)(*outfilename);
+
+      MvaEfficiency *effplot = new MvaEfficiency(nrTreeEvents[0], nrTreeEvents[1], currentAnalysisDir);
+      effplot->RunMvaEfficiency(inname);
+      // Selecting the signal/purity cut (not using signal/background or optimal)
+      (cutMva->widgetNE[0])->SetValue(effplot->sigpurCut);
+
+      delete effplot;
+      delete inname;
+   }
+   // Open the MVA GUI to review the training and testing procedure
+   else
+   {
+      if((specialMva->widgetChBox[1])->IsChecked())
+      {
+         TString *inname = new TString;
+         *inname = (TString)(*outfilename);
+
+         MvaEfficiency *effplot = new MvaEfficiency(nrTreeEvents[0], nrTreeEvents[1], currentAnalysisDir);
+         effplot->RunMvaEfficiency(inname);
+
+         stemp[2] = "Finished running MVA analysis. For Signal/Background values of: [" + ToString(nrTreeEvents[0]) + "/" + ToString(nrTreeEvents[1]) + "] best cuts are (sig/bgd/pur/SNR):\n";
+         stemp[2] = stemp[2] + "- Optimal cut: " + ToString(effplot->optimalCut, 4) + " (" + ToString(100.*(effplot->GetHistValue(0, 0)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(0, 1)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(0, 2)), 2) + "%/" + ToString(effplot->GetHistValue(0, 3), 4) + ")\n";
+         stemp[2] = stemp[2] + "- Cut with equal Signal/Background: " + ToString(effplot->sigbgdCut, 4) + " (" + ToString(100.*(effplot->GetHistValue(1, 0)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(1, 1)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(1, 2)), 2) + "%/" + ToString(effplot->GetHistValue(1, 3), 4) + ")\n";
+         stemp[2] = stemp[2] + "- Cut with equal Signal/Purity: " + ToString(effplot->sigpurCut, 4) + " (" + ToString(100.*(effplot->GetHistValue(2, 0)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(2, 1)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(2, 2)), 2) + "%/" + ToString(effplot->GetHistValue(2, 3), 4) + ")\n";
+
+         NEDialog *cutMvaDialog = new NEDialog(wxT("MVA cut"), wxSize(600,200), stemp[2], "Set MVA cut:", effplot->sigpurCut, &ID_MVACUTDIALOG);
+         cutMvaDialog->SetNEntryFormat(cutMvaDialog->widgetNE, 4, 0.0001, 0, 0., 0.);
+         if(cutMvaDialog->ShowModal() == wxID_OK)
+            (cutMva->widgetNE[0])->SetValue(cutMvaDialog->GetNEValue());
+         else
+         {
+            delete[] stemp;
+            delete[] nrTreeEvents;
+            delete[] itemp;
+            delete effplot;
+            delete inname;
+            cutMvaDialog->Destroy();
+            delete cutMvaDialog;
+            return -1;
+         }
+
+         cutMvaDialog->Destroy();
+         delete cutMvaDialog;
+         delete effplot;
+         delete inname;
+      }
+   }
+
+   stemp[2] = (methodsSelect->widgetCB)->GetStringSelection();
+   applymva = GetMethodName(stemp[2]);
+
+   if( applymva == "All" )
+   {
+      AlertPopup("Multiple MVA methods", "Multiple MVA methods selected. To continue applying MVA cuts, please select only one method and rerun the analysis.");
+      delete[] stemp;
+      delete[] nrTreeEvents;
+      delete[] itemp;
+      return -1;
+   }
+
+   delete[] nrTreeEvents;
+   delete[] stemp;
+   delete[] itemp;
+
+   return 0;
 }
 
 // Get the TMVA type
@@ -869,9 +1132,10 @@ void MyFrame::SetTmvaType(TMVA::Factory *factory, int nr, string *formula)
 int MyFrame::BookTheMethod(TMVA::Factory *factory)
 {
    string *stemp;
-   stemp = new string[3];
    vector<string>::iterator it;
    int *itemp;
+
+   stemp = new string[3];
    itemp = new int[2];
 
    stemp[0] = (methodsSelect->widgetCB)->GetStringSelection();
@@ -906,10 +1170,11 @@ int MyFrame::BookTheMethod(TMVA::Factory *factory)
 int MyFrame::GetTrainingShift(string *mvafilename)
 {
    string *stemp;
-   stemp = new string[2];
    char *ctemp;
-   ctemp = new char[1024];
    double *dtemp;
+
+   stemp = new string[2];
+   ctemp = new char[1024];
    dtemp = new double;
 
    TFile *mvafile = TFile::Open(mvafilename->c_str(), "READ");
@@ -918,16 +1183,16 @@ int MyFrame::GetTrainingShift(string *mvafilename)
 
    // Check the stats used for the MVA training from file ./results/transformation_stats.dat and save them to vectors
    stemp[0] = (*currentAnalysisDir) + "/transformation_stats.dat";
-   ifstream fstats;
-   fstats.open(stemp[0].c_str(), ifstream::in);
+   ifstream *fstats = new ifstream;
+   fstats->open(stemp[0].c_str(), ifstream::in);
 
    if(!statsMin.empty()) statsMin.erase(statsMin.begin(), statsMin.end());
    if(!statsMax.empty()) statsMax.erase(statsMax.begin(), statsMax.end());
 
-   if(fstats.is_open())
+   if(fstats->is_open())
    {
-      if(fstats.peek() == '#')
-         fstats.getline(ctemp, 1024, '\n');
+      if(fstats->peek() == '#')
+         fstats->getline(ctemp, 1024, '\n');
 
       for(int i = 0; i < nrobs; i++)
       {
@@ -935,22 +1200,23 @@ int MyFrame::GetTrainingShift(string *mvafilename)
          {
             if(DBGSIG > 0)
                cout << "# GetTrainingShift      #: " << "Stats for " << observables[i] << ": ";
-            fstats >> *dtemp >> *dtemp;	// Mean and RMS of the testing distribution
-            fstats >> *dtemp;		// Minimum of the testing distribution
+            *fstats >> *dtemp >> *dtemp;	// Mean and RMS of the testing distribution
+            *fstats >> *dtemp;		// Minimum of the testing distribution
             statsMin.push_back(*dtemp);
             if(DBGSIG > 0)
                cout << *dtemp << ", ";
-            fstats >> *dtemp;		// Maximum of the testing distribution
+            *fstats >> *dtemp;		// Maximum of the testing distribution
             statsMax.push_back(*dtemp);
             if(DBGSIG > 0)
                cout << *dtemp << endl;
-            fstats.ignore(1, '\n');
+            fstats->ignore(1, '\n');
          }
       }
    }
 
-   fstats.close();
+   fstats->close();
    
+   delete fstats;
    delete[] stemp;
    delete[] ctemp;
    delete dtemp;
@@ -965,16 +1231,16 @@ void MyFrame::GetCorrelations(TFile *corfile)
    corrDir = (TDirectoryFile*)corrDir->Get("CorrelationPlots");
 
    string *stemp;
-   stemp = new string;
    int *itemp;
-   vector<string> vtemp;
+   vector<string> *vtemp = new vector<string>;
 
    for(int i = 0; i < nrobs; i++)
    {
       if(obssel[i])
-         vtemp.push_back(observables[i]);
+         vtemp->push_back(observables[i]);
    }
 
+   stemp = new string;
    itemp = new int[2];
    itemp[0] = 0;
 
@@ -982,19 +1248,19 @@ void MyFrame::GetCorrelations(TFile *corfile)
    {
       for(int j = i+1; j < nrselobs; j++)
       {
-         *stemp = "scat_" + vtemp[j] + "_vs_" + vtemp[i] + "_Signal_Id";
+         *stemp = "scat_" + vtemp->at(j) + "_vs_" + vtemp->at(i) + "_Signal_Id";
 	 if(DBGSIG > 0)
 	    cout << "# GetCorrelations       #: " << "Signal scatter plot: " << *stemp << " (" << ((TH2F*)corrDir->Get( (*stemp).c_str() ))->GetCorrelationFactor() << ")" << endl;
-         vtemp.push_back(*stemp);
+         vtemp->push_back(*stemp);
 
-         *stemp = "scat_" + vtemp[j] + "_vs_" + vtemp[i] + "_Background_Id";
+         *stemp = "scat_" + vtemp->at(j) + "_vs_" + vtemp->at(i) + "_Background_Id";
 	 if(DBGSIG > 0)
    	    cout << "# GetCorrelations       #: " << "Background scatter plot: " << *stemp << " (" << ((TH2F*)corrDir->Get( (*stemp).c_str() ))->GetCorrelationFactor() << ")" << endl;
-         vtemp.push_back(*stemp);
+         vtemp->push_back(*stemp);
       }
    }
 
-   vtemp.erase(vtemp.begin(), vtemp.begin()+nrselobs);
+   vtemp->erase(vtemp->begin(), vtemp->begin()+nrselobs);
 
 
    for(int i = 0; i < nrselobs; i++)
@@ -1008,11 +1274,11 @@ void MyFrame::GetCorrelations(TFile *corfile)
 	 }
 	 else if(i < j)
 	 {
-	    (*sigCorMat)(i,j) = ((TH2F*)corrDir->Get( (vtemp[itemp[0]]).c_str() ))->GetCorrelationFactor();
-	    (*backCorMat)(i,j) = ((TH2F*)corrDir->Get( (vtemp[itemp[0]+1]).c_str() ))->GetCorrelationFactor();
+	    (*sigCorMat)(i,j) = ((TH2F*)corrDir->Get( (vtemp->at(itemp[0])).c_str() ))->GetCorrelationFactor();
+	    (*backCorMat)(i,j) = ((TH2F*)corrDir->Get( (vtemp->at(itemp[0]+1)).c_str() ))->GetCorrelationFactor();
 
-	    (*sigCorMat)(j,i) = ((TH2F*)corrDir->Get( (vtemp[itemp[0]]).c_str() ))->GetCorrelationFactor();
-	    (*backCorMat)(j,i) = ((TH2F*)corrDir->Get( (vtemp[itemp[0]+1]).c_str() ))->GetCorrelationFactor();
+	    (*sigCorMat)(j,i) = ((TH2F*)corrDir->Get( (vtemp->at(itemp[0])).c_str() ))->GetCorrelationFactor();
+	    (*backCorMat)(j,i) = ((TH2F*)corrDir->Get( (vtemp->at(itemp[0]+1)).c_str() ))->GetCorrelationFactor();
 
 	    itemp[0]+=2;
 	 }
@@ -1046,6 +1312,7 @@ void MyFrame::GetCorrelations(TFile *corfile)
       }
    }
 
+   delete vtemp;
    delete stemp;
    delete[] itemp;
    delete corrDir;
@@ -1057,18 +1324,18 @@ void MyFrame::GetApplyCorrelations(string *corname)
    stemp = new string[2];
 
    TCanvas *canvCor;
-   TTree *TCor;
-   TGraph *gr1;
+   TTree *TCor = new TTree;
+   TGraph *gr1 = new TGraph;
 
-   vector<string> vtemp;
+   vector<string> *vtemp = new vector<string>;
 
    for(int i = 0; i < nrobs; i++)
    {
       if(obssel[i])
-         vtemp.push_back(observables[i]);
+         vtemp->push_back(observables[i]);
    }
 
-   TFile *fileCor = new TFile(corname->c_str(), "READ");
+   TFile *fileCor = TFile::Open(corname->c_str(), "READ");
 
    canvCor = new TCanvas("canvCor", "", 800, 800);
 
@@ -1088,7 +1355,7 @@ void MyFrame::GetApplyCorrelations(string *corname)
 	       (*otherCorMat[k])(i,i) = 1;
 	    else if(i < j)
 	    {
-               stemp[1] = vtemp[i] + ":" + vtemp[j];
+               stemp[1] = vtemp->at(i) + ":" + vtemp->at(j);
 	       TCor->Draw(stemp[1].c_str());
                gr1 = (TGraph*)canvCor->GetPrimitive("Graph");
 	       (*otherCorMat[k])(i,j) = gr1->GetCorrelationFactor();
@@ -1115,6 +1382,9 @@ void MyFrame::GetApplyCorrelations(string *corname)
 
    // TEST
 
+   delete vtemp;
+//   delete TCor;
+   delete gr1;
    delete[] stemp;
    delete canvCor;
    delete fileCor;
@@ -1123,7 +1393,7 @@ void MyFrame::GetApplyCorrelations(string *corname)
 // Apply the MVA cut and save all events and MVA values into one output files (in order to plot anything from it)
 void MyFrame::CreateOutput(TTree *app, TMVA::Reader *reader, string mvamethod, float *obsvars, string signalName, int curtree, bool application, int mean)
 {
-   vector<string> obs;
+   vector<string> *obs = new vector<string>;
 
    int *sigcount, *backcount;
    sigcount = new int[nrselobs+1];
@@ -1135,7 +1405,7 @@ void MyFrame::CreateOutput(TTree *app, TMVA::Reader *reader, string mvamethod, f
       backcount[i] = 0;
    }
 
-   TBranch *mvabranch;
+   TBranch *mvabranch = new TBranch;
    if(mean == 0)
       mvabranch = app->Branch("MVA", &obsvars[nrobs], "MVA/F");
 
@@ -1145,11 +1415,11 @@ void MyFrame::CreateOutput(TTree *app, TMVA::Reader *reader, string mvamethod, f
    {
       if(obssel[i])
       {
-	 obs.push_back(observables[i]);
+	 obs->push_back(observables[i]);
          cout << "# CreateOutput          #: " << "- " << observables[i] << endl;
       }
    }
-   nrselobs = obs.size();
+   nrselobs = obs->size();
 
    if(DBGSIG > 1)
       cout << "# CreateOutput          #: " << "Number of events in the tree = " << app->GetEntries() << endl;
@@ -1169,7 +1439,7 @@ void MyFrame::CreateOutput(TTree *app, TMVA::Reader *reader, string mvamethod, f
       for(int i = 0; i <= nrselobs; i++)
       {
 	 if((i < nrselobs) && (DBGSIG > 1))
-            cout << "# CreateOutput          #: " << "  Event = " << ievt << ": values = " << obsvars[3*i] << ", " << obsvars[3*i+1] << ", " << obsvars[3*i+2] << ", observable = " << obs[i] << ", mvavalue = " << obsvars[nrobs] << endl;
+            cout << "# CreateOutput          #: " << "  Event = " << ievt << ": values = " << obsvars[3*i] << ", " << obsvars[3*i+1] << ", " << obsvars[3*i+2] << ", observable = " << obs->at(i) << ", mvavalue = " << obsvars[nrobs] << endl;
 
          if(obsvars[nrobs] >= (cutMva->widgetNE[0])->GetValue())
             sigcount[i]++;
@@ -1184,7 +1454,7 @@ void MyFrame::CreateOutput(TTree *app, TMVA::Reader *reader, string mvamethod, f
       for(int i = 0; i <= nrselobs; i++)
       {
          if(i < nrselobs)
-            cout << " - " << obs[i] << " = " << sigcount[i] << " vs. " << backcount[i] << endl;
+            cout << " - " << obs->at(i) << " = " << sigcount[i] << " vs. " << backcount[i] << endl;
          else
             cout << " - MVA = " << sigcount[i] << " vs. " << backcount[i] << endl;
       }
@@ -1200,20 +1470,19 @@ void MyFrame::CreateOutput(TTree *app, TMVA::Reader *reader, string mvamethod, f
    if(DBGSIG > 0)
       cout << "# CreateOutput          #: " << "Finished here..." << endl;
 
+   delete obs;
    delete[] sigcount;
    delete[] backcount;
 }
 
-void MyFrame::GetErrors(TTree *app, float *obsvars, vector<string> obs, int curtree)
+void MyFrame::GetErrors(TTree *app, float *obsvars, vector<string> *obs, int curtree)
 {
    string *stemp;
-   stemp = new string[2];
-//NG   ofstream outFile;
    TFile *outFile;
    double *dtemp;
-   dtemp = new double[2];
 
-   int cnt = 0;
+   stemp = new string[2];
+   dtemp = new double[2];
 
    if(DBGSIG > 1)
       cout << "# GetErrors             #: " << "Current tree = " << curtree << ", Observables size = " << nrselobs << endl;
@@ -1223,16 +1492,16 @@ void MyFrame::GetErrors(TTree *app, float *obsvars, vector<string> obs, int curt
    else
       outFile = TFile::Open(((*currentAnalysisDir) + "/mva_error.root").c_str(), "UPDATE");
    
-   vector<float> errObs;
-   float errVals[2];
+   vector<float> *errObs = new vector<float>;
+   float *errVals = new float[2];
 
    TTree *outTree = new TTree(("mva_error" + ToString(curtree)).c_str(), "MVA errors");
-   outTree->Branch("obs_errors", &errObs);
-   outTree->Branch("mva_errors", &errVals, "mva_errors[2]/F");
+   outTree->Branch("obs_errors", errObs);
+   outTree->Branch("mva_errors", errVals, "mva_errors[2]/F");
 
    for(int ievt = 0; ievt < app->GetEntries(); ievt++)
    {
-      errObs.clear();
+      errObs->clear();
      
       app->GetEntry(ievt);
 
@@ -1242,9 +1511,8 @@ void MyFrame::GetErrors(TTree *app, float *obsvars, vector<string> obs, int curt
       {
          if(DBGSIG > 1)
             cout << "# GetErrors             #: " << "j = " << j << ": observable value = " << obsvars[j] << endl;
-         errObs.push_back(obsvars[j]);
+         errObs->push_back(obsvars[j]);
       }
-      cnt = 0;
 
       double *norm1, *norm2;
       norm1 = new double[3];
@@ -1263,7 +1531,7 @@ void MyFrame::GetErrors(TTree *app, float *obsvars, vector<string> obs, int curt
 	 norm1[1] = ((obsvars[3*i] - obsvars[3*i+1] - statsMin[i])/(statsMax[i] - statsMin[i]))*2 - 1;
 	 norm1[2] = ((obsvars[3*i] + obsvars[3*i+2] - statsMin[i])/(statsMax[i] - statsMin[i]))*2 - 1;
          if(DBGSIG > 1)
-   	    cout << "# GetErrors             #: " << "Normalized values (" << obs[i] << "): " << norm1[0] << ", " << norm1[1] << ", " << norm1[2] << endl;
+   	    cout << "# GetErrors             #: " << "Normalized values (" << obs->at(i) << "): " << norm1[0] << ", " << norm1[1] << ", " << norm1[2] << endl;
 
          for(int j = 0; j < nrselobs; j++)
          {
@@ -1272,9 +1540,9 @@ void MyFrame::GetErrors(TTree *app, float *obsvars, vector<string> obs, int curt
 	    norm2[2] = ((obsvars[3*j] + obsvars[3*j+2] - statsMin[j])/(statsMax[j] - statsMin[j]))*2 - 1;
             if(DBGSIG > 1)
 	    {
-	       cout << "# GetErrors             #: " << "Xmin and Xmax (" << obs[j] << "): " << statsMin[j] << ", " << statsMax[j] << endl;
-	       cout << "# GetErrors             #: " << "Original values (" << obs[j] << "): " << obsvars[3*j] << ", " << obsvars[3*j] - obsvars[3*j+1] << ", " << obsvars[3*j] + obsvars[3*j+2] << endl;
-	       cout << "# GetErrors             #: " << "Normalized values (" << obs[j] << "): " << norm2[0] << ", " << norm2[1] << ", " << norm2[2] << endl;
+	       cout << "# GetErrors             #: " << "Xmin and Xmax (" << obs->at(j) << "): " << statsMin[j] << ", " << statsMax[j] << endl;
+	       cout << "# GetErrors             #: " << "Original values (" << obs->at(j) << "): " << obsvars[3*j] << ", " << obsvars[3*j] - obsvars[3*j+1] << ", " << obsvars[3*j] + obsvars[3*j+2] << endl;
+	       cout << "# GetErrors             #: " << "Normalized values (" << obs->at(j) << "): " << norm2[0] << ", " << norm2[1] << ", " << norm2[2] << endl;
 	    }
 
 	    if((signalSelect->widgetCB)->GetSelection() == curtree-1)
@@ -1364,8 +1632,11 @@ void MyFrame::GetErrors(TTree *app, float *obsvars, vector<string> obs, int curt
    }
 
    outFile->Write();
-   delete outFile;
+   delete outTree;
+   outFile->Close();
 
+   delete errObs;
+   delete[] errVals;
    delete[] stemp;
    delete[] dtemp;
 }
@@ -1382,53 +1653,55 @@ void MyFrame::GetMvaError(int selection, double *outvalue)
    stemp = new string;
 
    *stemp = (*currentAnalysisDir) + string("/mva_error.root");
-   if(DBGSIG > 1)
+   if(DBGSIG > 0)
       cout << "# GetMvaError           #: " << "File: " << *stemp << endl;
 
-   int vrstica[] = {0,0,0,0};
+   int *vrstica = new int;
+   *vrstica = 0;
 
-   vector<double> negarray;
-   vector<double> posarray;
+   vector<double> *negarray = new vector<double>;
+   vector<double> *posarray = new vector<double>;
    
-   float errVals[2];
+   float *errVals = new float[2];
 
    TFile *inFile = TFile::Open(stemp->c_str(), "READ");
-   TTree *inTree = (TTree*)inFile->Get(("mva_error" + ToString(selection)).c_str());
-   inTree->SetBranchAddress("mva_errors", &errVals);
+   TTree *inTree = new TTree;
+   inTree = (TTree*)inFile->Get(("mva_error" + ToString(selection)).c_str());
+   inTree->SetBranchAddress("mva_errors", errVals);
 
    for(int i = 0; i < inTree->GetEntries(); i++)
    {
       inTree->GetEntry(i);
-      negarray.push_back(errVals[0]);
-      posarray.push_back(errVals[1]);
-      vrstica[0]++;
+      negarray->push_back(errVals[0]);
+      posarray->push_back(errVals[1]);
+      (*vrstica)++;
    }
 
    if(DBGSIG > 1)
-      cout << "# GetMvaError           #: " << "Lines read = " << vrstica[0] << endl;
+      cout << "# GetMvaError           #: " << "Lines read = " << *vrstica << endl;
 
    double *dtemp;
    dtemp = new double[2];
    dtemp[0] = 0;
    dtemp[1] = 0;
-   for(int i = 0; i < vrstica[0]; i++)
+   for(int i = 0; i < *vrstica; i++)
    {
-      dtemp[0] += negarray[i];
-      dtemp[1] += posarray[i];
+      dtemp[0] += negarray->at(i);
+      dtemp[1] += posarray->at(i);
    }
-   dtemp[0] = dtemp[0]/vrstica[0];
-   dtemp[1] = dtemp[1]/vrstica[0];
+   dtemp[0] = dtemp[0]/(*vrstica);
+   dtemp[1] = dtemp[1]/(*vrstica);
 
    if(DBGSIG > 1)
       cout << "# GetMvaError           #: " << "Mean values (negative error, positive error) = " << "(" << dtemp[0] << ", " << dtemp[1] << ")" << endl;
 
-   for(int i = 0; i < vrstica[0]; i++)
+   for(int i = 0; i < *vrstica; i++)
    {
-      outvalue[1] += (negarray[i] - dtemp[0])*(negarray[i] - dtemp[0]);
-      outvalue[2] += (posarray[i] - dtemp[1])*(posarray[i] - dtemp[1]);
+      outvalue[1] += (negarray->at(i) - dtemp[0])*(negarray->at(i) - dtemp[0]);
+      outvalue[2] += (posarray->at(i) - dtemp[1])*(posarray->at(i) - dtemp[1]);
    }
-   outvalue[1] = TMath::Sqrt(outvalue[1]/vrstica[0]);
-   outvalue[2] = TMath::Sqrt(outvalue[2]/vrstica[0]);
+   outvalue[1] = TMath::Sqrt(outvalue[1]/(*vrstica));
+   outvalue[2] = TMath::Sqrt(outvalue[2]/(*vrstica));
 
    if(DBGSIG > 1)
       cout << "# GetMvaError           #: " << "Sigma values (negative error, positive error) = " << "(" << outvalue[1] << ", " << outvalue[2] << ")" << endl;
@@ -1436,6 +1709,13 @@ void MyFrame::GetMvaError(int selection, double *outvalue)
    outvalue[1] = outvalue[0] - outvalue[1];
    outvalue[2] = outvalue[0] + outvalue[2];
 
+   inFile->Close();
+
+   delete[] errVals;
+//   delete inTree;
+   delete negarray;
+   delete posarray;
+   delete vrstica;
    delete[] dtemp;
    delete stemp;
 }

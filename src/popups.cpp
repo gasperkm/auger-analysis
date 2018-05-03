@@ -34,20 +34,21 @@ void YesNoPopup(string title, string descr)
 
 NEDialog::NEDialog(const wxString &title, const wxSize &size, string text, string label, double value, const int *numID) : wxDialog(NULL, wxID_ANY, title, wxDefaultPosition, size)
 {
-   nevalue = value;
+   nevalue = new double;
+   *nevalue = value;
 
-   wxPanel *panel = new wxPanel(this, -1);
+   panel = new wxPanel(this, -1);
 
-   wxBoxSizer *vbox = new wxBoxSizer(wxVERTICAL);
+   vbox = new wxBoxSizer(wxVERTICAL);
 
-   wxStaticText *widgetText = new wxStaticText(panel, -1, text);
+   widgetText = new wxStaticText(panel, -1, text);
    vbox->Add(widgetText, 1, wxALL, 5);
 
-   wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
-   wxStaticText *widgetLabel = new wxStaticText(panel, -1, label);
+   hbox = new wxBoxSizer(wxHORIZONTAL);
+   widgetLabel = new wxStaticText(panel, -1, label);
    widgetNE = new wxSpinCtrlDouble(panel, *numID);
    widgetNE->SetRange(-9999999999., 9999999999.);
-   widgetNE->SetValue(nevalue);
+   widgetNE->SetValue(*nevalue);
 
    hbox->Add(widgetLabel, 0, wxLEFT | wxTOP, 5);
    hbox->Add(widgetNE, 0, wxRIGHT | wxTOP, 5);
@@ -56,9 +57,9 @@ NEDialog::NEDialog(const wxString &title, const wxSize &size, string text, strin
 
    vbox->Add(hbox, 1, wxEXPAND);
 
-   wxBoxSizer *hbox2 = new wxBoxSizer(wxHORIZONTAL);
-   wxButton *okButton = new wxButton(panel, wxID_OK, wxT("OK"));
-   wxButton *cancelButton = new wxButton(panel, wxID_CANCEL, wxT("Cancel"));
+   hbox2 = new wxBoxSizer(wxHORIZONTAL);
+   okButton = new wxButton(panel, wxID_OK, wxT("OK"));
+   cancelButton = new wxButton(panel, wxID_CANCEL, wxT("Cancel"));
    hbox2->Add(okButton, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
    hbox2->Add(cancelButton, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
 
@@ -71,7 +72,7 @@ NEDialog::NEDialog(const wxString &title, const wxSize &size, string text, strin
 
 NEDialog::~NEDialog()
 {
-//   delete widgetNE;
+   delete nevalue;
 }
 
 void NEDialog::SetNEntryFormat(wxSpinCtrlDouble *sc, int nrdig, double incr, int limit, double minlim, double maxlim)
@@ -91,12 +92,12 @@ void NEDialog::SetNEntryFormat(wxSpinCtrlDouble *sc, int nrdig, double incr, int
 
 void NEDialog::UpdateNEValue(wxSpinDoubleEvent &event)
 {
-   nevalue = widgetNE->GetValue();
+   *nevalue = widgetNE->GetValue();
    if(DBGSIG > 1)
-      cout << "# UpdateNEValue         #: " << "Value updated to " << nevalue << endl;
+      cout << "# UpdateNEValue         #: " << "Value updated to " << *nevalue << endl;
 }
 
 double NEDialog::GetNEValue()
 {
-   return nevalue;
+   return *nevalue;
 }

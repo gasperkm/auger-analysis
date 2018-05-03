@@ -16,7 +16,7 @@ public:
     // Single NEntry constructor
     CheckNEntry(wxPanel *parent, bool checked, wxString label, const int checkID, double numval, const int nentryID, int maxsize);
     // Multiple NEntry constructors
-    CheckNEntry(wxPanel *parent, bool checked, wxString label, const int checkID, vector<double> numval, vector<int> nentryID, int maxsize);
+    CheckNEntry(wxPanel *parent, bool checked, wxString label, const int checkID, vector<double> *numval, vector<int> *nentryID, int maxsize);
 
     wxCheckBox *widgetChBox;
     wxSpinCtrlDouble *widgetNE[2];

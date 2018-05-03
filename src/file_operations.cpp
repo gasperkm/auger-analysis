@@ -5,41 +5,51 @@
 // Open a file when selecting it for MVA analysis (File selection: ...)
 void MyFrame::SelectMvaFile(wxCommandEvent& event)
 {
-   string tempstring;
-   int retval;
+   string *tempstring;
+   int *retval;
 
    wxFileDialog *openFileDlg = new wxFileDialog(this, wxT("Open Offline root file"), *currentMvaDir, "", wxT("MVA files (*.root)|*.root"), wxFD_OPEN | wxFD_MULTIPLE);
 
    if(openFileDlg->ShowModal() == wxID_OK)
    {
-      wxArrayString filenameArray;
-      openFileDlg->GetPaths(filenameArray);
+      wxArrayString *filenameArray = new wxArrayString;
+      openFileDlg->GetPaths(*filenameArray);
 
-      if(!filenameArray.IsEmpty())
+      if(!filenameArray->IsEmpty())
       {
-         for(int i = 0; i < filenameArray.GetCount(); i++)
-	 {
-            tempstring = filenameArray[i];
-	    retval = CheckFormat(&tempstring);
+         tempstring = new string;
+	 retval = new int;
 
-	    if(retval == 1)
+         for(int i = 0; i < filenameArray->GetCount(); i++)
+	 {
+            *tempstring = filenameArray->Item(i);
+	    *retval = CheckFormat(tempstring);
+
+	    if(*retval == 1)
 	    {
-               (mvaList[0]->widgetLB)->Append(filenameArray[i]);
-	       *currentMvaDir = RemoveFromLast(&tempstring, "/");
+               (mvaList[0]->widgetLB)->Append(filenameArray->Item(i));
+	       *currentMvaDir = RemoveFromLast(tempstring, "/");
 	    }
-	    else if(retval == 2)
+	    else if(*retval == 2)
 	    {
-               (mvaList[1]->widgetLB)->Append(filenameArray[i]);
-	       *currentMvaDir = RemoveFromLast(&tempstring, "/");
+               (mvaList[1]->widgetLB)->Append(filenameArray->Item(i));
+	       *currentMvaDir = RemoveFromLast(tempstring, "/");
 	    }
-	    else if(retval == 3)
+	    else if(*retval == 3)
 	    {
-               (mvaList[2]->widgetLB)->Append(filenameArray[i]);
-	       *currentMvaDir = RemoveFromLast(&tempstring, "/");
+               (mvaList[2]->widgetLB)->Append(filenameArray->Item(i));
+	       *currentMvaDir = RemoveFromLast(tempstring, "/");
 	    }
 	 }
+
+	 delete tempstring;
+	 delete retval;
       }
+
+      delete filenameArray;
    }
+
+   delete openFileDlg;
 }
 
 // Check to decide if the file format is correct
@@ -84,7 +94,6 @@ int MyFrame::CheckFormat(string *infile)
 // Select a file to split depending on the fraction of events we need -> and write it back to rewritten ADST format
 void MyFrame::PrepareFileSplit(wxCommandEvent& event)
 {
-   wxArrayInt selections;
    (mvaList[1]->widgetLB)->GetSelections(selections);
 
    if(!selections.IsEmpty())
@@ -105,7 +114,6 @@ void MyFrame::PrepareFileSplit(wxCommandEvent& event)
 // Select a file to use for rewritten file
 void MyFrame::SelectRewrite(wxCommandEvent& event)
 {
-   wxArrayInt selections;
    (mvaList[0]->widgetLB)->GetSelections(selections);
 
    if(!selections.IsEmpty())
@@ -120,6 +128,7 @@ void MyFrame::SelectRewrite(wxCommandEvent& event)
       if(saveFileDlg->ShowModal() == wxID_CANCEL)
       {
          delete[] stemp;
+	 delete saveFileDlg;
          return;
       }
       
@@ -132,6 +141,7 @@ void MyFrame::SelectRewrite(wxCommandEvent& event)
       }
 
       delete[] stemp;
+      delete saveFileDlg;
    }
    else
       AlertPopup("No selected files", "No files from the first listbox were selected. Please select one or more files (holding Ctrl or Shift while clicking) to rewrite.");
@@ -140,7 +150,6 @@ void MyFrame::SelectRewrite(wxCommandEvent& event)
 // Select a file to use for combined file
 void MyFrame::SelectCombine(wxCommandEvent& event)
 {
-   wxArrayInt selections;
    (mvaList[1]->widgetLB)->GetSelections(selections);
 
    if(!selections.IsEmpty())
@@ -155,6 +164,7 @@ void MyFrame::SelectCombine(wxCommandEvent& event)
       if(saveFileDlg->ShowModal() == wxID_CANCEL)
       {
          delete[] stemp;
+         delete saveFileDlg;
          return;
       }
       
@@ -167,6 +177,7 @@ void MyFrame::SelectCombine(wxCommandEvent& event)
       }
 
       delete[] stemp;
+      delete saveFileDlg;
    }
    else
       AlertPopup("No selected files", "No files from the second listbox were selected. Please select one or more files (holding Ctrl or Shift while clicking) to rewrite.");
@@ -175,7 +186,6 @@ void MyFrame::SelectCombine(wxCommandEvent& event)
 // Select a file to use for combined file
 void MyFrame::SelectMerge(wxCommandEvent& event)
 {
-   wxArrayInt selections;
    (mvaList[1]->widgetLB)->GetSelections(selections);
 
    if(!selections.IsEmpty())
@@ -190,6 +200,7 @@ void MyFrame::SelectMerge(wxCommandEvent& event)
       if(saveFileDlg->ShowModal() == wxID_CANCEL)
       {
          delete[] stemp;
+         delete saveFileDlg;
          return;
       }
       
@@ -202,6 +213,7 @@ void MyFrame::SelectMerge(wxCommandEvent& event)
       }
 
       delete[] stemp;
+      delete saveFileDlg;
    }
    else
       AlertPopup("No selected files", "No files from the second listbox were selected. Please select one or more files (holding Ctrl or Shift while clicking) to rewrite.");
@@ -228,10 +240,14 @@ string MyFrame::SelectMva()
       if(!stemp.empty())
       {
          *currentAnalysisDir = RemoveFromLast(&stemp, "/");
+         delete saveFileDlg;
          return stemp;
       }
       else
+      {
+         delete saveFileDlg;
          return "";
+      }
    }
    else
    {

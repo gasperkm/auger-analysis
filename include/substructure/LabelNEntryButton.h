@@ -16,11 +16,11 @@ public:
     // Single NEntry + single button constructor
     LabelNEntryButton(wxPanel *parent, wxString label, double numval, const int nentryID, wxString buttext, const int butID, int maxsize);
     // Multiple NEntry + single button constructor
-    LabelNEntryButton(wxPanel *parent, wxString label, vector<double> numval, vector<int> nentryID, wxString buttext, const int butID, int maxsize);
+    LabelNEntryButton(wxPanel *parent, wxString label, vector<double> *numval, vector<int> *nentryID, wxString buttext, const int butID, int maxsize);
     // Single NEntry + multiple button constructor
-    LabelNEntryButton(wxPanel *parent, wxString label, double numval, const int nentryID, vector<string> buttext, vector<int> butID, int maxsize);
+    LabelNEntryButton(wxPanel *parent, wxString label, double numval, const int nentryID, vector<string> *buttext, vector<int> *butID, int maxsize);
     // Multiple NEntry + multiple button constructor
-    LabelNEntryButton(wxPanel *parent, wxString label, vector<double> numval, vector<int> nentryID, vector<string> buttext, vector<int> butID, int maxsize);
+    LabelNEntryButton(wxPanel *parent, wxString label, vector<double> *numval, vector<int> *nentryID, vector<string> *buttext, vector<int> *butID, int maxsize);
 
     wxStaticText *widgetLabel;
     wxSpinCtrlDouble *widgetNE[2];

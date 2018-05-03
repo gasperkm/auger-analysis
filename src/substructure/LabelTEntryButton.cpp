@@ -47,7 +47,7 @@ LabelTEntryButton::LabelTEntryButton(wxPanel *parent, wxString label, wxString d
 }
 
 // Multiple buttons
-LabelTEntryButton::LabelTEntryButton(wxPanel *parent, wxString label, wxString deftext, const int textID, vector<string> buttext, vector<int> butID, int maxsize)
+LabelTEntryButton::LabelTEntryButton(wxPanel *parent, wxString label, wxString deftext, const int textID, vector<string> *buttext, vector<int> *butID, int maxsize)
 {
     subsizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer *vbox = new wxBoxSizer(wxVERTICAL);
@@ -62,9 +62,9 @@ LabelTEntryButton::LabelTEntryButton(wxPanel *parent, wxString label, wxString d
        cout << "# LabelTEntryButton     #: " << "TextEntry text width = " << GetTextEntryWidth(widgetTE) << endl;
     // Create a button
     int butsize = 0;
-    for(int i = 0; i < buttext.size(); i++)
+    for(int i = 0; i < buttext->size(); i++)
     {
-       widgetTB[i] = new wxButton(parent, (const int)butID[i], buttext[i]);
+       widgetTB[i] = new wxButton(parent, (const int)butID->at(i), buttext->at(i));
        if(DBGSIG > 1)
           cout << "# LabelTEntryButton     #: " << "TextButton " << i+1 << " text width = " << GetButtonWidth(widgetTB[i]) << ", TextButton " << i+1 << " text height = " << GetButtonHeight(widgetTB[i]) << endl;
        butsize += GetButtonWidth(widgetTB[i]) + 2*padding;
@@ -82,7 +82,7 @@ LabelTEntryButton::LabelTEntryButton(wxPanel *parent, wxString label, wxString d
        vbox->Add(widgetTE, 1, wxEXPAND | wxLEFT | wxRIGHT, padding);
 
        wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
-       for(int i = 0; i < buttext.size(); i++)
+       for(int i = 0; i < buttext->size(); i++)
           hbox->Add(widgetTB[i], 0, wxLEFT | wxRIGHT, padding);
        vbox->Add(hbox, 1);
        subsizer->Add(vbox, 1);
@@ -91,7 +91,7 @@ LabelTEntryButton::LabelTEntryButton(wxPanel *parent, wxString label, wxString d
     {
        subsizer->Add(widgetLabel, 0, wxLEFT | wxTOP, padding);
        subsizer->Add(widgetTE, 1, wxLEFT | wxRIGHT, padding);
-       for(int i = 0; i < buttext.size(); i++)
+       for(int i = 0; i < buttext->size(); i++)
           subsizer->Add(widgetTB[i], 0, wxLEFT | wxRIGHT, padding);
     }
 

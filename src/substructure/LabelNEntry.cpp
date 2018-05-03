@@ -47,7 +47,7 @@ LabelNEntry::LabelNEntry(wxPanel *parent, wxString label, double numval, const i
 }
 
 // Multiple NEntry
-LabelNEntry::LabelNEntry(wxPanel *parent, wxString label, vector<double> numval, vector<int> nentryID, int maxsize)
+LabelNEntry::LabelNEntry(wxPanel *parent, wxString label, vector<double> *numval, vector<int> *nentryID, int maxsize)
 {
     subsizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer *vbox = new wxBoxSizer(wxVERTICAL);
@@ -58,10 +58,10 @@ LabelNEntry::LabelNEntry(wxPanel *parent, wxString label, vector<double> numval,
        cout << "# LabelNEntry           #: " << "Label text width = " << GetLabelWidth(widgetLabel) << ", Label text height = " << GetLabelHeight(widgetLabel) << endl;
     // Create all number entries
     int nesize = 0;
-    for(int i = 0; i < numval.size(); i++)
+    for(int i = 0; i < numval->size(); i++)
     {
-       widgetNE[i] = new wxSpinCtrlDouble(parent, (const int)nentryID[i]);
-       widgetNE[i]->SetValue(numval[i]);
+       widgetNE[i] = new wxSpinCtrlDouble(parent, (const int)nentryID->at(i));
+       widgetNE[i]->SetValue(numval->at(i));
        if(DBGSIG > 1)
           cout << "# LabelNEntry           #: " << "Number entry " << i+1 << " width = " << GetNumEntryWidth(widgetNE[i]) << ", Number entry " << i+1 << " height = " << GetNumEntryHeight(widgetNE[i]) << endl;
        nesize += GetNumEntryWidth(widgetNE[i]) + 2*padding;
@@ -78,7 +78,7 @@ LabelNEntry::LabelNEntry(wxPanel *parent, wxString label, vector<double> numval,
 
        wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
 
-       for(int i = 0; i < numval.size(); i++)
+       for(int i = 0; i < numval->size(); i++)
           hbox->Add(widgetNE[i], 0, wxLEFT | wxRIGHT, padding);
 
        vbox->Add(hbox, 1);
@@ -87,7 +87,7 @@ LabelNEntry::LabelNEntry(wxPanel *parent, wxString label, vector<double> numval,
     else
     {
        subsizer->Add(widgetLabel, 0, wxLEFT | wxTOP, padding);
-       for(int i = 0; i < numval.size(); i++)
+       for(int i = 0; i < numval->size(); i++)
           subsizer->Add(widgetNE[i], 0, wxLEFT | wxRIGHT, padding);
     }
 

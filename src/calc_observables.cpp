@@ -57,51 +57,51 @@ int AdstMva::SetSdObservables(Observables **cursig)
 int AdstMva::SetFdObservables(Observables **cursig)
 {
    cout << "# SetFdObservables      #: " << "# Entering function AdstMva::SetFdObservables()" << endl;
-   int count;
+   int *count = new int;
 
    SetBinary(2, 1, &rewritecode);
 
    // Go over a loop of mean, neg and pos values and all eyes
    for(int j = 0; j < 3; j++)
    {
-      count = 0;
+      *count = 0;
       for(int i = 0; i < ALLEYES; i++)
       {
  	 if(DBGSIG > 1)
             cout << "Rewritting eye " << i << " (" << ALLEYES << ")" << endl;
          // For some reason sometimes extra eyes remain in vector, but number of eyes is correct && if eye is not active, set value to -1
-	 if( (nreyes == count) || (acteyes[count].GetEyeId()-1 != i) )
+	 if( (nreyes == *count) || (acteyes[*count].GetEyeId()-1 != i) )
 	 {
  	    if(DBGSIG > 1)
 	       cout << "Extra eye!" << endl;
 
-            cursig[j]->SetValue("xmax", GetXmax(count, -1), i);
-            cursig[j]->SetValue("x0", GetX0(count, -1), i);
-            cursig[j]->SetValue("lambda", GetLambda(count, -1), i);
-            cursig[j]->SetValue("energyFD", GetFdEnergy(count, -1), i);
-            cursig[j]->SetValue("zenithFD", GetFdZenith(count, -1), i);
-            cursig[j]->SetValue("azimuthFD", GetFdAzimuth(count, -1), i);
-            cursig[j]->SetValue("latitudeFD", GetFdLatitude(count, -1), i);
-            cursig[j]->SetValue("longitudeFD", GetFdLongitude(count, -1), i);
-            cursig[j]->SetValue("shfoot", GetShowerFoot(count, -1), i);
+            cursig[j]->SetValue("xmax", GetXmax(*count, -1), i);
+            cursig[j]->SetValue("x0", GetX0(*count, -1), i);
+            cursig[j]->SetValue("lambda", GetLambda(*count, -1), i);
+            cursig[j]->SetValue("energyFD", GetFdEnergy(*count, -1), i);
+            cursig[j]->SetValue("zenithFD", GetFdZenith(*count, -1), i);
+            cursig[j]->SetValue("azimuthFD", GetFdAzimuth(*count, -1), i);
+            cursig[j]->SetValue("latitudeFD", GetFdLatitude(*count, -1), i);
+            cursig[j]->SetValue("longitudeFD", GetFdLongitude(*count, -1), i);
+            cursig[j]->SetValue("shfoot", GetShowerFoot(*count, -1), i);
 	 }
          // If we get active eye, set the values
-         else if(acteyes[count].GetEyeId()-1 == i)
+         else if(acteyes[*count].GetEyeId()-1 == i)
          {
  	    if(DBGSIG > 1)
                cout << "Active eye!" << endl;
 
-            cursig[j]->SetValue("xmax", GetXmax(count, j), i);
-            cursig[j]->SetValue("x0", GetX0(count, j), i);
-            cursig[j]->SetValue("lambda", GetLambda(count, j), i);
-            cursig[j]->SetValue("energyFD", GetFdEnergy(count, j), i);
-            cursig[j]->SetValue("zenithFD", GetFdZenith(count, j), i);
-            cursig[j]->SetValue("azimuthFD", GetFdAzimuth(count, j), i);
-            cursig[j]->SetValue("latitudeFD", GetFdLatitude(count, j), i);
-            cursig[j]->SetValue("longitudeFD", GetFdLongitude(count, j), i);
-            CalculateShowerFoot(count);
-            cursig[j]->SetValue("shfoot", GetShowerFoot(count, j), i);
-            count++;
+            cursig[j]->SetValue("xmax", GetXmax(*count, j), i);
+            cursig[j]->SetValue("x0", GetX0(*count, j), i);
+            cursig[j]->SetValue("lambda", GetLambda(*count, j), i);
+            cursig[j]->SetValue("energyFD", GetFdEnergy(*count, j), i);
+            cursig[j]->SetValue("zenithFD", GetFdZenith(*count, j), i);
+            cursig[j]->SetValue("azimuthFD", GetFdAzimuth(*count, j), i);
+            cursig[j]->SetValue("latitudeFD", GetFdLatitude(*count, j), i);
+            cursig[j]->SetValue("longitudeFD", GetFdLongitude(*count, j), i);
+            CalculateShowerFoot(*count);
+            cursig[j]->SetValue("shfoot", GetShowerFoot(*count, j), i);
+            (*count)++;
          }
       }
 
@@ -109,6 +109,7 @@ int AdstMva::SetFdObservables(Observables **cursig)
          cout << "Finished value type" << endl;
    }
 
+   delete count;
    return 0;
 }
 // Functions to hold rules for saving observables ------------------------------
@@ -239,25 +240,23 @@ void AdstMva::CalculateShowerFoot(int eye)
 //   cout << "# Entering function AdstMva::CalculateShowerFoot()" << endl;
    double *x, *xerr;
    int *itemp;
-   double *dtemp1, *dtemp2, *dtemp3;
+   double *dtemp;
 
    x = new double;
    xerr = new double;
    itemp = new int;
-   dtemp1 = new double;
-   dtemp2 = new double;
-   dtemp3 = new double;
+   dtemp = new double[3];
 
    *x = 0;
    *xerr = 0;
 
-   vector<double> slantDepth;
-   vector<double> profiledEdX;
-   vector<double> profiledEdXerr;
+   vector<double> *slantDepth = new vector<double>;
+   vector<double> *profiledEdX = new vector<double>;
+   vector<double> *profiledEdXerr = new vector<double>;
 
-   slantDepth = (acteyes[eye].GetFdRecShower()).GetDepth();
-   profiledEdX = (acteyes[eye].GetFdRecShower()).GetEnergyDeposit();
-   profiledEdXerr = (acteyes[eye].GetFdRecShower()).GetEnergyDepositError();
+   *slantDepth = (acteyes[eye].GetFdRecShower()).GetDepth();
+   *profiledEdX = (acteyes[eye].GetFdRecShower()).GetEnergyDeposit();
+   *profiledEdXerr = (acteyes[eye].GetFdRecShower()).GetEnergyDepositError();
 
    vector<double> xfoot;
    vector<double> yfoot;
@@ -267,12 +266,12 @@ void AdstMva::CalculateShowerFoot(int eye)
    if(!yfoot.empty()) yfoot.erase(yfoot.begin(),yfoot.end());
    if(!yerrfoot.empty()) yerrfoot.erase(yerrfoot.begin(),yerrfoot.end());
 
-   for(int i = 0; i < slantDepth.size(); i++)
+   for(int i = 0; i < slantDepth->size(); i++)
    {
-      *x += profiledEdX[i];
-      *xerr += profiledEdXerr[i];
+      *x += profiledEdX->at(i);
+      *xerr += profiledEdXerr->at(i);
    
-      xfoot.push_back(slantDepth[i]);
+      xfoot.push_back(slantDepth->at(i));
       yfoot.push_back(*x);
       yerrfoot.push_back(*xerr);
    }
@@ -292,24 +291,24 @@ void AdstMva::CalculateShowerFoot(int eye)
             //    k = (y2 - y1)/(x2 - x1)
             //    a = y2 - (y2 - y1)/(x2 - x1)*x2
             // x = ((x2 - x1)/(y2 - y1))*(y - y2) + x2
-            *dtemp1 = (xfoot[i] - xfoot[i-1])/(yfoot[i] - yfoot[i-1]); // 1/k = (x2 - x1)/(y2 - y1)
-            *dtemp2 = shfootlimit*(yfoot[yfoot.size()-1]) - yfoot[i]; // y - y2
-            *x = (*dtemp1)*(*dtemp2) + xfoot[i]; // x = (1/k)*(y - y2) + x2
+            dtemp[0] = (xfoot[i] - xfoot[i-1])/(yfoot[i] - yfoot[i-1]); // 1/k = (x2 - x1)/(y2 - y1)
+            dtemp[1] = shfootlimit*(yfoot[yfoot.size()-1]) - yfoot[i]; // y - y2
+            *x = (dtemp[0])*(dtemp[1]) + xfoot[i]; // x = (1/k)*(y - y2) + x2
 
-            *dtemp1 = (xfoot[i] - xfoot[i-1])/(yfoot[i]+yerrfoot[i] - (yfoot[i-1]+yerrfoot[i-1])); // 1/kerr = (x2 - x1)/(y2err - y1err)
-            *dtemp2 = (yfoot[i]+yerrfoot[i]) - (1/(*dtemp1))*(xfoot[i]); // aerr = y2err - (y2err - y1err)/(x2 - x1)*x2
-            *dtemp3 = (1/(*dtemp1))*(*x) + (*dtemp2); // yerr = kerr*x + aerr
-            *xerr = (*dtemp3) - (((yfoot[i] - yfoot[i-1])/(xfoot[i] - xfoot[i-1]))*(*x) + (yfoot[i] - ((yfoot[i] - yfoot[i-1])/(xfoot[i] - xfoot[i-1]))*(xfoot[i]))); // Dy = yerr - y
+            dtemp[0] = (xfoot[i] - xfoot[i-1])/(yfoot[i]+yerrfoot[i] - (yfoot[i-1]+yerrfoot[i-1])); // 1/kerr = (x2 - x1)/(y2err - y1err)
+            dtemp[1] = (yfoot[i]+yerrfoot[i]) - (1/(dtemp[0]))*(xfoot[i]); // aerr = y2err - (y2err - y1err)/(x2 - x1)*x2
+            dtemp[2] = (1/(dtemp[0]))*(*x) + (dtemp[1]); // yerr = kerr*x + aerr
+            *xerr = (dtemp[2]) - (((yfoot[i] - yfoot[i-1])/(xfoot[i] - xfoot[i-1]))*(*x) + (yfoot[i] - ((yfoot[i] - yfoot[i-1])/(xfoot[i] - xfoot[i-1]))*(xfoot[i]))); // Dy = yerr - y
 
-            *dtemp1 = ((yfoot[i] - yfoot[i-1])/(xfoot[i] - xfoot[i-1]))*(*x) + (yfoot[i] - ((yfoot[i] - yfoot[i-1])/(xfoot[i] - xfoot[i-1]))*(xfoot[i])); // y = k*x + a
+            dtemp[0] = ((yfoot[i] - yfoot[i-1])/(xfoot[i] - xfoot[i-1]))*(*x) + (yfoot[i] - ((yfoot[i] - yfoot[i-1])/(xfoot[i] - xfoot[i-1]))*(xfoot[i])); // y = k*x + a
 
             shfootmean = *x;
 
             for(int j = i; ; j++)	// Calculate positive error
             {
-               if( yfoot[j] >= (*dtemp1)+(*xerr) )
+               if( yfoot[j] >= (dtemp[0])+(*xerr) )
                {
-                  *dtemp2 = TMath::Abs(xfoot[j] - shfootmean);
+                  dtemp[1] = TMath::Abs(xfoot[j] - shfootmean);
                   break;
                }
             }
@@ -318,29 +317,31 @@ void AdstMva::CalculateShowerFoot(int eye)
             {
                if(j == 0)
                {
-                  *dtemp3 = TMath::Abs(xfoot[j] - shfootmean);
+                  dtemp[2] = TMath::Abs(xfoot[j] - shfootmean);
                   break;
                }
 
-               if( yfoot[j] <= (*dtemp1)-(*xerr) )
+               if( yfoot[j] <= (dtemp[0])-(*xerr) )
                {
-                  *dtemp3 = TMath::Abs(xfoot[j] - shfootmean);
+                  dtemp[2] = TMath::Abs(xfoot[j] - shfootmean);
                   break;
                }
             }
 
-            shfootmin = *dtemp3;
-            shfootmax = *dtemp2;
+            shfootmin = dtemp[2];
+            shfootmax = dtemp[1];
 	 }
       }
    }
 
+   delete slantDepth;
+   delete profiledEdX;
+   delete profiledEdXerr;
+
    delete x;
    delete xerr;
    delete itemp;
-   delete dtemp1;
-   delete dtemp2;
-   delete dtemp3;
+   delete[] dtemp;
 }
 
 double AdstMva::GetShowerFoot(int eye, int type)
@@ -479,11 +480,13 @@ void AdstMva::CalculateRisetime()
    dtemp = new double[2];
    itemp = new int[2];
 
-   int start_bin, stop_bin;
-   string stemp;
+   int *start_bin, *stop_bin;
 
-   double byrange[2];
-   double bzrange[2];
+   start_bin = new int;
+   stop_bin = new int;
+
+   double *byrange = new double[2];
+   double *bzrange = new double[2];
    byrange[0] = 1.e+40;
    byrange[1] = -1.e+40;
    bzrange[0] = 1.e+40;
@@ -492,15 +495,15 @@ void AdstMva::CalculateRisetime()
    vector<SdRecStation> stationVector = fRecEvent->GetSDEvent().GetStationVector();
 //   cout << "Number of triggered stations: " << stationVector.size() << ", Zenith angle = " << fRecEvent->GetSDEvent().GetSdRecShower().GetZenith() << ", Cos Zenith angle = " << fRecEvent->GetSDEvent().GetSdRecShower().GetCosZenith() << ", Energy = " << fRecEvent->GetSDEvent().GetSdRecShower().GetEnergy() << endl;
 
-   vector<float> time;
-   vector<float> vemtrace;
+   vector<float> *time = new vector<float>;
+   vector<float> *vemtrace = new vector<float>;
 
-   vector<float> yvalue;
+   vector<float> *yvalue = new vector<float>;
 
-   vector<double> riseVect;
-   vector<double> riseVectErr;
-   vector<double> distVect;
-   vector<double> distVectErr;
+   vector<double> *riseVect = new vector<double>;
+   vector<double> *riseVectErr = new vector<double>;
+   vector<double> *distVect = new vector<double>;
+   vector<double> *distVectErr = new vector<double>;
 
    dtemp[0] = 0;
    itemp[0] = 0;
@@ -511,13 +514,13 @@ void AdstMva::CalculateRisetime()
       // Only use stations that are valid candidates
       if( (stationVector[i].IsCandidate()) /*&& (stationVector[i].GetSPDistance() < 1500.)*/ )
       {
-         start_bin = stationVector[i].GetSignalStartSlot() - 4;
-         stop_bin = stationVector[i].GetSignalEndSlot();
+         *start_bin = stationVector[i].GetSignalStartSlot() - 4;
+         *stop_bin = stationVector[i].GetSignalEndSlot();
 
-         if( (start_bin >= stop_bin) || (start_bin < 0) || (start_bin > 5000) )
-            start_bin = 0;
+         if( (*start_bin >= *stop_bin) || (*start_bin < 0) || (*start_bin > 5000) )
+            *start_bin = 0;
 
-//         cout << "Tank " << i << " is a candidate (" << start_bin << "," << stop_bin << ")." << endl;
+//         cout << "Tank " << i << " is a candidate (" << *start_bin << "," << *stop_bin << ")." << endl;
 
          dtemp[1] = 0;
          itemp[1] = 0;
@@ -525,15 +528,15 @@ void AdstMva::CalculateRisetime()
          // Check all PMTs
          for(int j = 1; j <= 3; j++)
          {
-            if(time.size() != 0)
-               time.erase(time.begin(), time.end());
-            if(yvalue.size() != 0)
-               yvalue.erase(yvalue.begin(), yvalue.end());
+            if(time->size() != 0)
+               time->erase(time->begin(), time->end());
+            if(yvalue->size() != 0)
+               yvalue->erase(yvalue->begin(), yvalue->end());
             *y = 0;
             *maxval = -1.e40;
 
-            vemtrace = stationVector[i].GetVEMTrace(j);
-            *nrpoints = vemtrace.size();
+            *vemtrace = stationVector[i].GetVEMTrace(j);
+            *nrpoints = vemtrace->size();
 //          cout << "PMT " << j << ": Number of points in the VEM trace: " << *nrpoints << " --------------------------------------------------------" << endl;
 
             // Continue if there is a VEM trace
@@ -545,27 +548,27 @@ void AdstMva::CalculateRisetime()
                // Prepare the time vector (each point is multiplied by 25 to get nanoseconds)
                for(int k = 0; k < *nrpoints; k++)
                {
-                  if( (k >= start_bin) && (k <= stop_bin) )
+                  if( (k >= *start_bin) && (k <= *stop_bin) )
                   {
-                     time.push_back((float)k*25.);
+                     time->push_back((float)k*25.);
 
-                     *y += vemtrace[k];
+                     *y += vemtrace->at(k);
                      if(*y > *maxval) *maxval = *y;
                   
-                     yvalue.push_back(*y);
+                     yvalue->push_back(*y);
                   }
                }
 
-//             cout << "Number of points in the signal slot: " << yvalue.size() << endl;
+//             cout << "Number of points in the signal slot: " << yvalue->size() << endl;
 
-               for(int k = 0; k < yvalue.size(); k++)
+               for(int k = 0; k < yvalue->size(); k++)
                {
 //                cout << time[k]/25. << "\t" << yvalue[k]/(*maxval) << endl;
 
-                  if(yvalue[k]/(*maxval) <= 0.10)
+                  if(yvalue->at(k)/(*maxval) <= 0.10)
                   {
-                     byrange[0] = yvalue[k]/(*maxval);
-                     byrange[1] = yvalue[k+1]/(*maxval);
+                     byrange[0] = yvalue->at(k)/(*maxval);
+                     byrange[1] = yvalue->at(k+1)/(*maxval);
 
                      *y = 0.1;
                      // Find the x value of point with y value = *y = 0.1, that lies on a line between two points
@@ -573,16 +576,16 @@ void AdstMva::CalculateRisetime()
                      //    k = (y2 - y1)/(x2 - x1)
                      //    a = y2 - (y2 - y1)/(x2 - x1)*x2
                      // x = ((x2 - x1)/(y2 - y1))*(y - y2) + x2
-                     *x = ((time[k+1] - time[k])*((*y) - byrange[1]))/(byrange[1] - byrange[0]) + time[k+1];
+                     *x = ((time->at(k+1) - time->at(k))*((*y) - byrange[1]))/(byrange[1] - byrange[0]) + time->at(k+1);
 
                      byrange[0] = *x;
                      byrange[1] = *y;
                   }
 
-                  if(yvalue[k]/(*maxval) <= 0.50)
+                  if(yvalue->at(k)/(*maxval) <= 0.50)
                   {
-                     bzrange[0] = yvalue[k]/(*maxval);
-                     bzrange[1] = yvalue[k+1]/(*maxval);
+                     bzrange[0] = yvalue->at(k)/(*maxval);
+                     bzrange[1] = yvalue->at(k+1)/(*maxval);
 
                      *y = 0.5;
                      // Find the x value of point with y value = *y = 0.5, that lies on a line between two points
@@ -590,7 +593,7 @@ void AdstMva::CalculateRisetime()
                      //    k = (y2 - y1)/(x2 - x1)
                      //    a = y2 - (y2 - y1)/(x2 - x1)*x2
                      // x = ((x2 - x1)/(y2 - y1))*(y - y2) + x2
-                     *x = ((time[k+1] - time[k])*((*y) - bzrange[1]))/(bzrange[1] - bzrange[0]) + time[k+1];
+                     *x = ((time->at(k+1) - time->at(k))*((*y) - bzrange[1]))/(bzrange[1] - bzrange[0]) + time->at(k+1);
 
                      bzrange[0] = *x;
                      bzrange[1] = *y;
@@ -624,12 +627,12 @@ void AdstMva::CalculateRisetime()
 	    {
                if( (stationVector[i].GetSPDistance() >= limitTankDistance[0]) && (stationVector[i].GetSPDistance() <= limitTankDistance[1]) )
 	       {
-                  riseVect.push_back(risemean);
-//                  riseVect.push_back(stationVector[i].GetAssymCorrRiseTime(eventThetaRec));
-                  distVect.push_back(stationVector[i].GetSPDistance()/1000.);
-                  riseVectErr.push_back(risemin);
-//                  riseVectErr.push_back(stationVector[i].GetAssymCorrRiseTimeError(eventThetaRec));
-                  distVectErr.push_back(stationVector[i].GetSPDistanceError()/1000.);
+                  riseVect->push_back(risemean);
+//                  riseVect->push_back(stationVector[i].GetAssymCorrRiseTime(eventThetaRec));
+                  distVect->push_back(stationVector[i].GetSPDistance()/1000.);
+                  riseVectErr->push_back(risemin);
+//                  riseVectErr->push_back(stationVector[i].GetAssymCorrRiseTimeError(eventThetaRec));
+                  distVectErr->push_back(stationVector[i].GetSPDistanceError()/1000.);
 	       }
 /*	       else
 	       {
@@ -648,9 +651,9 @@ void AdstMva::CalculateRisetime()
       }
    }
 
-   if(riseVect.size() >= minPoints)
+   if(riseVect->size() >= minPoints)
    {
-      TGraphErrors riseGraph(riseVect.size(), &distVect.front(), &riseVect.front(), 0, &riseVectErr.front());
+      TGraphErrors riseGraph(riseVect->size(), &distVect->front(), &riseVect->front(), 0, &riseVectErr->front());
       TF1 risetimeFit("RisetimeFit", "40+[0]*x+[1]*x*x", limitTankDistance[0]/1000., limitTankDistance[1]/1000.);
       risetimeFit.SetParLimits(0, 0, 10000);
       risetimeFit.SetParLimits(1, 0, 10000);
@@ -673,12 +676,12 @@ void AdstMva::CalculateRisetime()
 	 risemax = -1;
       }
 
-//      cout << /*"Reconstructed risetime = " << inRisetime <<*/ "Calculated average risetime (for " << itemp[0] << " PMTs in all tanks, " << riseVect.size() << " fitting points) = " << risemean << " (+- " << risemin << ")" << endl;
+//      cout << /*"Reconstructed risetime = " << inRisetime <<*/ "Calculated average risetime (for " << itemp[0] << " PMTs in all tanks, " << riseVect->size() << " fitting points) = " << risemean << " (+- " << risemin << ")" << endl;
    }
    else
    {
       if(DBGSIG > 0)
-         cout << "Rejected: Only " << riseVect.size() << " valid tanks." << endl;
+         cout << "Rejected: Only " << riseVect->size() << " valid tanks." << endl;
       risemean = -1;
       risemin = -1;
       risemax = -1;
@@ -690,6 +693,19 @@ void AdstMva::CalculateRisetime()
    delete maxval;
    delete[] dtemp;
    delete[] itemp;
+
+   delete start_bin;
+   delete stop_bin;
+
+   delete[] byrange;
+
+   delete time;
+   delete vemtrace;
+   delete yvalue;
+   delete riseVect;
+   delete riseVectErr;
+   delete distVect;
+   delete distVectErr;
 }
 
 double AdstMva::GetRisetime(int eye, int type, bool recalc)

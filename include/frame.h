@@ -97,6 +97,8 @@ public:
 
     int mixednum;
 
+    wxArrayInt selections;
+
     // File open variables
     string *currentMvaDir;
     string *currentRewriteDir;
@@ -170,6 +172,7 @@ public:
     int MvaTreeFile(string *infilename, string *outfilename, int *nrEvents);
     int MvaSetTrees(int type, TFile *ifile, TTree *outtree);
     int IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, vector<int> *seleye, bool split);
+    int PerformMvaAnalysis(string *infilename, string *outfilename, int type);
     void SetTmvaType(TMVA::Factory *factory, int nr, string *formula);
     int BookTheMethod(TMVA::Factory *factory);
     int GetTrainingShift(string *mvafilename);
@@ -180,7 +183,7 @@ public:
     void MvaApplication(string *infilename, bool application, int mean);
     void CreateMVAPlots(TTree *app, TMVA::Reader *reader, string mvamethod, float *obsvars, string signalName, int curtree, bool application, int mean);
     void CreateOutput(TTree *app, TMVA::Reader *reader, string mvamethod, float *obsvars, string signalName, int curtree, bool application, int mean);
-    void GetErrors(TTree *app, float *obsvars, vector<string> obs, int curtree);
+    void GetErrors(TTree *app, float *obsvars, vector<string> *obs, int curtree);
     void GetMvaError(int selection, double *outvalue);
 };
 

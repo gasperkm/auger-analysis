@@ -131,31 +131,41 @@ string RemoveBeforeFirst(string *inname, string search)
 // Replace a part of a string with something else
 void ReplacePart(string *inname, string toreplace, string replace)
 {
-   size_t searchchar = inname->find(toreplace);
-   if(searchchar != string::npos)
-      inname->replace(searchchar, toreplace.length(), replace);
+   size_t *searchchar;
+   searchchar = new size_t;
+  
+   *searchchar = inname->find(toreplace);
+   if(*searchchar != string::npos)
+      inname->replace(*searchchar, toreplace.length(), replace);
+
+   delete searchchar;
 }
 
 // Replace all occurrences of a character inside another string
 void ReplaceAllCharacters(string *inname, string toreplace, string replace)
 {
-   size_t start_pos = 0;
+   size_t *start_pos;
+   start_pos = new size_t;
+   *start_pos = 0;
 
-   while((start_pos = inname->find(toreplace, start_pos)) != string::npos)
+   while((*start_pos = inname->find(toreplace, *start_pos)) != string::npos)
    {
-      inname->replace(start_pos, toreplace.length(), replace);
-      start_pos += replace.length();
+      inname->replace(*start_pos, toreplace.length(), replace);
+      *start_pos += replace.length();
    }
+
+   delete start_pos;
 }
 
 // Set the bin at set place for a binary number and return this number
 void SetBinary(int place, int val, int *number)
 {
    string *stemp;
+   int *itemp;
+
    stemp = new string;
    *stemp = DecimalToBinary(*number);
 
-   int *itemp;
    itemp = new int;
    *itemp = stemp->length();
 

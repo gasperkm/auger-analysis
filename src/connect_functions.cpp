@@ -3,7 +3,6 @@
 #include "adst_mva.h"
 #include "popups.h"
 #include "combine.h"
-#include "mvaefficiency.h"
 
 #include <chrono>
 
@@ -11,16 +10,19 @@
 void MyFrame::EnableMvaFile(wxCommandEvent& event)
 {
    int *itemp;
-   int cnt = 0;
+   int *cnt;
    string *stemp;
-   string signalName;
+   string *signalName;
+   vector<string> *backgroundType;
 
    if( (mvaList[2]->widgetLB)->GetSelection() != wxNOT_FOUND )
    {
       itemp = new int;
       stemp = new string[2];
-
-      vector<string> backgroundType;
+      signalName = new string;
+      backgroundType = new vector<string>;
+      cnt = new int;
+      *cnt = 0;
 
       // Place the file name into the text entry on the right side
       *itemp = (mvaList[2]->widgetLB)->GetSelection();
@@ -44,22 +46,22 @@ void MyFrame::EnableMvaFile(wxCommandEvent& event)
             cout << "# EnableMvaFile         #: " << "i = " << i << ", Searching for TreeA = " << strcmp((keyslist->At(i-1))->GetName(), "TreeA") << " (" << (keyslist->At(i-1))->GetName() << ")" << endl;
          if(strcmp((keyslist->At(i-1))->GetName(), "TreeA") != 0)
 	 {
-            signalName = "TreeS" + ToString(i);
-	    stemp[1] = string(ifile->GetKey(signalName.c_str())->GetTitle());
+            *signalName = "TreeS" + ToString(i);
+	    stemp[1] = string(ifile->GetKey(signalName->c_str())->GetTitle());
 	    (signalSelect->widgetCB)->Append(stemp[1]);
 	    (backgroundSelect->widgetCB)->Append(stemp[1]);
 	    (dataSelect->widgetCB)->Append(stemp[1]);
-            cnt++;
+            (*cnt)++;
 
 	    if(stemp[1] != "Data")
- 	       backgroundType.push_back(stemp[1]);
+ 	       backgroundType->push_back(stemp[1]);
 	 }
       }
 
-      nrkeys = cnt;
+      nrkeys = *cnt;
       cout << "# EnableMvaFile         #: " << "Found " << nrkeys << " signal keys in the selected file." << endl;
 
-      mixednum = backgroundType.size();
+      mixednum = backgroundType->size();
       if(mixednum > 2)
       {
          for(int i = 0; i < mixednum; i++)
@@ -68,7 +70,7 @@ void MyFrame::EnableMvaFile(wxCommandEvent& event)
 	    {
                if(i < j)
 	       {
-                  stemp[1] = backgroundType[i] + " + " + backgroundType[j];
+                  stemp[1] = backgroundType->at(i) + " + " + backgroundType->at(j);
                   (backgroundSelect->widgetCB)->Append(stemp[1]);
 	       }
 	    }
@@ -84,7 +86,7 @@ void MyFrame::EnableMvaFile(wxCommandEvent& event)
 	       {
                   if( (i < j) && (j < k) )
 	          {
-                     stemp[1] = backgroundType[i] + " + " + backgroundType[j] + " + " + backgroundType[k];
+                     stemp[1] = backgroundType->at(i) + " + " + backgroundType->at(j) + " + " + backgroundType->at(k);
                      (backgroundSelect->widgetCB)->Append(stemp[1]);
 	          }
 	       }
@@ -94,28 +96,28 @@ void MyFrame::EnableMvaFile(wxCommandEvent& event)
       // TODO - Add mixed combinations for background trees
 
       // Select the signal tree
-      if(oldselect[0] >= cnt)
+      if(oldselect[0] >= *cnt)
       {
-         (signalSelect->widgetCB)->SetSelection(cnt-1);
-	 oldselect[0] = cnt-1;
+         (signalSelect->widgetCB)->SetSelection((*cnt)-1);
+	 oldselect[0] = (*cnt)-1;
       }
       else
          (signalSelect->widgetCB)->SetSelection(oldselect[0]);
 
       // Select the background tree
-      if(oldselect[1] >= cnt)
+      if(oldselect[1] >= *cnt)
       {
-         (backgroundSelect->widgetCB)->SetSelection(cnt-1);
-	 oldselect[1] = cnt-1;
+         (backgroundSelect->widgetCB)->SetSelection((*cnt)-1);
+	 oldselect[1] = (*cnt)-1;
       }
       else
          (backgroundSelect->widgetCB)->SetSelection(oldselect[1]);
 
       // Select the data tree
-      if(oldselect[2] >= cnt)
+      if(oldselect[2] >= *cnt)
       {
-         (dataSelect->widgetCB)->SetSelection(cnt-1);
-	 oldselect[2] = cnt-1;
+         (dataSelect->widgetCB)->SetSelection((*cnt)-1);
+	 oldselect[2] = (*cnt)-1;
       }
       else
          (dataSelect->widgetCB)->SetSelection(oldselect[2]);
@@ -124,6 +126,8 @@ void MyFrame::EnableMvaFile(wxCommandEvent& event)
 
       delete itemp;
       delete[] stemp;
+      delete signalName;
+      delete cnt;
    }
    else
       return;
@@ -204,12 +208,16 @@ void MyFrame::CheckEnergyBin(wxCommandEvent& event)
    float *ftempaver;
    int *avercount;
    int *evtcount;
-   bool deleted = true;
+   bool *deleted;
    bool *uoflow;
+
+   deleted = new bool;
+   *deleted = true;
   
    TFile *ifile = TFile::Open(stemp[0].c_str(),"READ");
 
-   int selectedBin = (cutEnergyBins->widgetCB)->GetSelection();
+   int *selectedBin = new int;
+   *selectedBin = (cutEnergyBins->widgetCB)->GetSelection();
 
    stemp[0] = "Number of entries inside energy bin:\n";
    for(int i = 1; i <= nrkeys; i++)
@@ -231,6 +239,8 @@ void MyFrame::CheckEnergyBin(wxCommandEvent& event)
             delete[] stemp;
             delete[] ftemp;
 	    ifile->Close();
+	    delete deleted;
+	    delete selectedBin;
             return;
          }
       }
@@ -246,6 +256,8 @@ void MyFrame::CheckEnergyBin(wxCommandEvent& event)
             delete[] stemp;
             delete[] ftemp;
 	    ifile->Close();
+	    delete deleted;
+	    delete selectedBin;
             return;
          }
       }
@@ -265,7 +277,7 @@ void MyFrame::CheckEnergyBin(wxCommandEvent& event)
       {
          tempTree->GetEntry(j);
 
-	 deleted = true;
+	 *deleted = true;
 	 uoflow[0] = false;
 	 uoflow[1] = false;
 
@@ -302,21 +314,21 @@ void MyFrame::CheckEnergyBin(wxCommandEvent& event)
             if(seleyetype == 2)
                ftemp[i] = *ftempaver;
 
-	    if((ftemp[i] != -1) && deleted)
+	    if((ftemp[i] != -1) && *deleted)
             {
                // Event is inside the energy cut
-	       if((ftemp[i] > ecutBins[selectedBin]) && (ftemp[i] <= ecutBins[selectedBin+1]))
-                  deleted = false;
+	       if((ftemp[i] > ecutBins[*selectedBin]) && (ftemp[i] <= ecutBins[*selectedBin+1]))
+                  *deleted = false;
                // Event is below the energy cut
-               else if(ftemp[i] <= ecutBins[selectedBin])
+               else if(ftemp[i] <= ecutBins[*selectedBin])
                   uoflow[0] = true;
                // Event is above the energy cut
-               else if(ftemp[i] > ecutBins[selectedBin+1])
+               else if(ftemp[i] > ecutBins[*selectedBin+1])
                   uoflow[1] = true;
 	    }
 	 }
 
-	 if(!deleted)
+	 if(!(*deleted))
 	 {
             evtcount[0]++;
 	    uoflow[0] = false;
@@ -366,6 +378,8 @@ void MyFrame::CheckEnergyBin(wxCommandEvent& event)
 
    InfoPopup("Check energy bins", stemp[0]);
 
+   delete deleted;
+   delete selectedBin;
    delete[] stemp;
    delete[] ftemp;
 }
@@ -444,12 +458,16 @@ void MyFrame::CheckZenithBin(wxCommandEvent& event)
    float *ftempaver;
    int *avercount;
    int *evtcount;
-   bool deleted = true;
+   bool *deleted;
    bool *uoflow;
+
+   deleted = new bool;
+   *deleted = true;
   
    TFile *ifile = TFile::Open(stemp[0].c_str(),"READ");
 
-   int selectedBin = (cutZenithBins->widgetCB)->GetSelection();
+   int *selectedBin = new int;
+   *selectedBin = (cutZenithBins->widgetCB)->GetSelection();
 
    stemp[0] = "Number of entries inside zenith angle bin:\n";
    for(int i = 1; i <= nrkeys; i++)
@@ -469,6 +487,8 @@ void MyFrame::CheckZenithBin(wxCommandEvent& event)
             delete[] stemp;
             delete[] ftemp;
 	    ifile->Close();
+	    delete deleted;
+	    delete selectedBin;
             return;
          }
       }
@@ -484,6 +504,8 @@ void MyFrame::CheckZenithBin(wxCommandEvent& event)
             delete[] stemp;
             delete[] ftemp;
 	    ifile->Close();
+	    delete deleted;
+	    delete selectedBin;
             return;
          }
       }
@@ -503,7 +525,7 @@ void MyFrame::CheckZenithBin(wxCommandEvent& event)
       {
          tempTree->GetEntry(j);
 
-	 deleted = true;
+	 *deleted = true;
 	 uoflow[0] = false;
 	 uoflow[1] = false;
 	 
@@ -540,21 +562,21 @@ void MyFrame::CheckZenithBin(wxCommandEvent& event)
             if(seleyetype == 2)
                ftemp[i] = *ftempaver;
 
-	    if( (ftemp[i] != -1) && deleted )
+	    if( (ftemp[i] != -1) && *deleted )
             {
                // Event is inside the zenith angle cut
-	       if((ftemp[i] > AsinSqrt(zcutBins[selectedBin],false)) && (ftemp[i] <= AsinSqrt(zcutBins[selectedBin+1],false)))
-                  deleted = false;
+	       if((ftemp[i] > AsinSqrt(zcutBins[*selectedBin],false)) && (ftemp[i] <= AsinSqrt(zcutBins[*selectedBin+1],false)))
+                  *deleted = false;
                // Event is below the zenith angle cut
-               else if(ftemp[i] <= AsinSqrt(zcutBins[selectedBin],false))
+               else if(ftemp[i] <= AsinSqrt(zcutBins[*selectedBin],false))
                   uoflow[0] = true;
                // Event is above the zenith angle cut
-               else if(ftemp[i] > AsinSqrt(zcutBins[selectedBin+1],false))
+               else if(ftemp[i] > AsinSqrt(zcutBins[*selectedBin+1],false))
                   uoflow[1] = true;
 	    }
 	 }
 
-	 if(!deleted)
+	 if(!(*deleted))
 	 {
             evtcount[0]++;
 	    uoflow[0] = false;
@@ -604,6 +626,8 @@ void MyFrame::CheckZenithBin(wxCommandEvent& event)
 
    InfoPopup("Check zenith angle bins", stemp[0]);
 
+   delete deleted;
+   delete selectedBin;
    delete[] stemp;
    delete[] ftemp;
 }
@@ -648,11 +672,11 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
    int *avercount;
    int *evtcount;
    bool *sepcut, *uoflow;
-   bool sepcutend = false;
+   bool *sepcutend;
   
    TFile *ifile = TFile::Open(stemp[0].c_str(),"READ");
 
-   int selectedBin[2];
+   int *selectedBin = new int[2];
    selectedBin[0] = (cutEnergyBins->widgetCB)->GetSelection();
    selectedBin[1] = (cutZenithBins->widgetCB)->GetSelection();
 
@@ -677,6 +701,7 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
             delete[] ftemp3;
             delete[] ftemp3_err;
 	    ifile->Close();
+	    delete[] selectedBin;
             return;
          }
 
@@ -692,6 +717,7 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
             delete[] ftemp3;
             delete[] ftemp3_err;
 	    ifile->Close();
+	    delete[] selectedBin;
             return;
          }
       }
@@ -710,6 +736,7 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
             delete[] ftemp3;
             delete[] ftemp3_err;
 	    ifile->Close();
+	    delete[] selectedBin;
             return;
          }
 
@@ -725,6 +752,7 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
             delete[] ftemp3;
             delete[] ftemp3_err;
 	    ifile->Close();
+	    delete[] selectedBin;
             return;
          }
       }
@@ -744,6 +772,7 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
          delete[] ftemp3;
          delete[] ftemp3_err;
 	 ifile->Close();
+	 delete[] selectedBin;
 	 return;
       }
 
@@ -758,6 +787,9 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
 
       sepcut = new bool[3];
       uoflow = new bool[6];
+
+      sepcutend = new bool;
+      *sepcutend = false;
 
       ftempaver = new float[2];
       avercount = new int[2];
@@ -775,7 +807,7 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
          uoflow[3] = false;	// Above zenith
 	 uoflow[4] = false;	// Above risetime
 	 uoflow[5] = false;	// No VEM signal (no risetime)
-	 sepcutend = false;	// All
+	 *sepcutend = false;	// All
 
 	 // Calculate averages for all eyes
 	 if(seleyetype == 2)
@@ -916,11 +948,11 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
                sepcut[2] = true;
 
 	    // Only keep eye, if both energy, zenith angle and risetime are inside the cut
-	    if(!sepcutend)
-  	       sepcutend = sepcut[0] & sepcut[1] & sepcut[2];
+	    if(!(*sepcutend))
+  	       *sepcutend = sepcut[0] & sepcut[1] & sepcut[2];
 	 }
 
-	 if(sepcutend)
+	 if(*sepcutend)
 	 {
             evtcount[0]++;
             uoflow[0] = false;
@@ -995,6 +1027,7 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
          stemp[0] = stemp[0] + "- Number of entries above the risetime cut = " + ToString(evtcount[5]) + "\n- Number of entries without VEM signal = " + ToString(evtcount[6]) + "\n";
       stemp[0] = stemp[0] + "\n";
 
+      delete sepcutend;
       delete[] evtcount;
       delete[] sepcut;
       delete[] uoflow;
@@ -1007,6 +1040,7 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
    InfoPopup("Check all bins", stemp[0]);
 
    delete[] stemp;
+   delete[] selectedBin;
    delete[] ftemp1;
    delete[] ftemp2;
    delete[] ftemp3;
@@ -1026,10 +1060,10 @@ void MyFrame::UpdateObservableSelection(wxCommandEvent& event)
 void MyFrame::EditList(wxCommandEvent& event)
 {
    int *itemp;
-   itemp = new int[3];
    string *stemp;
+
+   itemp = new int[3];
    stemp = new string[2];
-   wxArrayInt selections;
 
 //   cout << "# EditList: " << event.GetId() << endl;
    for(int i = 0; i < nrlists; i++)
@@ -1173,13 +1207,13 @@ void MyFrame::CreateTempEventFile(wxCommandEvent& event)
 {
    int *nrTreeEvents;
 
-   string tempfile;
-   tempfile = (selectedMva->widgetTE)->GetLineText(0);
-   cout << "# CreateTempEventFile   #: " << "Opening file " << tempfile << " to rewrite it into a temporary event file." << endl;
+   string *tempfile = new string;
+   *tempfile = (selectedMva->widgetTE)->GetLineText(0);
+   cout << "# CreateTempEventFile   #: " << "Opening file " << *tempfile << " to rewrite it into a temporary event file." << endl;
 
-   tempAnalysisFile = RemoveFilename(&tempfile) + "/temporary_event_file.root";
+   tempAnalysisFile = RemoveFilename(tempfile) + "/temporary_event_file.root";
    nrTreeEvents = new int[nrkeys];
-   ret = MvaTreeFile(&tempfile, &tempAnalysisFile, nrTreeEvents);
+   ret = MvaTreeFile(tempfile, &tempAnalysisFile, nrTreeEvents);
    if(ret == -1)
    {
       AlertPopup("Invalid selection of signal and background trees", "The selected signal or background trees are invalid. Please make sure to correctly select them and that they are present inside the input file.");
@@ -1196,13 +1230,14 @@ void MyFrame::CreateTempEventFile(wxCommandEvent& event)
 void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
 {
    string *mvafile;
-   mvafile = new string[3];
    string *stemp;
-   stemp = new string[4];
    int *nrTreeEvents;
    int *itemp;
-   itemp = new int[3];
    double *dtemp;
+
+   mvafile = new string[3];
+   stemp = new string[4];
+   itemp = new int[3];
 
    mvaresults = "Finished applying MVA cut.";
 
@@ -1214,10 +1249,13 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
          mvafile[2] = mvafile[0];
    }
 
+   // Run over all energy bins automatically
    for(int imva = 0; imva < (cutEnergyBins->widgetNE[0])->GetValue(); imva++)
    {
+      // Only perform analysis if input rewritten ADST file exists
       if(!mvafile[0].empty())
       {
+	 // Prepare directory structure and naming for outputs of different energy bins
          if(((cutEnergyBins->widgetNE[0])->GetValue() > 1) && ((specialMva->widgetChBox[0])->IsChecked()))
 	 {
             mvafile[0] = mvafile[2];
@@ -1243,6 +1281,7 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
          stemp[2] = "Currently performing the MVA analysis, please wait for it to finish.";
          ShowProgress(wxT("Performing MVA analysis"), stemp[2], itemp[0]);
 
+	 // Open input file and rewrite it into a teporary file temporary_mvatree_file.root
          cout << "# StartMvaAnalysis      #: " << "Opening file " << mvafile[0] << " for MVA analysis." << endl;
 
          mvafile[1] = (selectedMva->widgetTE)->GetLineText(0);
@@ -1262,7 +1301,20 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
          itemp[1]++;
          progress->Update(itemp[1]);
 
-         TFile *ifile = TFile::Open(tempAnalysisFile.c_str(), "READ");
+/*-------------TODO-------------*/
+/*--- PerformMvaAnalysis(&tempAnalysisFile, &mvafile[0], 0)--------*/
+	 ret = PerformMvaAnalysis(&tempAnalysisFile, &mvafile[0], 0);
+         if(ret == -1)
+	 {
+            progress->Update(itemp[0]);
+            delete[] mvafile;
+            delete[] stemp;
+            delete[] nrTreeEvents;
+            delete[] itemp;
+	 }
+	 else
+            progress->Update(itemp[0]);
+/*         TFile *ifile = TFile::Open(tempAnalysisFile.c_str(), "READ");
 
          // Open the file to write out to
          TFile *ofile = TFile::Open(mvafile[0].c_str(), "RECREATE");
@@ -1303,12 +1355,16 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
          progress->Update(itemp[1]);
 
          // Select signal and background trees (from the temporary input file)
-         TTree *signalTree, *backgroundTree[mixednum];
+//         TTree *signalTree, *backgroundTree[mixednum];
+         TTree *signalTree = new TTree;
+	 TTree *backgroundTree[mixednum];
+	 for(int j = 0; j < mixednum; j++)
+            backgroundTree[j] = new TTree;
          itemp[2] = 0;
 
          nrTreeEvents[0] = -1;
          nrTreeEvents[1] = -1;
-         TList *tempkeyslist = (TList*) ifile->GetListOfKeys();
+	 TList *tempkeyslist = (TList*) ifile->GetListOfKeys();
          for(int j = 1; j <= ifile->GetNkeys(); j++)
          {
             stemp[0] = string((tempkeyslist->At(j-1))->GetName());
@@ -1321,8 +1377,6 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
                cout << "# StartMvaAnalysis      #: " << "Using signal tree: " << stemp[1] << endl;
                signalTree = (TTree*)ifile->Get(stemp[0].c_str());
                nrTreeEvents[0] = signalTree->GetEntries();
-/*               itemp[1]++;
-               progress->Update(itemp[1]);*/
             }
 
             // Background tree setup
@@ -1383,9 +1437,13 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
          if(BookTheMethod(factory) == -1)
          {
             progress->Update(itemp[0]);
+	    delete signalTree;
+	    for(int j = 0; j < mixednum; j++)
+	       delete backgroundTree[j];
             ifile->Close();
             delete factory;
             ofile->Close();
+
             AlertPopup("Invalid MVA method", "The selected MVA method is invalid. Please make sure it is correctly defined.");
             delete[] mvafile;
             delete[] stemp;
@@ -1410,13 +1468,20 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
          progress->Update(itemp[1]);
 
          // Close the open files
+	 delete signalTree;
+	 for(int j = 0; j < mixednum; j++)
+	    delete backgroundTree[j];
          ifile->Close();
          delete factory;
-         ofile->Close();
+         ofile->Close();*/
+/*-------------TODO-------------*/
+/*-------------TODO-------------*/
+/*---Errors: PerformMvaAnalysis(&tempAnalysisFile, &mvafile[0], 1)--------*/
+/*-------------TODO-------------*/
 
-         // Copy the training values from results/transformation_stats.dat to the current analysis directory
+/*         // Copy the training values from results/transformation_stats.dat to the current analysis directory
          stemp[3] = "cp -r " + string(rootdir) + "/results/transformation_stats.dat " + (*currentAnalysisDir) + "/";
-         system(stemp[3].c_str());
+         system(stemp[3].c_str());*/
 
          // Get MVA training values and variable correlations
          sigCorMat = new TMatrixD(nrselobs, nrselobs);
@@ -1426,7 +1491,7 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
             otherCorMat[i] = new TMatrixD(nrselobs, nrselobs);
          GetApplyCorrelations(&tempAnalysisFile);
 
-	 // Skip the GUI interface for best cut and automatically select signal/background
+/*	 // Skip the GUI interface for best cut and automatically select signal/background
          if(((cutEnergyBins->widgetNE[0])->GetValue() > 1) && ((specialMva->widgetChBox[0])->IsChecked()))
 	 {
             TString *inname = new TString;
@@ -1456,10 +1521,10 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
                stemp[2] = stemp[2] + "- Cut with equal Signal/Background: " + ToString(effplot->sigbgdCut, 4) + " (" + ToString(100.*(effplot->GetHistValue(1, 0)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(1, 1)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(1, 2)), 2) + "%/" + ToString(effplot->GetHistValue(1, 3), 4) + ")\n";
                stemp[2] = stemp[2] + "- Cut with equal Signal/Purity: " + ToString(effplot->sigpurCut, 4) + " (" + ToString(100.*(effplot->GetHistValue(2, 0)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(2, 1)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(2, 2)), 2) + "%/" + ToString(effplot->GetHistValue(2, 3), 4) + ")\n";
 
-               NEDialog cutMvaDialog(wxT("MVA cut"), wxSize(600,200), stemp[2], "Set MVA cut:", effplot->sigpurCut, &ID_MVACUTDIALOG);
-               cutMvaDialog.SetNEntryFormat(cutMvaDialog.widgetNE, 4, 0.0001, 0, 0., 0.);
-               if(cutMvaDialog.ShowModal() == wxID_OK)
-                  (cutMva->widgetNE[0])->SetValue(cutMvaDialog.GetNEValue());
+               NEDialog *cutMvaDialog = new NEDialog(wxT("MVA cut"), wxSize(600,200), stemp[2], "Set MVA cut:", effplot->sigpurCut, &ID_MVACUTDIALOG);
+               cutMvaDialog->SetNEntryFormat(cutMvaDialog->widgetNE, 4, 0.0001, 0, 0., 0.);
+               if(cutMvaDialog->ShowModal() == wxID_OK)
+                  (cutMva->widgetNE[0])->SetValue(cutMvaDialog->GetNEValue());
                else
                {
                   delete[] mvafile;
@@ -1468,9 +1533,17 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
                   delete[] itemp;
                   delete effplot;
                   delete inname;
+                  delete sigCorMat;
+                  delete backCorMat;
+                  for(int i = 0; i < nrkeys; i++)
+                     delete otherCorMat[i];
+		  cutMvaDialog->Destroy();
+		  delete cutMvaDialog;
                   return;
                }
 
+	       cutMvaDialog->Destroy();
+	       delete cutMvaDialog;
                delete effplot;
                delete inname;
             }
@@ -1486,16 +1559,21 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
             delete[] stemp;
             delete[] nrTreeEvents;
             delete[] itemp;
+            delete sigCorMat;
+            delete backCorMat;
+            for(int i = 0; i < nrkeys; i++)
+               delete otherCorMat[i];
             return;
-         }
+         }*/
 
          dtemp = new double[3];
          dtemp[0] = (cutMva->widgetNE[0])->GetValue();
          dtemp[1] = 0;
          dtemp[2] = 0;
          mvaresults = mvaresults + "\n\nResults for mean cut (" + ToString(dtemp[0], 4) + ")\n";
-         int selectedBin = (cutEnergyBins->widgetCB)->GetSelection();
-         mvaprintout = ToSciString(ecutBins[selectedBin], 4) + "\t" + ToSciString(ecutBins[selectedBin+1], 4) + "\n";
+	 int *selectedBin = new int;
+         *selectedBin = (cutEnergyBins->widgetCB)->GetSelection();
+         mvaprintout = ToSciString(ecutBins[*selectedBin], 4) + "\t" + ToSciString(ecutBins[(*selectedBin)+1], 4) + "\n";
          mvaprintout = mvaprintout + ToString(0) + "\t" + ToString(dtemp[0],4) + "\t";
          MvaApplication(&tempAnalysisFile, false, 0);
 
@@ -1521,13 +1599,16 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
          cout << "# StartMvaAnalysis      #: " << "MVA results:" << endl << mvaresults << endl;
          cout << "# StartMvaAnalysis      #: " << "MVA printout:" << endl << mvaprintout << endl;
 
-         ofstream printoutFile;
-         printoutFile.open(((*currentAnalysisDir) + "/application_results.txt").c_str(), ofstream::out | ofstream::trunc );
-         printoutFile << mvaprintout;
-         printoutFile.close();
+         ofstream *printoutFile = new ofstream;
+         printoutFile->open(((*currentAnalysisDir) + "/application_results.txt").c_str(), ofstream::out | ofstream::trunc );
+         *printoutFile << mvaprintout;
+         printoutFile->close();
+
+	 delete printoutFile;
 
          delete[] dtemp;
          delete[] nrTreeEvents;
+	 delete selectedBin;
 
          delete sigCorMat;
          delete backCorMat;
@@ -1554,8 +1635,9 @@ void MyFrame::ApplyMvaCut(wxCommandEvent& event)
       dtemp[1] = 0;
       dtemp[2] = 0;
       mvaresults = mvaresults + "\n\nResults for mean cut (" + ToString(dtemp[0], 4) + ")\n";
-      int selectedBin = (cutEnergyBins->widgetCB)->GetSelection();
-      mvaprintout = ToSciString(ecutBins[selectedBin], 4) + "\t" + ToSciString(ecutBins[selectedBin+1], 4) + "\n";
+      int *selectedBin = new int;
+      *selectedBin = (cutEnergyBins->widgetCB)->GetSelection();
+      mvaprintout = ToSciString(ecutBins[*selectedBin], 4) + "\t" + ToSciString(ecutBins[(*selectedBin)+1], 4) + "\n";
       mvaprintout = mvaprintout + ToString(0) + "\t" + ToString(dtemp[0],4) + "\t";
       MvaApplication(&tempAnalysisFile, freshAnalysis, 0);
 
@@ -1576,11 +1658,12 @@ void MyFrame::ApplyMvaCut(wxCommandEvent& event)
       cout << "# ApplyMvaCut           #: " << "MVA results:" << endl << mvaresults << endl;
       cout << "# ApplyMvaCut           #: " << "MVA printout:" << endl << mvaprintout << endl;
 
-      ofstream printoutFile;
-      printoutFile.open(((*currentAnalysisDir) + "/application_results.txt").c_str(), ofstream::out | ofstream::trunc );
-      printoutFile << mvaprintout;
-      printoutFile.close();
+      ofstream *printoutFile = new ofstream;
+      printoutFile->open(((*currentAnalysisDir) + "/application_results.txt").c_str(), ofstream::out | ofstream::trunc );
+      *printoutFile << mvaprintout;
+      printoutFile->close();
 
+      delete printoutFile;
       delete[] dtemp;
    }
    else
@@ -1591,8 +1674,9 @@ void MyFrame::ApplyMvaCut(wxCommandEvent& event)
 void MyFrame::MvaApplication(string *infilename, bool application, int mean)
 {
    int *itemp;
-   itemp = new int[4];
    string *stemp;
+
+   itemp = new int[4];
    stemp = new string[6];
 
    // Open a reader and add variables (must be the same as for the training)
@@ -1626,8 +1710,8 @@ void MyFrame::MvaApplication(string *infilename, bool application, int mean)
       cout << "# MvaApplication        #: " << "MVA method: " << stemp[1] << endl;
    reader->BookMVA(stemp[1].c_str(), stemp[0].c_str());
 
-   // Open the input file and prepare the TTree
-   TFile *ifile;
+   // Open the output file and prepare the TTree
+   TFile *ofile;
    if(mean == 0)
    {
       stemp[3] = "cp -r " + *infilename + " " + RemoveFilename(infilename) + "/mvatree_file.root";
@@ -1635,20 +1719,20 @@ void MyFrame::MvaApplication(string *infilename, bool application, int mean)
          cout << "# MvaApplication        #: " << "Copying temporary file: " << stemp[3] << endl;
       ret = system(stemp[3].c_str());
       stemp[3] = RemoveFilename(infilename) + "/mvatree_file.root";
-      ifile = TFile::Open(stemp[3].c_str(), "UPDATE");
+      ofile = TFile::Open(stemp[3].c_str(), "UPDATE");
    }
    else
-      ifile = TFile::Open(infilename->c_str(), "READ");
+      ofile = TFile::Open(infilename->c_str(), "READ");
 
    if(!(cutResults.empty()))
       cutResults.erase(cutResults.begin(), cutResults.end());
 
-   TList *tempkeyslist = (TList*) ifile->GetListOfKeys();
-   mvaprintout = mvaprintout + ToString(ifile->GetNkeys()) + "\n";
-   for(int j = 1; j <= ifile->GetNkeys(); j++)
+   TList *tempkeyslist = (TList*) ofile->GetListOfKeys();
+   mvaprintout = mvaprintout + ToString(ofile->GetNkeys()) + "\n";
+   for(int j = 1; j <= ofile->GetNkeys(); j++)
    {
       stemp[2] = string((tempkeyslist->At(j-1))->GetName());
-      cout << "# MvaApplication        #: " << endl << stemp[2] << " has been selected for evaluation." << endl;
+      cout << "# MvaApplication        #: " << stemp[2] << " has been selected for evaluation." << endl;
 
       stemp[4] = string((tempkeyslist->At(j-1))->GetTitle());
 
@@ -1666,8 +1750,7 @@ void MyFrame::MvaApplication(string *infilename, bool application, int mean)
       else
          mvaprintout = mvaprintout + ToString(0) + "\t";
 
-      TTree *signalApp;
-      signalApp = (TTree*)ifile->Get(stemp[2].c_str());
+      TTree *signalApp = (TTree*)ofile->Get(stemp[2].c_str());
 
       itemp[1] = 0;
       for(int i = 0; i < nrobs; i++)
@@ -1693,11 +1776,12 @@ void MyFrame::MvaApplication(string *infilename, bool application, int mean)
 
    if(mean == 0)
    {
-      ifile->Write();
-      itemp[3] = ifile->GetNkeys()/2;
+//      ofile->cd();
+      ofile->Write();
+      itemp[3] = ofile->GetNkeys()/2;
    }
    else
-      itemp[3] = ifile->GetNkeys();
+      itemp[3] = ofile->GetNkeys();
 
    itemp[2] = 0;
    for(int j = 0; j < itemp[3]; j++)
@@ -1710,7 +1794,7 @@ void MyFrame::MvaApplication(string *infilename, bool application, int mean)
       itemp[2] += 2;
    }
 
-   ifile->Close();
+   ofile->Close();
 
    delete reader;
    delete[] itemp;
@@ -1759,7 +1843,6 @@ void MyFrame::SetDefaultMva(wxCommandEvent& event)
 int MyFrame::StartRewrite(string *outfile)
 {
    // Check for all selections in the first listbox
-   wxArrayInt selections;
    (mvaList[0]->widgetLB)->GetSelections(selections);
 
    if(!selections.IsEmpty())
@@ -1828,11 +1911,12 @@ int MyFrame::StartFileSplit(string infile)
    float *ftemp;
    int *itemp;
    string *stemp;
-   float *obsvars;
    int rewritecode;
    // Set the random seed
-   unsigned int randSeed = (unsigned int)chrono::system_clock::now().time_since_epoch().count();
-   bool singlefile = false;
+   unsigned int *randSeed = new unsigned int;
+   *randSeed = (unsigned int)chrono::system_clock::now().time_since_epoch().count();
+   bool *singlefile = new bool;
+   *singlefile = false;
 
    ftemp = new float[2];
    itemp = new int[5];
@@ -1879,7 +1963,7 @@ int MyFrame::StartFileSplit(string infile)
    }
 
    // Preparing shuffled list for sampling
-   vector<int> shuflist;
+   vector<int> *shuflist = new vector<int>;
 
    // Loop over all events 
    for(int j = 0; j < itemp[0]; j++)
@@ -1893,7 +1977,7 @@ int MyFrame::StartFileSplit(string infile)
 
       // If event is inside selected cuts, enter it into the list for shuffling
       if(ret != -1)
-         shuflist.push_back(j);
+         shuflist->push_back(j);
       else
       {
          if(DBGSIG > 1)
@@ -1902,9 +1986,9 @@ int MyFrame::StartFileSplit(string infile)
    }
 
    // If the we are only filtering, then don't write out if input file will be equal to output file
-   if( singlefile && ((itemp[0] - shuflist.size()) == 0) )
+   if( *singlefile && ((itemp[0] - shuflist->size()) == 0) )
    {
-      AlertPopup("Input and output equal", "The filtering of input file removed no events (" + ToString(itemp[0]) + "/" + ToString(shuflist.size()) + "). Stopping filtering, since input and output files will be equal. Please adjust the settings accordingly and restart.");
+      AlertPopup("Input and output equal", "The filtering of input file removed no events (" + ToString(itemp[0]) + "/" + ToString(shuflist->size()) + "). Stopping filtering, since input and output files will be equal. Please adjust the settings accordingly and restart.");
 
       delete[] ftemp;
       delete[] itemp;
@@ -1912,34 +1996,37 @@ int MyFrame::StartFileSplit(string infile)
       delete obser;
       delete obser_neg;
       delete obser_pos;
+      delete randSeed;
+      delete shuflist;
+      delete singlefile;
       input->Close();
 
       return 1;
    }
 
    // After filtering set the number of all events (itemp[0]), events in one output file (itemp[1]) and events in other output file (itemp[2])
-   itemp[3] = shuflist.size();
+   itemp[3] = shuflist->size();
    cout << "# StartFileSplit        #: " << "There are " << itemp[3] << " events inside and " << (itemp[0] - itemp[3]) << " events outside the selected cuts." << endl;
 
    if(ftemp[0] < 0)
    {
       itemp[1] = itemp[3];
-      singlefile = true;
+      *singlefile = true;
    }
    else if(ftemp[0] < 1)
    {
       itemp[1] = TMath::Nint(itemp[3]*ftemp[0]);
-      singlefile = false;
+      *singlefile = false;
    }
    else
    {
       itemp[1] = TMath::Nint(ftemp[0]);
-      singlefile = false;
+      *singlefile = false;
    }
    itemp[2] = (int)(itemp[3]-itemp[1]);
 
    // If any of these are 0, cancel splitting
-   if( (!singlefile && ((itemp[0] == 0) || (itemp[1] == 0) || (itemp[2] <= 0))) || (itemp[0] == 0) || (itemp[3] == 0) )
+   if( (!(*singlefile) && ((itemp[0] == 0) || (itemp[1] == 0) || (itemp[2] <= 0))) || (itemp[0] == 0) || (itemp[3] == 0) )
    {
       AlertPopup("No events in split file", "One of the split files will have no events (" + ToString(itemp[1]) + "/" + ToString(itemp[2]) + "). Total number of filtered events is " + ToString(itemp[3]) + ". Please adjust the split setting accordingly and restart.");
 
@@ -1949,6 +2036,9 @@ int MyFrame::StartFileSplit(string infile)
       delete obser;
       delete obser_neg;
       delete obser_pos;
+      delete randSeed;
+      delete shuflist;
+      delete singlefile;
       input->Close();
 
       return 1;
@@ -1957,13 +2047,13 @@ int MyFrame::StartFileSplit(string infile)
    {
       // Open a dialog to select the random seed
       stemp[2] = "Selecting random seed for splitting the rewritten ADST file into two parts.\nThe current seed is selected randomly based on time.\n";
-      cout << "# StartFileSplit        #: Random seed = " << randSeed << endl;
-      NEDialog randomseedDialog(wxT("Random seed"), wxSize(500,200), stemp[2], "Set MVA cut:", randSeed, &ID_RANDSEEDDIALOG);
-      randomseedDialog.SetNEntryFormat(randomseedDialog.widgetNE, 0, 1, 2, 0, 10000000000);
-      if(randomseedDialog.ShowModal() == wxID_OK)
+      cout << "# StartFileSplit        #: Random seed = " << *randSeed << endl;
+      NEDialog *randomseedDialog = new NEDialog(wxT("Random seed"), wxSize(500,200), stemp[2], "Set MVA cut:", *randSeed, &ID_RANDSEEDDIALOG);
+      randomseedDialog->SetNEntryFormat(randomseedDialog->widgetNE, 0, 1, 2, 0, 10000000000);
+      if(randomseedDialog->ShowModal() == wxID_OK)
       {
-         randSeed = (unsigned int)randomseedDialog.GetNEValue();
-         cout << "# StartFileSplit        #: Selected random seed is: " << randSeed << endl;
+         *randSeed = (unsigned int)randomseedDialog->GetNEValue();
+         cout << "# StartFileSplit        #: Selected random seed is: " << *randSeed << endl;
       }
       else
       {
@@ -1973,10 +2063,18 @@ int MyFrame::StartFileSplit(string infile)
          delete obser;
          delete obser_neg;
          delete obser_pos;
+         delete randSeed;
+         delete shuflist;
+         delete singlefile;
+	 randomseedDialog->Destroy();
+	 delete randomseedDialog;
          input->Close();
 
          return 1;
       }
+
+      randomseedDialog->Destroy();
+      delete randomseedDialog;
 
       // Prepare the output filenames
       stemp[0] = RemoveExtension(&infile) + "_split-1.root";
@@ -1984,7 +2082,7 @@ int MyFrame::StartFileSplit(string infile)
 
       // Printout some information about splitting the files & prepare the output filenames
       itemp[4] = 0;
-      if(!singlefile)
+      if(!(*singlefile))
       {
          stemp[0] = RemoveExtension(&infile) + "_split-1.root";
          stemp[1] = RemoveExtension(&infile) + "_split-2.root";
@@ -2008,25 +2106,25 @@ int MyFrame::StartFileSplit(string infile)
       }
 
       // Shuffle the event list (saving to two vectors with event numbers)
-      shuffle(shuflist.begin(), shuflist.end(), default_random_engine(randSeed));
+      shuffle(shuflist->begin(), shuflist->end(), default_random_engine(*randSeed));
 
-      vector<int> split1list;
-      vector<int> split2list;
+      vector<int> *split1list = new vector<int>;
+      vector<int> *split2list = new vector<int>;
 
       for(int i = 0; i < itemp[3]; i++)
       {
          if(DBGSIG > 1)
-	    cout << i << "\tList event:\t" << shuflist[i] << "\t";
+	    cout << i << "\tList event:\t" << shuflist->at(i) << "\t";
 
          if(i < itemp[1])
 	 {
-            split1list.push_back(shuflist[i]);
+            split1list->push_back(shuflist->at(i));
             if(DBGSIG > 1)
 	       cout << " (1st list)" << endl;
 	 }
 	 else
 	 {
-            split2list.push_back(shuflist[i]);
+            split2list->push_back(shuflist->at(i));
             if(DBGSIG > 1)
 	       cout << " (2nd list)" << endl;
 	 }
@@ -2087,14 +2185,14 @@ int MyFrame::StartFileSplit(string infile)
                   readTree->GetEntry(j);
 
                   // Select the correct tree to write to
-                  if( (find(split1list.begin(), split1list.end(), j) != split1list.end()) && (i == 0) )
+                  if( (find(split1list->begin(), split1list->end(), j) != split1list->end()) && (i == 0) )
                      writeTree->Fill();
-                  if( (find(split2list.begin(), split2list.end(), j) != split2list.end()) && (i == 1) )
+                  if( (find(split2list->begin(), split2list->end(), j) != split2list->end()) && (i == 1) )
                      writeTree->Fill();
 
 	          // Update the progress bar
 	          itemp[4]++;
-                  if(!singlefile)
+                  if(!(*singlefile))
 		  {
 	             if(itemp[4]%((int)(2*(input->GetNkeys())*itemp[0]*0.05)) == 0)
                         progress->Update(itemp[4]);
@@ -2114,14 +2212,17 @@ int MyFrame::StartFileSplit(string infile)
 
 	 output->Close();
 
-	 if(singlefile && (i == 0))
+	 if(*singlefile && (i == 0))
             break;
       }
 
-      if(!singlefile)
+      if(!(*singlefile))
          progress->Update(2*(input->GetNkeys())*itemp[0]);
       else
          progress->Update((input->GetNkeys())*itemp[0]);
+
+      delete split1list;
+      delete split2list;
    }
 
    delete[] ftemp;
@@ -2130,6 +2231,10 @@ int MyFrame::StartFileSplit(string infile)
    delete obser;
    delete obser_neg;
    delete obser_pos;
+   delete randSeed;
+   delete shuflist;
+   delete singlefile;
+   input->Close();
 
    return 0;
 }
@@ -2138,7 +2243,6 @@ int MyFrame::StartFileSplit(string infile)
 int MyFrame::StartCombine(string *outfile)
 {
    // Check for all selections in the second listbox
-   wxArrayInt selections;
    (mvaList[1]->widgetLB)->GetSelections(selections);
 
    if(selections.GetCount() > 1)
@@ -2165,7 +2269,6 @@ int MyFrame::StartCombine(string *outfile)
 int MyFrame::StartMerge(string *outfile)
 {
    // Check for all selections in the second listbox
-   wxArrayInt selections;
    (mvaList[1]->widgetLB)->GetSelections(selections);
 
    if(!selections.IsEmpty())

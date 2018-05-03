@@ -14,7 +14,7 @@ class LabelNEntryDropButton : public Subheader
 {
 public:
     // Single NEntry and single button constructor
-    LabelNEntryDropButton(wxPanel *parent, wxString label, double numval, const int nentryID, vector<string> entrytext, string selecttext, const int dropID, wxString buttext, const int butID, int maxsize);
+    LabelNEntryDropButton(wxPanel *parent, wxString label, double numval, const int nentryID, vector<string> *entrytext, string selecttext, const int dropID, wxString buttext, const int butID, int maxsize);
     // TODO: add other constructors
 /*    // Multiple NEntry constructors
     CheckNEntry(wxPanel *parent, bool checked, wxString label, int nrnentries, vector<double> numval, int maxsize);*/
