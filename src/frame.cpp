@@ -366,6 +366,15 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    vstemp->push_back("Open MVA graphical interface after training and testing");
    vitemp->push_back(1);
    vitemp2->push_back(-1);
+   vstemp->push_back("Determine MVA cut error through calculation of data tree standard deviation");
+   vitemp->push_back(1);
+   vitemp2->push_back(-1);
+/*   vstemp->push_back("Apply bias correction for FD standard data files");
+   vitemp->push_back(0);
+   vitemp2->push_back(-1);
+   vstemp->push_back("Apply bias correction for HECO data files");
+   vitemp->push_back(0);
+   vitemp2->push_back(-1);*/
    specialMva = new CheckList(rightmvapanel, vitemp, vstemp, vitemp2, rwidth);
    vbox->Add(specialMva->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
 

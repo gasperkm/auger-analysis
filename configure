@@ -1,4 +1,47 @@
 #!/bin/bash
+
+   startdir=$PWD
+   
+   # Configure the workstation information and directory of program (0 if we find something and 1 otherwise)
+   basedir=$(echo $startdir | sed 's/\//\\\//g')
+
+   # Check for available ADST versions
+   adstcount=0
+   for adst in $startdir/setup/ADST_*.tar.gz
+   do
+     baseadst=$(basename $adst)
+     baseadst=$(echo ${baseadst%%.*})
+     baseadst=$(echo ${baseadst##*_})
+     
+     adstver[$adstcount]=$baseadst
+     adstcount=$(( $adstcount + 1 ))
+   done
+
+   # Save all arguments to a list
+   args[0]="all"
+   args[1]="support"
+   args[2]="lib"
+   args[3]="clean"
+   args[4]="compress"
+   argcount=5
+   for ver in ${adstver[@]}
+   do
+     args[$argcount]=$ver
+     argcount=$(( $argcount + 1 ))
+   done
+   
+   # Check arguments for ROOT install directory
+   rootsearch="--root-install="
+   rootdirectory=-1
+   for var in $@
+   do
+     case $var in
+       "$rootsearch"*)
+         rootdirectory=${var#$rootsearch}
+         echo "ROOT directory: $rootdirectory";;
+       *) ;;
+     esac 
+   done   
    
    # Functions for coloring
    function colorecho
@@ -22,10 +65,11 @@
      colorecho ""
      colorecho "[option] = Option for configure:"
      colorecho "  help       Display configure instructions."
-#     colorecho "  nomake     Configure installation, but do not run make."
      colorecho "  all        Configure installation and afterwards compile with make."
-     colorecho "  old        Same as all, but compile with old ADST version only."
-     colorecho "  new        Same as nomake, but compile with new ADST version only."
+     for verHelp in ${adstver[@]}
+     do
+       colorecho "  $verHelp     Same as all, but compile with ADST version $verHelp only."
+     done
      colorecho "  support    Same as all, but only compile support programs (not main GUI)."
      colorecho "  clean      Clean the installation directory. Does not clean the results directory."
      colorecho "  compress   Compress the source code in a tar-ball."
@@ -37,6 +81,487 @@
      colorecho "  ./configure all --root-install=/home/user/root"
      colorecho ""
      colorecho "#------------------------------"
+
+     exit 1
+   }
+
+   # Check for the current ROOT directory
+   function CheckRootdir()
+   {
+     if [ $rootdirectory != -1 ]; then
+       printenv ROOTSYS > /dev/null
+       if [ $? != 0 ]; then
+         colorecho "ROOT environment variables not set. Please run \"source $rootdirectory/bin/thisroot.sh\", before using make."
+       fi
+     else
+       printenv ROOTSYS > /dev/null
+       if [ $? != 0 ]; then
+         errorecho "Error! ROOT environment variables not set."
+       else
+         colorecho "ROOT found! Current root executable location: $(which root)"
+       fi
+     fi
+   }
+
+   # Put together the makefile
+   function SetupMakefile()
+   {
+     # Put together the makefile and save it into base directory
+     if [ "$1" != "" ]; then
+       cat $startdir/setup/Makefile1.in > $startdir/Makefile
+       tempstring=""
+       for verPrep in ${adstver[@]}
+       do
+         tempstring=$(echo "${tempstring} \$(TARGET${verPrep})")
+	 echo "TARGET${verPrep}=\$(BIN)/auger-analysis-gui-${verPrep}" >> $startdir/Makefile
+       done
+       cat $startdir/setup/Makefile2.in >> $startdir/Makefile
+       echo "all:${tempstring}" >> $startdir/Makefile
+       echo "support: \$(BIN)/tmvagui \$(BIN)/create_mva_plots \$(BIN)/data_fraction_plots \$(BIN)/individual_cut \$(BIN)/mva_fit_histogram" >> $startdir/Makefile
+       echo "library: \$(LDIR)/libsubstr.so" >> $startdir/Makefile
+       for verPrep in ${adstver[@]}
+       do
+         echo "support-${verPrep}: \$(BIN)/batch-rewrite-${verPrep}" >> $startdir/Makefile
+       done
+       echo "" >> $startdir/Makefile
+
+       for verPrep in ${adstver[@]}
+       do
+	 echo "# Make for main program (ADST version ${verPrep})" >> $startdir/Makefile
+         echo "\$(TARGET${verPrep}): \$(LDIR)/libsubstr.so \$(BIN)/batch-rewrite-${verPrep}" >> $startdir/Makefile
+	 echo -e '\t@echo "\\n# Compiling the main program (version '${verPrep}') ------------------------------------------"' >> $startdir/Makefile
+	 echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+         echo "" >> $startdir/Makefile
+         echo "# Batch rewrite rules -----------------------------------------------" >> $startdir/Makefile
+         echo "\$(BIN)/batch-rewrite-${verPrep}: \$(SRC)/batch_rewrite/batch_rewrite.cpp" >> $startdir/Makefile
+	 echo -e '\t@echo "\\n# Creating the standalone batch rewrite (version '${verPrep}') ------------------------------------------"' >> $startdir/Makefile
+         echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+         echo "" >> $startdir/Makefile
+       done
+       cat $startdir/setup/Makefile3.in >> $startdir/Makefile
+     else
+       if [ ! -f $startdir/Makefile ]; then
+         cat $startdir/setup/Makefile1.in > $startdir/Makefile
+	 echo "TARGET${adstver[0]}=\$(BIN)/auger-analysis-gui-${adstver[0]}" >> $startdir/Makefile
+         cat $startdir/setup/Makefile2.in >> $startdir/Makefile
+         echo "support-${adstver[0]}: \$(BIN)/batch-rewrite-${adstver[0]}" >> $startdir/Makefile
+         echo "" >> $startdir/Makefile
+
+         echo "# Make for main program (ADST version ${adstver[0]})" >> $startdir/Makefile
+         echo "\$(TARGET${adstver[0]}): \$(LDIR)/libsubstr.so \$(BIN)/batch-rewrite-${adstver[0]}" >> $startdir/Makefile
+	 echo -e '\t@echo "\\n# Compiling the main program (version '${adstver[0]}') ------------------------------------------"' >> $startdir/Makefile
+	 echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+         echo "" >> $startdir/Makefile
+         echo "# Batch rewrite rules -----------------------------------------------" >> $startdir/Makefile
+         echo "\$(BIN)/batch-rewrite-${adstver[0]}: \$(SRC)/batch_rewrite/batch_rewrite.cpp" >> $startdir/Makefile
+	 echo -e '\t@echo "\\n# Creating the standalone batch rewrite (version '${adstver[0]}') ------------------------------------------"' >> $startdir/Makefile
+         echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+         cat $startdir/setup/Makefile3.in >> $startdir/Makefile
+       fi
+     fi
+   }
+
+   # Prepare specific input files and folders
+   function PrepareInFiles()
+   {
+     # Find path-to-installation and replace it with the base directory
+     grep -q "#define rootdir \"path-to-installation\"" $startdir/setup/workstation.h.in
+     if [ $? == 0 ]; then
+       sed "s/path-to-installation/$basedir/g" $startdir/setup/workstation.h.in > $startdir/setup/workstation.h.mid
+     else
+       errorecho "Error! No \"path-to-installation\" found in $startdir/setup/workstation.h.in"
+     fi
+
+     if [ "$1" != "" ]; then
+       # Find OFFVER SOMETHING and set it depending on the selected ADST version
+       grep -q "#define OFFVER SOMETHING" $startdir/setup/workstation.h.mid
+       if [ $? == 0 ]; then
+	 if [ "$1" == "v2r9p1" ]; then
+           sed "s/OFFVER SOMETHING/OFFVER 0/g" $startdir/setup/workstation.h.mid > $startdir/include/workstation.h
+         else
+           sed "s/OFFVER SOMETHING/OFFVER 1/g" $startdir/setup/workstation.h.mid > $startdir/include/workstation.h
+         fi
+         rm -f $startdir/setup/workstation.h.mid
+       else
+         errorecho "Error! No \"OFFVER SOMETHING\" found in $startdir/setup/workstation.h.in"
+       fi
+     else
+       if [ ! -f $startdir/include/workstation.h ]; then
+         # Find OFFVER SOMETHING and set it depending on the selected ADST version
+         grep -q "#define OFFVER SOMETHING" $startdir/setup/workstation.h.mid
+         if [ $? == 0 ]; then
+           sed "s/OFFVER SOMETHING/OFFVER \"${adstver[0]}\"/g" $startdir/setup/workstation.h.mid > $startdir/include/workstation.h
+           rm -f $startdir/setup/workstation.h.mid
+         else
+           errorecho "Error! No \"OFFVER SOMETHING\" found in $startdir/setup/workstation.h.in"
+         fi
+       else
+         rm -f $startdir/setup/workstation.h.mid
+       fi
+     fi
+
+     # Find BASEDIR from the plots directory header (where TMVA plots will be saved)
+     grep -q "BASEDIR" $startdir/setup/plotsdir.h.in
+     if [ $? == 0 ]; then
+       sed "s/BASEDIR/$basedir/g" $startdir/setup/plotsdir.h.in > $startdir/src/root_mva/plotsdir.h
+     else
+       errorecho "Error! No \"BASEDIR\" found in $startdir/setup/plotsdir.h.in"
+     fi
+   
+     # Find :BASEDIR/src: from the TMVA source, so that it correctly searches for TMVA plotting scripts
+     grep -q ":BASEDIR/src:" $startdir/setup/TMVAGui.C.in
+     if [ $? == 0 ]; then
+       sed "s/BASEDIR/$basedir/g" $startdir/setup/TMVAGui.C.in > $startdir/src/root_mva/TMVAGui.C
+     else
+       errorecho "Error! No \"BASEDIR\" found in $startdir/setup/TMVAGui.C.in"
+     fi
+
+     # Prepare the Makefile
+     SetupMakefile $1
+
+     # Create library directory, if it doesn't exist yet
+     if [ ! -d $startdir/lib ]; then
+       mkdir $startdir/lib
+     fi
+
+     # Create results directory, if it doesn't exist yet
+     if [ ! -d $startdir/results ]; then
+       mkdir $startdir/results
+     fi
+
+     # Create bin directory, if it doesn't exist yet
+     if [ ! -d $startdir/bin ]; then
+       mkdir $startdir/bin
+     fi
+   }
+
+   function SetupTmva()
+   {
+     source $startdir/setup/setup_TMVA.sh $startdir
+     if [ ! -d $TMVASYS ]; then
+       cd $startdir/setup
+       for ball in *.tgz
+       do
+          tar -zxf $ball
+       done
+     fi
+
+     # Replace original Factory.cxx with edited one
+     grep -q "TRANSFORMDIR" $startdir/setup/Factory.cxx.in
+     if [ $? == 0 ]; then
+       sed "s/TRANSFORMDIR/$basedir/g" $startdir/setup/Factory.cxx.in > $startdir/setup/Factory.cxx.mid
+     fi
+     diff -q $TMVASYS/src/Factory.cxx $startdir/setup/Factory.cxx.mid
+     if [ $? != 0 ]; then
+       cp $startdir/setup/Factory.cxx.mid $TMVASYS/src/Factory.cxx
+     fi
+     rm -fr $startdir/setup/Factory.cxx.mid
+
+     # TESTING!
+     # Replace original MethodBase.cxx with edited one
+     diff -q $TMVASYS/src/MethodBase.cxx $startdir/setup/MethodBase.cxx.in
+     if [ $? != 0 ]; then
+       cp $startdir/setup/MethodBase.cxx.in $TMVASYS/src/MethodBase.cxx
+     fi
+     # TESTING!
+
+     # Create the TMVA version
+     cd $TMVASYS
+     make
+     if [ $? == 0 ]; then
+       source $TMVASYS/test/setup.sh $TMVASYS
+     fi
+   }
+
+   function SetupAdst()
+   {
+     source $startdir/setup/setup_ADST.sh $startdir $1
+     
+     if [ ! -d $ADSTROOT ]; then
+       cd $startdir/setup
+       tar -zxf ADST_${1}.tar.gz
+     fi
+     cd $ADSTROOT
+     make
+   }
+
+   function SetupStartScript()
+   {
+     cd $startdir
+     echo "#!/bin/bash" > $startdir/start.sh
+     echo "dir=\`dirname \$0\`" >> $startdir/start.sh
+     echo "" >> $startdir/start.sh
+     echo "function helptext()" >> $startdir/start.sh
+     echo "{" >> $startdir/start.sh
+     echo "  echo \"Usage instructions:\"" >> $startdir/start.sh
+     for verSetup in ${adstver[@]}
+     do
+       echo "  echo \"   ./start.sh $verSetup          (GUI with ADST version $verSetup)\"" >> $startdir/start.sh
+       echo "  echo \"   ./start.sh rewrite $verSetup  (Batch rewrite with ADST version $verSetup)\"" >> $startdir/start.sh
+     done
+     echo "}" >> $startdir/start.sh
+     echo "" >> $startdir/start.sh
+
+     echo "if [ \"\$1\" == \"help\" ]; then" >> $startdir/start.sh
+     echo "  helptext" >> $startdir/start.sh
+     echo "  exit 0" >> $startdir/start.sh
+     echo "fi" >> $startdir/start.sh
+     echo "" >> $startdir/start.sh
+
+     count=0
+     tempstring="if"
+     for verSetup in ${adstver[@]}
+     do
+       if [ $count == 0 ]; then
+         tempstring=$(echo "${tempstring} [ \"\$1\" == \"$verSetup\" ]")
+       else
+         tempstring=$(echo "${tempstring} || [ \"\$1\" == \"$verSetup\" ]")
+       fi
+
+       count=$(( $count + 1 ))
+     done
+     tempstring=$(echo "${tempstring}; then")
+     echo "$tempstring" >> $startdir/start.sh
+     echo "  offversion=\$1" >> $startdir/start.sh
+
+     count=0
+     tempstring="elif"
+     for verSetup in ${adstver[@]}
+     do
+       if [ $count == 0 ]; then
+         tempstring=$(echo "${tempstring} [ \"\$2\" == \"$verSetup\" ]")
+       else
+         tempstring=$(echo "${tempstring} || [ \"\$2\" == \"$verSetup\" ]")
+       fi
+
+       count=$(( $count + 1 ))
+     done
+     tempstring=$(echo "${tempstring}; then")
+     echo "$tempstring" >> $startdir/start.sh
+     echo "  offversion=\$2" >> $startdir/start.sh
+
+     echo "fi" >> $startdir/start.sh
+     echo "" >> $startdir/start.sh
+
+     count=0
+     for verSetup in ${adstver[@]}
+     do
+       if [ $count == 0 ]; then
+         echo "if [ \"\$offversion\" == \"$verSetup\" ]; then" >> $startdir/start.sh
+       else
+         echo "elif [ \"\$offversion\" == \"$verSetup\" ]; then" >> $startdir/start.sh
+       fi
+       echo "  source $startdir/setup/setup_ADST.sh $startdir $verSetup" >> $startdir/start.sh
+       echo "  cd $startdir" >> $startdir/start.sh
+
+       count=$(( $count + 1 ))
+     done
+     echo "else" >> $startdir/start.sh
+     echo "  echo \"Error! No ADST version supplied.\"" >> $startdir/start.sh
+     echo "  helptext" >> $startdir/start.sh
+     echo "  exit 1" >> $startdir/start.sh
+     echo "fi" >> $startdir/start.sh
+     echo "" >> $startdir/start.sh
+
+     echo "rootdirectory=$rootdirectory" >> $startdir/start.sh
+     echo "" >> $startdir/start.sh
+     echo "if [ \$rootdirectory != -1 ]; then" >> $startdir/start.sh
+     echo "  printenv ROOTSYS > /dev/null" >> $startdir/start.sh
+     echo "  if [ \$? != 0 ]; then" >> $startdir/start.sh
+     echo "    echo \"Preparing ROOT...\"" >> $startdir/start.sh
+     echo "    source \$rootdirectory/bin/thisroot.sh" >> $startdir/start.sh
+     echo "  fi" >> $startdir/start.sh
+     echo "fi" >> $startdir/start.sh
+     echo "" >> $startdir/start.sh
+
+     echo "source $startdir/setup/setup_TMVA.sh $startdir" >> $startdir/start.sh
+     echo "cd $TMVASYS" >> $startdir/start.sh
+     echo "source $TMVASYS/test/setup.sh $TMVASYS" >> $startdir/start.sh
+     echo "cd $startdir" >> $startdir/start.sh
+     echo "" >> $startdir/start.sh
+     echo "export LD_LIBRARY_PATH=\$PWD/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}" >> $startdir/start.sh
+     echo "" >> $startdir/start.sh
+
+     count=0
+     for verSetup in ${adstver[@]}
+     do
+       if [ $count == 0 ]; then
+         echo "if [ \"\$offversion\" == \"${verSetup}\" ]; then" >> $startdir/start.sh
+         echo "  if [ \"\$1\" == \"rewrite\" ]; then" >> $startdir/start.sh
+         echo "    ./bin/batch-rewrite-${verSetup} \"\$@\"" >> $startdir/start.sh
+         echo "  else" >> $startdir/start.sh
+         echo "    ./bin/auger-analysis-gui-${verSetup}" >> $startdir/start.sh
+         echo "  fi" >> $startdir/start.sh
+       else
+         echo "elif [ \"\$offversion\" == \"${verSetup}\" ]; then" >> $startdir/start.sh
+         echo "  if [ \"\$1\" == \"rewrite\" ]; then" >> $startdir/start.sh
+         echo "    ./bin/batch-rewrite-${verSetup} \"\$@\"" >> $startdir/start.sh
+         echo "  else" >> $startdir/start.sh
+         echo "    ./bin/auger-analysis-gui-${verSetup}" >> $startdir/start.sh
+         echo "  fi" >> $startdir/start.sh
+       fi
+
+       count=$(( $count + 1 ))
+     done
+     echo "else" >> $startdir/start.sh
+     echo "  echo \"Error! No ADST version supplied.\"" >> $startdir/start.sh
+     echo "  helptext" >> $startdir/start.sh
+     echo "  exit 1" >> $startdir/start.sh
+     echo "fi" >> $startdir/start.sh
+
+     chmod ug+x $startdir/start.sh
+   }
+
+   # When using compress, only create a tar-ball and then exit
+   function ConfigureCompress()
+   {
+     echo "TODO: Compress"
+#     cd $startdir
+#     if [ ! -d $startdir/auger-analysis ]; then
+#       mkdir $startdir/auger-analysis
+#       mkdir $startdir/auger-analysis/results
+#       mkdir $startdir/auger-analysis/layout
+#       mkdir $startdir/auger-analysis/setup
+#       echo "Copying files to temporary directory $startdir/auger-analysis..."
+#       cp -r $startdir/configure $startdir/include $startdir/input $startdir/src $startdir/auger-analysis/
+#       cp -r $startdir/layout/default.layout $startdir/auger-analysis/layout/
+#       cp -r $startdir/setup/setup_TMVA.sh $startdir/setup/setup_ADST.sh $startdir/setup/*.tar.gz $startdir/setup/*.tgz $startdir/setup/*.in $startdir/auger-analysis/setup/
+#       cd $startdir
+#       echo "default.layout" > $startdir/auger-analysis/layout/selected_layout.txt
+#       cd $startdir/auger-analysis
+#       echo "Cleaning the base directory in $startdir/auger-analysis..."
+#       rm -f ./*.bak
+#       echo "Cleaning the subdirectories of $startdir/auger-analysis..."
+#       rm -f ./*/*.bak
+#       cd $startdir/auger-analysis/src
+#       rm -f ./*/*.bak
+#       cd $startdir/auger-analysis/include
+#       rm -f ./*/*.bak
+#       cd $startdir
+#       echo "Creating a tar-ball auger-analysis.tar.gz..."
+#       tar -zcf $startdir/auger-analysis.tar.gz ./auger-analysis
+#       echo "Removing the temporary directory $startdir/auger-analysis..."
+#       rm -fr $startdir/auger-analysis
+#     else
+#       errorecho "Error! Directory $startdir/auger-analysis already exists."
+#       exit 1
+#     fi
+   }
+
+   function ConfigureAdst()
+   {
+     if [ "$2" == "" ]; then
+       CheckRootdir
+       SetupTmva
+     fi
+
+     PrepareInFiles $1
+     
+     if [ "$2" == "" ]; then
+       SetupStartScript
+     fi
+
+     SetupAdst $1
+
+     if [ "$2" == "" ]; then
+       cd $startdir
+       make ./bin/auger-analysis-gui-${1}
+       if [ $? != 0 ]; then
+         errorecho "Compiling of the ADST version $1 of the program failed..."
+         exit 1
+       fi
+     fi
+   }
+
+   function ConfigureLibs()
+   {
+     CheckRootdir
+     SetupTmva
+
+     for verLibs in ${adstver[@]}
+     do
+       PrepareInFiles $verLibs
+       SetupAdst $verLibs
+     done
+
+     cd $startdir
+     make library
+     if [ $? != 0 ]; then
+       errorecho "Compiling of substructure libraries failed..."
+       exit 1
+     fi
+   }
+
+   function ConfigureClean()
+   {
+     cd $startdir
+     if [ -f $startdir/Makefile ]; then
+       make clean
+       rm -f Makefile
+     fi
+   }
+
+   function ConfigureSupport()
+   {
+     CheckRootdir
+     SetupTmva
+     PrepareInFiles
+
+     cd $startdir
+     make support
+     if [ $? != 0 ]; then
+       errorecho "Compiling of support programs failed..."
+       exit 1
+     fi
+   }
+
+   function ConfigureAll()
+   {
+     CheckRootdir
+     SetupTmva
+     SetupStartScript
+
+     for verAll in ${adstver[@]}
+     do
+       ConfigureAdst $verAll $1
+     done
+
+     cd $startdir
+     make support
+     if [ $? != 0 ]; then
+       errorecho "Compiling of support programs failed..."
+       exit 1
+     fi
+
+     make
+     if [ $? != 0 ]; then
+       errorecho "Compiling of the main program failed..."
+       exit 1
+     fi
+   }
+
+   # All possible configure options
+   function PerformConfigure()
+   {
+     echo "Good, argument is $1. :)"
+     if [ "$1" == "compress" ]; then
+       ConfigureCompress $1
+     elif [ "$1" == "lib" ]; then
+       ConfigureLibs $1
+     elif [ "$1" == "clean" ]; then
+       ConfigureClean $1
+     elif [ "$1" == "support" ]; then
+       ConfigureSupport $1
+     elif [ "$1" == "all" ]; then
+       ConfigureAll $1
+     fi
+
+     for adst in ${adstver[@]}
+     do
+       if [ "$1" == "$adst" ]; then
+         ConfigureAdst $1
+       fi
+     done
    }
    
 #--- Start the configuration -----------------------------------------------
@@ -54,320 +579,16 @@
      fi
    
      # Print help and exit if we give a wrong first argument
-     if  [ "$1" != "all" ] && [ "$1" != "old" ] && [ "$1" != "new" ] && [ "$1" != "support" ] && [ "$1" != "lib" ] && [ "$1" != "clean" ] && [ "$1" != "compress" ]; then
-       errorecho "Error! Wrong configuration option selected (first argument)."
-       echo ""
-       helptext
-       exit 1
-     fi
-   
-     startdir=$PWD
-   
-     # Check arguments for ROOT install directory
-     rootsearch="--root-install="
-     rootdirectory=-1
-     for var in $@
+     for arg in ${args[@]}
      do
-       case $var in
-         "$rootsearch"*)
-           rootdirectory=${var#$rootsearch}
-           echo "ROOT directory: $rootdirectory";;
-         *) ;;
-       esac 
-     done   
-    
-     # Check for installation directory of ROOT (ROOTSYS) - if variables not currently set, remind user to set them before running make
-     if [ "$1" != "clean" ] && [ "$1" != "compress" ]; then
-       if [ $rootdirectory != -1 ]; then
-         printenv ROOTSYS > /dev/null
-         if [ $? != 0 ]; then
-           colorecho "ROOT environment variables not set. Please run \"source $rootdirectory/bin/thisroot.sh\", before using make."
-         fi
-       else
-         colorecho "Before running make, please make sure ROOT environment variables are set."
+       if  [ "$1" == "$arg" ]; then
+	 PerformConfigure $1
+	 exit 0
        fi
-     fi
-   
-     # When using compress, only create a tar-ball and then exit
-     if [ "$1" == "compress" ]; then
-       echo "TODO: compression"
-       cd $startdir
-       if [ ! -d $startdir/auger-analysis ]; then
-         mkdir $startdir/auger-analysis
-         mkdir $startdir/auger-analysis/results
-         mkdir $startdir/auger-analysis/layout
-         mkdir $startdir/auger-analysis/setup
-         echo "Copying files to temporary directory $startdir/auger-analysis..."
-         cp -r $startdir/configure $startdir/include $startdir/input $startdir/src $startdir/auger-analysis/
-         cp -r $startdir/layout/default.layout $startdir/auger-analysis/layout/
-         cp -r $startdir/setup/setup_TMVA.sh $startdir/setup/setup_ADST.sh $startdir/setup/*.tar.gz $startdir/setup/*.tgz $startdir/setup/*.in $startdir/auger-analysis/setup/
-#         cd $startdir/auger-analysis/setup
-#         for f in *.tar.gz
-#         do
-#           tar -zxf $f
-#         done
-         cd $startdir
-         echo "default.layout" > $startdir/auger-analysis/layout/selected_layout.txt
-         cd $startdir/auger-analysis
-         echo "Cleaning the base directory in $startdir/auger-analysis..."
-         rm -f ./*.bak
-         echo "Cleaning the subdirectories of $startdir/auger-analysis..."
-         rm -f ./*/*.bak
-         cd $startdir/auger-analysis/src
-         rm -f ./*/*.bak
-         cd $startdir/auger-analysis/include
-         rm -f ./*/*.bak
-         cd $startdir
-         echo "Creating a tar-ball auger-analysis.tar.gz..."
-         tar -zcf $startdir/auger-analysis.tar.gz ./auger-analysis
-         echo "Removing the temporary directory $startdir/auger-analysis..."
-         rm -fr $startdir/auger-analysis
-         exit 0
-       else
-         errorecho "Error! Directory $startdir/auger-analysis already exists."
-         exit 1
-       fi
-     fi
-   
-     # Configure the workstation information and directory of program (0 if we find something and 1 otherwise)
-     basedir=$(echo $startdir | sed 's/\//\\\//g')
-   
-     if [ "$1" == "all" ] || [ "$1" == "old" ] || [ "$1" == "new" ] || [ "$1" == "support" ] || [ "$1" == "lib" ]; then
-       for ver in 1 2
-       do
-	 # Find path-to-installation and replace it with the base directory
-         grep -q "#define rootdir \"path-to-installation\"" $startdir/setup/workstation.h.in
-         if [ $? == 0 ]; then
-           sed "s/path-to-installation/$basedir/g" $startdir/setup/workstation.h.in > $startdir/setup/workstation.h.mid
-         fi
-	 # Find OFFVER SOMETHING and set it depending on the current version (1 = old, 2 = new)
-         grep -q "#define OFFVER SOMETHING" $startdir/setup/workstation.h.mid
-         if [ $? == 0 ]; then
-           if [ $ver == 1 ]; then
-              sed "s/OFFVER SOMETHING/OFFVER 0/g" $startdir/setup/workstation.h.mid > $startdir/include/workstation.h
-   	      rm -f $startdir/setup/workstation.h.mid
-           elif [ $ver == 2 ]; then
-              sed "s/OFFVER SOMETHING/OFFVER 1/g" $startdir/setup/workstation.h.mid > $startdir/include/workstation.h
-   	      rm -f $startdir/setup/workstation.h.mid
-           else
-              errorecho "Error! The entered offline version is incorrect. Use old or new."
-   	      rm -f $startdir/setup/workstation.h.mid
-              exit 1
-           fi
-         fi
-   
-	 # Find BASEDIR from the plots directory header (where TMVA plots will be saved)
-         grep -q "BASEDIR" $startdir/setup/plotsdir.h.in
-         if [ $? == 0 ]; then
-           sed "s/BASEDIR/$basedir/g" $startdir/setup/plotsdir.h.in > $startdir/src/root_mva/plotsdir.h
-         fi
-   
-	 # Find :BASEDIR/src: from the TMVA source, so that it correctly searches for TMVA plotting scripts
-         grep -q ":BASEDIR/src:" $startdir/setup/TMVAGui.C.in
-         if [ $? == 0 ]; then
-           sed "s/BASEDIR/$basedir/g" $startdir/setup/TMVAGui.C.in > $startdir/src/root_mva/TMVAGui.C
-         fi
-   
-	 # Copy the makefile into base directory
-         cp $startdir/setup/Makefile.in $startdir/Makefile
-      
-	 # Create library directory, if it doesn't exist yet
-         if [ ! -d $startdir/lib ]; then
-           mkdir $startdir/lib
-         fi
-   
-         # Create the two ADST versions (old and new)
-         if [ $ver == 1 ]; then
-           source $startdir/setup/setup_ADST.sh $startdir old
-         elif [ $ver == 2 ]; then
-           source $startdir/setup/setup_ADST.sh $startdir new
-         fi
+     done
 
-   	 if [ ! -d $ADSTROOT ]; then
-   	   cd $startdir/setup
-   	   for ball in *.tar.gz
-   	   do
-   	     tar -zxf $ball
-   	   done
-   	 fi
-   	 cd $ADSTROOT
-   	 make
-   
-	 # Create the external TMVA version (only for the first time)
-         if [ $ver == 1 ]; then
-            source $startdir/setup/setup_TMVA.sh $startdir
-            if [ ! -d $TMVASYS ]; then
-               cd $startdir/setup
-               for ball in *.tgz
-               do
-                  tar -zxf $ball
-               done
-            fi
-            # Replace original Factory.cxx with edited one
-            grep -q "TRANSFORMDIR" $startdir/setup/Factory.cxx.in
-            if [ $? == 0 ]; then
-              sed "s/TRANSFORMDIR/$basedir/g" $startdir/setup/Factory.cxx.in > $startdir/setup/Factory.cxx.mid
-            fi
-            diff -q $TMVASYS/src/Factory.cxx $startdir/setup/Factory.cxx.mid
-            if [ $? != 0 ]; then
-              cp $startdir/setup/Factory.cxx.mid $TMVASYS/src/Factory.cxx
-            fi
-            rm -fr $startdir/setup/Factory.cxx.mid
-	    # TESTING!
-            # Replace original MethodBase.cxx with edited one
-            diff -q $TMVASYS/src/MethodBase.cxx $startdir/setup/MethodBase.cxx.in
-            if [ $? != 0 ]; then
-              cp $startdir/setup/MethodBase.cxx.in $TMVASYS/src/MethodBase.cxx
-            fi
-	    # TESTING!
-            # Create the TMVA version
-            cd $TMVASYS
-            make
-            if [ $? == 0 ]; then
-               source $TMVASYS/test/setup.sh $TMVASYS
-            fi
-	 fi
-      
-         if [ $ver == 2 ]; then
-           cd $startdir
-           echo "#!/bin/bash" > $startdir/start.sh
-           echo "dir=\`dirname \$0\`" >> $startdir/start.sh
-           echo "" >> $startdir/start.sh
-	   echo "function helptext()" >> $startdir/start.sh
-	   echo "{" >> $startdir/start.sh
-           echo "  echo \"Usage instructions:\"" >> $startdir/start.sh
-           echo "  echo \"   ./start.sh old          (GUI with old offline version)\"" >> $startdir/start.sh
-           echo "  echo \"   ./start.sh main old     (GUI with old offline version)\"" >> $startdir/start.sh
-           echo "  echo \"   ./start.sh new          (GUI with new offline version)\"" >> $startdir/start.sh
-           echo "  echo \"   ./start.sh main new     (GUI with new offline version)\"" >> $startdir/start.sh
-           echo "  echo \"   ./start.sh rewrite old  (Batch rewrite with old offline version)\"" >> $startdir/start.sh
-           echo "  echo \"   ./start.sh rewrite new  (Batch rewrite with new offline version)\"" >> $startdir/start.sh
-	   echo "}" >> $startdir/start.sh
-           echo "" >> $startdir/start.sh
-
-	   echo "if [ \"\$1\" == \"help\" ]; then" >> $startdir/start.sh
-	   echo "  helptext" >> $startdir/start.sh
-	   echo "  exit 0" >> $startdir/start.sh
-	   echo "fi" >> $startdir/start.sh
-	   echo "" >> $startdir/start.sh
-
-           echo "if [ \"\$1\" == \"old\" ] || [ \"\$1\" == \"new\" ]; then" >> $startdir/start.sh
-	   echo "  offversion=\$1" >> $startdir/start.sh
-           echo "elif [ \"\$2\" == \"old\" ] || [ \"\$2\" == \"new\" ]; then" >> $startdir/start.sh
-	   echo "  offversion=\$2" >> $startdir/start.sh
-           echo "fi" >> $startdir/start.sh
-	   echo "" >> $startdir/start.sh
-
-           echo "if [ \"\$offversion\" == \"old\" ]; then" >> $startdir/start.sh
-           echo "  source $startdir/setup/setup_ADST.sh $startdir old" >> $startdir/start.sh
-           echo "  cd $startdir" >> $startdir/start.sh
-           echo "elif [ \"\$offversion\" == \"new\" ]; then" >> $startdir/start.sh
-           echo "  source $startdir/setup/setup_ADST.sh $startdir new" >> $startdir/start.sh
-           echo "  cd $startdir" >> $startdir/start.sh
-           echo "else" >> $startdir/start.sh
-           echo "  echo \"Error! No offline version supplied.\"" >> $startdir/start.sh
-           echo "  helptext" >> $startdir/start.sh
-  	   echo "  exit 1" >> $startdir/start.sh
-           echo "fi" >> $startdir/start.sh
-           echo "" >> $startdir/start.sh
-
-           echo "rootdirectory=$rootdirectory" >> $startdir/start.sh
-           echo "" >> $startdir/start.sh
-           echo "if [ \$rootdirectory != -1 ]; then" >> $startdir/start.sh
-           echo "  printenv ROOTSYS > /dev/null" >> $startdir/start.sh
-           echo "  if [ \$? != 0 ]; then" >> $startdir/start.sh
-           echo "    echo \"Preparing ROOT...\"" >> $startdir/start.sh
-           echo "    source \$rootdirectory/bin/thisroot.sh" >> $startdir/start.sh
-           echo "  fi" >> $startdir/start.sh
-           echo "fi" >> $startdir/start.sh
-           echo "" >> $startdir/start.sh
-
-           echo "source $startdir/setup/setup_TMVA.sh $startdir" >> $startdir/start.sh
-     	   echo "cd $TMVASYS" >> $startdir/start.sh
-  	   echo "source $TMVASYS/test/setup.sh $TMVASYS" >> $startdir/start.sh
-           echo "cd $startdir" >> $startdir/start.sh
-           echo "" >> $startdir/start.sh
-
-           cat $startdir/setup/start.sh.in >> $startdir/start.sh
-           chmod ug+x $startdir/start.sh
-      
-           # In case we just want to set the workstation information, exit here
-           if [ "$1" == "nomake" ]; then
-             exit 0
-           fi
-         fi
-      
-	 # Create bin directory
-         if [ ! -d $startdir/bin ]; then
-           mkdir $startdir/bin
-         fi
-   
-         # In case we do all, also execute Makefile
-         if [ "$1" == "all" ]; then
-           cd $startdir
-           if [ -f $startdir/Makefile ]; then
-             if [ $ver == 1 ]; then
-               make auger-analysis-gui-old
-               if [ $? != 0 ]; then
-	          errorecho "Compiling of the old version of the program failed..."
-		  exit 1
-	       fi
-               make support-old
-               if [ $? != 0 ]; then
-	          errorecho "Compiling of support programs for old version of the program failed..."
-		  exit 1
-	       fi
-             elif [ $ver == 2 ]; then
-               make auger-analysis-gui-new
-               if [ $? != 0 ]; then
-	          errorecho "Compiling of the new version of the program failed..."
-		  exit 1
-	       fi
-               make support-new
-               if [ $? != 0 ]; then
-	          errorecho "Compiling of support programs for new version of the program failed..."
-		  exit 1
-	       fi
-             fi
-           fi
-         # For only support, we just compile support programs
-	 elif [ "$1" == "support" ]; then
-           cd $startdir
-           if [ -f $startdir/Makefile ]; then
-             if [ $ver == 1 ]; then
-               make support-old
-               if [ $? != 0 ]; then
-	          errorecho "Compiling of support programs for old version of the program failed..."
-		  exit 1
-	       fi
-             elif [ $ver == 2 ]; then
-               make support-new
-               if [ $? != 0 ]; then
-	          errorecho "Compiling of support programs for new version of the program failed..."
-		  exit 1
-	       fi
-             fi
-           fi
-         fi
-       done
-
-       if [ "$1" == "all" ] || [ "$1" == "support" ]; then
-         cd $startdir
-         if [ -f $startdir/Makefile ]; then
-           make support
-           if [ $? != 0 ]; then
-	      errorecho "Compiling of support programs failed..."
-	      exit 1
-	   fi
-         fi
-       fi
-     fi
-   
-     if [ "$1" == "clean" ]; then
-       cd $startdir
-       make clean
-       rm -f Makefile
-     fi
+     errorecho "Error! Wrong configuration option selected (first argument)."
+     echo ""
+     helptext
+     exit 1
    fi
-   
-   exit 0

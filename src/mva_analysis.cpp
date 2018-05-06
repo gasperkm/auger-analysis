@@ -822,7 +822,7 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
 }
 
 // Perform the MVA analysis on a collection of observables
-int MyFrame::PerformMvaAnalysis(string *infilename, string *outfilename, int type)
+int MyFrame::PerformMvaAnalysis(string *infilename, string *outfilename, int *curcount)
 {
    int *nrTreeEvents;
    string *stemp;
@@ -830,7 +830,7 @@ int MyFrame::PerformMvaAnalysis(string *infilename, string *outfilename, int typ
 
    nrTreeEvents = new int[nrkeys];
    stemp = new string[4];
-   itemp = new int[3];
+   itemp = new int;
 
    TFile *ifile = TFile::Open(infilename->c_str(), "READ");
    // Open the file to write out to
@@ -852,9 +852,9 @@ int MyFrame::PerformMvaAnalysis(string *infilename, string *outfilename, int typ
 
    // Selecting the weights directory
    (TMVA::gConfig().GetIONames()).fWeightFileDir = ((*currentAnalysisDir) + "/weights").c_str();
-   cout << "# StartMvaAnalysis      #: " << "Weights directory after = " << (TMVA::gConfig().GetIONames()).fWeightFileDir << endl;
-//   itemp[1]++;
-//   progress->Update(itemp[1]);
+   cout << "# PerformMvaAnalysis    #: " << "Weights directory after = " << (TMVA::gConfig().GetIONames()).fWeightFileDir << endl;
+   (*curcount)++;
+   progress->Update(*curcount);
 
    // Adding observables to the Factory
    nrTreeEvents[0] = 0;
@@ -863,20 +863,20 @@ int MyFrame::PerformMvaAnalysis(string *infilename, string *outfilename, int typ
       if(obssel[i])
       {
          factory->AddVariable(observables[i].c_str(), 'F');
-         cout << "# StartMvaAnalysis      #: " << "Adding variable: " << observables[i] << " (" << (int)obssel[i] << ")" << endl;
+         cout << "# PerformMvaAnalysis    #: " << "Adding variable: " << observables[i] << " (" << (int)obssel[i] << ")" << endl;
          nrTreeEvents[0]++;
       }
    }
    nrselobs = MvaNoteObservables(nrTreeEvents[0]);
-//   itemp[1]++;
-//   progress->Update(itemp[1]);
+   (*curcount)++;
+   progress->Update(*curcount);
 
    // Select signal and background trees (from the temporary input file)
    TTree *signalTree = new TTree;
    TTree *backgroundTree[mixednum];
    for(int j = 0; j < mixednum; j++)
       backgroundTree[j] = new TTree;
-   itemp[2] = 0;
+   *itemp = 0;
 
    nrTreeEvents[0] = -1;
    nrTreeEvents[1] = -1;
@@ -890,33 +890,31 @@ int MyFrame::PerformMvaAnalysis(string *infilename, string *outfilename, int typ
       // Signal tree setup
       if( string((signalSelect->widgetCB)->GetStringSelection()) == stemp[1] )
       {
-         cout << "# StartMvaAnalysis      #: " << "Using signal tree: " << stemp[1] << endl;
+         cout << "# PerformMvaAnalysis    #: " << "Using signal tree: " << stemp[1] << endl;
          signalTree = (TTree*)ifile->Get(stemp[0].c_str());
          nrTreeEvents[0] = signalTree->GetEntries();
-/*         itemp[1]++;
-         progress->Update(itemp[1]);*/
       }
 
       // Background tree setup
       stemp[3] = string((backgroundSelect->widgetCB)->GetStringSelection());
       if( stemp[3].find(stemp[1]) != string::npos )
       {
-         cout << "# StartMvaAnalysis      #: " << "Using background tree " << itemp[2] << ": " << stemp[1] << endl;
-         backgroundTree[itemp[2]] = (TTree*)ifile->Get(stemp[0].c_str());
-         nrTreeEvents[1] = backgroundTree[itemp[2]]->GetEntries();
-         itemp[2]++;
+         cout << "# PerformMvaAnalysis    #: " << "Using background tree " << *itemp << ": " << stemp[1] << endl;
+         backgroundTree[*itemp] = (TTree*)ifile->Get(stemp[0].c_str());
+         nrTreeEvents[1] = backgroundTree[*itemp]->GetEntries();
+         (*itemp)++;
       }
    }
 
-//   itemp[1]++;
-//   progress->Update(itemp[1]);
+   (*curcount)++;
+   progress->Update(*curcount);
 
-   cout << "# StartMvaAnalysis      #: " << "Number of entries in signal tree = " << nrTreeEvents[0] << endl;
-   cout << "# StartMvaAnalysis      #: " << "Number of entries in background tree = " << nrTreeEvents[1] << endl;
+   cout << "# PerformMvaAnalysis    #: " << "Number of entries in signal tree = " << nrTreeEvents[0] << endl;
+   cout << "# PerformMvaAnalysis    #: " << "Number of entries in background tree = " << nrTreeEvents[1] << endl;
 
    // Add signal and background tree
    factory->AddSignalTree(signalTree, 1.0);
-   for(int i = 0; i < itemp[2]; i++)
+   for(int i = 0; i < *itemp; i++)
       factory->AddBackgroundTree(backgroundTree[i], 1.0);
 
    // Preparing and training from the trees:
@@ -934,8 +932,8 @@ int MyFrame::PerformMvaAnalysis(string *infilename, string *outfilename, int typ
    //        SplitSeed = seed for random event shuffling (default = 100)
    //        VerboseLevel = level of verbose (Debug, Verbose, Info)
    factory->PrepareTrainingAndTestTree("", "", "nTrain_Signal=0:nTrain_Background=0:SplitMode=Random:NormMode=NumEvents:!V");
-//   itemp[1]++;
-//   progress->Update(itemp[1]);
+   (*curcount)++;
+   progress->Update(*curcount);
 
    // Booking MVA methods:
    // - type of MVA method to be used (all defined in src/Types.h)
@@ -954,7 +952,6 @@ int MyFrame::PerformMvaAnalysis(string *infilename, string *outfilename, int typ
    //        UseRegulator = use regulator to avoid overtraining
    if(BookTheMethod(factory) == -1)
    {
-      progress->Update(itemp[0]);
       delete signalTree;
       for(int j = 0; j < mixednum; j++)
          delete backgroundTree[j];
@@ -965,24 +962,24 @@ int MyFrame::PerformMvaAnalysis(string *infilename, string *outfilename, int typ
       AlertPopup("Invalid MVA method", "The selected MVA method is invalid. Please make sure it is correctly defined.");
       delete[] stemp;
       delete[] nrTreeEvents;
-      delete[] itemp;
+      delete itemp;
       return -1;
    }
-//   itemp[1]++;
-//   progress->Update(itemp[1]);
+   (*curcount)++;
+   progress->Update(*curcount);
 
    // Train the selected methods and save them to the weights folder
    factory->TrainAllMethods();
-//   itemp[1]++;
-//   progress->Update(itemp[1]);
+   (*curcount)++;
+   progress->Update(*curcount);
    // Test the selected methods by applying the trained data to the test data set -> outputs saved to TestTree output file and then to the output ROOT file
    factory->TestAllMethods();
-//   itemp[1]++;
-//   progress->Update(itemp[1]);
+   (*curcount)++;
+   progress->Update(*curcount);
    // Evaluation of methods printed to stdout
    factory->EvaluateAllMethods();
-//   itemp[1]++;
-//   progress->Update(itemp[1]);
+   (*curcount)++;
+   progress->Update(*curcount);
 
    // Close the open files
    delete signalTree;
@@ -1034,7 +1031,7 @@ int MyFrame::PerformMvaAnalysis(string *infilename, string *outfilename, int typ
          {
             delete[] stemp;
             delete[] nrTreeEvents;
-            delete[] itemp;
+            delete itemp;
             delete effplot;
             delete inname;
             cutMvaDialog->Destroy();
@@ -1057,13 +1054,13 @@ int MyFrame::PerformMvaAnalysis(string *infilename, string *outfilename, int typ
       AlertPopup("Multiple MVA methods", "Multiple MVA methods selected. To continue applying MVA cuts, please select only one method and rerun the analysis.");
       delete[] stemp;
       delete[] nrTreeEvents;
-      delete[] itemp;
+      delete itemp;
       return -1;
    }
 
    delete[] nrTreeEvents;
    delete[] stemp;
-   delete[] itemp;
+   delete itemp;
 
    return 0;
 }
@@ -1641,81 +1638,186 @@ void MyFrame::GetErrors(TTree *app, float *obsvars, vector<string> *obs, int cur
    delete[] dtemp;
 }
 
-void MyFrame::GetMvaError(int selection, double *outvalue)
+void MyFrame::GetMvaError(int selection, double *outvalue, string *inname)
 {
-   if(DBGSIG > 1)
-   {
-      cout << "# GetMvaError           #: " << "Selection: " << selection << endl;
-      cout << "# GetMvaError           #: " << "Mean: " << outvalue[0] << endl;
-   }
-
    string *stemp;
-   stemp = new string;
 
-   *stemp = (*currentAnalysisDir) + string("/mva_error.root");
-   if(DBGSIG > 0)
-      cout << "# GetMvaError           #: " << "File: " << *stemp << endl;
-
-   int *vrstica = new int;
-   *vrstica = 0;
-
-   vector<double> *negarray = new vector<double>;
-   vector<double> *posarray = new vector<double>;
-   
-   float *errVals = new float[2];
-
-   TFile *inFile = TFile::Open(stemp->c_str(), "READ");
-   TTree *inTree = new TTree;
-   inTree = (TTree*)inFile->Get(("mva_error" + ToString(selection)).c_str());
-   inTree->SetBranchAddress("mva_errors", errVals);
-
-   for(int i = 0; i < inTree->GetEntries(); i++)
+   if(!(specialMva->widgetChBox[2])->IsChecked())
    {
-      inTree->GetEntry(i);
-      negarray->push_back(errVals[0]);
-      posarray->push_back(errVals[1]);
-      (*vrstica)++;
+      if(DBGSIG > 1)
+      {
+         cout << "# GetMvaError           #: " << "Selection: " << selection << endl;
+         cout << "# GetMvaError           #: " << "Mean: " << outvalue[0] << endl;
+      }
+
+      stemp = new string;
+
+      *stemp = (*currentAnalysisDir) + string("/mva_error.root");
+      if(DBGSIG > 0)
+         cout << "# GetMvaError           #: " << "File: " << *stemp << endl;
+
+      int *vrstica = new int;
+      *vrstica = 0;
+
+      vector<double> *negarray = new vector<double>;
+      vector<double> *posarray = new vector<double>;
+      
+      float *errVals = new float[2];
+
+      TFile *inFile = TFile::Open(stemp->c_str(), "READ");
+      TTree *inTree = new TTree;
+      inTree = (TTree*)inFile->Get(("mva_error" + ToString(selection)).c_str());
+      inTree->SetBranchAddress("mva_errors", errVals);
+
+      for(int i = 0; i < inTree->GetEntries(); i++)
+      {
+         inTree->GetEntry(i);
+         negarray->push_back(errVals[0]);
+         posarray->push_back(errVals[1]);
+         (*vrstica)++;
+      }
+
+      if(DBGSIG > 1)
+         cout << "# GetMvaError           #: " << "Lines read = " << *vrstica << endl;
+
+      double *dtemp;
+      dtemp = new double[2];
+      dtemp[0] = 0;
+      dtemp[1] = 0;
+      for(int i = 0; i < *vrstica; i++)
+      {
+         dtemp[0] += negarray->at(i);
+         dtemp[1] += posarray->at(i);
+      }
+      dtemp[0] = dtemp[0]/(*vrstica);
+      dtemp[1] = dtemp[1]/(*vrstica);
+
+      if(DBGSIG > 1)
+         cout << "# GetMvaError           #: " << "Mean values (negative error, positive error) = " << "(" << dtemp[0] << ", " << dtemp[1] << ")" << endl;
+
+      for(int i = 0; i < *vrstica; i++)
+      {
+         outvalue[1] += (negarray->at(i) - dtemp[0])*(negarray->at(i) - dtemp[0]);
+         outvalue[2] += (posarray->at(i) - dtemp[1])*(posarray->at(i) - dtemp[1]);
+      }
+      outvalue[1] = TMath::Sqrt(outvalue[1]/(*vrstica));
+      outvalue[2] = TMath::Sqrt(outvalue[2]/(*vrstica));
+
+      if(DBGSIG > 1)
+         cout << "# GetMvaError           #: " << "Sigma values (negative error, positive error) = " << "(" << outvalue[1] << ", " << outvalue[2] << ")" << endl;
+
+      outvalue[1] = outvalue[0] - outvalue[1];
+      outvalue[2] = outvalue[0] + outvalue[2];
+
+      inFile->Close();
+
+      delete[] errVals;
+//      delete inTree;
+      delete negarray;
+      delete posarray;
+      delete vrstica;
+      delete[] dtemp;
+      delete stemp;
    }
-
-   if(DBGSIG > 1)
-      cout << "# GetMvaError           #: " << "Lines read = " << *vrstica << endl;
-
-   double *dtemp;
-   dtemp = new double[2];
-   dtemp[0] = 0;
-   dtemp[1] = 0;
-   for(int i = 0; i < *vrstica; i++)
+   else
    {
-      dtemp[0] += negarray->at(i);
-      dtemp[1] += posarray->at(i);
+      double *dtemp = new double[5];
+      stemp = new string[3];
+
+      TFile *ifile = TFile::Open(inname->c_str(), "READ");
+
+      vector<string> *obser = new vector<string>;
+      cout << "# GetMvaError           #: " << "Observables: ";
+      for(int i = 0; i < nrobs; i++)
+      {
+         if(obssel[i])
+         {
+            obser->push_back(observables[i]);
+            cout << observables[i] << ", ";
+         }
+      }
+      cout << endl;
+      nrselobs = obser->size();
+
+      float *obsVals = new float[3*nrselobs];
+
+      TTree *dataTree = new TTree;
+
+      TList *tempkeyslist = (TList*)ifile->GetListOfKeys();
+      for(int j = 1; j <= ifile->GetNkeys(); j++)
+      {
+         stemp[0] = string((tempkeyslist->At(j-1))->GetName());
+         stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
+         stemp[1] = RemovePath(&stemp[1]);
+
+         // Signal tree setup
+         if( string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1] )
+         {
+            cout << "# GetMvaError           #: " << "Using data tree: " << stemp[1] << endl;
+            dataTree = (TTree*)ifile->Get(stemp[0].c_str());
+         }
+      }
+
+      for(int i = 0; i < nrselobs; i++)
+      {
+         cout << "- " << obser->at(i) << endl;
+         stemp[0] = obser->at(i);
+         dataTree->SetBranchAddress(stemp[0].c_str(), &obsVals[3*i]);
+         stemp[0] = obser->at(i) + "_neg";
+         dataTree->SetBranchAddress(stemp[0].c_str(), &obsVals[3*i+1]);
+         stemp[0] = obser->at(i) + "_pos";
+         dataTree->SetBranchAddress(stemp[0].c_str(), &obsVals[3*i+2]);
+      }
+
+      TH1F *hist, *histNeg, *histPos;
+      dtemp[3] = 0;
+      dtemp[4] = 0;
+
+      for(int i = 0; i < nrselobs; i++)
+      {
+         hist = new TH1F("h1","",100,-1.5,1.5);
+         histNeg = new TH1F("h2","",100,0.,1.);
+         histPos = new TH1F("h3","",100,0.,1.);
+
+         for(int j = 0; j < dataTree->GetEntries(); j++)
+         {
+            dataTree->GetEntry(j);
+
+            dtemp[0] = 2*(obsVals[3*i] - statsMin[i])/(statsMax[i] - statsMin[i]) - 1;
+            dtemp[1] = dtemp[0] - (2*((obsVals[3*i]-obsVals[3*i+1]) - statsMin[i])/(statsMax[i] - statsMin[i]) - 1);
+            dtemp[2] = 2*((obsVals[3*i]+obsVals[3*i+2]) - statsMin[i])/(statsMax[i] - statsMin[i]) - 1 - dtemp[0];
+
+            hist->Fill(dtemp[0]);
+            histNeg->Fill(dtemp[1]);
+            histPos->Fill(dtemp[2]);
+         }
+
+         cout << "# GetMvaError           #: " << "0: Mean = " << hist->GetMean() << ", Sigma = " << hist->GetRMS() << endl;
+         cout << "# GetMvaError           #: " << "-: Mean = " << histNeg->GetMean() << ", Sigma = " << histNeg->GetRMS() << endl;
+         cout << "# GetMvaError           #: " << "+: Mean = " << histPos->GetMean() << ", Sigma = " << histPos->GetRMS() << endl;
+
+         dtemp[3] += TMath::Power(histNeg->GetRMS(), 2);
+         dtemp[4] += TMath::Power(histPos->GetRMS(), 2);
+
+         delete hist;
+         delete histNeg;
+         delete histPos;
+      }
+
+      outvalue[1] = TMath::Sqrt(dtemp[3]);
+      outvalue[2] = TMath::Sqrt(dtemp[4]);
+      cout << "# GetMvaError           #: " << "Final combined negative error = " << outvalue[1] << endl;
+      cout << "# GetMvaError           #: " << "Final combined positive error = " << outvalue[2] << endl;
+
+      outvalue[1] = outvalue[0] - outvalue[1];
+      outvalue[2] = outvalue[0] + outvalue[2];
+
+      ifile->Close();
+
+//      delete dataTree;
+      delete obsVals;
+      delete obser;
+      delete[] stemp;
+      delete[] dtemp;
    }
-   dtemp[0] = dtemp[0]/(*vrstica);
-   dtemp[1] = dtemp[1]/(*vrstica);
-
-   if(DBGSIG > 1)
-      cout << "# GetMvaError           #: " << "Mean values (negative error, positive error) = " << "(" << dtemp[0] << ", " << dtemp[1] << ")" << endl;
-
-   for(int i = 0; i < *vrstica; i++)
-   {
-      outvalue[1] += (negarray->at(i) - dtemp[0])*(negarray->at(i) - dtemp[0]);
-      outvalue[2] += (posarray->at(i) - dtemp[1])*(posarray->at(i) - dtemp[1]);
-   }
-   outvalue[1] = TMath::Sqrt(outvalue[1]/(*vrstica));
-   outvalue[2] = TMath::Sqrt(outvalue[2]/(*vrstica));
-
-   if(DBGSIG > 1)
-      cout << "# GetMvaError           #: " << "Sigma values (negative error, positive error) = " << "(" << outvalue[1] << ", " << outvalue[2] << ")" << endl;
-
-   outvalue[1] = outvalue[0] - outvalue[1];
-   outvalue[2] = outvalue[0] + outvalue[2];
-
-   inFile->Close();
-
-   delete[] errVals;
-//   delete inTree;
-   delete negarray;
-   delete posarray;
-   delete vrstica;
-   delete[] dtemp;
-   delete stemp;
 }

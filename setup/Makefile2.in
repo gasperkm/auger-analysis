@@ -1,0 +1,10 @@
+
+# Filenames for source files
+FILES=$(wildcard $(SRC)/*.cpp)
+SUBFILES=$(wildcard $(SUBSRC)/*.cpp)
+SUBOFILES=$(addsuffix .o, $(basename $(SUBFILES)))
+# -------------------------------------------------------------------
+
+# Base rules --------------------------------------------------------
+
+# General make options

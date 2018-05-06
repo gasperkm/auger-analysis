@@ -1,5 +1,19 @@
 #!/bin/bash
 
+   startdir=$PWD
+
+   # Check for available ADST versions
+   adstcount=0
+   for adst in $startdir/setup/ADST_*.tar.gz
+   do
+     baseadst=$(basename $adst)
+     baseadst=$(echo ${baseadst%%.*})
+     baseadst=$(echo ${baseadst##*_})
+     
+     adstver[$adstcount]=$baseadst
+     adstcount=$(( $adstcount + 1 ))
+   done
+
    function cleanAdstEnvironment
    {
      cleandir=$(echo $1 | sed 's/\//\\\//g')
@@ -36,8 +50,10 @@
    {
      echo ""
      echo "Run script with one of the two options below (depending on version of ADST):"
-     echo "  source set_environment.sh old"
-     echo "  source set_environment.sh new"
+     for verHelp in ${adstver[@]}
+     do
+       echo "  source set_environment.sh $verHelp"
+     done
      echo ""
      echo "Clean all environment variables with:"
      echo "  source set_environment.sh clean"
@@ -48,8 +64,10 @@
      echo "Done!"
      echo ""
      echo "Can now use Makefile to compile:"
-     echo "- Main program (with old ADST): make auger-analysis-gui-old"
-     echo "- Main program (with new ADST): make auger-analysis-gui-new"
+     for verFin in ${adstver[@]}
+     do
+       echo "- Main program (with ADST version $verFin): make auger-analysis-gui-$verFin"
+     done
      echo "- Support programs (plotting,...): make support"
      echo "- Substructure library: make library"
    }
@@ -66,28 +84,16 @@
 
    # Check for arguments
    if [ "$1" == "" ]; then
-     echo "Error! No arguments supplied (old/new)."
+     echo "Error! No arguments supplied (ADST version)."
      helptext
    else
-     startdir=$PWD
-
      # Cleaning old environment variables
      echo "Cleaning old TMVA environment variables"
-#     checkEnvironment $PATH $startdir/setup/TMVA
-#     if [ $? == 1 ]; then
      cleanTmvaEnvironment $startdir/setup/TMVA
-#     fi
      echo "Cleaning old custom library path"
-#     checkEnvironment $LD_LIBRARY_PATH $startdir/lib
-#     echo "$startdir/lib"
-#     if [ $? == 1 ]; then
      cleanLibEnvironment $startdir/lib
-#     fi
      echo "Cleaning old ADST environment variables"
-#     checkEnvironment $PATH $startdir/setup/ADST
-#     if [ $? == 1 ]; then
      cleanAdstEnvironment $startdir/setup/ADST
-#     fi
 
      if [ "$1" != "clean" ]; then
        cd $startdir
@@ -105,14 +111,18 @@
        cd $startdir
        # Set ADST environment variables
        echo "Setting ADST environment variables"
-       if [ "$1" == "old" ]; then
-         source $startdir/setup/setup_ADST.sh $startdir old
-	 finishtext
-       elif [ "$1" == "new" ]; then
-         source $startdir/setup/setup_ADST.sh $startdir new
-	 finishtext
-       else
-         echo "Error! No arguments supplied (old/new)."
+       err=1
+       for ver in ${adstver[@]}
+       do
+	 if [ "$1" == "$ver" ]; then
+           source $startdir/setup/setup_ADST.sh $startdir $ver
+	   finishtext
+	 fi
+	 err=0
+       done
+        
+       if [ $err == 1 ]; then
+         echo "Error! No arguments supplied (ADST version)."
          helptext
        fi
      fi

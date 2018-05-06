@@ -7,20 +7,31 @@ else
   startdir=$1
 fi
 
-adstold=$startdir/setup/ADST.r29701
-adstnew=$startdir/setup/ADST_trunk
-
-if [ "$2" == "old" ]; then
-  export ADSTROOT=$adstold
-  export LD_LIBRARY_PATH=${ADSTROOT}/lib:${LD_LIBRARY_PATH}
-  export PATH=${ADSTROOT}/bin:${PATH}
-elif [ "$2" == "new" ]; then
-  export ADSTROOT=$adstnew
-  export LD_LIBRARY_PATH=${ADSTROOT}/lib:${LD_LIBRARY_PATH}
-  export PATH=${ADSTROOT}/bin:${PATH}
-else
-  echo "ADST setup error! No ADST version supplied as second argument (old or new)."
+if [ "$2" == "" ]; then
+  echo "ADST setup error! No ADST version supplied as second argument."
   exit 1
 fi
 
-#exit 0
+# Check for available ADST versions
+adstcount=0
+for adst in $startdir/setup/ADST_*.tar.gz
+do
+  baseadst=$(basename $adst)
+  baseadst=$(echo ${baseadst%%.*})
+  baseadst=$(echo ${baseadst##*_})
+  
+  adstver[$adstcount]=$baseadst
+  adstcount=$(( $adstcount + 1 ))
+done
+
+count=0
+for ver in ${adstver[@]}
+do
+  if [ "$2" == "$ver" ]; then
+    export ADSTROOT=$startdir/setup/ADST_${ver}
+    export LD_LIBRARY_PATH=${ADSTROOT}/lib:${LD_LIBRARY_PATH}
+    export PATH=${ADSTROOT}/bin:${PATH}
+  fi
+
+  count=$(( $count + 1 ))
+done

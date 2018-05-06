@@ -1,0 +1,30 @@
+# Makefile tutorial: https://www.gnu.org/software/make/manual/html_node/index.html#SEC_Contents
+ 
+# Make variables ----------------------------------------------------
+
+# Setup for wxWidgets and ROOT
+WXCONF=$(shell wx-config --cxxflags --libs)
+ROOTCONF=$(shell root-config --cflags --libs)
+ROOTINC=$(shell root-config --incdir)
+ROOTLIB=$(shell root-config --libs)
+
+# Code position directories
+SRC=./src
+DBG=./dbg
+SUBSRC=$(SRC)/substructure
+BIN=./bin
+IDIR=./include
+LDIR=./lib
+
+# Compiler options
+COMPOPT=-fPIC -g -std=c++11
+#COMPOPT=-fPIC -std=c++11
+
+# Include directories
+INC=-I. -I$(IDIR) -I$(ADSTROOT)/include/adst -I$(ROOTINC) -I$(TMVASYS)/inc
+
+# Used libraries
+OFFLINELIBS=-lRecEventKG -lAnalysisKG
+LIBS=-L. -L$(LDIR) -lsubstr -L$(ADSTROOT)/lib $(OFFLINELIBS) -L$(TMVASYS)/lib -lTMVA $(ROOTLIB) -lMLP -lMinuit -lstdc++
+
+# Specific variables for the main program

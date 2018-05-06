@@ -1303,7 +1303,7 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
 
 /*-------------TODO-------------*/
 /*--- PerformMvaAnalysis(&tempAnalysisFile, &mvafile[0], 0)--------*/
-	 ret = PerformMvaAnalysis(&tempAnalysisFile, &mvafile[0], 0);
+	 ret = PerformMvaAnalysis(&tempAnalysisFile, &mvafile[0], &itemp[1]);
          if(ret == -1)
 	 {
             progress->Update(itemp[0]);
@@ -1312,8 +1312,6 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
             delete[] nrTreeEvents;
             delete[] itemp;
 	 }
-	 else
-            progress->Update(itemp[0]);
 /*         TFile *ifile = TFile::Open(tempAnalysisFile.c_str(), "READ");
 
          // Open the file to write out to
@@ -1579,7 +1577,7 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
 
          freshAnalysis = true;
 
-         GetMvaError((dataSelect->widgetCB)->GetSelection()+1, dtemp);
+         GetMvaError((dataSelect->widgetCB)->GetSelection()+1, dtemp, &tempAnalysisFile);
          (cutMva->widgetNE[0])->SetValue(dtemp[1]);
          mvaresults = mvaresults + "\nResults for negative error cut (" + ToString(dtemp[1], 4) + ")\n";
          mvaprintout = mvaprintout + ToString(-1) + "\t" + ToString(dtemp[1],4) + "\t";
@@ -1641,7 +1639,7 @@ void MyFrame::ApplyMvaCut(wxCommandEvent& event)
       mvaprintout = mvaprintout + ToString(0) + "\t" + ToString(dtemp[0],4) + "\t";
       MvaApplication(&tempAnalysisFile, freshAnalysis, 0);
 
-      GetMvaError((dataSelect->widgetCB)->GetSelection()+1, dtemp);
+      GetMvaError((dataSelect->widgetCB)->GetSelection()+1, dtemp, &tempAnalysisFile);
       (cutMva->widgetNE[0])->SetValue(dtemp[1]);
       mvaresults = mvaresults + "\nResults for negative error cut (" + ToString(dtemp[1], 4) + ")\n";
       mvaprintout = mvaprintout + ToString(-1) + "\t" + ToString(dtemp[1],4) + "\t";
