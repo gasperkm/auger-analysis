@@ -61,6 +61,11 @@ public:
 
    string GetLabel(int obs);
    string GetLabel(string obsname);
+
+   // Functions for applying specific corrections to observables
+   void ApplyCorrectionFD();
+   void ApplyCorrectionHECO();
+   void ApplyCorrectionHECOErrors(Observables *mean, int type);
 };
 
 #endif

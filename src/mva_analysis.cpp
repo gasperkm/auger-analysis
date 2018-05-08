@@ -225,6 +225,64 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
    {
       tempTree->GetEntry(j);
 
+      // Apply any Energy and Xmax corrections to the data file (only on data)
+      ret = Find(observables, "xmax");
+      if(ret == -1)
+      {
+         AlertPopup("No xmax observable found", "No xmax observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable xmax.");
+         delete seleye;
+         delete tempTree;
+         delete[] outobs;
+         delete[] outobs_neg;
+         delete[] outobs_pos;
+         delete invalues;
+         delete invalues_neg;
+         delete invalues_pos;
+         delete[] stemp;
+         delete[] itemp;
+         delete[] ftemp;
+         return -1;
+      }
+      else
+      {
+         if( type == (dataSelect->widgetCB)->GetSelection()+1 )
+         {
+            // Apply Xmax corrections to Auger FD standard data
+            if((specialMva->widgetChBox[3])->IsChecked())
+            {
+/*	       if(j < 10)
+	       {
+		  for(int eje = 0; eje < ALLEYES; eje++)
+                     cout << j << ", FD stand, eye " << eje+1 << ": E = " << invalues->GetValue("energyFD", eje) << ", Xmax = " << invalues->GetValue("xmax", eje) << endl;
+	       }*/
+               invalues->ApplyCorrectionFD();
+/*	       if(j < 10)
+	       {
+		  for(int eje = 0; eje < ALLEYES; eje++)
+                     cout << j << ", FD stand, eye " << eje+1 << ": Ecor = " << invalues->GetValue("energyFD", eje) << ", Xmaxcor = " << invalues->GetValue("xmax", eje) << endl;
+	       }*/
+            }
+
+            // Apply Xmax and energy corrections to Auger HECO data
+            if((specialMva->widgetChBox[4])->IsChecked())
+            {
+/*	       if(j < 10)
+	       {
+		  for(int eje = 0; eje < ALLEYES; eje++)
+                     cout << j << ", HECO, eye " << eje+1 << ": E = " << invalues->GetValue("energyFD", eje) << " (+- " << invalues_neg->GetValue("energyFD", eje) << "), Xmax = " << invalues->GetValue("xmax", eje) << endl;
+	       }*/
+               invalues->ApplyCorrectionHECO();
+               invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
+               invalues_pos->ApplyCorrectionHECOErrors(invalues, 1);
+/*	       if(j < 10)
+	       {
+		  for(int eje = 0; eje < ALLEYES; eje++)
+                     cout << j << ", HECO, eye " << eje+1 << ": Ecor = " << invalues->GetValue("energyFD", eje) << " (+- " << invalues_neg->GetValue("energyFD", eje) << "), Xmaxcor = " << invalues->GetValue("xmax", eje) << endl;
+	       }*/
+            }
+         }
+      }
+
       // Check if event is inside the selected cuts
       if(!seleye->empty()) seleye->erase(seleye->begin(), seleye->end());
 

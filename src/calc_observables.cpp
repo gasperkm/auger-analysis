@@ -477,7 +477,7 @@ void AdstMva::CalculateRisetime()
    y = new double;
    maxval = new double;
    nrpoints = new int;
-   dtemp = new double[2];
+   dtemp = new double[3];
    itemp = new int[2];
 
    int *start_bin, *stop_bin;
@@ -493,7 +493,8 @@ void AdstMva::CalculateRisetime()
    bzrange[1] = -1.e+40;
 
    vector<SdRecStation> stationVector = fRecEvent->GetSDEvent().GetStationVector();
-//   cout << "Number of triggered stations: " << stationVector.size() << ", Zenith angle = " << fRecEvent->GetSDEvent().GetSdRecShower().GetZenith() << ", Cos Zenith angle = " << fRecEvent->GetSDEvent().GetSdRecShower().GetCosZenith() << ", Energy = " << fRecEvent->GetSDEvent().GetSdRecShower().GetEnergy() << endl;
+
+//cout << "Number of triggered stations: " << stationVector.size() << ", Zenith angle = " << fRecEvent->GetSDEvent().GetSdRecShower().GetZenith() << ", Cos Zenith angle = " << fRecEvent->GetSDEvent().GetSdRecShower().GetCosZenith() << ", Energy = " << fRecEvent->GetSDEvent().GetSdRecShower().GetEnergy() << endl;
 
    vector<float> *time = new vector<float>;
    vector<float> *vemtrace = new vector<float>;
@@ -520,7 +521,7 @@ void AdstMva::CalculateRisetime()
          if( (*start_bin >= *stop_bin) || (*start_bin < 0) || (*start_bin > 5000) )
             *start_bin = 0;
 
-//         cout << "Tank " << i << " is a candidate (" << *start_bin << "," << *stop_bin << ")." << endl;
+//cout << "Tank " << i << " is a candidate (" << *start_bin << "," << *stop_bin << ")." << endl;
 
          dtemp[1] = 0;
          itemp[1] = 0;
@@ -537,13 +538,16 @@ void AdstMva::CalculateRisetime()
 
             *vemtrace = stationVector[i].GetVEMTrace(j);
             *nrpoints = vemtrace->size();
-//          cout << "PMT " << j << ": Number of points in the VEM trace: " << *nrpoints << " --------------------------------------------------------" << endl;
+
+//cout << "PMT " << j << ": Number of points in the VEM trace: " << *nrpoints << " --------------------------------------------------------" << endl;
 
             // Continue if there is a VEM trace
             if( *nrpoints > 0 )
             {
                itemp[0]++;
                itemp[1]++;
+
+	       dtemp[2] = 0;
 
                // Prepare the time vector (each point is multiplied by 25 to get nanoseconds)
                for(int k = 0; k < *nrpoints; k++)
@@ -556,58 +560,71 @@ void AdstMva::CalculateRisetime()
                      if(*y > *maxval) *maxval = *y;
                   
                      yvalue->push_back(*y);
+		     dtemp[2] += *y;
                   }
                }
 
-//             cout << "Number of points in the signal slot: " << yvalue->size() << endl;
+//cout << "Number of points in the signal slot: " << yvalue->size() << ", Maxval: " << *maxval << endl;
 
-               for(int k = 0; k < yvalue->size(); k++)
+	       if(dtemp[2] < 0)
                {
-//                cout << time[k]/25. << "\t" << yvalue[k]/(*maxval) << endl;
-
-                  if(yvalue->at(k)/(*maxval) <= 0.10)
-                  {
-                     byrange[0] = yvalue->at(k)/(*maxval);
-                     byrange[1] = yvalue->at(k+1)/(*maxval);
-
-                     *y = 0.1;
-                     // Find the x value of point with y value = *y = 0.1, that lies on a line between two points
-                     // y = k*x + a
-                     //    k = (y2 - y1)/(x2 - x1)
-                     //    a = y2 - (y2 - y1)/(x2 - x1)*x2
-                     // x = ((x2 - x1)/(y2 - y1))*(y - y2) + x2
-                     *x = ((time->at(k+1) - time->at(k))*((*y) - byrange[1]))/(byrange[1] - byrange[0]) + time->at(k+1);
-
-                     byrange[0] = *x;
-                     byrange[1] = *y;
-                  }
-
-                  if(yvalue->at(k)/(*maxval) <= 0.50)
-                  {
-                     bzrange[0] = yvalue->at(k)/(*maxval);
-                     bzrange[1] = yvalue->at(k+1)/(*maxval);
-
-                     *y = 0.5;
-                     // Find the x value of point with y value = *y = 0.5, that lies on a line between two points
-                     // y = k*x + a
-                     //    k = (y2 - y1)/(x2 - x1)
-                     //    a = y2 - (y2 - y1)/(x2 - x1)*x2
-                     // x = ((x2 - x1)/(y2 - y1))*(y - y2) + x2
-                     *x = ((time->at(k+1) - time->at(k))*((*y) - bzrange[1]))/(bzrange[1] - bzrange[0]) + time->at(k+1);
-
-                     bzrange[0] = *x;
-                     bzrange[1] = *y;
-                  }
+                  if(DBGSIG > 0)
+                     cout << "Rejected PMT " << j << " in tank " << stationVector[i].GetId() << ": Negative signal integral value = " << dtemp[2] << endl;
+		  itemp[0]--;
+		  itemp[1]--;
                }
+	       else
+               {
+                  for(int k = 0; k < yvalue->size(); k++)
+                  {
+//cout << time->at(k)/25. << "\t" << yvalue->at(k)/(*maxval) << endl;
 
-//             cout << "Reconstructed risetime = " << inRisetime << ", calculated risetime (" << byrange[0]/25. << "," << bzrange[0]/25. << ") = " << bzrange[0] - byrange[0] << endl;
-               dtemp[0] += bzrange[0] - byrange[0];
-               dtemp[1] += bzrange[0] - byrange[0];
+                     if(yvalue->at(k)/(*maxval) <= 0.10)
+                     {
+                        byrange[0] = yvalue->at(k)/(*maxval);
+                        byrange[1] = yvalue->at(k+1)/(*maxval);
+
+                        *y = 0.1;
+                        // Find the x value of point with y value = *y = 0.1, that lies on a line between two points
+                        // y = k*x + a
+                        //    k = (y2 - y1)/(x2 - x1)
+                        //    a = y2 - (y2 - y1)/(x2 - x1)*x2
+                        // x = ((x2 - x1)/(y2 - y1))*(y - y2) + x2
+                        *x = ((time->at(k+1) - time->at(k))*((*y) - byrange[1]))/(byrange[1] - byrange[0]) + time->at(k+1);
+
+                        byrange[0] = *x;
+                        byrange[1] = *y;
+                     }
+
+                     if(yvalue->at(k)/(*maxval) <= 0.50)
+                     {
+                        bzrange[0] = yvalue->at(k)/(*maxval);
+                        bzrange[1] = yvalue->at(k+1)/(*maxval);
+
+                        *y = 0.5;
+                        // Find the x value of point with y value = *y = 0.5, that lies on a line between two points
+                        // y = k*x + a
+                        //    k = (y2 - y1)/(x2 - x1)
+                        //    a = y2 - (y2 - y1)/(x2 - x1)*x2
+                        // x = ((x2 - x1)/(y2 - y1))*(y - y2) + x2
+                        *x = ((time->at(k+1) - time->at(k))*((*y) - bzrange[1]))/(bzrange[1] - bzrange[0]) + time->at(k+1);
+
+                        bzrange[0] = *x;
+                        bzrange[1] = *y;
+                     }
+                  }
+
+//cout << /*"Reconstructed risetime = " << inRisetime <<*/ ", calculated risetime (" << byrange[0]/25. << "," << bzrange[0]/25. << ") = " << bzrange[0] - byrange[0] << endl;
+
+                  dtemp[0] += bzrange[0] - byrange[0];
+                  dtemp[1] += bzrange[0] - byrange[0];
+	       }
             }
          }
 
          dtemp[1] = dtemp[1]/itemp[1];
-//         cout << "Tank " << stationVector[i].GetId() << ", " << stationVector[i].GetSPDistance() << " m: Calculated average risetime (for " << itemp[1] << " PMTs in the tank) = " << dtemp[1] << ", Total signal = " << stationVector[i].GetTotalSignal() << endl;
+
+//cout << "Tank " << stationVector[i].GetId() << ", " << stationVector[i].GetSPDistance() << " m: Calculated average risetime (for " << itemp[1] << " PMTs in the tank) = " << dtemp[1] << ", Total signal = " << stationVector[i].GetTotalSignal() << endl;
 
          // Asymmetry correction
          double eventThetaRec = fRecEvent->GetSDEvent().GetSdRecShower().GetZenith();
@@ -619,7 +636,7 @@ void AdstMva::CalculateRisetime()
 
          risemean = dtemp[1] - g*cos(zeta);
 	 risemin = fRTWeights->Eval(stationVector[i].GetSPDistance(), secZenith, stationVector[i].GetTotalSignal());
-//         cout << "Asymmetry corrected risetime = " << risemean << " (+- " << risemin << "), from actual data = " << stationVector[i].GetAssymCorrRiseTime(eventThetaRec) << " (+- " << stationVector[i].GetAssymCorrRiseTimeError(eventThetaRec) << ")" << endl;
+//cout << "Asymmetry corrected risetime = " << risemean << " (+- " << risemin << "), from actual data = " << stationVector[i].GetAssymCorrRiseTime(eventThetaRec) << " (+- " << stationVector[i].GetAssymCorrRiseTimeError(eventThetaRec) << ")" << endl;
 
          if( (stationVector[i].GetTotalSignal() > minSignal) )
 	 {
@@ -676,7 +693,7 @@ void AdstMva::CalculateRisetime()
 	 risemax = -1;
       }
 
-//      cout << /*"Reconstructed risetime = " << inRisetime <<*/ "Calculated average risetime (for " << itemp[0] << " PMTs in all tanks, " << riseVect->size() << " fitting points) = " << risemean << " (+- " << risemin << ")" << endl;
+//cout << /*"Reconstructed risetime = " << inRisetime <<*/ "Calculated average risetime (for " << itemp[0] << " PMTs in all tanks, " << riseVect->size() << " fitting points) = " << risemean << " (+- " << risemin << ")" << endl;
    }
    else
    {

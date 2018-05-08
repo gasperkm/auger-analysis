@@ -197,8 +197,9 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
       goodrec = true;
       rewritecode = 0;
 
-      cout << "# RewriteObservables    #: " << "# New event (" << j+1 << ") ---------------------------------" << endl;
       fFile->ReadEvent(j);
+
+      cout << "# RewriteObservables    #: " << "# New event (" << j+1 << ", ID = " << fRecEvent->GetEventId() << ", Time = [" << fRecEvent->GetYYMMDD() << "," << fRecEvent->GetHHMMSS() << "]) ---------------------------------" << endl;
 
       if(DBGSIG > 1)
          cout << "# RewriteObservables    #: " << "rewritecode (init) = " << rewritecode << endl;

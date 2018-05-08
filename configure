@@ -128,12 +128,12 @@
        for verPrep in ${adstver[@]}
        do
 	 echo "# Make for main program (ADST version ${verPrep})" >> $startdir/Makefile
-         echo "\$(TARGET${verPrep}): \$(LDIR)/libsubstr.so \$(BIN)/batch-rewrite-${verPrep}" >> $startdir/Makefile
+         echo "\$(TARGET${verPrep}): \$(LDIR)/libsubstr.so \$(BIN)/batch-rewrite-${verPrep} \${FILES}" >> $startdir/Makefile
 	 echo -e '\t@echo "\\n# Compiling the main program (version '${verPrep}') ------------------------------------------"' >> $startdir/Makefile
 	 echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
          echo "" >> $startdir/Makefile
          echo "# Batch rewrite rules -----------------------------------------------" >> $startdir/Makefile
-         echo "\$(BIN)/batch-rewrite-${verPrep}: \$(SRC)/batch_rewrite/batch_rewrite.cpp" >> $startdir/Makefile
+	 echo "\$(BIN)/batch-rewrite-${verPrep}: \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp \$(SRC)/adst_mva.cpp \$(SRC)/calc_observables.cpp" >> $startdir/Makefile
 	 echo -e '\t@echo "\\n# Creating the standalone batch rewrite (version '${verPrep}') ------------------------------------------"' >> $startdir/Makefile
          echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
          echo "" >> $startdir/Makefile
@@ -388,14 +388,14 @@
        if [ $count == 0 ]; then
          echo "if [ \"\$offversion\" == \"${verSetup}\" ]; then" >> $startdir/start.sh
          echo "  if [ \"\$1\" == \"rewrite\" ]; then" >> $startdir/start.sh
-         echo "    ./bin/batch-rewrite-${verSetup} \"\$@\"" >> $startdir/start.sh
+         echo "    ./bin/batch-rewrite-${verSetup} \"\${@:3}\"" >> $startdir/start.sh
          echo "  else" >> $startdir/start.sh
          echo "    ./bin/auger-analysis-gui-${verSetup}" >> $startdir/start.sh
          echo "  fi" >> $startdir/start.sh
        else
          echo "elif [ \"\$offversion\" == \"${verSetup}\" ]; then" >> $startdir/start.sh
          echo "  if [ \"\$1\" == \"rewrite\" ]; then" >> $startdir/start.sh
-         echo "    ./bin/batch-rewrite-${verSetup} \"\$@\"" >> $startdir/start.sh
+         echo "    ./bin/batch-rewrite-${verSetup} \"\${@:3}\"" >> $startdir/start.sh
          echo "  else" >> $startdir/start.sh
          echo "    ./bin/auger-analysis-gui-${verSetup}" >> $startdir/start.sh
          echo "  fi" >> $startdir/start.sh

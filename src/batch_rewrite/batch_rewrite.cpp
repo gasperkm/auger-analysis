@@ -11,8 +11,11 @@ using namespace std;
 int main(int argc, char **argv)
 {
    int nrfiles = argc;
-   if(nrfiles < 3)
+   if(nrfiles < 2)
+   {
+      cout << "Error! No input files supplied." << endl << "Usage instructions:" << endl << "  ./start.sh rewrite [ADST version] [input files]" << endl << "  ./bin/batch_rewrite-[ADST version] [input files]" << endl;
       return 1;
+   }
 
    // Initialize observables
    ifstream ifs;
@@ -93,7 +96,7 @@ cout << "Values: " << stemp[1] << "\t" << *itemp << "\t" << ftemp[0] << "\t" << 
    cout << endl << "----------------------------------------------" << endl;
    int ret;
 
-   for(int i = 3; i < nrfiles; i++)
+   for(int i = 1; i < nrfiles; i++)
    {
       stemp[0] = string(argv[i]);
       cout << "Rewriting file: " << stemp[0] << endl;
@@ -109,10 +112,10 @@ cout << "Values: " << stemp[1] << "\t" << *itemp << "\t" << ftemp[0] << "\t" << 
       Observables *obssig[3];
       Observables *obsall[3];
 
-      for(int i = 0; i < 3; i++)
+      for(int j = 0; j < 3; j++)
       {
-         obssig[i] = new Observables(observables);
-         obsall[i] = new Observables(observables);
+         obssig[j] = new Observables(observables);
+         obsall[j] = new Observables(observables);
       }
 
       mvatool->outfile = TFile::Open((mvatool->outname).c_str(), "RECREATE");
@@ -129,23 +132,35 @@ cout << "Values: " << stemp[1] << "\t" << *itemp << "\t" << ftemp[0] << "\t" << 
             delete obsall[j];
          }
 
+	 cout << "Error! Observables not rewritten." << endl;
+
+         (mvatool->outfile)->Close();
+         stemp[0] = "rm -fr " + (mvatool->outname);
+         system(stemp[0].c_str());
+
          delete mvatool;
 
-	 cout << "Error! Observables not rewritten." << endl;
-         return -1;
+/*         delete[] stemp;
+         delete itemp;
+         delete[] ftemp;
+         delete[] ctemp;
+         return -1;*/
       }
-      mvatool->PrepareOtherTrees(1, 0, observables);
-
-      (mvatool->all_tree)->Write();
-      (mvatool->outfile)->Close();
-
-      for (int i = 0; i < 3; i++)
+      else
       {
-         delete obssig[i];
-         delete obsall[i];
-      }
+         mvatool->PrepareOtherTrees(1, 0, observables);
 
-      delete mvatool;
+         (mvatool->all_tree)->Write();
+         (mvatool->outfile)->Close();
+
+         for (int j = 0; j < 3; j++)
+         {
+            delete obssig[j];
+            delete obsall[j];
+         }
+
+         delete mvatool;
+      }
 
       cout << endl;
    }

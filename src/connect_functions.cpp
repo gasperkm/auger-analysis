@@ -1311,6 +1311,7 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
             delete[] stemp;
             delete[] nrTreeEvents;
             delete[] itemp;
+	    return;
 	 }
 /*         TFile *ifile = TFile::Open(tempAnalysisFile.c_str(), "READ");
 

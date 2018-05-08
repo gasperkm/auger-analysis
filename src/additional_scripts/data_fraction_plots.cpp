@@ -233,6 +233,7 @@ int main(int argc, char **argv)
          float *ybinDataLnaNorm[3];
 	 float *ylowfractest[3], *yhighfractest[3];
 	 float *ylowlimitfrac, *yhighlimitfrac;
+	 float *ymvaCut[3];
 
 	 vector<string> treeName;
 	 vector<int> treeId;
@@ -252,6 +253,7 @@ int main(int argc, char **argv)
             ybinDataNorm[i] = new float[nrbins];
             ybinDataLna[i] = new float[nrbins];
             ybinDataLnaNorm[i] = new float[nrbins];
+	    ymvaCut[i] = new float[nrbins];
 
 	    if(autoFrac && !simplNorm)
 	    {
@@ -298,6 +300,11 @@ int main(int argc, char **argv)
                xbin[1][i] = 0;
                xbin[2][i] = 0;
 	    }
+
+	    // Getting MVA cut values
+	    ymvaCut[0][i] = analRes->GetMvaCut(0);
+	    ymvaCut[1][i] = TMath::Abs(analRes->GetMvaCut(-1) - ymvaCut[0][i]);
+	    ymvaCut[2][i] = TMath::Abs(analRes->GetMvaCut(1) - ymvaCut[0][i]);
 
             // Getting signal ybin values
             ybinSig[0][i] = analRes->GetFraction(1, -1);
@@ -649,6 +656,7 @@ int main(int argc, char **argv)
 	 // Skip the first point, just because
 	 for(int i = 1; i < nrbins; i++)
 	 {
+            cerr << i << ": MVA cut    = " << ymvaCut[0][i] << "\t" << ymvaCut[1][i] << "\t" << ymvaCut[2][i] << endl;
             cerr << i << ": Signal     = " << ybinSig[0][i] << "\t" << ybinSig[1][i] << "\t" << ybinSig[2][i] << endl;
             cerr << i << ": Background = " << ybinBack[0][i] << "\t" << ybinBack[1][i] << "\t" << ybinBack[2][i] << endl;
             cerr << i << ": Raw data   = " << ybinData[0][i] << "\t" << ybinData[1][i] << "\t" << ybinData[2][i] << endl;
@@ -708,7 +716,7 @@ int main(int argc, char **argv)
 	 }
 
          // y-range settings
-         cerr << endl << "Please set the y-axis range for all plots (comma separated): ";
+         cerr << endl << "Please set the y-axis range for all fraction plots (comma separated): ";
          cin >> yrange[0] >> *ctemp >> yrange[1];
 
          // Create directory structure for plots and delete old plots
@@ -748,6 +756,11 @@ int main(int argc, char **argv)
 
          // Preparing all graphs
 	 yrange[1] += 0.25*(yrange[1]-yrange[0]);
+         // MVA cut
+         TGraphAsymmErrors *grMva = new TGraphAsymmErrors(nrbins, xbin[0], ymvaCut[0], xbin[1], xbin[2], ymvaCut[1], ymvaCut[2]);
+         mystyle->SetGraphColor(grMva, 1);
+         grMva->GetYaxis()->SetRangeUser(0., 1.);
+
          // Signal
          TGraphAsymmErrors *grSig = new TGraphAsymmErrors(nrbins, xbin[0], ybinSig[0], xbin[1], xbin[2], ybinSig[1], ybinSig[2]);
          mystyle->SetGraphColor(grSig, 1);
@@ -821,6 +834,30 @@ int main(int argc, char **argv)
          grPubLna->GetYaxis()->SetRangeUser(-0.7, 5.);
 
          // Plotting each graph separately
+	 // MVA cut only
+         mystyle->SetAxisTitles(grMva, "FD energy [log(E/eV)]", "MVA applied cut");
+         grMva->Draw(plotInstr[0].c_str());
+         if(itemp[0] == 0)
+         {
+            stemp[1] = analRes->GetObservableType();
+            stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_mva_cut_" + stemp[1] + ".pdf";
+            c1->SaveAs(stemp[2].c_str());
+         }
+         else if(itemp[0] == 1)
+         {
+            if(autoFrac)
+	    {
+               if(simplNorm)
+	          stemp[1] = "frac-simple";
+	       else
+	          stemp[1] = "frac-auto";
+	    }
+	    else
+               stemp[1] = "frac-" + ToString(fraction, 3);
+            stemp[2] = RemoveFilename(&stemp[0]) + "/plots/mva_cut.pdf";
+            c1->SaveAs(stemp[2].c_str());
+         }
+
 	 // Signal only
          mystyle->SetAxisTitles(grSig, "FD energy [log(E/eV)]", "Purity of signal simulation events");
          grSig->Draw(plotInstr[0].c_str());
@@ -1387,6 +1424,8 @@ int main(int argc, char **argv)
 
             delete[] xbinPub[i];
             delete[] ybinPubLna[i];
+
+	    delete[] ymvaCut[i];
 
             if(autoFrac && !simplNorm)
             {

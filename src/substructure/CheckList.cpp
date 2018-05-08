@@ -18,7 +18,7 @@ CheckList::CheckList(wxPanel *parent, bool checked, wxString label, const int ch
 }
 
 // Multiple checkboxes
-CheckList::CheckList(wxPanel *parent, vector<int> *checked, vector<string> *label, vector<int> *checkID, int maxsize)
+CheckList::CheckList(wxPanel *parent, vector<int> *checked, vector<string> *label, vector<int> *checkID, int maxsize, string layout)
 {
     subsizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer *vbox = new wxBoxSizer(wxVERTICAL);
@@ -38,34 +38,42 @@ CheckList::CheckList(wxPanel *parent, vector<int> *checked, vector<string> *labe
     {
        *isbigger = true;
 
-       if(checksize/2 > maxsize)
+       if(layout == "vertical")
        {
-          wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
-          for(int i = 0; i < checked->size()/3; i++)
-             hbox->Add(widgetChBox[i], 0, wxLEFT | wxRIGHT, padding);
-          vbox->Add(hbox, 1);
-
-          hbox = new wxBoxSizer(wxHORIZONTAL);
-          for(int i = checked->size()/3; i < 2*checked->size()/3; i++)
-             hbox->Add(widgetChBox[i], 0, wxLEFT | wxRIGHT, padding);
-          vbox->Add(hbox, 1);
-
-          hbox = new wxBoxSizer(wxHORIZONTAL);
-          for(int i = 2*checked->size()/3; i < checked->size(); i++)
-             hbox->Add(widgetChBox[i], 0, wxLEFT | wxRIGHT, padding);
-          vbox->Add(hbox, 1);
+          for(int i = 0; i < checked->size(); i++)
+             vbox->Add(widgetChBox[i], 0, wxLEFT | wxRIGHT, padding);
        }
        else
        {
-          wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
-          for(int i = 0; i < checked->size()/2; i++)
-             hbox->Add(widgetChBox[i], 0, wxLEFT | wxRIGHT, padding);
-          vbox->Add(hbox, 1);
+          if(checksize/2 > maxsize)
+          {
+             wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
+             for(int i = 0; i < checked->size()/3; i++)
+                hbox->Add(widgetChBox[i], 0, wxLEFT | wxRIGHT, padding);
+             vbox->Add(hbox, 1);
 
-          hbox = new wxBoxSizer(wxHORIZONTAL);
-          for(int i = checked->size()/2; i < checked->size(); i++)
-             hbox->Add(widgetChBox[i], 0, wxLEFT | wxRIGHT, padding);
-          vbox->Add(hbox, 1);
+             hbox = new wxBoxSizer(wxHORIZONTAL);
+             for(int i = checked->size()/3; i < 2*checked->size()/3; i++)
+                hbox->Add(widgetChBox[i], 0, wxLEFT | wxRIGHT, padding);
+             vbox->Add(hbox, 1);
+
+             hbox = new wxBoxSizer(wxHORIZONTAL);
+             for(int i = 2*checked->size()/3; i < checked->size(); i++)
+                hbox->Add(widgetChBox[i], 0, wxLEFT | wxRIGHT, padding);
+             vbox->Add(hbox, 1);
+          }
+          else
+          {
+             wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
+             for(int i = 0; i < checked->size()/2; i++)
+                hbox->Add(widgetChBox[i], 0, wxLEFT | wxRIGHT, padding);
+             vbox->Add(hbox, 1);
+
+             hbox = new wxBoxSizer(wxHORIZONTAL);
+             for(int i = checked->size()/2; i < checked->size(); i++)
+                hbox->Add(widgetChBox[i], 0, wxLEFT | wxRIGHT, padding);
+             vbox->Add(hbox, 1);
+          }
        }
 
        subsizer->Add(vbox, 1);
