@@ -29,24 +29,34 @@ void NormalizeFrac(int nr, float **sig, float **back, float **data, double *dtem
    // calculate the normalized fraction
    dtemp[0] = (data[0][nr] - back[0][nr])/(sig[0][nr] - back[0][nr]);
    cout << "Step 1 = " << dtemp[0] << endl;
-   // calculate neg propagation error with respect to x_d (d(x_d,norm)/d(x_d))*delta(x_d)
-   dtemp[1] = TMath::Power(data[1][nr]/(sig[0][nr] - back[0][nr]), 2);
-   cout << "Step 2 = " << TMath::Power(data[1][nr]/(sig[0][nr] - back[0][nr]), 2) << endl;
-   // calculate neg propagation error with respect to x_sig (d(x_d,norm)/d(x_sig))*delta(x_sig)
-   dtemp[1] += TMath::Power(sig[1][nr]*(data[0][nr] - back[0][nr])/TMath::Power(sig[0][nr] - back[0][nr], 2), 2);
-   cout << "Step 3 = " << TMath::Power(sig[1][nr]*(data[0][nr] - back[0][nr])/TMath::Power(sig[0][nr] - back[0][nr], 2), 2) << endl;
-   // calculate neg propagation error with respect to x_back (d(x_d,norm)/d(x_back))*delta(x_back)
-   dtemp[1] += TMath::Power(back[1][nr]*(data[0][nr] - sig[0][nr])/TMath::Power(sig[0][nr] - back[0][nr], 2), 2);
-   cout << "Step 4 = " << TMath::Power(back[1][nr]*(data[0][nr] - sig[0][nr])/TMath::Power(sig[0][nr] - back[0][nr], 2), 2) << endl;
-   dtemp[1] = TMath::Sqrt(dtemp[1]);
-   cout << "Step 5 = " << TMath::Sqrt(dtemp[1]) << endl;
-   // calculate pos propagation error with respect to x_d (d(x_d,norm)/d(x_d))*delta(x_d)
-   dtemp[2] = TMath::Power(data[2][nr]/(sig[0][nr] - back[0][nr]), 2);
-   // calculate pos propagation error with respect to x_sig (d(x_d,norm)/d(x_sig))*delta(x_sig)
-   dtemp[2] += TMath::Power(sig[2][nr]*(data[0][nr] - back[0][nr])/TMath::Power(sig[0][nr] - back[0][nr], 2), 2);
-   // calculate pos propagation error with respect to x_back (d(x_d,norm)/d(x_back))*delta(x_back)
-   dtemp[2] += TMath::Power(back[2][nr]*(data[0][nr] - sig[0][nr])/TMath::Power(sig[0][nr] - back[0][nr], 2), 2);
-   dtemp[2] = TMath::Sqrt(dtemp[2]);
+
+   if( (sig != data) && (back != data) )
+   {
+      // calculate neg propagation error with respect to x_d (d(x_d,norm)/d(x_d))*delta(x_d)
+      dtemp[1] = TMath::Power(data[1][nr]/(sig[0][nr] - back[0][nr]), 2);
+      cout << "Step 2 = " << TMath::Power(data[1][nr]/(sig[0][nr] - back[0][nr]), 2) << endl;
+      // calculate neg propagation error with respect to x_sig (d(x_d,norm)/d(x_sig))*delta(x_sig)
+      dtemp[1] += TMath::Power(sig[1][nr]*(data[0][nr] - back[0][nr])/TMath::Power(sig[0][nr] - back[0][nr], 2), 2);
+      cout << "Step 3 = " << TMath::Power(sig[1][nr]*(data[0][nr] - back[0][nr])/TMath::Power(sig[0][nr] - back[0][nr], 2), 2) << endl;
+      // calculate neg propagation error with respect to x_back (d(x_d,norm)/d(x_back))*delta(x_back)
+      dtemp[1] += TMath::Power(back[1][nr]*(data[0][nr] - sig[0][nr])/TMath::Power(sig[0][nr] - back[0][nr], 2), 2);
+      cout << "Step 4 = " << TMath::Power(back[1][nr]*(data[0][nr] - sig[0][nr])/TMath::Power(sig[0][nr] - back[0][nr], 2), 2) << endl;
+      dtemp[1] = TMath::Sqrt(dtemp[1]);
+      cout << "Step 5 = " << TMath::Sqrt(dtemp[1]) << endl;
+      // calculate pos propagation error with respect to x_d (d(x_d,norm)/d(x_d))*delta(x_d)
+      dtemp[2] = TMath::Power(data[2][nr]/(sig[0][nr] - back[0][nr]), 2);
+      // calculate pos propagation error with respect to x_sig (d(x_d,norm)/d(x_sig))*delta(x_sig)
+      dtemp[2] += TMath::Power(sig[2][nr]*(data[0][nr] - back[0][nr])/TMath::Power(sig[0][nr] - back[0][nr], 2), 2);
+      // calculate pos propagation error with respect to x_back (d(x_d,norm)/d(x_back))*delta(x_back)
+      dtemp[2] += TMath::Power(back[2][nr]*(data[0][nr] - sig[0][nr])/TMath::Power(sig[0][nr] - back[0][nr], 2), 2);
+      dtemp[2] = TMath::Sqrt(dtemp[2]);
+   }
+   else
+   {
+      cout << "These two things are the same" << endl;
+      dtemp[1] = 0.;
+      dtemp[2] = 0.;
+   }
    
    cout << nr << ": Normfrac = " << dtemp[0] << ", Normfrac neg error = " << dtemp[1] << ", Normfrac pos error = " << dtemp[2] << endl;
 }
@@ -241,6 +251,9 @@ int main(int argc, char **argv)
 	 double sigType;
 	 double backType;
 
+	 float *xlimit;
+	 xlimit = new float[2];
+
          for(int i = 0; i < 3; i++)
          {
             xbin[i] = new float[nrbins];
@@ -300,6 +313,12 @@ int main(int argc, char **argv)
                xbin[1][i] = 0;
                xbin[2][i] = 0;
 	    }
+
+	    if(i == 0)
+               xlimit[0] = analRes->GetLowEnergy();
+
+	    if(i == nrbins-1)
+               xlimit[1] = analRes->GetHighEnergy();
 
 	    // Getting MVA cut values
 	    ymvaCut[0][i] = analRes->GetMvaCut(0);
@@ -759,21 +778,25 @@ int main(int argc, char **argv)
          // MVA cut
          TGraphAsymmErrors *grMva = new TGraphAsymmErrors(nrbins, xbin[0], ymvaCut[0], xbin[1], xbin[2], ymvaCut[1], ymvaCut[2]);
          mystyle->SetGraphColor(grMva, 1);
+         grMva->GetXaxis()->SetRangeUser(xlimit[0], xlimit[1]);
          grMva->GetYaxis()->SetRangeUser(0., 1.);
 
          // Signal
          TGraphAsymmErrors *grSig = new TGraphAsymmErrors(nrbins, xbin[0], ybinSig[0], xbin[1], xbin[2], ybinSig[1], ybinSig[2]);
          mystyle->SetGraphColor(grSig, 1);
+         grSig->GetXaxis()->SetRangeUser(xlimit[0], xlimit[1]);
          grSig->GetYaxis()->SetRangeUser(yrange[0], yrange[1]);
 
          // Background
          TGraphAsymmErrors *grBack = new TGraphAsymmErrors(nrbins, xbin[0], ybinBack[0], xbin[1], xbin[2], ybinBack[1], ybinBack[2]);
          mystyle->SetGraphColor(grBack, 0);
+         grBack->GetXaxis()->SetRangeUser(xlimit[0], xlimit[1]);
          grBack->GetYaxis()->SetRangeUser(yrange[0], yrange[1]);
 
          // Data
          TGraphAsymmErrors *grData = new TGraphAsymmErrors(nrbins, xbin[0], ybinData[0], xbin[1], xbin[2], ybinData[1], ybinData[2]);
          mystyle->SetGraphColor(grData, 2);
+         grData->GetXaxis()->SetRangeUser(xlimit[0], xlimit[1]);
          grData->GetYaxis()->SetRangeUser(yrange[0], yrange[1]);
 
          TGraphAsymmErrors *grSigNorm, *grBackNorm, *grDataNorm;
@@ -782,14 +805,17 @@ int main(int argc, char **argv)
          {
             grSigNorm = new TGraphAsymmErrors(nrbins, xbin[0], ybinSigNorm[0], xbin[1], xbin[2], ybinSigNorm[1], ybinSigNorm[2]);
             mystyle->SetGraphColor(grSigNorm, 1);
+            grSigNorm->GetXaxis()->SetRangeUser(xlimit[0], xlimit[1]);
             grSigNorm->GetYaxis()->SetRangeUser(yrange[0], yrange[1]);
 
             grBackNorm = new TGraphAsymmErrors(nrbins, xbin[0], ybinBackNorm[0], xbin[1], xbin[2], ybinBackNorm[1], ybinBackNorm[2]);
             mystyle->SetGraphColor(grBackNorm, 0);
+            grBackNorm->GetXaxis()->SetRangeUser(xlimit[0], xlimit[1]);
             grBackNorm->GetYaxis()->SetRangeUser(yrange[0], yrange[1]);
 
             grDataNorm = new TGraphAsymmErrors(nrbins, xbin[0], ybinDataNorm[0], xbin[1], xbin[2], ybinDataNorm[1], ybinDataNorm[2]);
             mystyle->SetGraphColor(grDataNorm, 3);
+            grDataNorm->GetXaxis()->SetRangeUser(xlimit[0], xlimit[1]);
             grDataNorm->GetYaxis()->SetRangeUser(yrange[0], yrange[1]);
          }
 
@@ -797,6 +823,7 @@ int main(int argc, char **argv)
 	 TGraphAsymmErrors *grDataLna, *grDataLnaNorm, *grPubLna;
          grDataLna = new TGraphAsymmErrors(nrbins, xbin[0], ybinDataLna[0], xbin[1], xbin[2], ybinDataLna[1], ybinDataLna[2]);
          mystyle->SetGraphColor(grDataLna, 2);
+         grDataLna->GetXaxis()->SetRangeUser(xlimit[0], xlimit[1]);
          grDataLna->GetYaxis()->SetRangeUser(-0.7, 5.);
          if(runnorm)
          {
@@ -805,8 +832,11 @@ int main(int argc, char **argv)
             grDataLnaNorm->GetYaxis()->SetRangeUser(-0.7, 5.);
          }
 
+	 cout << "Which dataset did you use (EPOS = 0, QGSJET = 1, SIBYLL = 2)? ";
+	 cin >> itemp[1];
+
 	 vector<float> returnVal;
-	 itemp[1] = ReadLnaResults(&returnVal, 0);
+	 itemp[1] = ReadLnaResults(&returnVal, itemp[1]);
 	 cout << "Number of points = " << itemp[1] << endl;
 	 float *xbinPub[3];
 	 float *ybinPubLna[3];
@@ -1019,7 +1049,7 @@ int main(int argc, char **argv)
          mystyle->SetAxisTitles(grSig, "FD energy [log(E/eV)]", "Purity of simulation events");
          grSig->Draw(plotInstr[0].c_str());
          grBack->Draw(plotInstr[1].c_str());
-	 legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	 legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(nrfigs)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
 	 legend->SetFillStyle(1001);
 	 legend->SetFillColor(c_Legend);
 	 legend->AddEntry(grSig, "Signal", "lp");
@@ -1045,7 +1075,7 @@ int main(int argc, char **argv)
             mystyle->SetAxisTitles(grSigNorm, "FD energy [log(E/eV)]", "Purity of simulation events");
             grSigNorm->Draw(plotInstr[0].c_str());
             grBackNorm->Draw(plotInstr[1].c_str());
-	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(nrfigs)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
 	    legend->SetFillStyle(1001);
 	    legend->SetFillColor(c_Legend);
 	    legend->AddEntry(grSigNorm, "Signal (normalized)", "lp");
@@ -1070,7 +1100,7 @@ int main(int argc, char **argv)
 //	    grData->SetLineStyle(9);
             grData->Draw(plotInstr[0].c_str());
             grDataNorm->Draw(plotInstr[1].c_str());
-	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(nrfigs)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
 	    legend->SetFillStyle(1001);
 	    legend->SetFillColor(c_Legend);
 	    legend->AddEntry(grData, "Data (raw)", "lp");
@@ -1098,7 +1128,7 @@ int main(int argc, char **argv)
             grDataLna->Draw(plotInstr[0].c_str());
             grDataLnaNorm->Draw(plotInstr[1].c_str());
             grPubLna->Draw(plotInstr[1].c_str());
-	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(nrfigs)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
 	    legend->SetFillStyle(1001);
 	    legend->SetFillColor(c_Legend);
 	    legend->AddEntry(grDataLna, "Data (raw)", "lp");
@@ -1128,7 +1158,7 @@ int main(int argc, char **argv)
          grSig->Draw(plotInstr[0].c_str());
          grBack->Draw(plotInstr[1].c_str());
          grData->Draw(plotInstr[1].c_str());
-	 legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	 legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(nrfigs)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
 	 legend->SetFillStyle(1001);
 	 legend->SetFillColor(c_Legend);
 	 legend->AddEntry(grSig, "Signal", "lp");
@@ -1156,7 +1186,7 @@ int main(int argc, char **argv)
             grSig->Draw(plotInstr[0].c_str());
             grBack->Draw(plotInstr[1].c_str());
             grDataNorm->Draw(plotInstr[1].c_str());
-	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(nrfigs)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
 	    legend->SetFillStyle(1001);
 	    legend->SetFillColor(c_Legend);
 	    legend->AddEntry(grSig, "Signal", "lp");
@@ -1182,7 +1212,7 @@ int main(int argc, char **argv)
             grSigNorm->Draw(plotInstr[0].c_str());
             grBackNorm->Draw(plotInstr[1].c_str());
             grData->Draw(plotInstr[1].c_str());
-	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(nrfigs)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
 	    legend->SetFillStyle(1001);
 	    legend->SetFillColor(c_Legend);
 	    legend->AddEntry(grSigNorm, "Signal (normalized)", "lp");
@@ -1203,13 +1233,12 @@ int main(int argc, char **argv)
                c1->SaveAs(stemp[2].c_str());
             }
 
-	    nrfigs = 4;
             // Signal-norm/background-norm/data-norm
             mystyle->SetAxisTitles(grSigNorm, "FD energy [log(E/eV)]", "Purity of simulation events/Signal fraction of data events");
             grSigNorm->Draw(plotInstr[0].c_str());
             grBackNorm->Draw(plotInstr[1].c_str());
             grDataNorm->Draw(plotInstr[1].c_str());
-	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(nrfigs)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
 	    legend->SetFillStyle(1001);
 	    legend->SetFillColor(c_Legend);
 	    legend->AddEntry(grSigNorm, "Signal (normalized)", "lp");
@@ -1230,6 +1259,7 @@ int main(int argc, char **argv)
                c1->SaveAs(stemp[2].c_str());
             }
 
+	    nrfigs = 4;
             // Signal/background/data/data-norm
             mystyle->SetAxisTitles(grSig, "FD energy [log(E/eV)]", "Purity of simulation events/Signal fraction of data events");
             grSig->Draw(plotInstr[0].c_str());
@@ -1276,7 +1306,7 @@ int main(int argc, char **argv)
          mystyle->SetAxisTitles(grDataLna, "FD energy [log(E/eV)]", "<lnA> of data events");
          grDataLna->Draw(plotInstr[0].c_str());
          grPubLna->Draw(plotInstr[1].c_str());
-	 legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	 legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(nrfigs)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
 	 legend->SetFillStyle(1001);
 	 legend->SetFillColor(c_Legend);
 	 legend->AddEntry(grDataLna, "Data (raw)", "lp");
@@ -1322,10 +1352,10 @@ int main(int argc, char **argv)
             mystyle->SetAxisTitles(grDataLnaNorm, "FD energy [log(E/eV)]", "<lnA> of data events");
             grDataLnaNorm->Draw(plotInstr[0].c_str());
             grPubLna->Draw(plotInstr[1].c_str());
-	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(nrfigs)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
 	    legend->SetFillStyle(1001);
 	    legend->SetFillColor(c_Legend);
-	    legend->AddEntry(grDataLnaNorm, "Data (raw)", "lp");
+	    legend->AddEntry(grDataLnaNorm, "Data (normalized)", "lp");
 	    legend->AddEntry(grPubLna, "Data (Auger published)", "lp");
             legend->SetBorderSize(1);
             legend->SetMargin(0.3);
@@ -1369,7 +1399,7 @@ int main(int argc, char **argv)
             grDataLna->Draw(plotInstr[0].c_str());
             grDataLnaNorm->Draw(plotInstr[1].c_str());
             grPubLna->Draw(plotInstr[1].c_str());
-	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(nrfigs)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
 	    legend->SetFillStyle(1001);
 	    legend->SetFillColor(c_Legend);
 	    legend->AddEntry(grDataLna, "Data (raw)", "lp");
@@ -1439,6 +1469,8 @@ int main(int argc, char **argv)
             delete[] ylowlimitfrac;
             delete[] yhighlimitfrac;
          }
+
+	 delete[] xlimit;
       }         
       else
       {

@@ -1,0 +1,486 @@
+Directory name = /home/gkukec/Gasper/github/auger-analysis/dbg/tmva_example
+--- Factory                  : You are running ROOT Version: 5.34/32, Jun 23, 2015
+--- Factory                  : 
+--- Factory                  : _/_/_/_/_/ _|      _|  _|      _|    _|_|   
+--- Factory                  :    _/      _|_|  _|_|  _|      _|  _|    _| 
+--- Factory                  :   _/       _|  _|  _|  _|      _|  _|_|_|_| 
+--- Factory                  :  _/        _|      _|    _|  _|    _|    _| 
+--- Factory                  : _/         _|      _|      _|      _|    _| 
+--- Factory                  : 
+--- Factory                  : ___________TMVA Version 4.2.0, Sep 19, 2013
+--- Factory                  : 
+--- DataSetInfo              : Added class "TreeS1"	 with internal class number 0
+--- Factory                  : Add Tree TreeS1 of type TreeS1 with 2471 events
+--- DataSetInfo              : Added class "TreeS2"	 with internal class number 1
+--- Factory                  : Add Tree TreeS2 of type TreeS2 with 2351 events
+--- DataSetInfo              : Added class "TreeS3"	 with internal class number 2
+--- Factory                  : Add Tree TreeS3 of type TreeS3 with 2411 events
+--- DataSetInfo              : Added class "TreeS4"	 with internal class number 3
+--- Factory                  : Add Tree TreeS4 of type TreeS4 with 2673 events
+--- DataSetInfo              : Class index : 0  name : TreeS1
+--- DataSetInfo              : Class index : 1  name : TreeS2
+--- DataSetInfo              : Class index : 2  name : TreeS3
+--- DataSetInfo              : Class index : 3  name : TreeS4
+--- Factory                  : Booking method: [1mBDTG[0m
+[1;31m--- <WARNING> BDTG                     : the option *InverseBoostNegWeights* does not exist for BoostType=Grad --> change to *IgnoreNegWeightsInTraining*[0m
+--- DataSetFactory           : Splitmode is: "RANDOM" the mixmode is: "SAMEASSPLITMODE"
+--- DataSetFactory           : Create training and testing trees -- looping over class "TreeS1" ...
+--- DataSetFactory           : Weight expression for class 'TreeS1': ""
+--- DataSetFactory           : Create training and testing trees -- looping over class "TreeS2" ...
+--- DataSetFactory           : Weight expression for class 'TreeS2': ""
+--- DataSetFactory           : Create training and testing trees -- looping over class "TreeS3" ...
+--- DataSetFactory           : Weight expression for class 'TreeS3': ""
+--- DataSetFactory           : Create training and testing trees -- looping over class "TreeS4" ...
+--- DataSetFactory           : Weight expression for class 'TreeS4': ""
+--- DataSetFactory           : Number of events in input trees (after possible flattening of arrays):
+--- DataSetFactory           :     TreeS1      -- number of events       : 2471   / sum of weights: 2471 
+--- DataSetFactory           :     TreeS2      -- number of events       : 2351   / sum of weights: 2351 
+--- DataSetFactory           :     TreeS3      -- number of events       : 2411   / sum of weights: 2411 
+--- DataSetFactory           :     TreeS4      -- number of events       : 2673   / sum of weights: 2673 
+--- DataSetFactory           :     TreeS1 tree -- total number of entries: 2471 
+--- DataSetFactory           :     TreeS2 tree -- total number of entries: 2351 
+--- DataSetFactory           :     TreeS3 tree -- total number of entries: 2411 
+--- DataSetFactory           :     TreeS4 tree -- total number of entries: 2673 
+--- DataSetFactory           : Preselection: (will NOT affect number of requested training and testing events)
+--- DataSetFactory           :     No preselection cuts applied on event classes
+--- DataSetFactory           : Weight renormalisation mode: "NumEvents": renormalises all event classes 
+--- DataSetFactory           :  such that the effective (weighted) number of events in each class equals the respective 
+--- DataSetFactory           :  number of events (entries) that you demanded in PrepareTrainingAndTestTree("","nTrain_Signal=.. )
+--- DataSetFactory           :  ... i.e. such that Sum[i=1..N_j]{w_i} = N_j, j=0,1,2...
+--- DataSetFactory           :  ... (note that N_j is the sum of TRAINING events (nTrain_j...with j=Signal,Background..
+--- DataSetFactory           :  ..... Testing events are not renormalised nor included in the renormalisation factor! )
+--- DataSetFactory           : --> Rescale TreeS1 event weights by factor: 1
+--- DataSetFactory           : --> Rescale TreeS2 event weights by factor: 1
+--- DataSetFactory           : --> Rescale TreeS3 event weights by factor: 1
+--- DataSetFactory           : --> Rescale TreeS4 event weights by factor: 1
+--- DataSetFactory           : Number of training and testing events after rescaling:
+--- DataSetFactory           : ------------------------------------------------------
+--- DataSetFactory           : TreeS1 -- training events            : 1235 (sum of weights: 1235) - requested were 0 events
+--- DataSetFactory           : TreeS1 -- testing events             : 1235 (sum of weights: 1235) - requested were 0 events
+--- DataSetFactory           : TreeS1 -- training and testing events: 2470 (sum of weights: 2470)
+--- DataSetFactory           : TreeS2 -- training events            : 1175 (sum of weights: 1175) - requested were 0 events
+--- DataSetFactory           : TreeS2 -- testing events             : 1175 (sum of weights: 1175) - requested were 0 events
+--- DataSetFactory           : TreeS2 -- training and testing events: 2350 (sum of weights: 2350)
+--- DataSetFactory           : TreeS3 -- training events            : 1205 (sum of weights: 1205) - requested were 0 events
+--- DataSetFactory           : TreeS3 -- testing events             : 1205 (sum of weights: 1205) - requested were 0 events
+--- DataSetFactory           : TreeS3 -- training and testing events: 2410 (sum of weights: 2410)
+--- DataSetFactory           : TreeS4 -- training events            : 1336 (sum of weights: 1336) - requested were 0 events
+--- DataSetFactory           : TreeS4 -- testing events             : 1336 (sum of weights: 1336) - requested were 0 events
+--- DataSetFactory           : TreeS4 -- training and testing events: 2672 (sum of weights: 2672)
+--- DataSetFactory           : Create internal training tree
+--- DataSetFactory           : Create internal testing tree
+--- DataSetInfo              : Correlation matrix (TreeS1):
+--- DataSetInfo              : ------------------------
+--- DataSetInfo              :             xmax shwsize
+--- DataSetInfo              :    xmax:  +1.000  -0.132
+--- DataSetInfo              : shwsize:  -0.132  +1.000
+--- DataSetInfo              : ------------------------
+--- DataSetInfo              : Correlation matrix (TreeS2):
+--- DataSetInfo              : ------------------------
+--- DataSetInfo              :             xmax shwsize
+--- DataSetInfo              :    xmax:  +1.000  -0.081
+--- DataSetInfo              : shwsize:  -0.081  +1.000
+--- DataSetInfo              : ------------------------
+--- DataSetInfo              : Correlation matrix (TreeS3):
+--- DataSetInfo              : ------------------------
+--- DataSetInfo              :             xmax shwsize
+--- DataSetInfo              :    xmax:  +1.000  -0.105
+--- DataSetInfo              : shwsize:  -0.105  +1.000
+--- DataSetInfo              : ------------------------
+--- DataSetInfo              : Correlation matrix (TreeS4):
+--- DataSetInfo              : ------------------------
+--- DataSetInfo              :             xmax shwsize
+--- DataSetInfo              :    xmax:  +1.000  -0.039
+--- DataSetInfo              : shwsize:  -0.039  +1.000
+--- DataSetInfo              : ------------------------
+--- DataSetFactory           :  
+--- Factory                  : 
+--- Factory                  : current transformation string: 'I'
+--- Factory                  : Create Transformation "I" with events from all classes.
+--- Id                       : Transformation, Variable selection : 
+--- Id                       : Input : variable 'xmax' (index=0).   <---> Output : variable 'xmax' (index=0).
+--- Id                       : Input : variable 'shwsize' (index=1).   <---> Output : variable 'shwsize' (index=1).
+--- Factory                  : 
+--- Factory                  : current transformation string: 'D'
+--- Factory                  : Create Transformation "D" with events from all classes.
+--- Deco                     : Transformation, Variable selection : 
+--- Deco                     : Input : variable 'xmax' (index=0).   <---> Output : variable 'xmax' (index=0).
+--- Deco                     : Input : variable 'shwsize' (index=1).   <---> Output : variable 'shwsize' (index=1).
+--- Factory                  : 
+--- Factory                  : current transformation string: 'P'
+--- Factory                  : Create Transformation "P" with events from all classes.
+--- PCA                      : Transformation, Variable selection : 
+--- PCA                      : Input : variable 'xmax' (index=0).   <---> Output : variable 'xmax' (index=0).
+--- PCA                      : Input : variable 'shwsize' (index=1).   <---> Output : variable 'shwsize' (index=1).
+--- Factory                  : 
+--- Factory                  : current transformation string: 'G,D'
+--- Factory                  : Create Transformation "G" with events from all classes.
+--- Gauss                    : Transformation, Variable selection : 
+--- Gauss                    : Input : variable 'xmax' (index=0).   <---> Output : variable 'xmax' (index=0).
+--- Gauss                    : Input : variable 'shwsize' (index=1).   <---> Output : variable 'shwsize' (index=1).
+--- Factory                  : Create Transformation "D" with events from all classes.
+--- Deco                     : Transformation, Variable selection : 
+--- Deco                     : Input : variable 'xmax' (index=0).   <---> Output : variable 'xmax' (index=0).
+--- Deco                     : Input : variable 'shwsize' (index=1).   <---> Output : variable 'shwsize' (index=1).
+# GKM (Factory): Number of observables is 2
+# GKM (Factory): Exporting identity transformation to file /home/gkukec/Gasper/github/auger-analysis/dbg/tmva_example/transformation_stats.dat
+--- Id                       : Preparing the Identity transformation...
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        : Variable        Mean        RMS   [        Min        Max ]
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        :     xmax:     732.84     52.746   [     588.81     1200.0 ]
+--- TFHandler_Factory        :  shwsize:     19.562     5.4346   [     7.3159     39.514 ]
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        : Plot event variables for Id
+--- TFHandler_Factory        : Create scatter and profile plots in target-file directory: 
+--- TFHandler_Factory        : tmva_multiclass_output.root:/InputVariables_Id/CorrelationPlots
+--- Deco                     : Preparing the Decorrelation transformation...
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        : Variable        Mean        RMS   [        Min        Max ]
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        :     xmax:     14.043     1.0000   [     11.362     22.929 ]
+--- TFHandler_Factory        :  shwsize:     6.7194     1.0000   [     4.1543     10.445 ]
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        : Plot event variables for Deco
+--- TFHandler_Factory        : Create scatter and profile plots in target-file directory: 
+--- TFHandler_Factory        : tmva_multiclass_output.root:/InputVariables_Deco/CorrelationPlots
+--- PCA                      : Preparing the Principle Component (PCA) transformation...
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        : Variable        Mean        RMS   [        Min        Max ]
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        :     xmax: 8.3536e-10     52.762   [    -144.36     467.09 ]
+--- TFHandler_Factory        :  shwsize:-1.0553e-09     5.2840   [    -19.662     13.724 ]
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        : Plot event variables for PCA
+--- TFHandler_Factory        : Create scatter and profile plots in target-file directory: 
+--- TFHandler_Factory        : tmva_multiclass_output.root:/InputVariables_PCA/CorrelationPlots
+--- Gauss                    : Preparing the Gaussian transformation...
+--- Deco                     : Preparing the Decorrelation transformation...
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        : Variable        Mean        RMS   [        Min        Max ]
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        :     xmax:  0.0062336     1.0000   [    -3.0170     5.8571 ]
+--- TFHandler_Factory        :  shwsize:  0.0062753     1.0000   [    -3.0521     5.9242 ]
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        : Plot event variables for Gauss_Deco
+--- TFHandler_Factory        : Create scatter and profile plots in target-file directory: 
+--- TFHandler_Factory        : tmva_multiclass_output.root:/InputVariables_Gauss_Deco/CorrelationPlots
+--- TFHandler_Factory        :  
+--- TFHandler_Factory        : Ranking input variables (method unspecific)...
+--- Factory                  :  
+--- Factory                  : Train all methods for Multiclass ...
+--- Factory                  : Train method: BDTG for Multiclass classification
+--- BDTG                     : Begin training
+--- BDTG                     :  found and suggest the following possible pre-selection cuts 
+--- BDTG                     : as option DoPreselection was not used, these cuts however will not be performed, but the training will see the full sample
+--- BDTG                     : re-normlise events such that Sig and Bkg have respective sum of weights = 1
+--- BDTG                     :   sig->sig*2.00445ev. bkg->bkg*0.666173ev.
+--- BDTG                     : #events: (reweighted) sig: 2475.5 bkg: 2475.5
+--- BDTG                     : #events: (unweighted) sig: 1235 bkg: 3716
+--- BDTG                     : Training 1000 Decision Trees ... patience please
+--- BinaryTree               : The minimal node size MinNodeSize=5 fMinNodeSize=5% is translated to an actual number of events = 125.15
+--- BinaryTree               : Note: This number will be taken as absolute minimum in the node, 
+--- BinaryTree               :       in terms of 'weighted events' and unweighted ones !! 
+--- BDTG                     : <Train> elapsed time: [1;31m18.2 sec[0m                              
+--- BDTG                     : <Train> average number of nodes (w/o pruning) : 0
+--- BDTG                     : End of training                                              
+--- BDTG                     : Elapsed time for training with 4951 events: [1;31m18.2 sec[0m         
+--- BDTG                     : Create MVA output for Multiclass classification on training sample
+--- BDTG                     : Create results for training
+--- BDTG                     : Multiclass evaluation of BDTG on training sample
+--- BDTG                     : Elapsed time for evaluation of 4951 events: [1;31m3.68 sec[0m       
+--- ResultsMultiClassBDTG    : Creating multiclass response histograms...
+--- BDTG                     : Creating weight file in xml format: [0;36m./weights/TMVAMulticlass_BDTG.weights.xml[0m
+--- BDTG                     : Creating standalone response class: [0;36m./weights/TMVAMulticlass_BDTG.class.C[0m
+--- BDTG                     : Write monitoring histograms to file: tmva_multiclass_output.root:/Method_BDT/BDTG
+--- Factory                  : Training finished
+--- Factory                  : 
+--- Factory                  : Ranking input variables (method specific)...
+--- BDTG                     : Ranking result (top variable is best ranked)
+--- BDTG                     : -----------------------------------------
+--- BDTG                     : Rank : Variable  : Variable Importance
+--- BDTG                     : -----------------------------------------
+--- BDTG                     :    1 : xmax      : 5.623e-01
+--- BDTG                     :    2 : shwsize   : 4.377e-01
+--- BDTG                     : -----------------------------------------
+--- Factory                  : 
+--- Factory                  : === Destroy and recreate all methods via weight files for testing ===
+--- Factory                  : 
+--- MethodBase               : Reading weight file: [0;36m./weights/TMVAMulticlass_BDTG.weights.xml[0m
+--- BDTG                     : Read method "BDTG" of type "BDT"
+--- BDTG                     : MVA method was trained with TMVA Version: 4.2.0
+--- BDTG                     : MVA method was trained with ROOT Version: 5.34/32
+--- Factory                  : Test all methods...
+--- Factory                  : Test method: BDTG for Multiclass classification performance
+--- BDTG                     : Create results for testing
+--- BDTG                     : Multiclass evaluation of BDTG on testing sample
+--- BDTG                     : Elapsed time for evaluation of 4951 events: [1;31m2.98 sec[0m       
+--- ResultsMultiClassBDTG    : Creating multiclass response histograms...
+--- Factory                  : Evaluate all methods...
+--- Factory                  : Evaluate multiclass classification method: BDTG
+--- Factory                  : Write evaluation histograms to file
+--- TFHandler_BDTG           : Plot event variables for BDTG
+--- TFHandler_BDTG           : -----------------------------------------------------------
+--- TFHandler_BDTG           : Variable        Mean        RMS   [        Min        Max ]
+--- TFHandler_BDTG           : -----------------------------------------------------------
+--- TFHandler_BDTG           :     xmax:     733.66     52.560   [     572.25     1051.2 ]
+--- TFHandler_BDTG           :  shwsize:     19.635     5.4130   [     7.1720     41.201 ]
+--- TFHandler_BDTG           : -----------------------------------------------------------
+--- TFHandler_BDTG           : Create scatter and profile plots in target-file directory: 
+--- TFHandler_BDTG           : tmva_multiclass_output.root:/Method_BDT/BDTG/CorrelationPlots
+--- BDTG                     : Determine optimal multiclass cuts for test data...
+--- ResultsMultiClassBDTG    : Calculating best set of cuts for class TreeS1
+--- FitterBase               : <GeneticFitter> Optimisation, please be patient ... (inaccurate progress timing for GA)
+--- FitterBase               : Elapsed time: [1;31m4.94 sec[0m                            
+--- ResultsMultiClassBDTG    :   cutValue[TreeS1] = 0.338736;
+--- ResultsMultiClassBDTG    :   cutValue[TreeS2] = -0.322127;
+--- ResultsMultiClassBDTG    :   cutValue[TreeS3] = -0.336037;
+--- ResultsMultiClassBDTG    :   cutValue[TreeS4] = -0.150623;
+--- ResultsMultiClassBDTG    : Calculating best set of cuts for class TreeS2
+--- FitterBase               : <GeneticFitter> Optimisation, please be patient ... (inaccurate progress timing for GA)
+--- FitterBase               : Elapsed time: [1;31m4.28 sec[0m                            
+--- ResultsMultiClassBDTG    :   cutValue[TreeS1] = 0.223613;
+--- ResultsMultiClassBDTG    :   cutValue[TreeS2] = 0.0877547;
+--- ResultsMultiClassBDTG    :   cutValue[TreeS3] = -0.402405;
+--- ResultsMultiClassBDTG    :   cutValue[TreeS4] = -0.423393;
+--- ResultsMultiClassBDTG    : Calculating best set of cuts for class TreeS3
+--- FitterBase               : <GeneticFitter> Optimisation, please be patient ... (inaccurate progress timing for GA)
+--- FitterBase               : Elapsed time: [1;31m5.28 sec[0m                            
+--- ResultsMultiClassBDTG    :   cutValue[TreeS1] = 0.0548289;
+--- ResultsMultiClassBDTG    :   cutValue[TreeS2] = -0.98472;
+--- ResultsMultiClassBDTG    :   cutValue[TreeS3] = 0.0946441;
+--- ResultsMultiClassBDTG    :   cutValue[TreeS4] = -0.769409;
+--- ResultsMultiClassBDTG    : Calculating best set of cuts for class TreeS4
+--- FitterBase               : <GeneticFitter> Optimisation, please be patient ... (inaccurate progress timing for GA)
+--- FitterBase               : Elapsed time: [1;31m3.91 sec[0m                            
+--- ResultsMultiClassBDTG    :   cutValue[TreeS1] = -0.357113;
+--- ResultsMultiClassBDTG    :   cutValue[TreeS2] = -0.171066;
+--- ResultsMultiClassBDTG    :   cutValue[TreeS3] = -0.394646;
+--- ResultsMultiClassBDTG    :   cutValue[TreeS4] = 0.250981;
+--- Factory                  : 
+--- Factory                  : Evaluation results ranked by best signal efficiency times signal purity 
+--- Factory                  : --------------------------------------------------------------------------------
+--- Factory                  : MVA Method     TreeS1       TreeS2       TreeS3       TreeS4       
+--- Factory                  : --------------------------------------------------------------------------------
+--- Factory                  : BDTG           0.331        0.285        0.274        0.493        
+--- Factory                  : --------------------------------------------------------------------------------
+--- Factory                  : 
+--- Dataset:Default          : Created tree 'TestTree' with 4951 events
+--- Dataset:Default          : Created tree 'TrainTree' with 4951 events
+--- Factory                  :   
+--- Factory                  : [1mThank you for using TMVA![0m
+--- Factory                  : [1mFor citation information, please visit: http://tmva.sf.net/citeTMVA.html[0m
+--- Reader                   : Booking "BDTG method" of type "BDT" from ./weights/TMVAMulticlass_BDTG.weights.xml.
+--- MethodBase               : Reading weight file: ./weights/TMVAMulticlass_BDTG.weights.xml
+--- BDTG                     : Read method "BDTG" of type "BDT"
+--- BDTG                     : MVA method was trained with TMVA Version: 4.2.0
+--- BDTG                     : MVA method was trained with ROOT Version: 5.34/32
+--- DataSetInfo              : Added class "TreeS1"	 with internal class number 0
+--- DataSetInfo              : Added class "TreeS2"	 with internal class number 1
+--- DataSetInfo              : Added class "TreeS3"	 with internal class number 2
+--- DataSetInfo              : Added class "TreeS4"	 with internal class number 3
+--- Reader                   : Booked classifier "BDTG" of type: "BDT"
+Current tree () entries: 2471
+obsvars = 783.197
+obsvars = 9.46913
+0: 783.197	9.46913
+  Multiclass evaluate (0): 0.768202
+  MVA evaluate (0): -0.998827
+obsvars = 768.298
+obsvars = 17.7378
+1: 768.298	17.7378
+  Multiclass evaluate (0): 0.707371
+  MVA evaluate (0): -0.973725
+obsvars = 763.166
+obsvars = 16.2996
+2: 763.166	16.2996
+  Multiclass evaluate (0): 0.691174
+  MVA evaluate (0): -0.965277
+obsvars = 761.19
+obsvars = 20.768
+3: 761.19	20.768
+  Multiclass evaluate (0): 0.650532
+  MVA evaluate (0): -0.93007
+obsvars = 756.702
+obsvars = 20.8501
+4: 756.702	20.8501
+  Multiclass evaluate (0): 0.644134
+  MVA evaluate (0): -0.925256
+obsvars = 764.015
+obsvars = 11.6283
+5: 764.015	11.6283
+  Multiclass evaluate (0): 0.711282
+  MVA evaluate (0): -0.991148
+obsvars = 707.105
+obsvars = 22.8265
+6: 707.105	22.8265
+  Multiclass evaluate (0): 0.321644
+  MVA evaluate (0): -0.378521
+obsvars = 710.742
+obsvars = 22.3579
+7: 710.742	22.3579
+  Multiclass evaluate (0): 0.347553
+  MVA evaluate (0): -0.270979
+obsvars = 761.642
+obsvars = 21.52
+8: 761.642	21.52
+  Multiclass evaluate (0): 0.640785
+  MVA evaluate (0): -0.924803
+obsvars = 785.241
+obsvars = 17.8082
+9: 785.241	17.8082
+  Multiclass evaluate (0): 0.727875
+  MVA evaluate (0): -0.994512
+Current tree () entries: 2351
+obsvars = 719.135
+obsvars = 10.6516
+0: 719.135	10.6516
+  Multiclass evaluate (1): 0.522446
+  MVA evaluate (1): -0.707992
+obsvars = 728.268
+obsvars = 13.0361
+1: 728.268	13.0361
+  Multiclass evaluate (1): 0.505525
+  MVA evaluate (1): -0.61099
+obsvars = 735.457
+obsvars = 12.6696
+2: 735.457	12.6696
+  Multiclass evaluate (1): 0.565266
+  MVA evaluate (1): -0.695125
+obsvars = 739.92
+obsvars = 12.378
+3: 739.92	12.378
+  Multiclass evaluate (1): 0.615001
+  MVA evaluate (1): -0.815799
+obsvars = 777.074
+obsvars = 19.5379
+4: 777.074	19.5379
+  Multiclass evaluate (1): 0.643786
+  MVA evaluate (1): -0.984585
+obsvars = 785.071
+obsvars = 21.046
+5: 785.071	21.046
+  Multiclass evaluate (1): 0.671575
+  MVA evaluate (1): -0.99069
+obsvars = 784.776
+obsvars = 21.4426
+6: 784.776	21.4426
+  Multiclass evaluate (1): 0.666277
+  MVA evaluate (1): -0.989424
+obsvars = 782.153
+obsvars = 24.0861
+7: 782.153	24.0861
+  Multiclass evaluate (1): 0.541223
+  MVA evaluate (1): -0.979252
+obsvars = 780.32
+obsvars = 22.7926
+8: 780.32	22.7926
+  Multiclass evaluate (1): 0.558799
+  MVA evaluate (1): -0.98036
+obsvars = 724.367
+obsvars = 21.7217
+9: 724.367	21.7217
+  Multiclass evaluate (1): 0.495934
+  MVA evaluate (1): -0.586099
+Current tree () entries: 2411
+obsvars = 690.943
+obsvars = 22.536
+0: 690.943	22.536
+  Multiclass evaluate (2): 0.240665
+  MVA evaluate (2): -0.585532
+obsvars = 671.505
+obsvars = 21.6133
+1: 671.505	21.6133
+  Multiclass evaluate (2): 0.127042
+  MVA evaluate (2): -0.782015
+obsvars = 824.004
+obsvars = 19.3218
+2: 824.004	19.3218
+  Multiclass evaluate (2): 0.814335
+  MVA evaluate (2): -0.999892
+obsvars = 706.985
+obsvars = 28.4017
+3: 706.985	28.4017
+  Multiclass evaluate (2): 0.144236
+  MVA evaluate (2): -0.502099
+obsvars = 681.504
+obsvars = 22.8163
+4: 681.504	22.8163
+  Multiclass evaluate (2): 0.161572
+  MVA evaluate (2): -0.67015
+obsvars = 734.51
+obsvars = 24.3149
+5: 734.51	24.3149
+  Multiclass evaluate (2): 0.440554
+  MVA evaluate (2): -0.498918
+obsvars = 777.749
+obsvars = 22.7616
+6: 777.749	22.7616
+  Multiclass evaluate (2): 0.561119
+  MVA evaluate (2): -0.976499
+obsvars = 735.912
+obsvars = 19.9952
+7: 735.912	19.9952
+  Multiclass evaluate (2): 0.54088
+  MVA evaluate (2): -0.621604
+obsvars = 687.057
+obsvars = 15.5879
+8: 687.057	15.5879
+  Multiclass evaluate (2): 0.171884
+  MVA evaluate (2): -0.698293
+obsvars = 748.225
+obsvars = 20.3281
+9: 748.225	20.3281
+  Multiclass evaluate (2): 0.624352
+  MVA evaluate (2): -0.845235
+Current tree () entries: 2673
+obsvars = 660.633
+obsvars = 20.4347
+0: 660.633	20.4347
+  Multiclass evaluate (3): 0.0844094
+  MVA evaluate (3): -0.838679
+obsvars = 677.988
+obsvars = 27.188
+1: 677.988	27.188
+  Multiclass evaluate (3): 0.0816221
+  MVA evaluate (3): -0.782076
+obsvars = 694.853
+obsvars = 26.1937
+2: 694.853	26.1937
+  Multiclass evaluate (3): 0.144605
+  MVA evaluate (3): -0.616821
+obsvars = 691.585
+obsvars = 24.9078
+3: 691.585	24.9078
+  Multiclass evaluate (3): 0.220169
+  MVA evaluate (3): -0.56893
+obsvars = 684.211
+obsvars = 25.4209
+4: 684.211	25.4209
+  Multiclass evaluate (3): 0.12109
+  MVA evaluate (3): -0.695707
+obsvars = 693.629
+obsvars = 26.4768
+5: 693.629	26.4768
+  Multiclass evaluate (3): 0.141044
+  MVA evaluate (3): -0.620241
+obsvars = 669.688
+obsvars = 29.6742
+6: 669.688	29.6742
+  Multiclass evaluate (3): 0.0406625
+  MVA evaluate (3): -0.879683
+obsvars = 658.652
+obsvars = 21.6981
+7: 658.652	21.6981
+  Multiclass evaluate (3): 0.096876
+  MVA evaluate (3): -0.858002
+obsvars = 679.961
+obsvars = 26.7383
+8: 679.961	26.7383
+  Multiclass evaluate (3): 0.0847804
+  MVA evaluate (3): -0.738962
+obsvars = 702.228
+obsvars = 27.8504
+9: 702.228	27.8504
+  Multiclass evaluate (3): 0.126359
+  MVA evaluate (3): -0.59448

@@ -29,6 +29,8 @@ RootStyle::RootStyle()
    datafill = 3002;
    residfill = 3001;
 
+   legendBaseHeight = 0.033;
+
    basestyle = new TStyle("basestyle", "basestyle");
 }
 
@@ -293,4 +295,9 @@ void RootStyle::SetGraphColor(TGraphAsymmErrors *plot, int sigbackdata)
       plot->SetMarkerStyle(23);
       plot->SetMarkerSize(1.6);
    }
+}
+
+double RootStyle::SetLegendHeight(int nrfigs)
+{
+   return nrfigs*legendBaseHeight;
 }

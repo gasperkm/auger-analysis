@@ -1207,13 +1207,14 @@ void MyFrame::CreateTempEventFile(wxCommandEvent& event)
 {
    int *nrTreeEvents;
 
-   string *tempfile = new string;
-   *tempfile = (selectedMva->widgetTE)->GetLineText(0);
-   cout << "# CreateTempEventFile   #: " << "Opening file " << *tempfile << " to rewrite it into a temporary event file." << endl;
+   string *tempfile = new string[2];
+   tempfile[0] = (selectedMva->widgetTE)->GetLineText(0);
+   cout << "# CreateTempEventFile   #: " << "Opening file " << tempfile[0] << " to rewrite it into a temporary event file." << endl;
 
-   tempAnalysisFile = RemoveFilename(tempfile) + "/temporary_event_file.root";
+   tempfile[1] = RemovePath(&tempfile[0]);
+   tempAnalysisFile = RemoveFilename(&tempfile[0]) + "/temporary_event_file_" + tempfile[1];
    nrTreeEvents = new int[nrkeys];
-   ret = MvaTreeFile(tempfile, &tempAnalysisFile, nrTreeEvents);
+   ret = MvaTreeFile(&tempfile[0], &tempAnalysisFile, nrTreeEvents);
    if(ret == -1)
    {
       AlertPopup("Invalid selection of signal and background trees", "The selected signal or background trees are invalid. Please make sure to correctly select them and that they are present inside the input file.");
@@ -1234,6 +1235,12 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
    int *nrTreeEvents;
    int *itemp;
    double *dtemp;
+
+   if( ((specialMva->widgetChBox[0])->IsChecked()) && ((cutEnergyBins->widgetNE[0])->GetValue() == 1) )
+   {
+      AlertPopup("Automatic run failure", "If automatic run is selected, there should be more than 1 energy bins. Please adjust one of them accordingly.");
+      return;
+   }
 
    mvafile = new string[3];
    stemp = new string[4];

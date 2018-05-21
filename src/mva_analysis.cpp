@@ -245,8 +245,8 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
       }
       else
       {
-         if( type == (dataSelect->widgetCB)->GetSelection()+1 )
-         {
+/*         if( type == (dataSelect->widgetCB)->GetSelection()+1 )
+         {*/
             // Apply Xmax corrections to Auger FD standard data
             if((specialMva->widgetChBox[3])->IsChecked())
             {
@@ -280,7 +280,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
                      cout << j << ", HECO, eye " << eje+1 << ": Ecor = " << invalues->GetValue("energyFD", eje) << " (+- " << invalues_neg->GetValue("energyFD", eje) << "), Xmaxcor = " << invalues->GetValue("xmax", eje) << endl;
 	       }*/
             }
-         }
+//         }
       }
 
       // Check if event is inside the selected cuts

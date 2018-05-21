@@ -202,7 +202,7 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
 
    // Label + NEntry + button for splitting rewritten ADST files
    startSplitting = new LabelNEntryButton(leftmvapanel, wxT("Split by a fraction (decimal) or number of events (integer):"), 0.5, -1, "Split", ID_SPLIT, lwidth);
-   startSplitting->SetNEntryFormat(startSplitting->widgetNE[0], 2, 0.01, -1, -1.0, -1.);
+   startSplitting->SetNEntryFormat(startSplitting->widgetNE[0], 3, 0.001, -1, -1.0, -1.);
    vbox->Add(startSplitting->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
    Connect(ID_SPLIT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::PrepareFileSplit));
 

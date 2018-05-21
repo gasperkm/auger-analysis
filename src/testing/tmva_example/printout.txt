@@ -1,0 +1,609 @@
+Directory name = /home/gkukec/Gasper/github/auger-analysis/dbg/tmva_example
+--- Factory                  : You are running ROOT Version: 5.34/32, Jun 23, 2015
+--- Factory                  : 
+--- Factory                  : _/_/_/_/_/ _|      _|  _|      _|    _|_|   
+--- Factory                  :    _/      _|_|  _|_|  _|      _|  _|    _| 
+--- Factory                  :   _/       _|  _|  _|  _|      _|  _|_|_|_| 
+--- Factory                  :  _/        _|      _|    _|  _|    _|    _| 
+--- Factory                  : _/         _|      _|      _|      _|    _| 
+--- Factory                  : 
+--- Factory                  : ___________TMVA Version 4.2.0, Sep 19, 2013
+--- Factory                  : 
+--- DataSetInfo              : Added class "Signal"	 with internal class number 0
+--- Factory                  : Add Tree TreeS1 of type Signal with 3752 events
+--- DataSetInfo              : Added class "Background"	 with internal class number 1
+--- Factory                  : Add Tree TreeS4 of type Background with 4605 events
+--- Factory                  : Preparing trees for training and testing...
+--- Factory                  : Booking method: [1mMLPBNN[0m
+--- MLPBNN                   : Create Transformation "N" with events from all classes.
+--- Norm                     : Transformation, Variable selection : 
+--- Norm                     : Input : variable 'myvar1' (index=0).   <---> Output : variable 'myvar1' (index=0).
+--- Norm                     : Input : variable 'myvar2' (index=1).   <---> Output : variable 'myvar2' (index=1).
+--- Norm                     : Input : variable 'myvar3' (index=2).   <---> Output : variable 'myvar3' (index=2).
+--- MLPBNN                   : Building Network
+--- MLPBNN                   : Initializing weights
+--- DataSetFactory           : Splitmode is: "RANDOM" the mixmode is: "SAMEASSPLITMODE"
+--- DataSetFactory           : Create training and testing trees -- looping over class "Signal" ...
+--- DataSetFactory           : Weight expression for class 'Signal': ""
+--- DataSetFactory           : Create training and testing trees -- looping over class "Background" ...
+--- DataSetFactory           : Weight expression for class 'Background': ""
+--- DataSetFactory           : Number of events in input trees (after possible flattening of arrays):
+--- DataSetFactory           :     Signal          -- number of events       : 3752   / sum of weights: 3752 
+--- DataSetFactory           :     Background      -- number of events       : 4605   / sum of weights: 4605 
+--- DataSetFactory           :     Signal     tree -- total number of entries: 3752 
+--- DataSetFactory           :     Background tree -- total number of entries: 4605 
+--- DataSetFactory           : Preselection: (will NOT affect number of requested training and testing events)
+--- DataSetFactory           :     No preselection cuts applied on event classes
+--- DataSetFactory           : Weight renormalisation mode: "NumEvents": renormalises all event classes 
+--- DataSetFactory           :  such that the effective (weighted) number of events in each class equals the respective 
+--- DataSetFactory           :  number of events (entries) that you demanded in PrepareTrainingAndTestTree("","nTrain_Signal=.. )
+--- DataSetFactory           :  ... i.e. such that Sum[i=1..N_j]{w_i} = N_j, j=0,1,2...
+--- DataSetFactory           :  ... (note that N_j is the sum of TRAINING events (nTrain_j...with j=Signal,Background..
+--- DataSetFactory           :  ..... Testing events are not renormalised nor included in the renormalisation factor! )
+--- DataSetFactory           : --> Rescale Signal     event weights by factor: 1
+--- DataSetFactory           : --> Rescale Background event weights by factor: 1
+--- DataSetFactory           : Number of training and testing events after rescaling:
+--- DataSetFactory           : ------------------------------------------------------
+--- DataSetFactory           : Signal     -- training events            : 1876 (sum of weights: 1876) - requested were 0 events
+--- DataSetFactory           : Signal     -- testing events             : 1876 (sum of weights: 1876) - requested were 0 events
+--- DataSetFactory           : Signal     -- training and testing events: 3752 (sum of weights: 3752)
+--- DataSetFactory           : Background -- training events            : 2302 (sum of weights: 2302) - requested were 0 events
+--- DataSetFactory           : Background -- testing events             : 2302 (sum of weights: 2302) - requested were 0 events
+--- DataSetFactory           : Background -- training and testing events: 4604 (sum of weights: 4604)
+--- DataSetFactory           : Create internal training tree
+--- DataSetFactory           : Create internal testing tree
+--- DataSetInfo              : Correlation matrix (Signal):
+--- DataSetInfo              : ------------------------------------------------------------------------------------------------------
+--- DataSetInfo              :                                    xmax-xmax_neg shwsize+shwsize_pos risetimerecalc-risetimerecalc_neg
+--- DataSetInfo              :                     xmax-xmax_neg:        +1.000              -0.206                            +0.024
+--- DataSetInfo              :               shwsize+shwsize_pos:        -0.206              +1.000                            +0.768
+--- DataSetInfo              : risetimerecalc-risetimerecalc_neg:        +0.024              +0.768                            +1.000
+--- DataSetInfo              : ------------------------------------------------------------------------------------------------------
+--- DataSetInfo              : Correlation matrix (Background):
+--- DataSetInfo              : ------------------------------------------------------------------------------------------------------
+--- DataSetInfo              :                                    xmax-xmax_neg shwsize+shwsize_pos risetimerecalc-risetimerecalc_neg
+--- DataSetInfo              :                     xmax-xmax_neg:        +1.000              -0.126                            -0.054
+--- DataSetInfo              :               shwsize+shwsize_pos:        -0.126              +1.000                            +0.860
+--- DataSetInfo              : risetimerecalc-risetimerecalc_neg:        -0.054              +0.860                            +1.000
+--- DataSetInfo              : ------------------------------------------------------------------------------------------------------
+--- DataSetFactory           :  
+--- Factory                  : 
+--- Factory                  : current transformation string: 'I'
+--- Factory                  : Create Transformation "I" with events from all classes.
+--- Id                       : Transformation, Variable selection : 
+--- Id                       : Input : variable 'myvar1' (index=0).   <---> Output : variable 'myvar1' (index=0).
+--- Id                       : Input : variable 'myvar2' (index=1).   <---> Output : variable 'myvar2' (index=1).
+--- Id                       : Input : variable 'myvar3' (index=2).   <---> Output : variable 'myvar3' (index=2).
+--- Factory                  : 
+--- Factory                  : current transformation string: 'D'
+--- Factory                  : Create Transformation "D" with events from all classes.
+--- Deco                     : Transformation, Variable selection : 
+--- Deco                     : Input : variable 'myvar1' (index=0).   <---> Output : variable 'myvar1' (index=0).
+--- Deco                     : Input : variable 'myvar2' (index=1).   <---> Output : variable 'myvar2' (index=1).
+--- Deco                     : Input : variable 'myvar3' (index=2).   <---> Output : variable 'myvar3' (index=2).
+--- Factory                  : 
+--- Factory                  : current transformation string: 'P'
+--- Factory                  : Create Transformation "P" with events from all classes.
+--- PCA                      : Transformation, Variable selection : 
+--- PCA                      : Input : variable 'myvar1' (index=0).   <---> Output : variable 'myvar1' (index=0).
+--- PCA                      : Input : variable 'myvar2' (index=1).   <---> Output : variable 'myvar2' (index=1).
+--- PCA                      : Input : variable 'myvar3' (index=2).   <---> Output : variable 'myvar3' (index=2).
+--- Factory                  : 
+--- Factory                  : current transformation string: 'G,D'
+--- Factory                  : Create Transformation "G" with events from all classes.
+--- Gauss                    : Transformation, Variable selection : 
+--- Gauss                    : Input : variable 'myvar1' (index=0).   <---> Output : variable 'myvar1' (index=0).
+--- Gauss                    : Input : variable 'myvar2' (index=1).   <---> Output : variable 'myvar2' (index=1).
+--- Gauss                    : Input : variable 'myvar3' (index=2).   <---> Output : variable 'myvar3' (index=2).
+--- Factory                  : Create Transformation "D" with events from all classes.
+--- Deco                     : Transformation, Variable selection : 
+--- Deco                     : Input : variable 'myvar1' (index=0).   <---> Output : variable 'myvar1' (index=0).
+--- Deco                     : Input : variable 'myvar2' (index=1).   <---> Output : variable 'myvar2' (index=1).
+--- Deco                     : Input : variable 'myvar3' (index=2).   <---> Output : variable 'myvar3' (index=2).
+# GKM (Factory): Number of observables is 3
+# GKM (Factory): Exporting identity transformation to file /home/gkukec/Gasper/github/auger-analysis/dbg/tmva_example/transformation_stats.dat
+--- Id                       : Preparing the Identity transformation...
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        : Variable        Mean        RMS   [        Min        Max ]
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        :   myvar1:     791.32     57.343   [     658.55     1086.8 ]
+--- TFHandler_Factory        :   myvar2:     259.12     76.592   [     77.595     491.27 ]
+--- TFHandler_Factory        :   myvar3:     249.30     78.849   [     77.244     1179.5 ]
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        : Plot event variables for Id
+--- TFHandler_Factory        : Create scatter and profile plots in target-file directory: 
+--- TFHandler_Factory        : tmva_output.root:/InputVariables_Id/CorrelationPlots
+--- Deco                     : Preparing the Decorrelation transformation...
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        : Variable        Mean        RMS   [        Min        Max ]
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        :   myvar1:     17.165     1.0000   [     12.198     22.932 ]
+--- TFHandler_Factory        :   myvar2:     8.5192     1.0000   [    0.71516     12.126 ]
+--- TFHandler_Factory        :   myvar3:    -1.8120     1.0000   [    -4.1282     14.775 ]
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        : Plot event variables for Deco
+--- TFHandler_Factory        : Create scatter and profile plots in target-file directory: 
+--- TFHandler_Factory        : tmva_output.root:/InputVariables_Deco/CorrelationPlots
+--- PCA                      : Preparing the Principle Component (PCA) transformation...
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        : Variable        Mean        RMS   [        Min        Max ]
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        :   myvar1:-5.7173e-08     101.56   [    -230.18     685.79 ]
+--- TFHandler_Factory        :   myvar2: 3.5579e-08     64.751   [    -397.72     154.01 ]
+--- TFHandler_Factory        :   myvar3:-1.1882e-08     29.400   [    -139.68     489.63 ]
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        : Plot event variables for PCA
+--- TFHandler_Factory        : Create scatter and profile plots in target-file directory: 
+--- TFHandler_Factory        : tmva_output.root:/InputVariables_PCA/CorrelationPlots
+--- Gauss                    : Preparing the Gaussian transformation...
+--- Deco                     : Preparing the Decorrelation transformation...
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        : Variable        Mean        RMS   [        Min        Max ]
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        :   myvar1:   0.016481     1.0000   [    -3.5009     6.5679 ]
+--- TFHandler_Factory        :   myvar2:   0.017525     1.0000   [    -3.3084     7.9470 ]
+--- TFHandler_Factory        :   myvar3:  0.0031303     1.0000   [    -2.6492     7.6526 ]
+--- TFHandler_Factory        : -----------------------------------------------------------
+--- TFHandler_Factory        : Plot event variables for Gauss_Deco
+--- TFHandler_Factory        : Create scatter and profile plots in target-file directory: 
+--- TFHandler_Factory        : tmva_output.root:/InputVariables_Gauss_Deco/CorrelationPlots
+--- TFHandler_Factory        :  
+--- TFHandler_Factory        : Ranking input variables (method unspecific)...
+--- IdTransformation         : Ranking result (top variable is best ranked)
+--- IdTransformation         : -------------------------------
+--- IdTransformation         : Rank : Variable  : Separation
+--- IdTransformation         : -------------------------------
+--- IdTransformation         :    1 : myvar1    : 6.823e-01
+--- IdTransformation         :    2 : myvar2    : 2.205e-01
+--- IdTransformation         :    3 : myvar3    : 3.559e-02
+--- IdTransformation         : -------------------------------
+--- Factory                  :  
+--- Factory                  : Train all methods for Classification ...
+--- Factory                  : Train method: MLPBNN for Classification
+--- MLPBNN                   : 
+--- MLPBNN                   : [1m================================================================[0m
+--- MLPBNN                   : [1mH e l p   f o r   M V A   m e t h o d   [ MLPBNN ] :[0m
+--- MLPBNN                   : 
+--- MLPBNN                   : [1m--- Short description:[0m
+--- MLPBNN                   : 
+--- MLPBNN                   : The MLP artificial neural network (ANN) is a traditional feed-
+--- MLPBNN                   : forward multilayer perceptron impementation. The MLP has a user-
+--- MLPBNN                   : defined hidden layer architecture, while the number of input (output)
+--- MLPBNN                   : nodes is determined by the input variables (output classes, i.e., 
+--- MLPBNN                   : signal and one background). 
+--- MLPBNN                   : 
+--- MLPBNN                   : [1m--- Performance optimisation:[0m
+--- MLPBNN                   : 
+--- MLPBNN                   : Neural networks are stable and performing for a large variety of 
+--- MLPBNN                   : linear and non-linear classification problems. However, in contrast
+--- MLPBNN                   : to (e.g.) boosted decision trees, the user is advised to reduce the 
+--- MLPBNN                   : number of input variables that have only little discrimination power. 
+--- MLPBNN                   : 
+--- MLPBNN                   : In the tests we have carried out so far, the MLP and ROOT networks
+--- MLPBNN                   : (TMlpANN, interfaced via TMVA) performed equally well, with however
+--- MLPBNN                   : a clear speed advantage for the MLP. The Clermont-Ferrand neural 
+--- MLPBNN                   : net (CFMlpANN) exhibited worse classification performance in these
+--- MLPBNN                   : tests, which is partly due to the slow convergence of its training
+--- MLPBNN                   : (at least 10k training cycles are required to achieve approximately
+--- MLPBNN                   : competitive results).
+--- MLPBNN                   : 
+--- MLPBNN                   : [1mOvertraining: [0monly the TMlpANN performs an explicit separation of the
+--- MLPBNN                   : full training sample into independent training and validation samples.
+--- MLPBNN                   : We have found that in most high-energy physics applications the 
+--- MLPBNN                   : avaliable degrees of freedom (training events) are sufficient to 
+--- MLPBNN                   : constrain the weights of the relatively simple architectures required
+--- MLPBNN                   : to achieve good performance. Hence no overtraining should occur, and 
+--- MLPBNN                   : the use of validation samples would only reduce the available training
+--- MLPBNN                   : information. However, if the perrormance on the training sample is 
+--- MLPBNN                   : found to be significantly better than the one found with the inde-
+--- MLPBNN                   : pendent test sample, caution is needed. The results for these samples 
+--- MLPBNN                   : are printed to standard output at the end of each training job.
+--- MLPBNN                   : 
+--- MLPBNN                   : [1m--- Performance tuning via configuration options:[0m
+--- MLPBNN                   : 
+--- MLPBNN                   : The hidden layer architecture for all ANNs is defined by the option
+--- MLPBNN                   : "HiddenLayers=N+1,N,...", where here the first hidden layer has N+1
+--- MLPBNN                   : neurons and the second N neurons (and so on), and where N is the number  
+--- MLPBNN                   : of input variables. Excessive numbers of hidden layers should be avoided,
+--- MLPBNN                   : in favour of more neurons in the first hidden layer.
+--- MLPBNN                   : 
+--- MLPBNN                   : The number of cycles should be above 500. As said, if the number of
+--- MLPBNN                   : adjustable weights is small compared to the training sample size,
+--- MLPBNN                   : using a large number of training samples should not lead to overtraining.
+--- MLPBNN                   : 
+--- MLPBNN                   : <Suppress this message by specifying "!H" in the booking option>
+--- MLPBNN                   : [1m================================================================[0m
+--- MLPBNN                   : 
+--- Norm                     : Preparing the transformation.
+--- TFHandler_MLPBNN         : -----------------------------------------------------------
+--- TFHandler_MLPBNN         : Variable        Mean        RMS   [        Min        Max ]
+--- TFHandler_MLPBNN         : -----------------------------------------------------------
+--- TFHandler_MLPBNN         :   myvar1:   -0.37995    0.26780   [    -1.0000     1.0000 ]
+--- TFHandler_MLPBNN         :   myvar2:   -0.12240    0.37030   [    -1.0000     1.0000 ]
+--- TFHandler_MLPBNN         :   myvar3:   -0.68782    0.14306   [    -1.0000     1.0000 ]
+--- TFHandler_MLPBNN         : -----------------------------------------------------------
+--- MLPBNN                   : Begin training
+--- MLPBNN                   : Training Network
+--- MLPBNN                   : Finalizing handling of Regulator terms, trainE=0.047353 testE=0.0575142
+--- MLPBNN                   : Done with handling of Regulator terms
+--- MLPBNN                   : End of training                                              
+--- MLPBNN                   : Elapsed time for training with 4178 events: [1;31m67.3 sec[0m         
+--- MLPBNN                   : Create MVA output for classification on training sample
+--- MLPBNN                   : Evaluation of MLPBNN on training sample (4178 events)
+--- MLPBNN                   : Elapsed time for evaluation of 4178 events: [1;31m0.0283 sec[0m       
+--- MLPBNN_PDFSig            : Validation result for PDF "MLP_tr_S": 
+--- MLPBNN_PDFSig            :     chi2/ndof(!=0) = 0.0/76 = 0.00 (Prob = 1.00)
+--- MLPBNN_PDFSig            :     #bins-found(#expected-bins) deviating > [1,2,3,6] sigmas: [0(24),0(3),0(0),0(0)]
+--- MLPBNN_PDFBkg            : Validation result for PDF "MLP_tr_B": 
+--- MLPBNN_PDFBkg            :     chi2/ndof(!=0) = 0.0/74 = 0.00 (Prob = 1.00)
+--- MLPBNN_PDFBkg            :     #bins-found(#expected-bins) deviating > [1,2,3,6] sigmas: [0(23),0(3),0(0),0(0)]
+[1;31m--- <WARNING> MLPBNN                   : could not calculate the separation, distributions fSplS or fSplB are not yet filled[0m
+--- MLPBNN                   : <CreateMVAPdfs> Separation from histogram (PDF): 0.818 (0.000)
+--- MLPBNN                   : Evaluation of MLPBNN on training sample
+--- MLPBNN                   : Elapsed time for evaluation of 4178 events: [1;31m0.0286 sec[0m       
+--- MLPBNN                   : Creating weight file in xml format: [0;36m./weights/TMVAClassification_MLPBNN.weights.xml[0m
+--- MLPBNN                   : Creating standalone response class: [0;36m./weights/TMVAClassification_MLPBNN.class.C[0m
+--- MLPBNN                   : Write special histos to file: tmva_output.root:/Method_MLP/MLPBNN
+--- Factory                  : Training finished
+--- Factory                  : 
+--- Factory                  : Ranking input variables (method specific)...
+--- MLPBNN                   : Ranking result (top variable is best ranked)
+--- MLPBNN                   : -------------------------------
+--- MLPBNN                   : Rank : Variable  : Importance
+--- MLPBNN                   : -------------------------------
+--- MLPBNN                   :    1 : myvar3    : 4.520e+01
+--- MLPBNN                   :    2 : myvar1    : 7.380e+00
+--- MLPBNN                   :    3 : myvar2    : 1.909e+00
+--- MLPBNN                   : -------------------------------
+--- Factory                  : 
+--- Factory                  : === Destroy and recreate all methods via weight files for testing ===
+--- Factory                  : 
+--- MethodBase               : Reading weight file: [0;36m./weights/TMVAClassification_MLPBNN.weights.xml[0m
+--- MLPBNN                   : Read method "MLPBNN" of type "MLP"
+--- MLPBNN                   : MVA method was trained with TMVA Version: 4.2.0
+--- MLPBNN                   : MVA method was trained with ROOT Version: 5.34/32
+--- MLPBNN                   : Building Network
+--- MLPBNN                   : Initializing weights
+--- Factory                  : Test all methods...
+--- Factory                  : Test method: MLPBNN for Classification performance
+--- MLPBNN                   : Evaluation of MLPBNN on testing sample (4178 events)
+--- MLPBNN                   : Elapsed time for evaluation of 4178 events: [1;31m0.028 sec[0m       
+--- MLPBNN                   : Evaluation of MLPBNN on testing sample
+--- MLPBNN                   : Elapsed time for evaluation of 4178 events: [1;31m0.0286 sec[0m       
+--- Factory                  : Evaluate all methods...
+--- Factory                  : Evaluate classifier: MLPBNN
+--- TFHandler_MLPBNN         : -----------------------------------------------------------
+--- TFHandler_MLPBNN         : Variable        Mean        RMS   [        Min        Max ]
+--- TFHandler_MLPBNN         : -----------------------------------------------------------
+--- TFHandler_MLPBNN         :   myvar1:   -0.38713    0.26307   [    -1.0809    0.90716 ]
+--- TFHandler_MLPBNN         :   myvar2:   -0.11600    0.36857   [   -0.97828    0.94135 ]
+--- TFHandler_MLPBNN         :   myvar3:   -0.68807    0.14327   [    -1.0058    0.93894 ]
+--- TFHandler_MLPBNN         : -----------------------------------------------------------
+--- MLPBNN                   : Loop over test events and fill histograms with classifier response...
+--- MLPBNN                   : Also filling probability and rarity histograms (on request)...
+--- Factory                  : # GKM (Factory) Evaluating classifiers: isel = 0
+--- Factory                  : # GKM (Factory): mname (method name) = MLPBNN
+--- Factory                  : # GKM (Factory): sig (significance) = 2.53985
+--- Factory                  : # GKM (Factory): sep (separation) = 0.769118
+--- Factory                  : # GKM (Factory): roc (roc curve integral) = 0.971546
+--- Factory                  : Write evaluation histograms to file
+--- TFHandler_MLPBNN         : Plot event variables for MLPBNN
+--- TFHandler_MLPBNN         : -----------------------------------------------------------
+--- TFHandler_MLPBNN         : Variable        Mean        RMS   [        Min        Max ]
+--- TFHandler_MLPBNN         : -----------------------------------------------------------
+--- TFHandler_MLPBNN         :   myvar1:   -0.38713    0.26307   [    -1.0809    0.90716 ]
+--- TFHandler_MLPBNN         :   myvar2:   -0.11600    0.36857   [   -0.97828    0.94135 ]
+--- TFHandler_MLPBNN         :   myvar3:   -0.68807    0.14327   [    -1.0058    0.93894 ]
+--- TFHandler_MLPBNN         : -----------------------------------------------------------
+--- TFHandler_MLPBNN         : Create scatter and profile plots in target-file directory: 
+--- TFHandler_MLPBNN         : tmva_output.root:/Method_MLP/MLPBNN/CorrelationPlots
+--- Factory                  : Correlations between input variables and MVA response (signal):
+--- Factory                  : ----------------
+--- Factory                  :           MLPBNN
+--- Factory                  :  myvar1:  +0.554
+--- Factory                  :  myvar2:  -0.339
+--- Factory                  :  myvar3:  +0.011
+--- Factory                  : ----------------
+--- Factory                  : 
+--- Factory                  : Correlations between input variables and MVA response (background):
+--- Factory                  : ----------------
+--- Factory                  :           MLPBNN
+--- Factory                  :  myvar1:  +0.582
+--- Factory                  :  myvar2:  -0.146
+--- Factory                  :  myvar3:  +0.104
+--- Factory                  : ----------------
+--- Factory                  : 
+--- Factory                  : The following "overlap" matrices contain the fraction of events for which 
+--- Factory                  : the MVAs 'i' and 'j' have returned conform answers about "signal-likeness"
+--- Factory                  : An event is signal-like, if its MVA output exceeds the following value:
+--- Factory                  : --------------------
+--- Factory                  :  Method:  Cut value:
+--- Factory                  : --------------------
+--- Factory                  :  MLPBNN:     +0.370
+--- Factory                  : --------------------
+--- Factory                  : which correspond to the working point: eff(signal) = 1 - eff(background)
+--- Factory                  : 
+--- Factory                  : Evaluation results ranked by best signal efficiency and purity (area)
+--- Factory                  : --------------------------------------------------------------------------------
+--- Factory                  : MVA              Signal efficiency at bkg eff.(error):       | Sepa-    Signifi- 
+--- Factory                  : Method:          @B=0.01    @B=0.10    @B=0.30    ROC-integ. | ration:  cance:   
+--- Factory                  : --------------------------------------------------------------------------------
+--- Factory                  : MLPBNN         : 0.781(09)  0.927(06)  0.977(03)    0.972    | 0.769    2.540
+--- Factory                  : --------------------------------------------------------------------------------
+--- Factory                  : 
+--- Factory                  : Testing efficiency compared to training efficiency (overtraining check)
+--- Factory                  : --------------------------------------------------------------------------------
+--- Factory                  : MVA              Signal efficiency: from test sample (from training sample) 
+--- Factory                  : Method:          @B=0.01             @B=0.10            @B=0.30   
+--- Factory                  : --------------------------------------------------------------------------------
+--- Factory                  : MLPBNN         : 0.781 (0.808)       0.927 (0.938)      0.977 (0.977)
+--- Factory                  : --------------------------------------------------------------------------------
+--- Factory                  : 
+--- Dataset:Default          : Created tree 'TestTree' with 4178 events
+--- Dataset:Default          : Created tree 'TrainTree' with 4178 events
+--- Factory                  :   
+--- Factory                  : [1mThank you for using TMVA![0m
+--- Factory                  : [1mFor citation information, please visit: http://tmva.sf.net/citeTMVA.html[0m
+Observable limits: 658.554	1086.81
+Observable limits: 77.5947	491.271
+Observable limits: 77.2439	1179.53
+--- Opening root file tmva_output.root in read mode
+
+# ReadHistogram()
+--- Found directory: Method_MLP
+--- Got method name: MLP
+--- Classifier: MLPBNN
+
+# SetPlotLimits()
+
+# SetResultHist()
+
+# SetFormula()
+
+# UpdateSignificanceHist()
+
+# GetFormula()
+--- ===========================================================================================================
+--- Classifier   (  #signal, #backgr.)  Optimal-cut  S/sqrt(S+B)      NSig      NBkg   EffSig   EffBkg   SigPur
+--- -----------------------------------------------------------------------------------------------------------
+---     MLPBNN:  (     3752,     4605)       0.4635      56.0819      3378  250.0543   0.9003   0.0543   0.9311
+
+Optimal cut (4799, 0.463482), sig = 0.90032, back = 0.945699, purity = 0.931078
+Best cut (4236, 0.393776), sig = 0.911514, back = 0.927889, purity = 0.911496
+Equal cut (4037, 0.369137), sig = 0.918443, back = 0.918332, purity = 0.901603
+
+--- -----------------------------------------------------------------------------------------------------------
+
+
+# DrawHistogram()
+
+# GetLatexFormula()
+
+# GetLatexFormula()
+--- --------------------------------------------------------------------
+--- If you want to save the image as eps, gif or png, please comment out 
+--- the corresponding lines (line no. 239-241) in tmvaglob.C
+--- --------------------------------------------------------------------
+Cut value = 0.393776
+--- Reader                   : Booking "MLPBNN method" of type "MLP" from ./weights/TMVAClassification_MLPBNN.weights.xml.
+--- MethodBase               : Reading weight file: ./weights/TMVAClassification_MLPBNN.weights.xml
+--- MLPBNN                   : Read method "MLPBNN" of type "MLP"
+--- MLPBNN                   : MVA method was trained with TMVA Version: 4.2.0
+--- MLPBNN                   : MVA method was trained with ROOT Version: 5.34/32
+--- DataSetInfo              : Added class "Signal"	 with internal class number 0
+--- DataSetInfo              : Added class "Background"	 with internal class number 1
+--- MLPBNN                   : Building Network
+--- MLPBNN                   : Initializing weights
+--- Reader                   : Booked classifier "MLPBNN" of type: "MLP"
+Current tree (TreeS1) entries: 3752
+obsvars = 962.65, addobsvars0 = 973.806, addobsvars1 = 11.1558
+obsvars = 293.881, addobsvars2 = 287.372, addobsvars3 = 6.50835
+obsvars = 322.007, addobsvars4 = 329.128, addobsvars5 = 7.12051
+0: 962.65	293.881	322.007
+obsvars = 959.243, addobsvars0 = 970.953, addobsvars1 = 11.7094
+obsvars = 277.51, addobsvars2 = 267.171, addobsvars3 = 10.3392
+obsvars = 326.328, addobsvars4 = 337.836, addobsvars5 = 11.5077
+1: 959.243	277.51	326.328
+obsvars = 946.641, addobsvars0 = 965.582, addobsvars1 = 18.9412
+obsvars = 262.568, addobsvars2 = 252.991, addobsvars3 = 9.57709
+obsvars = 305.189, addobsvars4 = 317.222, addobsvars5 = 12.0329
+2: 946.641	262.568	305.189
+obsvars = 990.396, addobsvars0 = 1000.48, addobsvars1 = 10.0813
+obsvars = 303.375, addobsvars2 = 297.803, addobsvars3 = 5.57289
+obsvars = 330.455, addobsvars4 = 338.583, addobsvars5 = 8.1279
+3: 990.396	303.375	330.455
+obsvars = 851.224, addobsvars0 = 862.242, addobsvars1 = 11.0177
+obsvars = 327.152, addobsvars2 = 320.742, addobsvars3 = 6.40989
+obsvars = 292.663, addobsvars4 = 360.795, addobsvars5 = 68.1319
+4: 851.224	327.152	292.663
+obsvars = 947.923, addobsvars0 = 965.797, addobsvars1 = 17.8733
+obsvars = 135.321, addobsvars2 = 129.416, addobsvars3 = 5.90455
+obsvars = 208.018, addobsvars4 = 211.921, addobsvars5 = 3.90321
+5: 947.923	135.321	208.018
+obsvars = 937.002, addobsvars0 = 942.601, addobsvars1 = 5.599
+obsvars = 145.491, addobsvars2 = 141.214, addobsvars3 = 4.27698
+obsvars = 206.865, addobsvars4 = 211.183, addobsvars5 = 4.3185
+6: 937.002	145.491	206.865
+obsvars = 947.793, addobsvars0 = 954.01, addobsvars1 = 6.21738
+obsvars = 147.056, addobsvars2 = 140.831, addobsvars3 = 6.22567
+obsvars = 202.532, addobsvars4 = 207.869, addobsvars5 = 5.3361
+7: 947.793	147.056	202.532
+obsvars = 943.13, addobsvars0 = 946.236, addobsvars1 = 3.10551
+obsvars = 146.754, addobsvars2 = 142.241, addobsvars3 = 4.51277
+obsvars = 173.794, addobsvars4 = 198.3, addobsvars5 = 24.5061
+8: 943.13	146.754	173.794
+obsvars = 781.581, addobsvars0 = 796.12, addobsvars1 = 14.5388
+obsvars = 192.476, addobsvars2 = 185.105, addobsvars3 = 7.37041
+obsvars = 161.973, addobsvars4 = 169.24, addobsvars5 = 7.26736
+9: 781.581	192.476	161.973
+TreeS1
+   signal events = 3457
+   background events = 295
+Current tree (TreeS2) entries: 3795
+obsvars = 843.254, addobsvars0 = 847.728, addobsvars1 = 4.47402
+obsvars = 278.123, addobsvars2 = 268.044, addobsvars3 = 10.0794
+obsvars = 261.475, addobsvars4 = 271.717, addobsvars5 = 10.2419
+0: 843.254	278.123	261.475
+obsvars = 826.048, addobsvars0 = 830.403, addobsvars1 = 4.35528
+obsvars = 286.201, addobsvars2 = 280.372, addobsvars3 = 5.82921
+obsvars = 301.233, addobsvars4 = 309.537, addobsvars5 = 8.30418
+1: 826.048	286.201	301.233
+obsvars = 792.49, addobsvars0 = 817.395, addobsvars1 = 24.905
+obsvars = 271.269, addobsvars2 = 261.564, addobsvars3 = 9.7045
+obsvars = 256.909, addobsvars4 = 262.657, addobsvars5 = 5.74819
+2: 792.49	271.269	256.909
+obsvars = 839.132, addobsvars0 = 843.89, addobsvars1 = 4.75856
+obsvars = 281.375, addobsvars2 = 274.805, addobsvars3 = 6.56946
+obsvars = 256.191, addobsvars4 = 265.961, addobsvars5 = 9.76916
+3: 839.132	281.375	256.191
+obsvars = 822.294, addobsvars0 = 832.179, addobsvars1 = 9.88442
+obsvars = 248.504, addobsvars2 = 242.813, addobsvars3 = 5.69092
+obsvars = 346.407, addobsvars4 = 358.317, addobsvars5 = 11.9101
+4: 822.294	248.504	346.407
+obsvars = 881.795, addobsvars0 = 886.074, addobsvars1 = 4.27916
+obsvars = 334.744, addobsvars2 = 328.875, addobsvars3 = 5.86865
+obsvars = 296.851, addobsvars4 = 304.109, addobsvars5 = 7.25857
+5: 881.795	334.744	296.851
+obsvars = 783.864, addobsvars0 = 790.474, addobsvars1 = 6.60962
+obsvars = 131.255, addobsvars2 = 125.42, addobsvars3 = 5.83536
+obsvars = 130.871, addobsvars4 = 135.606, addobsvars5 = 4.73524
+6: 783.864	131.255	130.871
+obsvars = 787.64, addobsvars0 = 794.888, addobsvars1 = 7.24823
+obsvars = 132.994, addobsvars2 = 127.483, addobsvars3 = 5.51124
+obsvars = 121.436, addobsvars4 = 125.515, addobsvars5 = 4.07927
+7: 787.64	132.994	121.436
+obsvars = 797.633, addobsvars0 = 800.879, addobsvars1 = 3.24585
+obsvars = 115.424, addobsvars2 = 109.614, addobsvars3 = 5.81013
+obsvars = 140.542, addobsvars4 = 145.305, addobsvars5 = 4.76281
+8: 797.633	115.424	140.542
+obsvars = 801.718, addobsvars0 = 804.353, addobsvars1 = 2.63507
+obsvars = 122.696, addobsvars2 = 117.293, addobsvars3 = 5.40334
+obsvars = 117.713, addobsvars4 = 122.449, addobsvars5 = 4.73528
+9: 801.718	122.696	117.713
+TreeS2
+   signal events = 3261
+   background events = 534
+Current tree (TreeS3) entries: 4462
+obsvars = 773.866, addobsvars0 = 780.358, addobsvars1 = 6.49201
+obsvars = 100.29, addobsvars2 = 97.0725, addobsvars3 = 3.21774
+obsvars = 108.611, addobsvars4 = 111.843, addobsvars5 = 3.2315
+0: 773.866	100.29	108.611
+obsvars = 813.799, addobsvars0 = 816.011, addobsvars1 = 2.21255
+obsvars = 107.319, addobsvars2 = 103.942, addobsvars3 = 3.377
+obsvars = 118.758, addobsvars4 = 121.533, addobsvars5 = 2.77504
+1: 813.799	107.319	118.758
+obsvars = 796.699, addobsvars0 = 804.532, addobsvars1 = 7.83313
+obsvars = 103.699, addobsvars2 = 100.428, addobsvars3 = 3.27095
+obsvars = 105.657, addobsvars4 = 108.274, addobsvars5 = 2.61673
+2: 796.699	103.699	105.657
+obsvars = 799.791, addobsvars0 = 803.223, addobsvars1 = 3.43217
+obsvars = 107.229, addobsvars2 = 101.941, addobsvars3 = 5.28727
+obsvars = 108.713, addobsvars4 = 111.939, addobsvars5 = 3.226
+3: 799.791	107.229	108.713
+obsvars = 798.648, addobsvars0 = 801.924, addobsvars1 = 3.27549
+obsvars = 113.85, addobsvars2 = 110.318, addobsvars3 = 3.53202
+obsvars = 117.613, addobsvars4 = 120.475, addobsvars5 = 2.86174
+4: 798.648	113.85	117.613
+obsvars = 761.905, addobsvars0 = 780.225, addobsvars1 = 18.3201
+obsvars = 341.324, addobsvars2 = 326.163, addobsvars3 = 15.1602
+obsvars = 293.183, addobsvars4 = 300.727, addobsvars5 = 7.54376
+5: 761.905	341.324	293.183
+obsvars = 877.948, addobsvars0 = 885.767, addobsvars1 = 7.81982
+obsvars = 300.256, addobsvars2 = 295.027, addobsvars3 = 5.22947
+obsvars = 238.316, addobsvars4 = 285.385, addobsvars5 = 47.0697
+6: 877.948	300.256	238.316
+obsvars = 877.336, addobsvars0 = 882.971, addobsvars1 = 5.63467
+obsvars = 298.843, addobsvars2 = 293.317, addobsvars3 = 5.52613
+obsvars = 301.785, addobsvars4 = 308.253, addobsvars5 = 6.46849
+7: 877.336	298.843	301.785
+obsvars = 875.025, addobsvars0 = 882.259, addobsvars1 = 7.23444
+obsvars = 255.368, addobsvars2 = 249.461, addobsvars3 = 5.90673
+obsvars = 222.981, addobsvars4 = 231.316, addobsvars5 = 8.33507
+8: 875.025	255.368	222.981
+obsvars = 875.154, addobsvars0 = 878.474, addobsvars1 = 3.32092
+obsvars = 303.368, addobsvars2 = 298.365, addobsvars3 = 5.00227
+obsvars = 261.804, addobsvars4 = 268.679, addobsvars5 = 6.87519
+9: 875.154	303.368	261.804
+TreeS3
+   signal events = 2233
+   background events = 2229
+Current tree (TreeS4) entries: 4605
+obsvars = 754.393, addobsvars0 = 763.151, addobsvars1 = 8.75783
+obsvars = 326.905, addobsvars2 = 321.341, addobsvars3 = 5.56392
+obsvars = 349.22, addobsvars4 = 360.344, addobsvars5 = 11.1241
+0: 754.393	326.905	349.22
+obsvars = 769.254, addobsvars0 = 780.46, addobsvars1 = 11.2057
+obsvars = 320.742, addobsvars2 = 306.793, addobsvars3 = 13.9498
+obsvars = 367.585, addobsvars4 = 376.973, addobsvars5 = 9.38811
+1: 769.254	320.742	367.585
+obsvars = 777.531, addobsvars0 = 787.646, addobsvars1 = 10.1145
+obsvars = 311.148, addobsvars2 = 295.826, addobsvars3 = 15.3219
+obsvars = 308.905, addobsvars4 = 327.415, addobsvars5 = 18.5098
+2: 777.531	311.148	308.905
+obsvars = 754.72, addobsvars0 = 757.143, addobsvars1 = 2.42277
+obsvars = 315.807, addobsvars2 = 305.605, addobsvars3 = 10.2019
+obsvars = 243.306, addobsvars4 = 252.455, addobsvars5 = 9.14911
+3: 754.72	315.807	243.306
+obsvars = 774.821, addobsvars0 = 787.692, addobsvars1 = 12.8718
+obsvars = 298.88, addobsvars2 = 288.659, addobsvars3 = 10.221
+obsvars = 239.222, addobsvars4 = 245.298, addobsvars5 = 6.07638
+4: 774.821	298.88	239.222
+obsvars = 717.24, addobsvars0 = 724.583, addobsvars1 = 7.34295
+obsvars = 284.185, addobsvars2 = 278.533, addobsvars3 = 5.65193
+obsvars = 253.277, addobsvars4 = 262.393, addobsvars5 = 9.11554
+5: 717.24	284.185	253.277
+obsvars = 729.18, addobsvars0 = 747.899, addobsvars1 = 18.7191
+obsvars = 312.511, addobsvars2 = 301.795, addobsvars3 = 10.7166
+obsvars = 223.045, addobsvars4 = 237.039, addobsvars5 = 13.9942
+6: 729.18	312.511	223.045
+obsvars = 718.17, addobsvars0 = 721.356, addobsvars1 = 3.18652
+obsvars = 294.096, addobsvars2 = 283.622, addobsvars3 = 10.4748
+obsvars = 234.261, addobsvars4 = 243.894, addobsvars5 = 9.63275
+7: 718.17	294.096	234.261
+obsvars = 732.269, addobsvars0 = 735.571, addobsvars1 = 3.30147
+obsvars = 292.258, addobsvars2 = 280.716, addobsvars3 = 11.5423
+obsvars = 248.3, addobsvars4 = 259.161, addobsvars5 = 10.8614
+8: 732.269	292.258	248.3
+obsvars = 729.351, addobsvars0 = 731.825, addobsvars1 = 2.4737
+obsvars = 310.887, addobsvars2 = 299.98, addobsvars3 = 10.9074
+obsvars = 230.663, addobsvars4 = 241.545, addobsvars5 = 10.8823
+9: 729.351	310.887	230.663
+TreeS4
+   signal events = 314
+   background events = 4291
+Current tree (TreeS5) entries: 4
+obsvars = 800.509, addobsvars0 = 806.927, addobsvars1 = 6.418
+obsvars = 284.757, addobsvars2 = 275.574, addobsvars3 = 9.18342
+obsvars = 245.249, addobsvars4 = 255.298, addobsvars5 = 10.0483
+0: 800.509	284.757	245.249
+obsvars = 761.085, addobsvars0 = 779.257, addobsvars1 = 18.1718
+obsvars = 249.664, addobsvars2 = 244.039, addobsvars3 = 5.62556
+obsvars = 257.267, addobsvars4 = 340.692, addobsvars5 = 83.4246
+1: 761.085	249.664	257.267
+obsvars = 734.098, addobsvars0 = 760.044, addobsvars1 = 25.9463
+obsvars = 222.254, addobsvars2 = 215.782, addobsvars3 = 6.47204
+obsvars = 179.002, addobsvars4 = 186.756, addobsvars5 = 7.75369
+2: 734.098	222.254	179.002
+obsvars = 752.03, addobsvars0 = 761.58, addobsvars1 = 9.54991
+obsvars = 531.99, addobsvars2 = 517.124, addobsvars3 = 14.8658
+obsvars = 326.065, addobsvars4 = 330.928, addobsvars5 = 4.86356
+3: 752.03	531.99	326.065
+TreeS5
+   signal events = 1
+   background events = 3
+Setting data tree
+0: Norm = -0.337057	0.00156933	-0.695169	
+1: Norm = -0.52117	-0.168096	-0.673363	
+2: Norm = -0.647201	-0.300617	-0.815369	
+3: Norm = -0.563458	1.19686	-0.548537	
+Mean = -0.517222	0.18243	-0.683109	
+0: Diff = 0.180164	-0.18086	-0.0120596	
+1: Diff = -0.00394881	-0.350526	0.00974608	
+2: Diff = -0.129979	-0.483047	-0.132259	
+3: Diff = -0.0462363	1.01443	0.134573	
+Matrix:
+0.017169 | -0.005106 | 0.00291921 | 
+-0.005106 | 0.472662 | 0.0663891 | 
+0.00291921 | 0.0663891 | 0.0119476 | 
+Diagonal values: 0.482085 0.0179665 0.00172782 
+Final error = 0.482422

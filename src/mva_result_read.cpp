@@ -13,7 +13,7 @@ ResultRead::ResultRead()
 
    itemp = new int[6];
    stemp = new string[2];
-   ftemp = new float[5];
+   ftemp = new float[6];
    fraction = new float[3];
 }
 
@@ -146,6 +146,9 @@ float ResultRead::GetFraction(int sigbackdata, float norm)
          ftemp[0] = 0;
          ftemp[1] = 0;
          ftemp[2] = 0;
+         ftemp[3] = 0;
+         ftemp[4] = 0;
+         ftemp[5] = 0;
       }
 
       if(treeType[i] == itemp[0])
@@ -156,9 +159,16 @@ float ResultRead::GetFraction(int sigbackdata, float norm)
 	    // Background events (save background fraction)
             if(itemp[0] == 2)
 	    {
-               ftemp[0] += bgdlikeEvents[i]/allEvents[i];
+/*               ftemp[0] += bgdlikeEvents[i]/allEvents[i];
                ftemp[1] += bgdlikeEvents[i+itemp[1]]/allEvents[i+itemp[1]];
-               ftemp[2] += bgdlikeEvents[i+2*itemp[1]]/allEvents[i+2*itemp[1]];
+               ftemp[2] += bgdlikeEvents[i+2*itemp[1]]/allEvents[i+2*itemp[1]];*/
+	       
+               ftemp[0] += bgdlikeEvents[i];
+               ftemp[1] += bgdlikeEvents[i+itemp[1]];
+               ftemp[2] += bgdlikeEvents[i+2*itemp[1]];
+               ftemp[3] += allEvents[i];
+               ftemp[4] += allEvents[i+itemp[1]];
+               ftemp[5] += allEvents[i+2*itemp[1]];
 	       nrbacktrees++;
 //               cout << i << ": Background mean =\t" << ftemp[0] << endl;
 //               cout << i << ": Background neg =\t" << ftemp[1] << endl;
@@ -256,9 +266,12 @@ float ResultRead::GetFraction(int sigbackdata, float norm)
    {
       if(norm == -1)
       {
-         fraction[0] = ftemp[0]/(float)nrbacktrees;
+         fraction[0] = ftemp[0]/ftemp[3];
+         fraction[1] = TMath::Abs(ftemp[0]/ftemp[3] - ftemp[1]/ftemp[4]);
+         fraction[2] = TMath::Abs(ftemp[0]/ftemp[3] - ftemp[2]/ftemp[5]);
+/*         fraction[0] = ftemp[0]/(float)nrbacktrees;
          fraction[1] = TMath::Abs(ftemp[0] - ftemp[2])/(float)nrbacktrees;
-         fraction[2] = TMath::Abs(ftemp[0] - ftemp[1])/(float)nrbacktrees;
+         fraction[2] = TMath::Abs(ftemp[0] - ftemp[1])/(float)nrbacktrees;*/
       }
    }
    else

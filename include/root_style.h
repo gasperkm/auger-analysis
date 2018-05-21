@@ -10,6 +10,7 @@ private:
    int labelsize, labelfont, titlesize, titlefont, textsize, textfont;
    int c_SignalLine, c_SignalFill, c_BackgroundLine, c_BackgroundFill, c_DataLine, c_DataFill, c_DataNormLine, c_DataNormFill, c_ResidLine, c_ResidFill;
    int signalfill, backgroundfill, datafill, residfill;
+   double legendBaseHeight;
    TStyle *basestyle;
 public:
    RootStyle();
@@ -28,6 +29,8 @@ public:
    void SetGraphColor(TGraphAsymmErrors *plot, int sigbackdata);
 
    void SetHistColorSimple(TH1 *plot, int sigbackdata);
+
+   double SetLegendHeight(int nrfigs);
 };
 
 #endif

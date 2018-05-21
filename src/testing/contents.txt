@@ -1,0 +1,83 @@
+------------------------
+--- bias_corrections ---
+------------------------
+Using FD bias corrections from https://www.auger.unam.mx/AugerWiki/XmaxHeatIcrc2017, draw plots for both bias corrections (HECO and Hybrid) to see their impact on energy and Xmax.
+
+[Status] = Included into main program.
+
+-----------------------------------
+--- converting_xmax_to_fraction ---
+-----------------------------------
+Test to see, if conversion from proton fraction to lnA is correct. Using Xmax and lnA moments from https://www.auger.unam.mx/AugerWiki/XmaxHeatIcrc2017, convert Xmax to proton fraction and then to lnA. Compare converted values to lnA moments to see the difference.
+
+[Status] = Side test to see, if conversion is correct. Conversio included into main program.
+
+------------------------------
+--- covariance_calculation ---
+------------------------------
+Calculating covariances to see the error values we get like this. Testing the old calculation of MVA uncertainty.
+
+[Status] = Fixed in main program (old calculation was wrong).
+
+-------------------
+--- error_sigma ---
+-------------------
+Improvement of covariance_calculation for use with auger-analysis input files. Calculates the Mean and RMS of observable distributions in order to check the uncertainty on MVA cut calculated from observable uncertainties.
+
+[Status] = Included into main program.
+
+-----------------------------
+--- mass_composition_plot ---
+-----------------------------
+Ploting of proton fractions from histogram fit analysis.
+
+[Status] = Not yet included into main program.
+
+-------------------------
+--- matrix_operations ---
+-------------------------
+Showcase of matrix operations. Calculating inverses.
+
+[Status] = Included in old way of calculating uncertainties (producing mva_error.root file).
+
+-----------------------
+--- print_fractions ---
+-----------------------
+Plotting of lnA values for different MVA analysis runs.
+
+[Status] = Included into support program (data_fraction_plots).
+
+----------------------
+--- risetime_s1000 ---
+----------------------
+Testing to see, if combining risetime and S1000 would bring any better separation. Plotting observable distributions.
+
+[Status] = Still under research.
+
+------------------------
+--- rootfile_vectors ---
+------------------------
+Showcase of writing and reading vectors to ROOT files.
+
+[Status] = Included in old way of calculating uncertainties (producing mva_error.root file).
+
+--------------------
+--- tmva_example ---
+--------------------
+Testing example of an MVA analysis with single signal and background trees.
+
+[Status] = Included in main program (current MVA analysis).
+
+--------------------------
+--- tmva_example-multi ---
+--------------------------
+Testing example of an MVA analysis with multiple input trees. Multiclassification problem. Working on auger-analysis input files.
+
+[Status] = Still under research.
+
+-----------------------
+--- tmva_multiclass ---
+-----------------------
+Testing example of an MVA analysis with multiple input trees. Multiclassification problem. Working on testing files from ROOT TMVA.
+
+[Status] = Still under research.
