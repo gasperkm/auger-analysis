@@ -99,6 +99,10 @@ public:
 
     wxArrayInt selections;
 
+    vector<double> esplitBins;
+    bool customBinning;
+    double oldBinSettings[3];
+
     // File open variables
     string *currentMvaDir;
     string *currentRewriteDir;
@@ -129,6 +133,7 @@ public:
     LabelDrop *cutObservables;
     CheckNEntry *cutEnergy;
     LabelNEntryDropButton *cutEnergyBins;
+    LabelTEntryButton *cutEnergyBinsCustom;
     CheckNEntry *cutZenith;
     CheckNEntry *cutRisetime;
     LabelNEntryDropButton *cutZenithBins;
@@ -149,7 +154,10 @@ public:
     void EnableMvaFile(wxCommandEvent& event);
     void UpdateEnergyBinSelect(wxSpinDoubleEvent& event);
     void RunEnergyBinSelect();
+    void RunEnergyBinSplitSelect();
     void CheckEnergyBin(wxCommandEvent& event);
+    void CustomEnergyBins(wxCommandEvent& event);
+    void CustomEnergyBinsDisable(wxCommandEvent& event);
     void UpdateZenithBinSelect(wxSpinDoubleEvent& event);
     void RunZenithBinSelect();
     void CheckZenithBin(wxCommandEvent& event);
@@ -161,7 +169,7 @@ public:
     void ApplyMvaCut(wxCommandEvent& event);
     void SetDefaultMva(wxCommandEvent& event);
     int StartRewrite(string *outfile);
-    int StartFileSplit(string infile);
+    int StartFileSplit(string infile, int cursel, int nrsel);
     int StartCombine(string *outfile);
     int StartMerge(string *outfile);
     void EditList(wxCommandEvent& event);
@@ -171,7 +179,7 @@ public:
     int MvaNoteObservables(int count);
     int MvaTreeFile(string *infilename, string *outfilename, int *nrEvents);
     int MvaSetTrees(int type, TFile *ifile, TTree *outtree);
-    int IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, vector<int> *seleye, bool split);
+    int IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, vector<int> *seleye, bool split, int splitbin);
     int PerformMvaAnalysis(string *infilename, string *outfilename, int *curcount);
     void SetTmvaType(TMVA::Factory *factory, int nr, string *formula);
     int BookTheMethod(TMVA::Factory *factory);
@@ -205,16 +213,18 @@ const int ID_CHANGEOBSSELECT 	= 300;
 const int ID_ENERGYLIMITMIN 	= 301;
 const int ID_ENERGYLIMITMAX 	= 302;
 const int ID_ENERGYBIN 		= 303;
-const int ID_CHECKENERGYBINS 	= 304;
-const int ID_ZENITHLIMITMIN 	= 305;
-const int ID_ZENITHLIMITMAX 	= 306;
-const int ID_ZENITHBIN 		= 307;
-const int ID_CHECKZENITHBINS 	= 308;
-const int ID_STARTMVA 		= 309;
-const int ID_TEMPFILE 		= 310;
-const int ID_MVACUT 		= 311;
-const int ID_CHECKBINS 		= 312;
-const int ID_DEFOPTIONS 	= 313;
+const int ID_ENERGYBINCUSTOM	= 304;
+const int ID_CUSTOMDISABLE	= 305;
+const int ID_CHECKENERGYBINS 	= 306;
+const int ID_ZENITHLIMITMIN 	= 307;
+const int ID_ZENITHLIMITMAX 	= 308;
+const int ID_ZENITHBIN 		= 309;
+const int ID_CHECKZENITHBINS 	= 310;
+const int ID_STARTMVA 		= 311;
+const int ID_TEMPFILE 		= 312;
+const int ID_MVACUT 		= 313;
+const int ID_CHECKBINS 		= 314;
+const int ID_DEFOPTIONS 	= 315;
 
 // Additional IDs for any custom dialogs
 const int ID_MVACUTDIALOG	= 401;

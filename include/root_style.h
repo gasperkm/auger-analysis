@@ -17,6 +17,7 @@ public:
 
    void SetBaseStyle();
 
+   void SetAxisTitles(TF1 *plot, string xtitle, string ytitle);
    void SetAxisTitles(TH1 *plot, string xtitle, string ytitle);
    void SetAxisTitles(TH2 *plot, string xtitle, string ytitle);
    void SetAxisTitles(TGraph *plot, string xtitle, string ytitle);

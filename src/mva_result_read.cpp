@@ -50,6 +50,7 @@ int ResultRead::ReadFile(string inname)
    fraction[1] = -1;
    fraction[2] = -1;
 
+   char *ctemp = new char[1024];
    ifstream *ifile = new ifstream;
    ifile->open(inname.c_str(), ifstream::in);
 
@@ -65,7 +66,12 @@ int ResultRead::ReadFile(string inname)
 
          for(int j = 0; j < *nrtrees; j++)
          {
-            *ifile >> itemp[0] >> itemp[1] >> itemp[2] >> itemp[3] >> stemp[0];
+//            *ifile >> itemp[0] >> itemp[1] >> itemp[2] >> itemp[3] >> stemp[0];
+            *ifile >> itemp[0] >> itemp[1] >> itemp[2] >> itemp[3];
+//	    cout << "Numbers = " << itemp[0] << ", " << itemp[1] << ", " << itemp[2] << ", " << itemp[3] << endl;
+	    ifile->getline(ctemp, 1024, '\n');
+//	    cout << "Line = " << ctemp << endl;
+	    stemp[0] = string(ctemp);
 
 /*            if(itemp[0] > 0)
             {*/
@@ -80,11 +86,13 @@ int ResultRead::ReadFile(string inname)
 
       ifile->close();
       delete ifile;
+      delete[] ctemp;
       return 0;
    }
    else
    {
       delete ifile;
+      delete[] ctemp;
       return 1;
    }
 }

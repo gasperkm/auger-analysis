@@ -3,6 +3,7 @@
 #include <time.h>
 #include <cstdlib>
 #include "separate_functions.h"
+#include "mva_methods.h"
 #include "mva_result_read.h"
 #include "mva_fit_histogram.h"
 
@@ -14,9 +15,23 @@ MvaFitHist::MvaFitHist()
    itemp = new int[3];
    dtemp = new double[3];
 
-   nrbins = 100;
-   xlim[0] = -0.25;
-   xlim[1] = 1.25;
+   nrbins = -1;
+   cout << endl;
+   while(nrbins < 4)
+   {
+      cout << "Select number of bins (min of 4): ";
+      cin >> nrbins;
+   }
+
+   cout << endl;
+   PrintMethods();
+   cout << "Select the used MVA type: ";
+   cin >> stemp[0];
+
+   xlim[0] = GetMethodMin(stemp[0]);
+   xlim[1] = GetMethodMax(stemp[0]);
+   cout << "MVA limits (" << stemp[0] << "): " << xlim[0] << ", " << xlim[1] << endl;
+
    treeSelect = -1;
 
    norm = new double[40];
@@ -471,15 +486,15 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
    if(fitproc == 0)
    {
       stemp[0] = "#chi^{2}/NDF = " + ToString(chiVal, 4) + "/" + ToString(chiNdf) + " = " + ToString(chiVal/(double)chiNdf, 4);
-      chiText.DrawLatex(0.5, TMath::MaxElement(2, yrange), stemp[0].c_str());
+      chiText.DrawLatex((xlim[0]+xlim[1])/2., TMath::MaxElement(2, yrange), stemp[0].c_str());
 
       stemp[0] = "r_{p} = " + ToString(sigFrac[0], 4);
-      chiText.DrawLatex(0.5, 0.94*TMath::MaxElement(2, yrange), stemp[0].c_str());
+      chiText.DrawLatex((xlim[0]+xlim[1])/2., 0.94*TMath::MaxElement(2, yrange), stemp[0].c_str());
    }
    else if(fitproc == 1)
    {
       stemp[0] = "#chi^{2}/NDF = " + ToString(chiVal, 4) + "/" + ToString(chiNdf) + " = " + ToString(chiVal/(double)chiNdf, 4) + ", status = " + ToString(status) + ", step = " + ToString(selStep, 3);
-      chiText.DrawLatex(0.5, TMath::MaxElement(2, yrange), stemp[0].c_str());
+      chiText.DrawLatex((xlim[0]+xlim[1])/2., TMath::MaxElement(2, yrange), stemp[0].c_str());
 
       dtemp[0] = 1.;
       dtemp[1] = 0.;
@@ -490,12 +505,12 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
             dtemp[0] -= sigFrac[i];
             dtemp[1] += sigFracErr[i];
             stemp[0] = "r_{" + ToString(i+1) + "} = " + ToString(sigFrac[i], 4) + " #pm " + ToString(sigFracErr[i], 4) + " (" + treeNames[i] + ")";
-            chiText.DrawLatex(0.5, (1.-0.06*((double)i+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
+            chiText.DrawLatex((xlim[0]+xlim[1])/2., (1.-0.06*((double)i+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
          }
          else
          {
             stemp[0] = "r_{" + ToString(i+1) + "} = " + ToString(dtemp[0], 4) + " #pm " + ToString(dtemp[1], 4) + " (" + treeNames[i] + ")";
-            chiText.DrawLatex(0.5, (1.-0.06*((double)i+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
+            chiText.DrawLatex((xlim[0]+xlim[1])/2., (1.-0.06*((double)i+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
          }
       }
    }

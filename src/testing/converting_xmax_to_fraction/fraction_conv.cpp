@@ -105,6 +105,15 @@ void SetStyle()
    gROOT->ForceStyle(1);
 }
 
+void SetAxisTitles(TF1 *plot, string xtitle, string ytitle)
+{
+   plot->SetTitle("");
+   plot->GetXaxis()->SetTitle(xtitle.c_str());
+   plot->GetXaxis()->CenterTitle();
+   plot->GetYaxis()->SetTitle(ytitle.c_str());
+   plot->GetYaxis()->CenterTitle();
+}
+
 void SetAxisTitles(TGraph *plot, string xtitle, string ytitle)
 {
    plot->SetTitle("");
@@ -121,6 +130,17 @@ void SetAxisTitles(TGraphErrors *plot, string xtitle, string ytitle)
    plot->GetXaxis()->CenterTitle();
    plot->GetYaxis()->SetTitle(ytitle.c_str());
    plot->GetYaxis()->CenterTitle();
+}
+
+// Xmax parametrization function for simulations
+// Input parameters: 0 = E0, 1 = X0, 2 = D, 3 = eta, 4 = delta, 5 = A [energies are in units of log(E/eV)]
+double ParamFunction(double *x, double *par)
+{
+	// Expanding Log10(E/E0) into Log10(E) - Log10(E0)
+	double logTerm1 = x[0] - par[0];
+	// Expanding Log10(E/(E0*A)) into Log10(E) - Log10(E0) - Log10(A)
+	double logTerm2 = logTerm1 - TMath::Log10(par[5]);
+	return par[1] + par[2]*logTerm2 + par[3]*TMath::Log(par[5]) + par[4]*TMath::Log(par[5])*logTerm1;
 }
 
 void fraction_conv()
@@ -169,7 +189,7 @@ void fraction_conv()
 
 	ifile.close();
 
-	// Simulations estimated from ICRC 2017 X_max plot)
+/*	// Simulations estimated from ICRC 2017 X_max plot)
 	double xlimit[] = {xbins[0], xbins[xbins.size()-1]};
 	double plimitEpos[] = {705., 841.};
 	double felimitEpos[] = {600., 746.};
@@ -190,7 +210,56 @@ void fraction_conv()
 	cout << "pKEpos = " << pKEpos << ", pCEpos = " << pCEpos << endl;
 	cout << "feKEpos = " << feKEpos << ", feCEpos = " << feCEpos << endl;
 	cout << "pKQgs = " << pKQgs << ", pCQgs = " << pCQgs << endl;
-	cout << "feKQgs = " << feKQgs << ", feCQgs = " << feCQgs << endl;
+	cout << "feKQgs = " << feKQgs << ", feCQgs = " << feCQgs << endl;*/
+
+	// Simulations gathered from parametrization (https://www.auger.unam.mx/AugerWiki/MassComposition, GAP 2018-021, JCAP 02 (2013) 026))
+	double ylimit[] = {590., 841.};
+	double E0param = 19.;
+	vector<double> eposParam, qgsParam;
+	eposParam.push_back(806.0);
+	eposParam.push_back(56.3);
+	eposParam.push_back(0.35);
+	eposParam.push_back(1.04);
+	qgsParam.push_back(790.1);
+	qgsParam.push_back(54.2);
+	qgsParam.push_back(-0.42);
+	qgsParam.push_back(0.69);
+
+	TF1 *pEpos = new TF1("pEpos", ParamFunction, 17., 20., 6);
+	pEpos->SetParameter(0, E0param);
+	for(int i = 0; i < eposParam.size(); i++)
+		pEpos->SetParameter(i+1, eposParam[i]);
+	pEpos->SetParameter(5, 1.);
+
+	TF1 *heEpos = new TF1("heEpos", ParamFunction, 17., 20., 6);
+	heEpos->SetParameter(0, E0param);
+	for(int i = 0; i < eposParam.size(); i++)
+		heEpos->SetParameter(i+1, eposParam[i]);
+	heEpos->SetParameter(5, 4.);
+
+	TF1 *oEpos = new TF1("oEpos", ParamFunction, 17., 20., 6);
+	oEpos->SetParameter(0, E0param);
+	for(int i = 0; i < eposParam.size(); i++)
+		oEpos->SetParameter(i+1, eposParam[i]);
+	oEpos->SetParameter(5, 16.);
+
+	TF1 *feEpos = new TF1("feEpos", ParamFunction, 17., 20., 6);
+	feEpos->SetParameter(0, E0param);
+	for(int i = 0; i < eposParam.size(); i++)
+		feEpos->SetParameter(i+1, eposParam[i]);
+	feEpos->SetParameter(5, 56.);
+
+	TF1 *pQgs = new TF1("pQgs", ParamFunction, 17., 20., 6);
+	pQgs->SetParameter(0, E0param);
+	for(int i = 0; i < qgsParam.size(); i++)
+		pQgs->SetParameter(i+1, qgsParam[i]);
+	pQgs->SetParameter(5, 1.);
+
+	TF1 *feQgs = new TF1("feQgs", ParamFunction, 17., 20., 6);
+	feQgs->SetParameter(0, E0param);
+	for(int i = 0; i < qgsParam.size(); i++)
+		feQgs->SetParameter(i+1, qgsParam[i]);
+	feQgs->SetParameter(5, 56.);
 
 	vector<double> pbinsEpos;
 	vector<double> febinsEpos;
@@ -204,34 +273,71 @@ void fraction_conv()
 	int nrfigs;
 	TCanvas *c1 = new TCanvas("c1","",1200,900);
 	c1->SetGrid();
-	TGraph *pgrEpos = new TGraph(nbins);
+/*	TGraph *pgrEpos = new TGraph(nbins);
 	TGraph *fegrEpos = new TGraph(nbins);
 	TGraph *pgrQgs = new TGraph(nbins);
-	TGraph *fegrQgs = new TGraph(nbins);
+	TGraph *fegrQgs = new TGraph(nbins);*/
 	TGraphErrors *dgr = new TGraphErrors(nbins);
 
 	cout << "Xmax values:" << endl;
 	for(int i = 0; i < nbins; i++)
 	{
-		pbinsEpos.push_back(pKEpos*xbins[i] + pCEpos);
+		pbinsEpos.push_back(pEpos->Eval(xbins[i]));
+		febinsEpos.push_back(feEpos->Eval(xbins[i]));
+		cout << "Epos values " << i << ": E = " << xbins[i] << ",\tp = " << pbinsEpos[i] << ",\tFe = " << febinsEpos[i] << ",\tdata = " << dbins[i] << " (" << dbinsErr[i] << ")" << endl;
+
+		pbinsQgs.push_back(pQgs->Eval(xbins[i]));
+		febinsQgs.push_back(feQgs->Eval(xbins[i]));
+		cout << "Qgs values " << i << ": E = " << xbins[i] << ",\tp = " << pbinsQgs[i] << ",\tFe = " << febinsQgs[i] << ",\tdata = " << dbins[i] << " (" << dbinsErr[i] << ")" << endl;
+/*		pbinsEpos.push_back(pKEpos*xbins[i] + pCEpos);
 		febinsEpos.push_back(feKEpos*xbins[i] + feCEpos);
 		cout << "Epos values " << i << ": E = " << xbins[i] << ",\tp = " << pbinsEpos[i] << ",\tFe = " << febinsEpos[i] << ",\tdata = " << dbins[i] << " (" << dbinsErr[i] << ")" << endl;
 
 		pbinsQgs.push_back(pKQgs*xbins[i] + pCQgs);
 		febinsQgs.push_back(feKQgs*xbins[i] + feCQgs);
-		cout << "Qgs values " << i << ": E = " << xbins[i] << ",\tp = " << pbinsQgs[i] << ",\tFe = " << febinsQgs[i] << ",\tdata = " << dbins[i] << " (" << dbinsErr[i] << ")" << endl;
+		cout << "Qgs values " << i << ": E = " << xbins[i] << ",\tp = " << pbinsQgs[i] << ",\tFe = " << febinsQgs[i] << ",\tdata = " << dbins[i] << " (" << dbinsErr[i] << ")" << endl;*/
 
-		pgrEpos->SetPoint(i, xbins[i], pbinsEpos[i]);
+/*		pgrEpos->SetPoint(i, xbins[i], pbinsEpos[i]);
 		fegrEpos->SetPoint(i, xbins[i], febinsEpos[i]);
 
 		pgrQgs->SetPoint(i, xbins[i], pbinsQgs[i]);
-		fegrQgs->SetPoint(i, xbins[i], febinsQgs[i]);
+		fegrQgs->SetPoint(i, xbins[i], febinsQgs[i]);*/
 
 		dgr->SetPoint(i, xbins[i], dbins[i]);
 		dgr->SetPointError(i, 0, dbinsErr[i]);
 	}
 
-	SetAxisTitles(pgrEpos, "log(E/eV)", "<X_{max}> (g/cm^{2})");
+	SetAxisTitles(pEpos, "log(E/eV)", "<X_{max}> (g/cm^{2})");
+	pEpos->GetYaxis()->SetRangeUser(ylimit[0], ylimit[1]);
+	pEpos->SetLineColor(2);
+	pEpos->SetLineWidth(2);
+	pEpos->Draw();
+
+	heEpos->SetLineColor(13);
+	heEpos->SetLineWidth(2);
+	heEpos->SetLineStyle(2);
+	heEpos->Draw("L;SAME");
+
+	oEpos->SetLineColor(15);
+	oEpos->SetLineWidth(2);
+	oEpos->SetLineStyle(2);
+	oEpos->Draw("L;SAME");
+
+	feEpos->SetLineColor(4);
+	feEpos->SetLineWidth(2);
+	feEpos->Draw("L;SAME");
+
+	pQgs->SetLineColor(2);
+	pQgs->SetLineWidth(2);
+	pQgs->SetLineStyle(linestyle);
+	pQgs->Draw("L;SAME");
+
+	feQgs->SetLineColor(4);
+	feQgs->SetLineWidth(2);
+	feQgs->SetLineStyle(linestyle);
+	feQgs->Draw("L;SAME");
+
+/*	SetAxisTitles(pgrEpos, "log(E/eV)", "<X_{max}> (g/cm^{2})");
 //	pgrEpos->GetXaxis()->SetTitle("log(E/eV)");
 //	pgrEpos->GetYaxis()->SetTitle("<X_{max}> (g/cm^{2})");
 	pgrEpos->GetYaxis()->SetRangeUser(felimitQgs[0], plimitEpos[1]);
@@ -251,7 +357,7 @@ void fraction_conv()
 	fegrQgs->SetLineColor(4);
 	fegrQgs->SetLineWidth(2);
 	fegrQgs->SetLineStyle(linestyle);
-	fegrQgs->Draw("L;SAME");
+	fegrQgs->Draw("L;SAME");*/
 
 	dgr->SetMarkerColor(1);
 	dgr->SetMarkerStyle(22);
@@ -263,10 +369,14 @@ void fraction_conv()
 	legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(nrfigs*.03), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
 	legend->SetFillStyle(1001);
 	legend->SetFillColor(c_Legend);
-	legend->AddEntry(pgrEpos, "EPOS protons", "l");
+	legend->AddEntry(pEpos, "EPOS protons", "l");
+	legend->AddEntry(feEpos, "EPOS iron", "l");
+	legend->AddEntry(pQgs, "QGSJET-II protons", "l");
+	legend->AddEntry(feQgs, "QGSJET-II iron", "l");
+/*	legend->AddEntry(pgrEpos, "EPOS protons", "l");
 	legend->AddEntry(fegrEpos, "EPOS iron", "l");
 	legend->AddEntry(pgrQgs, "QGSJET-II protons", "l");
-	legend->AddEntry(fegrQgs, "QGSJET-II iron", "l");
+	legend->AddEntry(fegrQgs, "QGSJET-II iron", "l");*/
 	legend->AddEntry(dgr, "Auger data", "pl");
 	legend->SetBorderSize(1);
 	legend->SetMargin(0.3);
@@ -274,8 +384,10 @@ void fraction_conv()
 
 	c1->SaveAs("xmax_plot.pdf");
 
-	pgrEpos->GetXaxis()->SetRangeUser(18.5,19.7);
-	pgrEpos->GetYaxis()->SetRangeUser(650,plimitEpos[1]);
+	pEpos->GetXaxis()->SetRangeUser(18.5,19.7);
+	pEpos->GetYaxis()->SetRangeUser(650,ylimit[1]);
+/*	pgrEpos->GetXaxis()->SetRangeUser(18.5,19.7);
+	pgrEpos->GetYaxis()->SetRangeUser(650,plimitEpos[1]);*/
 	c1->SaveAs("xmax_plot_zoom.pdf");
 
 	TCanvas *c2 = new TCanvas("c2","",1200,900);

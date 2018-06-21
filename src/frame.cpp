@@ -169,9 +169,12 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    vitemp->push_back(-1);
    vdtemp->push_back(21.);
    vitemp->push_back(-1);
-   splitCutEnergy = new CheckNEntry(leftmvapanel, false, wxT("Energy limits:"), -1, vdtemp, vitemp, rwidth);
+   vdtemp->push_back(1.);
+   vitemp->push_back(-1);
+   splitCutEnergy = new CheckNEntry(leftmvapanel, false, wxT("Energy limits and bins:"), -1, vdtemp, vitemp, rwidth);
    splitCutEnergy->SetNEntryFormat(splitCutEnergy->widgetNE[0], 2, 0.01, 2, 0., 25.);
    splitCutEnergy->SetNEntryFormat(splitCutEnergy->widgetNE[1], 2, 0.01, 2, 0., 25.);
+   splitCutEnergy->SetNEntryFormat(splitCutEnergy->widgetNE[2], 0, 1, 2, 1., 30.);
    vbox->Add(splitCutEnergy->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
 
    // Check + label + NEntry for choosing zenith angle cut (splitting)
@@ -311,6 +314,21 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    RunEnergyBinSelect();
    Connect(ID_CHECKENERGYBINS, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::CheckEnergyBin));
 
+   // Label + TEntry + button for choosing custom energy binning (from a file)
+   if(!vstemp->empty()) vstemp->erase(vstemp->begin(), vstemp->end());
+   if(!vitemp->empty()) vitemp->erase(vitemp->begin(), vitemp->end());
+   vstemp->push_back("Select file...");
+   vitemp->push_back(ID_ENERGYBINCUSTOM);
+   vstemp->push_back("Disable");
+   vitemp->push_back(ID_CUSTOMDISABLE);
+
+   cutEnergyBinsCustom = new LabelTEntryButton(rightmvapanel, wxT("Custom energy binning:"), wxT(""), -1, vstemp, vitemp, rwidth);
+   (cutEnergyBinsCustom->widgetTE)->SetEditable(false);
+   vbox->Add(cutEnergyBinsCustom->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   Connect(ID_ENERGYBINCUSTOM, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::CustomEnergyBins));
+   Connect(ID_CUSTOMDISABLE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::CustomEnergyBinsDisable));
+   customBinning = false;
+
    // Check + label + NEntry for choosing zenith angle cut
    if(!vitemp->empty()) vitemp->erase(vitemp->begin(), vitemp->end());
    if(!vdtemp->empty()) vdtemp->erase(vdtemp->begin(), vdtemp->end());
@@ -360,7 +378,7 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    if(!vitemp->empty()) vitemp->erase(vitemp->begin(), vitemp->end());
    if(!vitemp2->empty()) vitemp2->erase(vitemp2->begin(), vitemp2->end());
    if(!vstemp->empty()) vstemp->erase(vstemp->begin(), vstemp->end());
-   vstemp->push_back("Automatically run analysis over all energy bins (word ENERGY is replaced by energy range)");
+   vstemp->push_back("Automatically run analysis over all energy bins");
    vitemp->push_back(0);
    vitemp2->push_back(-1);
    vstemp->push_back("Open MVA graphical interface after training and testing");

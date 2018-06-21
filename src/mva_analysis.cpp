@@ -288,7 +288,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
 
       if(DBGSIG > 1)
          cout << "# MvaSetTrees           #: " << "Event = " << j << endl;
-      ret = IsInsideCuts(invalues, invalues_neg, invalues_pos, seleye, false);
+      ret = IsInsideCuts(invalues, invalues_neg, invalues_pos, seleye, false, 0);
 
       // Combine stereo FD events
       if(ret == 0)
@@ -501,7 +501,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
    return ret;
 }
 
-int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, vector<int> *seleye, bool split)
+int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, vector<int> *seleye, bool split, int splitbin)
 {
    bool *sepcut, *isinside;
    bool *btemp;
@@ -678,16 +678,17 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
             {
                if(!split)
 	       {
-                  if((ftemp[0] > ecutBins[selectedBin[0]]) && (ftemp[0] <= ecutBins[selectedBin[0]+1]))
+                  if((ftemp[0] > ecutBins[2*selectedBin[0]]) && (ftemp[0] <= ecutBins[2*selectedBin[0]+1]))
                      sepcut[0] = true;
 	          else
                      sepcut[0] = false;
 	       }
 	       else
 	       {
-                  ftemp[2] = (float)pow(10, splitCutEnergy->GetNumber(splitCutEnergy->widgetNE[0]));
-                  ftemp[3] = (float)pow(10, splitCutEnergy->GetNumber(splitCutEnergy->widgetNE[1]));
-                  if((ftemp[0] > ftemp[2]) && (ftemp[0] <= ftemp[3]))
+//                  ftemp[2] = (float)pow(10, splitCutEnergy->GetNumber(splitCutEnergy->widgetNE[0]));
+//                  ftemp[3] = (float)pow(10, splitCutEnergy->GetNumber(splitCutEnergy->widgetNE[1]));
+//                  if((ftemp[0] > ftemp[2]) && (ftemp[0] <= ftemp[3]))
+                  if((ftemp[0] > esplitBins[2*splitbin]) && (ftemp[0] <= esplitBins[2*splitbin+1]))
                      sepcut[0] = true;
 	          else
                      sepcut[0] = false;
@@ -755,16 +756,17 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
             {
                if(!split)
 	       {
-                  if((ftemp[0] > ecutBins[selectedBin[0]]) && (ftemp[0] <= ecutBins[selectedBin[0]+1]))
+                  if((ftemp[0] > ecutBins[2*selectedBin[0]]) && (ftemp[0] <= ecutBins[2*selectedBin[0]+1]))
                      sepcut[0] = true;
 	          else
                      sepcut[0] = false;
 	       }
 	       else
 	       {
-                  ftemp[2] = (float)pow(10, splitCutEnergy->GetNumber(splitCutEnergy->widgetNE[0]));
-                  ftemp[3] = (float)pow(10, splitCutEnergy->GetNumber(splitCutEnergy->widgetNE[1]));
-                  if((ftemp[0] > ftemp[2]) && (ftemp[0] <= ftemp[3]))
+//                  ftemp[2] = (float)pow(10, splitCutEnergy->GetNumber(splitCutEnergy->widgetNE[0]));
+//                  ftemp[3] = (float)pow(10, splitCutEnergy->GetNumber(splitCutEnergy->widgetNE[1]));
+//                  if((ftemp[0] > ftemp[2]) && (ftemp[0] <= ftemp[3]))
+                  if((ftemp[0] > esplitBins[2*splitbin]) && (ftemp[0] <= esplitBins[2*splitbin+1]))
                      sepcut[0] = true;
 	          else
                      sepcut[0] = false;

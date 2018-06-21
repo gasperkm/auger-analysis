@@ -24,9 +24,9 @@ $(BIN)/tmvagui: $(SRC)/root_mva/TMVAGui.C
 # -------------------------------------------------------------------
 
 # MVA plotting rules ------------------------------------------------
-$(BIN)/create_mva_plots: $(SRC)/additional_scripts/create_mva_plots.cpp $(SRC)/separate_functions.cpp $(SRC)/root_style.cpp $(SRC)/mva_result_read.cpp
+$(BIN)/create_mva_plots: $(SRC)/additional_scripts/create_mva_plots.cpp $(SRC)/separate_functions.cpp $(SRC)/root_style.cpp $(SRC)/mva_result_read.cpp $(SRC)/mva_methods.cpp
 	@echo "\n# Creating the standalone MVA plotting script -------------------------------"
-	$(CXX) -I. -I$(IDIR) -I$(ROOTINC) $(SRC)/additional_scripts/create_mva_plots.cpp $(SRC)/separate_functions.cpp $(SRC)/root_style.cpp $(SRC)/mva_result_read.cpp -o $@ -L. $(ROOTCONF) -lMLP -lMinuit -lstdc++
+	$(CXX) -I. -I$(IDIR) -I$(ROOTINC) $(SRC)/additional_scripts/create_mva_plots.cpp $(SRC)/separate_functions.cpp $(SRC)/root_style.cpp $(SRC)/mva_result_read.cpp $(SRC)/mva_methods.cpp -o $@ -L. $(ROOTCONF) -lMLP -lMinuit -lstdc++
 # -------------------------------------------------------------------
 
 # Cutting on individual observables ---------------------------------
@@ -48,9 +48,15 @@ $(BIN)/data_fraction_plots: $(SRC)/additional_scripts/data_fraction_plots.cpp $(
 # -------------------------------------------------------------------
 
 # Histogram fitting rules -------------------------------------------
-$(BIN)/mva_fit_histogram: $(SRC)/additional_scripts/mva_fit_histogram.cpp $(SRC)/separate_functions.cpp $(SRC)/root_style.cpp $(SRC)/mva_result_read.cpp
+$(BIN)/mva_fit_histogram: $(SRC)/additional_scripts/mva_fit_histogram.cpp $(SRC)/separate_functions.cpp $(SRC)/root_style.cpp $(SRC)/mva_result_read.cpp $(SRC)/mva_methods.cpp
 	@echo "\n# Creating the standalone script for fitting histograms ---------------------"
-	$(CXX) -I. -I$(IDIR) -I$(ROOTINC) $(SRC)/additional_scripts/mva_fit_histogram.cpp $(SRC)/separate_functions.cpp $(SRC)/root_style.cpp $(SRC)/mva_result_read.cpp -o $@ -L. $(ROOTCONF) -lMLP -lMinuit -lstdc++
+	$(CXX) -I. -I$(IDIR) -I$(ROOTINC) $(SRC)/additional_scripts/mva_fit_histogram.cpp $(SRC)/separate_functions.cpp $(SRC)/root_style.cpp $(SRC)/mva_result_read.cpp $(SRC)/mva_methods.cpp -o $@ -L. $(ROOTCONF) -lMLP -lMinuit -lstdc++
+# -------------------------------------------------------------------
+
+# Mass composition fitting from MVA ---------------------------------
+$(BIN)/mass_composition_fit: $(SRC)/additional_scripts/mass_composition_fit.cpp $(SRC)/separate_functions.cpp $(SRC)/root_style.cpp $(SRC)/primary_type.cpp
+	@echo "\n# Creating the standalone script for fitting mass composition from MVA ------"
+	$(CXX) -I. -I$(IDIR) -I$(ROOTINC) $(SRC)/additional_scripts/mass_composition_fit.cpp $(SRC)/separate_functions.cpp $(SRC)/root_style.cpp $(SRC)/primary_type.cpp -o $@ -L. $(ROOTCONF) -lMLP -lMinuit -lstdc++
 # -------------------------------------------------------------------
 
 # Cleaning rules ----------------------------------------------------

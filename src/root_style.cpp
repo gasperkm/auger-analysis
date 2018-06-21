@@ -86,6 +86,16 @@ void RootStyle::SetBaseStyle()
 }
 
 // Setting the axis titles
+void RootStyle::SetAxisTitles(TF1 *plot, string xtitle, string ytitle)
+{
+   plot->SetTitle("");
+   plot->GetXaxis()->SetTitle(xtitle.c_str());
+   plot->GetXaxis()->CenterTitle();
+   plot->GetYaxis()->SetTitle(ytitle.c_str());
+   plot->GetYaxis()->CenterTitle();
+}
+
+// Setting the axis titles
 void RootStyle::SetAxisTitles(TH1 *plot, string xtitle, string ytitle)
 {
    plot->SetTitle("");

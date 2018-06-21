@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include "mvaefficiency.h"
+#include "mva_methods.h"
 #include "./root_mva/tmvaglob.C"
 
 using namespace std;
@@ -72,7 +73,10 @@ void MvaEfficiency::SetPlotLimits()
 {
    cout << endl << "# SetPlotLimits()" << endl;
 
-   // setup the ploting limits, depending on the used mva method
+   plotXmin = GetMethodMin(methodTitle);
+   plotXmax = GetMethodMax(methodTitle);
+
+/*   // setup the ploting limits, depending on the used mva method
    if(methodTitle.Contains("CutsD"))
    {
       plotXmin = 0.;
@@ -130,15 +134,15 @@ void MvaEfficiency::SetPlotLimits()
    }
    else if(methodTitle.Contains("BDT"))
    {
-      plotXmin = -0.5;
-      plotXmax = 0.5;
+      plotXmin = -1.;
+      plotXmax = 1.;
    }
    else if(methodTitle.Contains("RuleFit"))
    {
       plotXmin = -1.6;
       plotXmax = 1.6;
    }
-
+*/
 }
 
 void MvaEfficiency::ReadHistogram(TFile *file)

@@ -1,0 +1,48 @@
+p_Fe_mock-p:
+Mean data value = 0.886257	0.00723943	0.00729527
+Mean norm. data value = 0.996595	0.0130088	0.0118478
+
+He_Fe_mock-p:
+Mean data value = 0.911003	0.00644291	0.00732277
+Mean norm. data value = 1.08183	0.0180084	0.0190923
+
+O_Fe_mock-p:
+Mean data value = 0.958799	0.00689994	0.00465232
+Mean norm. data value = 1.48698	0.091135	0.0787212
+
+p_Fe_mock-He:
+Mean data value = 0.807995	0.0088853	0.00852614
+Mean norm. data value = 0.897526	0.0140774	0.0128294
+
+He_Fe_mock-He:
+Mean data value = 0.84435	0.0103276	0.0124228
+Mean norm. data value = 0.989121	0.0204516	0.0231252
+
+O_Fe_mock-He:
+Mean data value = 0.921707	0.00927622	0.0092512
+Mean norm. data value = 1.4074	0.0874252	0.0770919
+
+p_Fe_mock-O:
+Mean data value = 0.479961	0.0158467	0.015955
+Mean norm. data value = 0.482553	0.0214123	0.0212432
+
+He_Fe_mock-O:
+Mean data value = 0.551149	0.0196834	0.0192758
+Mean norm. data value = 0.581554	0.0298651	0.0293038
+
+O_Fe_mock-O:
+Mean data value = 0.723432	0.0244409	0.0230105
+Mean norm. data value = 0.984212	0.0763944	0.068967
+
+p_Fe_mock-Fe:
+Mean data value = 0.100565	0.00719559	0.00664763
+Mean norm. data value = 0.00228328	0.0135256	0.0129225
+
+He_Fe_mock-Fe:
+Mean data value = 0.133311	0.0116452	0.0121469
+Mean norm. data value = 0.00181489	0.0250775	0.0244534
+
+O_Fe_mock-Fe:
+Mean data value = 0.268001	0.0268089	0.0270678
+Mean norm. data value = 0.0197649	0.0810437	0.0789351
+

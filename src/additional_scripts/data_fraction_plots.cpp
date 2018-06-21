@@ -136,7 +136,7 @@ int main(int argc, char **argv)
    string filename;
    if(argc > 1)
    {
-      ftemp = new float[4];
+      ftemp = new float[6];
       ctemp = new char;
       stemp = new string[3];
       itemp = new int[2];
@@ -672,7 +672,10 @@ int main(int argc, char **argv)
 	 ftemp[0] = 0;
 	 ftemp[1] = 0;
 	 ftemp[2] = 0;
-	 // Skip the first point, just because
+	 ftemp[3] = 0;
+	 ftemp[4] = 0;
+	 ftemp[5] = 0;
+/*	 // Skip the first point, just because
 	 for(int i = 1; i < nrbins; i++)
 	 {
             cerr << i << ": MVA cut    = " << ymvaCut[0][i] << "\t" << ymvaCut[1][i] << "\t" << ymvaCut[2][i] << endl;
@@ -683,9 +686,108 @@ int main(int argc, char **argv)
 	    ftemp[0] += ybinDataNorm[0][i];
 	    ftemp[1] += ybinDataNorm[1][i];
 	    ftemp[2] += ybinDataNorm[2][i];
+	    ftemp[3] += ybinData[0][i];
+	    ftemp[4] += ybinData[1][i];
+	    ftemp[5] += ybinData[2][i];
 	 }
+	 cout << endl << "Mean data value = " << ftemp[3]/(nrbins-1.) << "\t" << ftemp[4]/(nrbins-1.) << "\t" << ftemp[5]/(nrbins-1.) << endl;
 	 cout << endl << "Mean norm. data value = " << ftemp[0]/(nrbins-1.) << "\t" << ftemp[1]/(nrbins-1.) << "\t" << ftemp[2]/(nrbins-1.) << endl;
+	 cout << endl;*/
+
+         // Create directory structure for plots and delete old plots
+         stemp[2] = RemoveFilename(&filename);
+         itemp[0] = analRes->GetFileType();
+         if(itemp[0] == 0)
+            stemp[0] = RemoveFilename(&stemp[2]);
+         else if(itemp[0] == 1)
+            stemp[0] = stemp[2];
+
+         stemp[1] = "mkdir -p " + RemoveFilename(&stemp[0]) + "/plots";
+         system(stemp[1].c_str());
+
+	 cout << "Is this a p/Fe (0), He/Fe (1) or O/Fe (2) treatment: ";
+	 cin >> itemp[1];
+
+         if(itemp[0] == 0)
+         {
+            stemp[1] = analRes->GetObservableType();
+
+	    if(itemp[1] == 0)
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fractions_" + stemp[1] + "_p-Fe_summary.root";
+	    else if(itemp[1] == 1)
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fractions_" + stemp[1] + "_He-Fe_summary.root";
+	    else if(itemp[1] == 2)
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/individual_fractions_" + stemp[1] + "_O-Fe_summary.root";
+         }
+         else if(itemp[0] == 1)
+         {
+            stemp[1] = analRes->GetObservableType();
+
+	    if(itemp[1] == 0)
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fractions_" + stemp[1] + "_p-Fe_summary.root";
+	    else if(itemp[1] == 1)
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fractions_" + stemp[1] + "_He-Fe_summary.root";
+	    else if(itemp[1] == 2)
+               stemp[2] = RemoveFilename(&stemp[0]) + "/plots/fractions_" + stemp[1] + "_O-Fe_summary.root";
+         }
+
+         TFile *fractionRes = TFile::Open(stemp[2].c_str(), "RECREATE");;
+         TTree *fracTree;
+	 if(itemp[1] == 0)
+            fracTree = new TTree("fracTree_p-Fe_treatment", "Fractions from MVA analysis");
+	 else if(itemp[1] == 1)
+            fracTree = new TTree("fracTree_He-Fe_treatment", "Fractions from MVA analysis");
+	 else if(itemp[1] == 2)
+            fracTree = new TTree("fracTree_O-Fe_treatment", "Fractions from MVA analysis");
+
+	 vector<double> *rawFrac = new vector<double>;
+	 vector<double> *normFrac = new vector<double>;
+	 vector<double> *meanFrac = new vector<double>;
+
+	 fracTree->Branch("rawFraction", rawFrac);
+	 fracTree->Branch("normFraction", normFrac);
+	 fracTree->Branch("meanFraction", meanFrac);
+
+	 for(int i = 0; i < nrbins; i++)
+	 {
+            cerr << i << ": MVA cut    = " << ymvaCut[0][i] << "\t" << ymvaCut[1][i] << "\t" << ymvaCut[2][i] << endl;
+            cerr << i << ": Signal     = " << ybinSig[0][i] << "\t" << ybinSig[1][i] << "\t" << ybinSig[2][i] << endl;
+            cerr << i << ": Background = " << ybinBack[0][i] << "\t" << ybinBack[1][i] << "\t" << ybinBack[2][i] << endl;
+            cerr << i << ": Raw data   = " << ybinData[0][i] << "\t" << ybinData[1][i] << "\t" << ybinData[2][i] << endl;
+            cerr << i << ": Norm. data = " << ybinDataNorm[0][i] << "\t" << ybinDataNorm[1][i] << "\t" << ybinDataNorm[2][i] << endl;
+	    ftemp[0] += ybinDataNorm[0][i];
+	    ftemp[1] += ybinDataNorm[1][i];
+	    ftemp[2] += ybinDataNorm[2][i];
+	    ftemp[3] += ybinData[0][i];
+	    ftemp[4] += ybinData[1][i];
+	    ftemp[5] += ybinData[2][i];
+
+	    rawFrac->push_back(ybinData[0][i]);
+	    rawFrac->push_back(ybinData[1][i]);
+	    rawFrac->push_back(ybinData[2][i]);
+	    normFrac->push_back(ybinDataNorm[0][i]);
+	    normFrac->push_back(ybinDataNorm[1][i]);
+	    normFrac->push_back(ybinDataNorm[2][i]);
+	 }
+	 cout << endl << "Mean data value = " << ftemp[3]/(nrbins) << "\t" << ftemp[4]/(nrbins) << "\t" << ftemp[5]/(nrbins) << endl;
+	 cout << endl << "Mean norm. data value = " << ftemp[0]/(nrbins) << "\t" << ftemp[1]/(nrbins) << "\t" << ftemp[2]/(nrbins) << endl;
 	 cout << endl;
+
+	 meanFrac->push_back(ftemp[3]/((double)nrbins));
+	 meanFrac->push_back(ftemp[4]/((double)nrbins));
+	 meanFrac->push_back(ftemp[5]/((double)nrbins));
+	 meanFrac->push_back(ftemp[0]/((double)nrbins));
+	 meanFrac->push_back(ftemp[1]/((double)nrbins));
+	 meanFrac->push_back(ftemp[2]/((double)nrbins));
+
+	 fracTree->Fill();
+
+	 fractionRes->Write();
+	 fractionRes->Close();
+	 delete fractionRes;
+	 delete rawFrac;
+	 delete normFrac;
+	 delete meanFrac;
 
          // Minimum and maximum values for all bins and types
          cerr << "Minimum and maximum values for all bins (without error bars):" << endl;
@@ -738,7 +840,7 @@ int main(int argc, char **argv)
          cerr << endl << "Please set the y-axis range for all fraction plots (comma separated): ";
          cin >> yrange[0] >> *ctemp >> yrange[1];
 
-         // Create directory structure for plots and delete old plots
+/*         // Create directory structure for plots and delete old plots
          stemp[2] = RemoveFilename(&filename);
          itemp[0] = analRes->GetFileType();
          if(itemp[0] == 0)
@@ -747,7 +849,7 @@ int main(int argc, char **argv)
             stemp[0] = stemp[2];
 
          stemp[1] = "mkdir -p " + RemoveFilename(&stemp[0]) + "/plots";
-         system(stemp[1].c_str());
+         system(stemp[1].c_str());*/
 
          if(itemp[0] == 0)
          {

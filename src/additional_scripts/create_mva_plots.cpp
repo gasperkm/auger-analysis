@@ -1,6 +1,7 @@
 #define _STANDALONE_ 1
 #include "workstation.h"
 #include "separate_functions.h"
+#include "mva_methods.h"
 #include "root_style.h"
 #include "mva_result_read.h"
 
@@ -90,9 +91,17 @@ int main(int argc, char **argv)
    // Add information for the MVA variable
    observables.push_back("MVA");
    obssel.push_back(1);
-   tempmin.push_back(-0.5);
-   tempmax.push_back(1.5);
+
+   cout << endl;
+   PrintMethods();
+   cout << "Select the used MVA type: ";
+   cin >> stemp[0];
+
+   tempmin.push_back(GetMethodMin(stemp[0]));
+   tempmax.push_back(GetMethodMax(stemp[0]));
    tempdesc.push_back("MVA variable");
+
+   cout << "MVA limits (" << stemp[0] << "): " << tempmin[tempmin.size()-1] << ", " << tempmax[tempmax.size()-1] << endl;
 
    // Save the number of observables (+MVA) into itemp[1]
    itemp[1] = observables.size();

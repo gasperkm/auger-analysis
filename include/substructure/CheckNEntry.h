@@ -19,7 +19,7 @@ public:
     CheckNEntry(wxPanel *parent, bool checked, wxString label, const int checkID, vector<double> *numval, vector<int> *nentryID, int maxsize);
 
     wxCheckBox *widgetChBox;
-    wxSpinCtrlDouble *widgetNE[2];
+    wxSpinCtrlDouble *widgetNE[3];
 
     wxBoxSizer *subsizer;
 };

@@ -143,37 +143,68 @@ void MyFrame::RunEnergyBinSelect()
 {
    double *erange = new double;
    double *elimits = new double[2];
-   elimits[0] = cutEnergy->GetNumber(cutEnergy->widgetNE[0]);
-   elimits[1] = cutEnergy->GetNumber(cutEnergy->widgetNE[1]);
-
    string *stemp = new string;
 
-   // Check the energy range (in logarithmic scale)
-   *erange = (elimits[1] - elimits[0])/((double)cutEnergyBins->GetNumber(cutEnergyBins->widgetNE[0]));
-
-   if(!ecutBins.empty()) ecutBins.erase(ecutBins.begin(), ecutBins.end());
-   (cutEnergyBins->widgetCB)->Clear();
-
-   // Save energy cut bins (in linear scale)
-   for(int i = 0; i <= (int)cutEnergyBins->GetNumber(cutEnergyBins->widgetNE[0]); i++)
+   if(!customBinning)
    {
-      ecutBins.push_back((double)pow(10, i*(*erange)+elimits[0]));
-      if(DBGSIG > 0)
-         cout << "# RunEnergyBinSelect    #: " << i << ", energy bin = " << ecutBins[i] << endl;
-   }
+      elimits[0] = cutEnergy->GetNumber(cutEnergy->widgetNE[0]);
+      elimits[1] = cutEnergy->GetNumber(cutEnergy->widgetNE[1]);
 
-   // Add all bins to the selection dropbox for energy
-   for(int i = 0; i < (int)cutEnergyBins->GetNumber(cutEnergyBins->widgetNE[0]); i++)
+      // Check the energy range (in logarithmic scale)
+      *erange = (elimits[1] - elimits[0])/((double)cutEnergyBins->GetNumber(cutEnergyBins->widgetNE[0]));
+
+      if(!ecutBins.empty()) ecutBins.erase(ecutBins.begin(), ecutBins.end());
+      (cutEnergyBins->widgetCB)->Clear();
+
+      // Save energy cut bins (in linear scale)
+      for(int i = 0; i < (int)cutEnergyBins->GetNumber(cutEnergyBins->widgetNE[0]); i++)
+      {
+         ecutBins.push_back((double)pow(10, i*(*erange)+elimits[0]));
+         ecutBins.push_back((double)pow(10, (i+1)*(*erange)+elimits[0]));
+         if(DBGSIG > 0)
+            cout << "# RunEnergyBinSelect    #: " << i << ", energy bin = " << ecutBins[2*i] << ", " << ecutBins[2*i+1] << endl;
+      }
+
+      // Add all bins to the selection dropbox for energy
+      for(int i = 0; i < (int)cutEnergyBins->GetNumber(cutEnergyBins->widgetNE[0]); i++)
+      {
+         if(i < 9)
+            *stemp = "0" + ToString(i+1) + " (" + ToSciString(ecutBins[2*i], 2) + " - " + ToSciString(ecutBins[2*i+1], 2) + ")";
+         else
+            *stemp = ToString(i+1) + " (" + ToSciString(ecutBins[2*i], 2) + " - " + ToSciString(ecutBins[2*i+1], 2) + ")";
+
+         (cutEnergyBins->widgetCB)->Append(*stemp);
+      }
+
+      (cutEnergyBins->widgetCB)->SetSelection(0);
+
+      oldBinSettings[0] = elimits[0];
+      oldBinSettings[1] = elimits[1];
+      oldBinSettings[2] = (double)cutEnergyBins->GetNumber(cutEnergyBins->widgetNE[0]);
+   }
+   else
    {
-      if(i < 9)
-         *stemp = "0" + ToString(i+1) + " (" + ToSciString(ecutBins[i], 1) + " - " + ToSciString(ecutBins[i+1], 1) + ")";
-      else
-         *stemp = ToString(i+1) + " (" + ToSciString(ecutBins[i], 1) + " - " + ToSciString(ecutBins[i+1], 1) + ")";
+      (cutEnergyBins->widgetCB)->Clear();
 
-      (cutEnergyBins->widgetCB)->Append(*stemp);
+      for(int i = 0; i < (int)cutEnergyBins->GetNumber(cutEnergyBins->widgetNE[0]); i++)
+      {
+         if(DBGSIG > 0)
+            cout << "# RunEnergyBinSelect    #: " << i << ", energy bin = " << ecutBins[2*i] << ", " << ecutBins[2*i+1] << endl;
+      }
+
+      // Add all bins to the selection dropbox for energy
+      for(int i = 0; i < (int)cutEnergyBins->GetNumber(cutEnergyBins->widgetNE[0]); i++)
+      {
+         if(i < 9)
+            *stemp = "0" + ToString(i+1) + " (" + ToSciString(ecutBins[2*i], 2) + " - " + ToSciString(ecutBins[2*i+1], 2) + ")";
+         else
+            *stemp = ToString(i+1) + " (" + ToSciString(ecutBins[2*i], 2) + " - " + ToSciString(ecutBins[2*i+1], 2) + ")";
+
+         (cutEnergyBins->widgetCB)->Append(*stemp);
+      }
+
+      (cutEnergyBins->widgetCB)->SetSelection(0);
    }
-
-   (cutEnergyBins->widgetCB)->SetSelection(0);
 
    delete stemp;
    delete erange;
@@ -317,13 +348,13 @@ void MyFrame::CheckEnergyBin(wxCommandEvent& event)
 	    if((ftemp[i] != -1) && *deleted)
             {
                // Event is inside the energy cut
-	       if((ftemp[i] > ecutBins[*selectedBin]) && (ftemp[i] <= ecutBins[*selectedBin+1]))
+	       if((ftemp[i] > ecutBins[2*(*selectedBin)]) && (ftemp[i] <= ecutBins[2*(*selectedBin+1)]))
                   *deleted = false;
                // Event is below the energy cut
-               else if(ftemp[i] <= ecutBins[*selectedBin])
+               else if(ftemp[i] <= ecutBins[2*(*selectedBin)])
                   uoflow[0] = true;
                // Event is above the energy cut
-               else if(ftemp[i] > ecutBins[*selectedBin+1])
+               else if(ftemp[i] > ecutBins[2*(*selectedBin+1)])
                   uoflow[1] = true;
 	    }
 	 }
@@ -382,6 +413,107 @@ void MyFrame::CheckEnergyBin(wxCommandEvent& event)
    delete selectedBin;
    delete[] stemp;
    delete[] ftemp;
+}
+// Use a file to define custom energy bins
+void MyFrame::CustomEnergyBins(wxCommandEvent& event)
+{
+   string *tempstring;
+   int *retval;
+   double *dtemp;
+   int *itemp;
+
+   wxFileDialog *customBinsDlg = new wxFileDialog(this, wxT("Open custom energy bins file"), string(rootdir) + string("/input"), "", wxT("Txt files (*.txt)|*.txt"), wxFD_OPEN);
+
+   if(customBinsDlg->ShowModal() == wxID_OK)
+   {
+      tempstring = new string;
+      *tempstring = customBinsDlg->GetPath();
+
+      if(!tempstring->empty())
+      {
+         (cutEnergyBinsCustom->widgetTE)->SetValue(*tempstring);
+	 (cutEnergy->widgetNE[0])->Disable();
+	 (cutEnergy->widgetNE[1])->Disable();
+	 (cutEnergyBins->widgetNE[0])->Disable();
+         (splitCutEnergy->widgetNE[0])->Disable();
+         (splitCutEnergy->widgetNE[1])->Disable();
+         (splitCutEnergy->widgetNE[2])->Disable();
+         (splitCutEnergy->widgetChBox)->SetValue(1);
+	 customBinning = true;
+         if(!ecutBins.empty()) ecutBins.erase(ecutBins.begin(), ecutBins.end());
+
+         ifstream *ifs = new ifstream;
+	 dtemp = new double[4];
+	 itemp = new int[2];
+
+         ifs->open(tempstring->c_str(), ifstream::in);
+
+	 dtemp[2] = 1e+20;
+	 dtemp[3] = -1;
+
+	 if(ifs->is_open())
+	 {
+            itemp[0] = 0;
+	    cout << "Writing out custom binning:" << endl;
+            while(1)
+	    {
+               *ifs >> dtemp[0] >> dtemp[1];
+
+	       if(dtemp[0] < dtemp[2])
+                  dtemp[2] = dtemp[0];
+	       if(dtemp[1] > dtemp[3])
+                  dtemp[3] = dtemp[1];
+
+               ecutBins.push_back((double)pow(10, dtemp[0]));
+               ecutBins.push_back((double)pow(10, dtemp[1]));
+               esplitBins.push_back((double)pow(10, dtemp[0]));
+               esplitBins.push_back((double)pow(10, dtemp[1]));
+
+               itemp[0]++;
+	       ifs->ignore(1,' ');
+               if(ifs->eof()) break;
+	    }
+
+	    cout << "Number of bins = " << itemp[0] << ", Minimum energy = " << dtemp[2] << ", Maximum energy = " << dtemp[3] << endl;
+	    (cutEnergy->widgetNE[0])->SetValue(dtemp[2]);
+	    (cutEnergy->widgetNE[1])->SetValue(dtemp[3]);
+	    (cutEnergyBins->widgetNE[0])->SetValue(itemp[0]);
+	    (splitCutEnergy->widgetNE[0])->SetValue(dtemp[2]);
+	    (splitCutEnergy->widgetNE[1])->SetValue(dtemp[3]);
+	    (splitCutEnergy->widgetNE[2])->SetValue(itemp[0]);
+	    RunEnergyBinSelect();
+	    RunEnergyBinSplitSelect();
+	 }
+
+	 ifs->close();
+
+	 delete[] itemp;
+	 delete[] dtemp;
+	 delete ifs;
+      }
+
+      delete tempstring;
+   }
+
+   delete customBinsDlg;
+}
+
+// Disable custom energy binning
+void MyFrame::CustomEnergyBinsDisable(wxCommandEvent& event)
+{
+   (cutEnergyBinsCustom->widgetTE)->SetValue("");
+   (cutEnergy->widgetNE[0])->Enable();
+   (cutEnergy->widgetNE[1])->Enable();
+   (cutEnergyBins->widgetNE[0])->Enable();
+   (cutEnergy->widgetNE[0])->SetValue(oldBinSettings[0]);
+   (cutEnergy->widgetNE[1])->SetValue(oldBinSettings[1]);
+   (cutEnergyBins->widgetNE[0])->SetValue(oldBinSettings[2]);
+   (splitCutEnergy->widgetNE[0])->Enable();
+   (splitCutEnergy->widgetNE[1])->Enable();
+   (splitCutEnergy->widgetNE[2])->Enable();
+   (splitCutEnergy->widgetChBox)->SetValue(0);
+   customBinning = false;
+   RunEnergyBinSelect();
 }
 
 // Update the dropbox options when we change number of bins or limits for zenith angle
@@ -876,16 +1008,16 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
 	       if( (ftemp1[k] != -1) )
                {
                   // Event is inside the energy cut
-                  if((ftemp1[k] > ecutBins[selectedBin[0]]) && (ftemp1[k] <= ecutBins[selectedBin[0]+1]))
+                  if((ftemp1[k] > ecutBins[2*(selectedBin[0])]) && (ftemp1[k] <= ecutBins[2*(selectedBin[0])+1]))
                      sepcut[0] = true;
 		  // Event is below the energy cut
-	          else if(ftemp1[k] <= ecutBins[selectedBin[0]])
+	          else if(ftemp1[k] <= ecutBins[2*(selectedBin[0])])
 		  {
 		     uoflow[0] = true;
 		     sepcut[0] = false;
 		  }
 		  // Event is above the energy cut
-	          else if(ftemp1[k] > ecutBins[selectedBin[0]+1])
+	          else if(ftemp1[k] > ecutBins[2*(selectedBin[0])+1])
 		  {
 		     uoflow[1] = true;
 		     sepcut[0] = false;
@@ -1242,6 +1374,12 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
       return;
    }
 
+   if( ((signalSelect->widgetCB)->GetSelection() == (backgroundSelect->widgetCB)->GetSelection()) || ((signalSelect->widgetCB)->GetSelection() == (dataSelect->widgetCB)->GetSelection()) || ((backgroundSelect->widgetCB)->GetSelection() == (dataSelect->widgetCB)->GetSelection()) )
+   {
+      AlertPopup("Wrong tree selections", "There is an error in tree selections. Any two from signal tree select, background tree select and data tree select combo boxes should not be equal. Always select different trees as signal, background and data.");
+      return;
+   }
+
    mvafile = new string[3];
    stemp = new string[4];
    itemp = new int[3];
@@ -1268,15 +1406,23 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
             mvafile[0] = mvafile[2];
 
             stemp[2] = RemoveExtension(&mvafile[0]);
-            stemp[3] = ToString(TMath::Log10(ecutBins[imva]),2) + "-" + ToString(TMath::Log10(ecutBins[imva+1]),2);
-            ReplacePart(&stemp[2], "ENERGY", stemp[3]);
+            stemp[3] = ToString(TMath::Log10(ecutBins[2*imva]),2) + "-" + ToString(TMath::Log10(ecutBins[2*imva+1]),2);
+	    stemp[2] = stemp[2] + "_" + stemp[3];
+/*            ReplacePart(&stemp[2], "ENERGY", stemp[3]);
+            *currentAnalysisDir = stemp[2];
+            stemp[2] = "mkdir " + stemp[2];*/
             *currentAnalysisDir = stemp[2];
             stemp[2] = "mkdir " + stemp[2];
-            cout << "Creating directory: " << stemp[2] << endl;
+            cout << "Creating directory: " << *currentAnalysisDir << endl;
             system(stemp[2].c_str());
 
-            ReplacePart(&mvafile[0], "ENERGY", stemp[3]);
-            mvafile[0] = (*currentAnalysisDir) + "/" + RemovePath(&mvafile[0]);
+/*            ReplacePart(&mvafile[0], "ENERGY", stemp[3]);
+            mvafile[0] = (*currentAnalysisDir) + "/" + RemovePath(&mvafile[0]);*/
+            stemp[2] = RemoveExtension(&mvafile[0]);
+            stemp[3] = ToString(TMath::Log10(ecutBins[2*imva]),2) + "-" + ToString(TMath::Log10(ecutBins[2*imva+1]),2);
+	    stemp[2] = stemp[2] + "_" + stemp[3];
+            stemp[2] = CheckExtension(&stemp[2], "root");
+	    mvafile[0] = (*currentAnalysisDir) + "/" + RemovePath(&stemp[2]);
             cout << "Running analysis with output: " << mvafile[0] << endl;
 
 	    (cutEnergyBins->widgetCB)->SetSelection(imva);
@@ -1579,7 +1725,7 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
          mvaresults = mvaresults + "\n\nResults for mean cut (" + ToString(dtemp[0], 4) + ")\n";
 	 int *selectedBin = new int;
          *selectedBin = (cutEnergyBins->widgetCB)->GetSelection();
-         mvaprintout = ToSciString(ecutBins[*selectedBin], 4) + "\t" + ToSciString(ecutBins[(*selectedBin)+1], 4) + "\n";
+         mvaprintout = ToSciString(ecutBins[2*(*selectedBin)], 4) + "\t" + ToSciString(ecutBins[2*(*selectedBin)+1], 4) + "\n";
          mvaprintout = mvaprintout + ToString(0) + "\t" + ToString(dtemp[0],4) + "\t";
          MvaApplication(&tempAnalysisFile, false, 0);
 
@@ -1643,7 +1789,7 @@ void MyFrame::ApplyMvaCut(wxCommandEvent& event)
       mvaresults = mvaresults + "\n\nResults for mean cut (" + ToString(dtemp[0], 4) + ")\n";
       int *selectedBin = new int;
       *selectedBin = (cutEnergyBins->widgetCB)->GetSelection();
-      mvaprintout = ToSciString(ecutBins[*selectedBin], 4) + "\t" + ToSciString(ecutBins[(*selectedBin)+1], 4) + "\n";
+      mvaprintout = ToSciString(ecutBins[2*(*selectedBin)], 4) + "\t" + ToSciString(ecutBins[2*(*selectedBin)+1], 4) + "\n";
       mvaprintout = mvaprintout + ToString(0) + "\t" + ToString(dtemp[0],4) + "\t";
       MvaApplication(&tempAnalysisFile, freshAnalysis, 0);
 
@@ -1742,19 +1888,31 @@ void MyFrame::MvaApplication(string *infilename, bool application, int mean)
 
       stemp[4] = string((tempkeyslist->At(j-1))->GetTitle());
 
-      cout << stemp[4] << endl;
-      cout << string((signalSelect->widgetCB)->GetStringSelection()) << endl;
-      cout << string((backgroundSelect->widgetCB)->GetStringSelection()) << endl;
-      cout << string((dataSelect->widgetCB)->GetStringSelection()) << endl;
+      cout << stemp[4] << "\t" << j-1 << endl;
+      cout << string((signalSelect->widgetCB)->GetStringSelection()) << "\t";
+      cout << (signalSelect->widgetCB)->GetSelection() << endl;
+      cout << string((backgroundSelect->widgetCB)->GetStringSelection()) << "\t";
+      cout << (backgroundSelect->widgetCB)->GetSelection() << endl;
+      cout << string((dataSelect->widgetCB)->GetStringSelection()) << "\t";
+      cout << (dataSelect->widgetCB)->GetSelection() << endl;
 
-      if( string((signalSelect->widgetCB)->GetStringSelection()).find(stemp[4]) != string::npos )
+      if( (signalSelect->widgetCB)->GetSelection() == j-1 )
+         mvaprintout = mvaprintout + ToString(1) + "\t";
+      else if( (backgroundSelect->widgetCB)->GetSelection() == j-1 )
+         mvaprintout = mvaprintout + ToString(2) + "\t";
+      else if( (dataSelect->widgetCB)->GetSelection() == j-1 )
+         mvaprintout = mvaprintout + ToString(3) + "\t";
+      else
+         mvaprintout = mvaprintout + ToString(0) + "\t";
+
+/*      if( string((signalSelect->widgetCB)->GetStringSelection()).find(stemp[4]) != string::npos )
          mvaprintout = mvaprintout + ToString(1) + "\t";
       else if( string((backgroundSelect->widgetCB)->GetStringSelection()).find(stemp[4]) != string::npos )
          mvaprintout = mvaprintout + ToString(2) + "\t";
       else if( string((dataSelect->widgetCB)->GetStringSelection()).find(stemp[4]) != string::npos )
          mvaprintout = mvaprintout + ToString(3) + "\t";
       else
-         mvaprintout = mvaprintout + ToString(0) + "\t";
+         mvaprintout = mvaprintout + ToString(0) + "\t";*/
 
       TTree *signalApp = (TTree*)ofile->Get(stemp[2].c_str());
 
@@ -1829,6 +1987,14 @@ void MyFrame::SetDefaultMva(wxCommandEvent& event)
    (cutEnergy->widgetNE[0])->SetValue(17.);
    (cutEnergy->widgetNE[1])->SetValue(21.);
    (cutEnergyBins->widgetNE[0])->SetValue(1);
+   (cutEnergyBinsCustom->widgetTE)->SetValue("");
+   (cutEnergy->widgetNE[0])->Enable();
+   (cutEnergy->widgetNE[1])->Enable();
+   (cutEnergyBins->widgetNE[0])->Enable();
+   (splitCutEnergy->widgetNE[0])->Enable();
+   (splitCutEnergy->widgetNE[1])->Enable();
+   (splitCutEnergy->widgetNE[2])->Enable();
+   customBinning = false;
    RunEnergyBinSelect();
    (cutZenith->widgetChBox)->SetValue(true);
    (cutZenith->widgetNE[0])->SetValue(0.);
@@ -1911,158 +2077,136 @@ int MyFrame::StartRewrite(string *outfile)
    }
 }
 
-// Select a file to split depending on the fraction of events we need -> and write it back to rewritten ADST format
-int MyFrame::StartFileSplit(string infile)
+void MyFrame::RunEnergyBinSplitSelect()
 {
-   float *ftemp;
-   int *itemp;
-   string *stemp;
-   int rewritecode;
-   // Set the random seed
-   unsigned int *randSeed = new unsigned int;
-   *randSeed = (unsigned int)chrono::system_clock::now().time_since_epoch().count();
-   bool *singlefile = new bool;
-   *singlefile = false;
+   double *erange = new double;
+   double *elimits = new double[2];
+   string *stemp = new string;
 
-   ftemp = new float[2];
-   itemp = new int[5];
-   stemp = new string[5];
-   
-   // Get the value for splitting (either fraction of events or number of events)
-   ftemp[0] = (startSplitting->widgetNE[0])->GetValue();
-   
-   // Open input file and save All Tree and list of keys
-   TFile *input = TFile::Open(infile.c_str(), "READ");
-   TTree *tempTree = (TTree*)input->Get("TreeA");
-   TList *tempkeyslist = (TList*)input->GetListOfKeys();
-   TTree *readTree;
-   TTree *writeTree;
-
-   // Set the number of all events (itemp[0])
-   itemp[0] = tempTree->GetEntries();
-
-   // Determine the type of observables to cut on (SD or FD)
-   selcuttype = (cutObservables->widgetCB)->GetSelection();
-   // Determine how eye selection should be handled (any eye inside selection or average)
-   seleyetype = (eyeSelection->widgetCB)->GetSelection();
-   vector<int> seleye;
-
-   // Prepare observables for reading and writing
-   Observables *obser = new Observables(observables);
-   Observables *obser_neg = new Observables(observables);
-   Observables *obser_pos = new Observables(observables);
-
-   // Name and title of the current tree
-   stemp[2] = string(tempTree->GetName());
-   stemp[3] = string(tempTree->GetTitle());
-
-   cout << "#   Applying split filtering to the all tree: " << stemp[2] << "; " << stemp[3] << endl;
-
-   // Prepare test tree for reading
-   tempTree = (TTree*)input->Get(stemp[2].c_str());
-   tempTree->SetBranchAddress("rewritecode", &rewritecode);
-   for(int j = 0; j < nrobs; j++)
+   if(!customBinning)
    {
-      tempTree->SetBranchAddress((obser->GetName(j)).c_str(), obser->obsstruct[j].value);
-      tempTree->SetBranchAddress((obser->GetName(j) + "_neg").c_str(), obser_neg->obsstruct[j].value);
-      tempTree->SetBranchAddress((obser->GetName(j) + "_pos").c_str(), obser_pos->obsstruct[j].value);
-   }
+      elimits[0] = splitCutEnergy->GetNumber(splitCutEnergy->widgetNE[0]);
+      elimits[1] = splitCutEnergy->GetNumber(splitCutEnergy->widgetNE[1]);
 
-   // Preparing shuffled list for sampling
-   vector<int> *shuflist = new vector<int>;
+      // Check the energy range (in logarithmic scale)
+      *erange = (elimits[1] - elimits[0])/((double)splitCutEnergy->GetNumber(splitCutEnergy->widgetNE[2]));
 
-   // Loop over all events 
-   for(int j = 0; j < itemp[0]; j++)
-   {
-      tempTree->GetEntry(j);
+      if(!esplitBins.empty()) esplitBins.erase(esplitBins.begin(), esplitBins.end());
 
-      // Check if event is inside the selected cuts
-      if(!seleye.empty()) seleye.erase(seleye.begin(), seleye.end());
-
-      ret = IsInsideCuts(obser, obser_neg, obser_pos, &seleye, true);
-
-      // If event is inside selected cuts, enter it into the list for shuffling
-      if(ret != -1)
-         shuflist->push_back(j);
-      else
+      // Save energy cut bins (in linear scale)
+      for(int i = 0; i < (int)splitCutEnergy->GetNumber(splitCutEnergy->widgetNE[2]); i++)
       {
-         if(DBGSIG > 1)
-            cout << "# StartFileSplit        #: " << "Event = " << j << " is outside the selected cuts." << endl;
+         esplitBins.push_back((double)pow(10, i*(*erange)+elimits[0]));
+         esplitBins.push_back((double)pow(10, (i+1)*(*erange)+elimits[0]));
+         if(DBGSIG > 0)
+            cout << "# RunEnergyBinSplitSelect#: " << i << ", energy bin = " << esplitBins[2*i] << ", " << esplitBins[2*i+1] << endl;
       }
-   }
-
-   // If the we are only filtering, then don't write out if input file will be equal to output file
-   if( *singlefile && ((itemp[0] - shuflist->size()) == 0) )
-   {
-      AlertPopup("Input and output equal", "The filtering of input file removed no events (" + ToString(itemp[0]) + "/" + ToString(shuflist->size()) + "). Stopping filtering, since input and output files will be equal. Please adjust the settings accordingly and restart.");
-
-      delete[] ftemp;
-      delete[] itemp;
-      delete[] stemp;
-      delete obser;
-      delete obser_neg;
-      delete obser_pos;
-      delete randSeed;
-      delete shuflist;
-      delete singlefile;
-      input->Close();
-
-      return 1;
-   }
-
-   // After filtering set the number of all events (itemp[0]), events in one output file (itemp[1]) and events in other output file (itemp[2])
-   itemp[3] = shuflist->size();
-   cout << "# StartFileSplit        #: " << "There are " << itemp[3] << " events inside and " << (itemp[0] - itemp[3]) << " events outside the selected cuts." << endl;
-
-   if(ftemp[0] < 0)
-   {
-      itemp[1] = itemp[3];
-      *singlefile = true;
-   }
-   else if(ftemp[0] < 1)
-   {
-      itemp[1] = TMath::Nint(itemp[3]*ftemp[0]);
-      *singlefile = false;
    }
    else
    {
-      itemp[1] = TMath::Nint(ftemp[0]);
-      *singlefile = false;
-   }
-   itemp[2] = (int)(itemp[3]-itemp[1]);
-
-   // If any of these are 0, cancel splitting
-   if( (!(*singlefile) && ((itemp[0] == 0) || (itemp[1] == 0) || (itemp[2] <= 0))) || (itemp[0] == 0) || (itemp[3] == 0) )
-   {
-      AlertPopup("No events in split file", "One of the split files will have no events (" + ToString(itemp[1]) + "/" + ToString(itemp[2]) + "). Total number of filtered events is " + ToString(itemp[3]) + ". Please adjust the split setting accordingly and restart.");
-
-      delete[] ftemp;
-      delete[] itemp;
-      delete[] stemp;
-      delete obser;
-      delete obser_neg;
-      delete obser_pos;
-      delete randSeed;
-      delete shuflist;
-      delete singlefile;
-      input->Close();
-
-      return 1;
-   }
-   else
-   {
-      // Open a dialog to select the random seed
-      stemp[2] = "Selecting random seed for splitting the rewritten ADST file into two parts.\nThe current seed is selected randomly based on time.\n";
-      cout << "# StartFileSplit        #: Random seed = " << *randSeed << endl;
-      NEDialog *randomseedDialog = new NEDialog(wxT("Random seed"), wxSize(500,200), stemp[2], "Set MVA cut:", *randSeed, &ID_RANDSEEDDIALOG);
-      randomseedDialog->SetNEntryFormat(randomseedDialog->widgetNE, 0, 1, 2, 0, 10000000000);
-      if(randomseedDialog->ShowModal() == wxID_OK)
+      for(int i = 0; i < (int)cutEnergyBins->GetNumber(cutEnergyBins->widgetNE[0]); i++)
       {
-         *randSeed = (unsigned int)randomseedDialog->GetNEValue();
-         cout << "# StartFileSplit        #: Selected random seed is: " << *randSeed << endl;
+         if(DBGSIG > 0)
+            cout << "# RunEnergyBinSplitSelect#: " << i << ", energy bin = " << esplitBins[2*i] << ", " << esplitBins[2*i+1] << endl;
       }
-      else
+   }
+
+   delete stemp;
+   delete erange;
+   delete[] elimits;
+}
+
+// Select a file to split depending on the fraction of events we need -> and write it back to rewritten ADST format
+int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
+{
+   RunEnergyBinSplitSelect();
+   int *nrsplits = new int;
+   *nrsplits = splitCutEnergy->GetNumber(splitCutEnergy->widgetNE[2]);
+
+   for(int ebin = 0; ebin < *nrsplits; ebin++)
+   {
+      float *ftemp;
+      int *itemp;
+      string *stemp;
+      int rewritecode;
+      // Set the random seed
+      unsigned int *randSeed = new unsigned int;
+      *randSeed = (unsigned int)chrono::system_clock::now().time_since_epoch().count();
+      bool *singlefile = new bool;
+      *singlefile = false;
+
+      ftemp = new float[2];
+      itemp = new int[5];
+      stemp = new string[5];
+      
+      // Get the value for splitting (either fraction of events or number of events)
+      ftemp[0] = (startSplitting->widgetNE[0])->GetValue();
+      
+      // Open input file and save All Tree and list of keys
+      TFile *input = TFile::Open(infile.c_str(), "READ");
+      TTree *tempTree = (TTree*)input->Get("TreeA");
+      TList *tempkeyslist = (TList*)input->GetListOfKeys();
+      TTree *readTree;
+      TTree *writeTree;
+
+      // Set the number of all events (itemp[0])
+      itemp[0] = tempTree->GetEntries();
+
+      // Determine the type of observables to cut on (SD or FD)
+      selcuttype = (cutObservables->widgetCB)->GetSelection();
+      // Determine how eye selection should be handled (any eye inside selection or average)
+      seleyetype = (eyeSelection->widgetCB)->GetSelection();
+      vector<int> seleye;
+
+      // Prepare observables for reading and writing
+      Observables *obser = new Observables(observables);
+      Observables *obser_neg = new Observables(observables);
+      Observables *obser_pos = new Observables(observables);
+
+      // Name and title of the current tree
+      stemp[2] = string(tempTree->GetName());
+      stemp[3] = string(tempTree->GetTitle());
+
+//      cout << "#   Applying split filtering to the all tree: " << stemp[2] << "; " << stemp[3] << endl;
+
+      // Prepare test tree for reading
+      tempTree = (TTree*)input->Get(stemp[2].c_str());
+      tempTree->SetBranchAddress("rewritecode", &rewritecode);
+      for(int j = 0; j < nrobs; j++)
       {
+         tempTree->SetBranchAddress((obser->GetName(j)).c_str(), obser->obsstruct[j].value);
+         tempTree->SetBranchAddress((obser->GetName(j) + "_neg").c_str(), obser_neg->obsstruct[j].value);
+         tempTree->SetBranchAddress((obser->GetName(j) + "_pos").c_str(), obser_pos->obsstruct[j].value);
+      }
+
+      // Preparing shuffled list for sampling
+      vector<int> *shuflist = new vector<int>;
+
+      // Loop over all events 
+      for(int j = 0; j < itemp[0]; j++)
+      {
+         tempTree->GetEntry(j);
+
+         // Check if event is inside the selected cuts
+         if(!seleye.empty()) seleye.erase(seleye.begin(), seleye.end());
+
+         ret = IsInsideCuts(obser, obser_neg, obser_pos, &seleye, true, ebin);
+
+         // If event is inside selected cuts, enter it into the list for shuffling
+         if(ret != -1)
+            shuflist->push_back(j);
+         else
+         {
+            if(DBGSIG > 1)
+               cout << "# StartFileSplit        #: " << "Event = " << j << " is outside the selected cuts." << endl;
+         }
+      }
+
+      // If the we are only filtering, then don't write out if input file will be equal to output file
+      if( *singlefile && ((itemp[0] - shuflist->size()) == 0) )
+      {
+         AlertPopup("Input and output equal", "The filtering of input file removed no events (" + ToString(itemp[0]) + "/" + ToString(shuflist->size()) + "). Stopping filtering, since input and output files will be equal. Please adjust the settings accordingly and restart.");
+
          delete[] ftemp;
          delete[] itemp;
          delete[] stemp;
@@ -2072,175 +2216,297 @@ int MyFrame::StartFileSplit(string infile)
          delete randSeed;
          delete shuflist;
          delete singlefile;
-	 randomseedDialog->Destroy();
-	 delete randomseedDialog;
          input->Close();
 
          return 1;
       }
 
-      randomseedDialog->Destroy();
-      delete randomseedDialog;
+      // After filtering set the number of all events (itemp[0]), events in one output file (itemp[1]) and events in other output file (itemp[2])
+      itemp[3] = shuflist->size();
+      cout << "# StartFileSplit        #: " << "There are " << itemp[3] << " events inside and " << (itemp[0] - itemp[3]) << " events outside the selected cuts." << endl;
 
-      // Prepare the output filenames
-      stemp[0] = RemoveExtension(&infile) + "_split-1.root";
-      stemp[1] = RemoveExtension(&infile) + "_split-2.root";
-
-      // Printout some information about splitting the files & prepare the output filenames
-      itemp[4] = 0;
-      if(!(*singlefile))
+      if(ftemp[0] < 0)
       {
-         stemp[0] = RemoveExtension(&infile) + "_split-1.root";
-         stemp[1] = RemoveExtension(&infile) + "_split-2.root";
-
-         stemp[2] = "Currently splitting file\n   " + RemovePath(&infile) + "        \t" + ToString(itemp[0]) + " events\ninto two files:\n   " + RemovePath(&stemp[0]) + "\t" + ToString(itemp[1]) + " events\n   " + RemovePath(&stemp[1])+ "\t" + ToString(itemp[2]) + " events\n\nPlease wait for it to finish.";
-         ShowProgress(wxT("Splitting rewritten ADST file"), stemp[2].c_str(), 2*(input->GetNkeys())*itemp[0]);
-
-         cout << "# StartFileSplit        #: Will start splitting file " << RemovePath(&infile) << " into:" << endl;
-         cout << "# StartFileSplit        #: - First file:  " << RemovePath(&stemp[0]) << " (" << itemp[1] << " of " << itemp[3] << " total filtered events)" << endl;
-         cout << "# StartFileSplit        #: - Second file: " << RemovePath(&stemp[1]) << " (" << itemp[2] << " of " << itemp[3] << " total filtered events)" << endl;
+         itemp[1] = itemp[3];
+         *singlefile = true;
+      }
+      else if(ftemp[0] < 1)
+      {
+         itemp[1] = TMath::Nint(itemp[3]*ftemp[0]);
+         *singlefile = false;
       }
       else
       {
-         stemp[0] = RemoveExtension(&infile) + "_filtered.root";
-
-         stemp[2] = "Currently filtering file\n   " + RemovePath(&infile) + "        \t" + ToString(itemp[0]) + " events\ninto file:\n   " + RemovePath(&stemp[0]) + "\t" + ToString(itemp[1]) + " events\n\nPlease wait for it to finish.";
-         ShowProgress(wxT("Filtering rewritten ADST file"), stemp[2].c_str(), (input->GetNkeys())*itemp[0]);
-
-         cout << "# StartFileSplit        #: Will start filtering file " << RemovePath(&infile) << " into:" << endl;
-         cout << "# StartFileSplit        #: - Filtered file:  " << RemovePath(&stemp[0]) << " (" << itemp[1] << " of " << itemp[3] << " total filtered events)" << endl;
+         itemp[1] = TMath::Nint(ftemp[0]);
+         *singlefile = false;
       }
+      itemp[2] = (int)(itemp[3]-itemp[1]);
 
-      // Shuffle the event list (saving to two vectors with event numbers)
-      shuffle(shuflist->begin(), shuflist->end(), default_random_engine(*randSeed));
-
-      vector<int> *split1list = new vector<int>;
-      vector<int> *split2list = new vector<int>;
-
-      for(int i = 0; i < itemp[3]; i++)
+      // If any of these are 0, cancel splitting
+      if( (!(*singlefile) && ((itemp[0] == 0) || (itemp[1] == 0) || (itemp[2] <= 0))) || (itemp[0] == 0) || (itemp[3] == 0) )
       {
-         if(DBGSIG > 1)
-	    cout << i << "\tList event:\t" << shuflist->at(i) << "\t";
+         AlertPopup("No events in split file", "One of the split files will have no events (" + ToString(itemp[1]) + "/" + ToString(itemp[2]) + "). Total number of filtered events is " + ToString(itemp[3]) + ". Please adjust the split setting accordingly and restart.");
 
-         if(i < itemp[1])
+         delete[] ftemp;
+         delete[] itemp;
+         delete[] stemp;
+         delete obser;
+         delete obser_neg;
+         delete obser_pos;
+         delete randSeed;
+         delete shuflist;
+         delete singlefile;
+         input->Close();
+
+         return 1;
+      }
+      else
+      {
+         if( (*nrsplits > 1) || (nrsel > 1) )
 	 {
-            split1list->push_back(shuflist->at(i));
-            if(DBGSIG > 1)
-	       cout << " (1st list)" << endl;
+            cout << "# StartFileSplit        #: Selected random seed is: " << *randSeed << endl;
+            ofstream *ofs = new ofstream;
+	    stemp[2] = string(rootdir) + "/results/split_seeds.txt";
+	    if( (ebin == 0) && (cursel == 0) )
+               ofs->open(stemp[2].c_str(), ofstream::trunc);
+	    else
+               ofs->open(stemp[2].c_str(), ofstream::app);
+	    *ofs << *randSeed << endl;
+	    if( (nrsel > 1) && (ebin == (*nrsplits)-1) )
+               *ofs << endl;
+	    ofs->close();
+	    delete ofs;
 	 }
 	 else
 	 {
-            split2list->push_back(shuflist->at(i));
-            if(DBGSIG > 1)
-	       cout << " (2nd list)" << endl;
+            // Open a dialog to select the random seed
+            stemp[2] = "Selecting random seed for splitting the rewritten ADST file into two parts.\nThe current seed is selected randomly based on time.\n";
+            cout << "# StartFileSplit        #: Random seed = " << *randSeed << endl;
+            NEDialog *randomseedDialog = new NEDialog(wxT("Random seed"), wxSize(500,200), stemp[2], "Set random seed:", *randSeed, &ID_RANDSEEDDIALOG);
+            randomseedDialog->SetNEntryFormat(randomseedDialog->widgetNE, 0, 1, 2, 0, 10000000000);
+            if(randomseedDialog->ShowModal() == wxID_OK)
+            {
+               *randSeed = (unsigned int)randomseedDialog->GetNEValue();
+               cout << "# StartFileSplit        #: Selected random seed is: " << *randSeed << endl;
+            }
+            else
+            {
+               delete[] ftemp;
+               delete[] itemp;
+               delete[] stemp;
+               delete obser;
+               delete obser_neg;
+               delete obser_pos;
+               delete randSeed;
+               delete shuflist;
+               delete singlefile;
+               randomseedDialog->Destroy();
+               delete randomseedDialog;
+               input->Close();
+
+               return 1;
+            }
+
+            randomseedDialog->Destroy();
+            delete randomseedDialog;
 	 }
-      }
 
-      // Loop over the two split files (break loop, if only filtering)
-      TFile *output;
-      for(int i = 0; i < 2; i++)
-      {
-         cout << "# StartFileSplit        #: Currently writing out to: " << stemp[i] << endl;
-         output = TFile::Open(stemp[i].c_str(), "RECREATE");
+         // Prepare the output filenames
+	 if(*nrsplits > 1)
+	 {
+            stemp[0] = RemoveExtension(&infile) + "_" + ToString(TMath::Log10(esplitBins[2*ebin]), 2) + "-" + ToString(TMath::Log10(esplitBins[2*ebin+1]), 2) + "_split-1.root";
+            stemp[1] = RemoveExtension(&infile) + "_" + ToString(TMath::Log10(esplitBins[2*ebin]), 2) + "-" + ToString(TMath::Log10(esplitBins[2*ebin+1]), 2) + "_split-2.root";
+	 }
+	 else
+	 {
+            stemp[0] = RemoveExtension(&infile) + "_split-1.root";
+            stemp[1] = RemoveExtension(&infile) + "_split-2.root";
+	 }
 
-         // Loop over all trees
-         for(int k = 0; k < input->GetNkeys(); k++)
+         // Printout some information about splitting the files & prepare the output filenames
+         itemp[4] = 0;
+         // Splitting into two files
+         if(!(*singlefile))
          {
-            // Name and title of the current tree
-            stemp[2] = string((tempkeyslist->At(k))->GetName());
-            stemp[3] = string((tempkeyslist->At(k))->GetTitle());
-
-            cout << "# StartFileSplit        #:   Currently selected tree: " << stemp[2] << "; " << stemp[3] << endl;
-
-            // Prepare tree for reading
-            readTree = (TTree*)input->Get(stemp[2].c_str());
-            readTree->SetBranchAddress("rewritecode", &rewritecode);
-            for(int j = 0; j < nrobs; j++)
-            {
-               readTree->SetBranchAddress((obser->GetName(j)).c_str(), obser->obsstruct[j].value);
-               readTree->SetBranchAddress((obser->GetName(j) + "_neg").c_str(), obser_neg->obsstruct[j].value);
-               readTree->SetBranchAddress((obser->GetName(j) + "_pos").c_str(), obser_pos->obsstruct[j].value);
-            }
-
-            // Prepare tree for writing
-	    if( (stemp[3].compare("Signal tree from old file.") == 0) || (stemp[3].compare("Signal tree from new file.") == 0) || (stemp[3].compare("Background tree with all events, including signal events.") == 0) )
-	       stemp[4] = stemp[3];
-	    else
-               stemp[4] = stemp[3] + "-split" + ToString(i+1);
-            writeTree = new TTree(stemp[2].c_str(), stemp[4].c_str());
-            writeTree->Branch("rewritecode", &rewritecode, "rewritecode/I");
-            for(int j = 0; j < nrobs; j++)
-            {
-               writeTree->Branch((obser->GetName(j)).c_str(), &(obser->obsstruct[j].value), (obser->GetName(j) + "[" + ToString(ALLEYES) + "]/F").c_str());
-               writeTree->Branch((obser->GetName(j) + "_neg").c_str(), &(obser_neg->obsstruct[j].value), (obser->GetName(j) + "_neg[" + ToString(ALLEYES) + "]/F").c_str());
-               writeTree->Branch((obser->GetName(j) + "_pos").c_str(), &(obser_pos->obsstruct[j].value), (obser->GetName(j) + "_pos[" + ToString(ALLEYES) + "]/F").c_str());
-            }
-
-	    // Check if the values in this tree are valid
-	    if( (stemp[3].compare("Signal tree from old file.") == 0) || (stemp[3].compare("Signal tree from new file.") == 0) )
+	    if(*nrsplits > 1)
 	    {
-	       // Update the progress bar
-	       itemp[4]+=itemp[0];
-               progress->Update(itemp[4]);
+               stemp[0] = RemoveExtension(&infile) + "_" + ToString(TMath::Log10(esplitBins[2*ebin]), 2) + "-" + ToString(TMath::Log10(esplitBins[2*ebin+1]), 2) + "_split-1.root";
+               stemp[1] = RemoveExtension(&infile) + "_" + ToString(TMath::Log10(esplitBins[2*ebin]), 2) + "-" + ToString(TMath::Log10(esplitBins[2*ebin+1]), 2) + "_split-2.root";
 	    }
 	    else
 	    {
-               // Loop over all events 
-               for(int j = 0; j < itemp[0]; j++)
-               {
-                  readTree->GetEntry(j);
-
-                  // Select the correct tree to write to
-                  if( (find(split1list->begin(), split1list->end(), j) != split1list->end()) && (i == 0) )
-                     writeTree->Fill();
-                  if( (find(split2list->begin(), split2list->end(), j) != split2list->end()) && (i == 1) )
-                     writeTree->Fill();
-
-	          // Update the progress bar
-	          itemp[4]++;
-                  if(!(*singlefile))
-		  {
-	             if(itemp[4]%((int)(2*(input->GetNkeys())*itemp[0]*0.05)) == 0)
-                        progress->Update(itemp[4]);
-		  }
-		  else
-		  {
-	             if(itemp[4]%((int)((input->GetNkeys())*itemp[0]*0.05)) == 0)
-                        progress->Update(itemp[4]);
-		  }
-               }
+               stemp[0] = RemoveExtension(&infile) + "_split-1.root";
+               stemp[1] = RemoveExtension(&infile) + "_split-2.root";
 	    }
 
-	    writeTree->Write();
+            stemp[2] = "Currently splitting file\n   " + RemovePath(&infile) + "        \t" + ToString(itemp[0]) + " events\ninto two files:\n   " + RemovePath(&stemp[0]) + "\t" + ToString(itemp[1]) + " events\n   " + RemovePath(&stemp[1])+ "\t" + ToString(itemp[2]) + " events\n\nPlease wait for it to finish.";
+            ShowProgress(wxT("Splitting rewritten ADST file"), stemp[2].c_str(), 2*(input->GetNkeys())*itemp[0]);
 
-	    delete writeTree;
+            cout << "# StartFileSplit        #: Will start splitting file " << RemovePath(&infile) << " into:" << endl;
+            cout << "# StartFileSplit        #: - First file:  " << RemovePath(&stemp[0]) << " (" << itemp[1] << " of " << itemp[3] << " total filtered events)" << endl;
+            cout << "# StartFileSplit        #: - Second file: " << RemovePath(&stemp[1]) << " (" << itemp[2] << " of " << itemp[3] << " total filtered events)" << endl;
+         }
+         // Filtering a file
+         else
+         {
+	    if(*nrsplits > 1)
+               stemp[0] = RemoveExtension(&infile) + "_" + ToString(TMath::Log10(esplitBins[2*ebin]), 2) + "-" + ToString(TMath::Log10(esplitBins[2*ebin+1]), 2) + "_filtered.root";
+	    else
+               stemp[0] = RemoveExtension(&infile) + "_filtered.root";
+
+            stemp[2] = "Currently filtering file\n   " + RemovePath(&infile) + "        \t" + ToString(itemp[0]) + " events\ninto file:\n   " + RemovePath(&stemp[0]) + "\t" + ToString(itemp[1]) + " events\n\nPlease wait for it to finish.";
+            ShowProgress(wxT("Filtering rewritten ADST file"), stemp[2].c_str(), (input->GetNkeys())*itemp[0]);
+
+            cout << "# StartFileSplit        #: Will start filtering file " << RemovePath(&infile) << " into:" << endl;
+            cout << "# StartFileSplit        #: - Filtered file:  " << RemovePath(&stemp[0]) << " (" << itemp[1] << " of " << itemp[3] << " total filtered events)" << endl;
          }
 
-	 output->Close();
+         // Shuffle the event list (saving to two vectors with event numbers)
+         shuffle(shuflist->begin(), shuflist->end(), default_random_engine(*randSeed));
 
-	 if(*singlefile && (i == 0))
-            break;
+         vector<int> *split1list = new vector<int>;
+         vector<int> *split2list = new vector<int>;
+
+         for(int i = 0; i < itemp[3]; i++)
+         {
+            if(DBGSIG > 1)
+               cout << i << "\tList event:\t" << shuflist->at(i) << "\t";
+
+            if(i < itemp[1])
+            {
+               split1list->push_back(shuflist->at(i));
+               if(DBGSIG > 1)
+                  cout << " (1st list)" << endl;
+            }
+            else
+            {
+               split2list->push_back(shuflist->at(i));
+               if(DBGSIG > 1)
+                  cout << " (2nd list)" << endl;
+            }
+         }
+
+         // Loop over the two split files (break loop, if only filtering)
+         TFile *output;
+         for(int i = 0; i < 2; i++)
+         {
+            cout << "# StartFileSplit        #: Currently writing out to: " << stemp[i] << endl;
+            output = TFile::Open(stemp[i].c_str(), "RECREATE");
+
+            // Loop over all trees
+            for(int k = 0; k < input->GetNkeys(); k++)
+            {
+               // Name and title of the current tree
+               stemp[2] = string((tempkeyslist->At(k))->GetName());
+               stemp[3] = string((tempkeyslist->At(k))->GetTitle());
+
+               cout << "# StartFileSplit        #:   Currently selected tree: " << stemp[2] << "; " << stemp[3] << endl;
+
+               // Prepare tree for reading
+               readTree = (TTree*)input->Get(stemp[2].c_str());
+               readTree->SetBranchAddress("rewritecode", &rewritecode);
+               for(int j = 0; j < nrobs; j++)
+               {
+                  readTree->SetBranchAddress((obser->GetName(j)).c_str(), obser->obsstruct[j].value);
+                  readTree->SetBranchAddress((obser->GetName(j) + "_neg").c_str(), obser_neg->obsstruct[j].value);
+                  readTree->SetBranchAddress((obser->GetName(j) + "_pos").c_str(), obser_pos->obsstruct[j].value);
+               }
+
+               // Prepare tree for writing
+               if( (stemp[3].compare("Signal tree from old file.") == 0) || (stemp[3].compare("Signal tree from new file.") == 0) || (stemp[3].compare("Background tree with all events, including signal events.") == 0) )
+                  stemp[4] = stemp[3];
+               else
+               {
+                  // Splitting by fraction or number of events
+                  if(!(*singlefile))
+                  {
+/*                     ftemp[1] = 100.*((float)itemp[i+1])/((float)itemp[3]);
+                     stemp[4] = stemp[3] + " (" + ToString((double)ftemp[1],2) + "%)";
+//                     stemp[4] = stemp[3] + "-split" + ToString(i+1);*/
+                     stemp[4] = stemp[3];
+                  }
+                  // Filtering a file
+                  else
+                  {
+//                     stemp[4] = stemp[3] + " (filtered)";
+                     stemp[4] = stemp[3];
+                  }
+               }
+               writeTree = new TTree(stemp[2].c_str(), stemp[4].c_str());
+               writeTree->Branch("rewritecode", &rewritecode, "rewritecode/I");
+               for(int j = 0; j < nrobs; j++)
+               {
+                  writeTree->Branch((obser->GetName(j)).c_str(), &(obser->obsstruct[j].value), (obser->GetName(j) + "[" + ToString(ALLEYES) + "]/F").c_str());
+                  writeTree->Branch((obser->GetName(j) + "_neg").c_str(), &(obser_neg->obsstruct[j].value), (obser->GetName(j) + "_neg[" + ToString(ALLEYES) + "]/F").c_str());
+                  writeTree->Branch((obser->GetName(j) + "_pos").c_str(), &(obser_pos->obsstruct[j].value), (obser->GetName(j) + "_pos[" + ToString(ALLEYES) + "]/F").c_str());
+               }
+
+               // Check if the values in this tree are valid
+               if( (stemp[3].compare("Signal tree from old file.") == 0) || (stemp[3].compare("Signal tree from new file.") == 0) )
+               {
+                  // Update the progress bar
+                  itemp[4]+=itemp[0];
+                  progress->Update(itemp[4]);
+               }
+               else
+               {
+                  // Loop over all events 
+                  for(int j = 0; j < itemp[0]; j++)
+                  {
+                     readTree->GetEntry(j);
+
+                     // Select the correct tree to write to
+                     if( (find(split1list->begin(), split1list->end(), j) != split1list->end()) && (i == 0) )
+                        writeTree->Fill();
+                     if( (find(split2list->begin(), split2list->end(), j) != split2list->end()) && (i == 1) )
+                        writeTree->Fill();
+
+                     // Update the progress bar
+                     itemp[4]++;
+                     if(!(*singlefile))
+           	  {
+                        if(itemp[4]%((int)(2*(input->GetNkeys())*itemp[0]*0.05)) == 0)
+                           progress->Update(itemp[4]);
+           	  }
+           	  else
+           	  {
+                        if(itemp[4]%((int)((input->GetNkeys())*itemp[0]*0.05)) == 0)
+                           progress->Update(itemp[4]);
+           	  }
+                  }
+               }
+
+               writeTree->Write();
+
+               delete writeTree;
+            }
+
+            output->Close();
+
+            if(*singlefile && (i == 0))
+               break;
+         }
+
+         if(!(*singlefile))
+            progress->Update(2*(input->GetNkeys())*itemp[0]);
+         else
+            progress->Update((input->GetNkeys())*itemp[0]);
+
+         delete split1list;
+         delete split2list;
       }
 
-      if(!(*singlefile))
-         progress->Update(2*(input->GetNkeys())*itemp[0]);
-      else
-         progress->Update((input->GetNkeys())*itemp[0]);
-
-      delete split1list;
-      delete split2list;
+      delete[] ftemp;
+      delete[] itemp;
+      delete[] stemp;
+      delete obser;
+      delete obser_neg;
+      delete obser_pos;
+      delete randSeed;
+      delete shuflist;
+      delete singlefile;
+      input->Close();
    }
-
-   delete[] ftemp;
-   delete[] itemp;
-   delete[] stemp;
-   delete obser;
-   delete obser_neg;
-   delete obser_pos;
-   delete randSeed;
-   delete shuflist;
-   delete singlefile;
-   input->Close();
 
    return 0;
 }

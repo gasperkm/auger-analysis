@@ -1,0 +1,35 @@
+p_Fe_70p-30Fe:
+Mean data value = 0.640042	0.0064728	0.00589161
+Mean norm. data value = 0.697495	0.0106597	0.0101125
+
+He_Fe_70p-30Fe:
+Mean data value = 0.667274	0.00695095	0.00901426
+Mean norm. data value = 0.762485	0.014663	0.0175664
+
+O_Fe_70p-30Fe:
+Mean data value = 0.75265	0.0132119	0.0138209
+Mean norm. data value = 1.04634	0.0718594	0.0700865
+
+p_Fe_70p-30O:
+Mean data value = 0.749631	0.00950252	0.00768447
+Mean norm. data value = 0.836035	0.0143971	0.0122327
+
+He_Fe_70p-30O:
+Mean data value = 0.788677	0.0105627	0.010269
+Mean norm. data value = 0.93091	0.019491	0.0201713
+
+O_Fe_70p-30O:
+Mean data value = 0.886773	0.012098	0.012911
+Mean norm. data value = 1.33093	0.0903095	0.0873713
+
+p_Fe_70He-30Fe:
+Mean data value = 0.586314	0.00928777	0.00832216
+Mean norm. data value = 0.629611	0.0135814	0.0126062
+
+He_Fe_70He-30Fe:
+Mean data value = 0.625226	0.0100775	0.00979163
+Mean norm. data value = 0.703773	0.0176322	0.0179697
+    
+O_Fe_70He-30Fe:
+Mean data value = 0.728672	0.0169455	0.0157673
+Mean norm. data value = 0.994779	0.0719592	0.0684994

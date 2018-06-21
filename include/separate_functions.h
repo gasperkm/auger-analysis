@@ -26,6 +26,7 @@ string RemovePath(string *inname);
 string RemoveFilename(string *inname);
 string ReplaceExtension(string *inname, string ext);
 string CheckExtension(string *inname, string ext);
+int CompareExtension(string *inname, string ext);
 string RemoveFromLast(string *inname, string search);
 string RemoveBeforeLast(string *inname, string search);
 string RemoveBeforeFirst(string *inname, string search);

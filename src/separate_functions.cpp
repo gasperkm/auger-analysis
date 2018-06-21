@@ -101,6 +101,26 @@ string CheckExtension(string *inname, string ext)
    }
 }
 
+// Compare the extension extension
+int CompareExtension(string *inname, string ext)
+{
+   if(DBGSIG > 1)
+      cout << "# CompareExtension        #: " << "Remove before last = " << RemoveBeforeLast(inname, ".") << endl;
+
+   if(RemoveBeforeLast(inname, ".") == ext)
+   {
+      if(DBGSIG > 1)
+         cout << "# CompareExtension        #: " << "Extensions equal: " << *inname << endl;
+      return 1;
+   }
+   else
+   {
+      if(DBGSIG > 1)
+         cout << "# CompareExtension        #: " << "Extensions not equal: " << *inname << endl;
+      return 0;
+   }
+}
+
 // Remove everything from the last occurence of a character to the end
 string RemoveFromLast(string *inname, string search)
 {

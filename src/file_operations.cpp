@@ -100,12 +100,20 @@ void MyFrame::PrepareFileSplit(wxCommandEvent& event)
    {
       if(selections.GetCount() == 1)
       {
-         ret = StartFileSplit(string((mvaList[1]->widgetLB)->GetString(selections[0])));
+         ret = StartFileSplit(string((mvaList[1]->widgetLB)->GetString(selections[0])), 0, selections.GetCount());
          if(ret == 0)
             InfoPopup("Finished spliting files", "The selected files have been split according to the set fraction.");
       }
       else
-         AlertPopup("Multiple files selected", "Multiple files from the second listbox were selected. Please select only one file to split.");
+      {
+         ret = 0;
+         for(int i = 0; i < selections.GetCount(); i++)
+            ret += StartFileSplit(string((mvaList[1]->widgetLB)->GetString(selections[i])), i, selections.GetCount());
+
+	 if(ret == 0)
+            InfoPopup("Finished spliting files", "The selected files have been split according to the set fraction.");
+//         AlertPopup("Multiple files selected", "Multiple files from the second listbox were selected. Please select only one file to split.");
+      }
    }
    else
       AlertPopup("No selected files", "No files from the second listbox were selected. Please select only one file to split.");

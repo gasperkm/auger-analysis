@@ -1,4 +1,5 @@
 #include "combine.h"
+#include "primary_type.h"
 
 void CombineRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, vector<int> &nrevts, vector<string> &filenames )
 {
@@ -74,7 +75,7 @@ void CombineRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys
          }
       }
 
-      cout << "selectCount = " << selectCount[0] << ", " << selectCount[1] <</* ", " << selectCount[2] <<*/ endl;
+      cout << "selectCount = " << selectCount[0] << ", " << selectCount[1] << endl;
 
       // Merge all events
       printf("#- %d c ---------------------------------------------\n", fileCount);
@@ -119,8 +120,10 @@ void CombineRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys
    delete listAll;
 }
 
-void MergeRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, vector<int> &nrevts, vector<string> &filenames, int opt )
+void MergeRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, vector<int> &nrevts, vector<string> &titles, vector<string> &filenames, int opt )
 {
+   PrimPart *prim = new PrimPart();
+
    cout << "Merging root files." << endl;
    for(int i = 0; i < filenames.size(); i++) cout << "  " << filenames[i] << endl;
 
@@ -129,6 +132,76 @@ void MergeRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, 
    for(int i = 0; i < nrkeys.size(); i++)
       sigKeys += (nrkeys[i]-1)/2;
    cout << "Number of signal keys in all files = " << sigKeys << endl;
+
+   vector<int> *partevts = new vector<int>;
+   for(int i = 0; i < prim->Nr(); i++)
+      partevts->push_back(0);
+   int maxevents = 0;
+   int partid = -1;
+//   int *itemp = new int[5];
+//   string *stemp = new string[2];
+/*   itemp[0] = 0;
+   itemp[1] = 0;
+   itemp[2] = 0;
+   itemp[3] = 0;
+   itemp[4] = 0;*/
+   // Set titles for final keys
+   for(int i = 0; i < titles.size(); i++)
+   {
+      if( !((titles[i].compare("Signal tree from old file.") == 0) || (titles[i].compare("Signal tree from new file.") == 0) || (titles[i].compare("Background tree with all events, including signal events.") == 0)) )
+      {
+	 cout << "Combining " << titles[i] << " (" << nrevts[i] << ")" << endl;
+
+         partid = prim->GetZ(&titles[i]);
+	 if(partid != -1)
+	 {
+            partevts->at(partid) += nrevts[i];
+	 }
+
+/*         if(titles[i] == "Proton")
+            itemp[0] += nrevts[i]; 
+         else if(titles[i] == "Helium")
+            itemp[1] += nrevts[i]; 
+         else if(titles[i] == "Oxygen")
+            itemp[2] += nrevts[i]; 
+         else if(titles[i] == "Iron")
+            itemp[3] += nrevts[i]; 
+	 else
+            itemp[4] += nrevts[i];*/
+
+	 maxevents += nrevts[i];
+      }
+   }
+
+   /* TODO */
+/*   cout << prim->Nr() << endl
+        << prim->GetName(6) << endl
+        << prim->GetShortName(6) << endl
+        << prim->GetA(6) << endl
+        << prim->GetShortName(&stemp[0]) << endl
+        << prim->GetName(&stemp[1]) << endl
+        << prim->GetA(&stemp[0]) << endl
+        << prim->GetA(&stemp[1]) << endl;*/
+
+   cout << "Events per particle type:" << endl;
+   for(int i = 0; i < prim->Nr(); i++)
+   {
+      cout << "- " << prim->GetName(i) << " = " << partevts->at(i) << " (" << (double)partevts->at(i)/(double)maxevents << ")" << endl;
+   }
+/*   cout << "- Proton = " << itemp[0] << " (" << (double)itemp[0]/(double)maxevents << ")" << endl;
+   cout << "- Helium = " << itemp[1] << " (" << (double)itemp[1]/(double)maxevents << ")" << endl;
+   cout << "- Oxygen = " << itemp[2] << " (" << (double)itemp[2]/(double)maxevents << ")" << endl;
+   cout << "- Iron   = " << itemp[3] << " (" << (double)itemp[3]/(double)maxevents << ")" << endl;
+   cout << "- Other  = " << itemp[4] << " (" << (double)itemp[4]/(double)maxevents << ")" << endl;*/
+   cout << "- Total  = " << maxevents << endl;
+
+//   delete prim;
+
+/*   for(int i = 0; i < 5; i++)
+      partevts.push_back(itemp[i]);
+
+   delete[] itemp;
+   delete[] stemp;*/
 
    int nrfiles = sourcelist->GetSize();
    string strOldS, strNewS;
@@ -190,7 +263,7 @@ void MergeRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, 
          }
       }
 
-      cout << "selectCount = " << selectCount[0] << ", " << selectCount[1] << ", " << selectCount[2] << endl;
+      cout << "selectCount = " << selectCount[0] << ", " << selectCount[1] << endl;
 
       // Merge all events
       printf("#- %d c ---------------------------------------------\n", fileCount);
@@ -222,6 +295,44 @@ void MergeRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, 
       outOld = TTree::MergeTrees(listOld);
       strOldS = "TreeOldS1";
       outOld->SetName(strOldS.c_str());
+
+      treeTitleOld = "";
+      for(int i = 0; i < partevts->size(); i++)
+      {
+         if((double)partevts->at(i)/(double)maxevents == 1)
+	 {
+            treeTitleOld = prim->GetName(i);
+/*            if(i == 0)
+               treeTitleOld = "Proton";
+            else if(i == 1)
+               treeTitleOld = "Helium";
+            else if(i == 2)
+               treeTitleOld = "Oxygen";
+            else if(i == 3)
+               treeTitleOld = "Iron";
+            else if(i == 4)
+               treeTitleOld = "Other";*/
+
+	    break;
+	 }
+         else if((double)partevts->at(i)/(double)maxevents > 0)
+	 {
+            treeTitleOld += "[" + prim->GetName(i) + " " + ToString(100.*(double)partevts->at(i)/(double)maxevents, 2) + "%]";
+/*            if(i == 0)
+               treeTitleOld += "[Proton " + ToString((double)partevts->at(i)/(double)maxevents, 2) + "%] ";
+            else if(i == 1)
+               treeTitleOld += "[Helium " + ToString((double)partevts->at(i)/(double)maxevents, 2) + "%] ";
+            else if(i == 2)
+               treeTitleOld += "[Oxygen " + ToString((double)partevts->at(i)/(double)maxevents, 2) + "%] ";
+            else if(i == 3)
+               treeTitleOld += "[Iron " + ToString((double)partevts->at(i)/(double)maxevents, 2) + "%] ";
+            else if(i == 4)
+               treeTitleOld += "[Other " + ToString((double)partevts->at(i)/(double)maxevents, 2) + "%] ";*/
+	 }
+      }
+
+      cout << "Final output name: " << treeTitleOld << endl;
+      outOld->SetTitle(treeTitleOld.c_str());
    }
    else
    {
@@ -237,6 +348,44 @@ void MergeRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, 
       outNew = TTree::MergeTrees(listNew);
       strOldS = "TreeNewS1";
       outNew->SetName(strOldS.c_str());
+
+      treeTitleNew = "";
+      for(int i = 0; i < partevts->size(); i++)
+      {
+         if((double)partevts->at(i)/(double)maxevents == 1)
+	 {
+            treeTitleNew = prim->GetName(i);
+/*            if(i == 0)
+               treeTitleNew = "Proton";
+            else if(i == 1)
+               treeTitleNew = "Helium";
+            else if(i == 2)
+               treeTitleNew = "Oxygen";
+            else if(i == 3)
+               treeTitleNew = "Iron";
+            else if(i == 4)
+               treeTitleNew = "Other";*/
+
+	    break;
+	 }
+         else if((double)partevts->at(i)/(double)maxevents > 0)
+	 {
+            treeTitleNew += "[" + prim->GetName(i) + " " + ToString(100.*(double)partevts->at(i)/(double)maxevents, 2) + "%]";
+/*            if(i == 0)
+               treeTitleNew += "[Proton " + ToString(100.*(double)partevts->at(i)/(double)maxevents, 2) + "%]";
+            else if(i == 1)
+               treeTitleNew += "[Helium " + ToString(100.*(double)partevts->at(i)/(double)maxevents, 2) + "%]";
+            else if(i == 2)
+               treeTitleNew += "[Oxygen " + ToString(100.*(double)partevts->at(i)/(double)maxevents, 2) + "%]";
+            else if(i == 3)
+               treeTitleNew += "[Iron " + ToString(100.*(double)partevts->at(i)/(double)maxevents, 2) + "%]";
+            else if(i == 4)
+               treeTitleNew += "[Other " + ToString(100.*(double)partevts->at(i)/(double)maxevents, 2) + "%]";*/
+	 }
+      }
+
+      cout << "Final output name: " << treeTitleNew << endl;
+      outOld->SetTitle(treeTitleNew.c_str());
    }
    else
    {
@@ -256,9 +405,12 @@ void MergeRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, 
    delete listAll;
    delete listOld;
    delete listNew;
+
+   delete partevts;
+   delete prim;
 }
 
-void CheckKeys( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, vector<int> &nrevts )
+void CheckKeys( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, vector<int> &nrevts, vector<string> &titles )
 {
    int nrfiles = sourcelist->GetSize();
    int fileCount = 0;
@@ -283,6 +435,7 @@ void CheckKeys( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, vect
       treeAll = (TTree*)nextsource->Get("TreeA");
 cout << "Number of events in tree TreeA = " << treeAll->GetEntries() << endl;
       nrevts.push_back(treeAll->GetEntries());
+      titles.push_back(treeAll->GetTitle());
 
       for(int j = 1; j <= (nrkeys[fileCount]-1)/2; j++)
       {
@@ -296,6 +449,12 @@ cout << "Number of events in tree " << strOldS << " = " << treeOldS->GetEntries(
 cout << "Number of events in tree " << strNewS << " = " << treeNewS->GetEntries() << endl;
          nrevts.push_back(treeOldS->GetEntries());
          nrevts.push_back(treeNewS->GetEntries());
+
+//         if( !((stemp[3].compare("Signal tree from old file.") == 0) || (stemp[3].compare("Signal tree from new file.") == 0) || (stemp[3].compare("Background tree with all events, including signal events.") == 0)) )
+//	 {
+	    titles.push_back(treeOldS->GetTitle());
+	    titles.push_back(treeNewS->GetTitle());
+//	 }
       }
 
       nextsource = (TFile*)sourcelist->After(nextsource);
@@ -314,6 +473,7 @@ void hmerge(int nrfiles, string *files, string *outname)
    char ctemp[1024];
    vector<int> nrkeys;
    vector<int> nrevts;
+   vector<string> titles;
    vector<string> filenames;
 
    // Prepare the files to be merged
@@ -339,16 +499,19 @@ void hmerge(int nrfiles, string *files, string *outname)
      FileList->Add(TFile::Open(ctemp));   
    }
 
-   CheckKeys(Target, FileList, nrkeys, nrevts);
+   CheckKeys(Target, FileList, nrkeys, nrevts, titles);
    for(int i = 0; i < nrkeys.size(); i++)
       printf("Keys in file %d = %d\n", i, nrkeys[i]);
    for(int i = 0; i < nrevts.size(); i++)
       printf("Events in key %d = %d\n", i, nrevts[i]);
+   for(int i = 0; i < titles.size(); i++)
+      cout << "Title of key " << i << " = " << titles[i] << endl;
+//      printf("Title of key %d = %d\n", i, nrevts[i]);
 
    if(nrfiles > 1)
-      MergeRootfile(Target, FileList, nrkeys, nrevts, filenames, 0);
+      MergeRootfile(Target, FileList, nrkeys, nrevts, titles, filenames, 0);
    else
-      MergeRootfile(Target, FileList, nrkeys, nrevts, filenames, 1);
+      MergeRootfile(Target, FileList, nrkeys, nrevts, titles, filenames, 1);
 
    Target->Close();
 
@@ -372,6 +535,7 @@ void hadd(int nrfiles, string *files, string *outname)
    char ctemp[1024];
    vector<int> nrkeys;
    vector<int> nrevts;
+   vector<string> titles;
    vector<string> filenames;
 
    // Prepare the files to be merged
@@ -395,11 +559,13 @@ void hadd(int nrfiles, string *files, string *outname)
      FileList->Add(TFile::Open(ctemp));   
    }
 
-   CheckKeys(Target, FileList, nrkeys, nrevts);
+   CheckKeys(Target, FileList, nrkeys, nrevts, titles);
    for(int i = 0; i < nrkeys.size(); i++)
       printf("Keys in file %d = %d\n", i, nrkeys[i]);
    for(int i = 0; i < nrevts.size(); i++)
       printf("Events in key %d = %d\n", i, nrevts[i]);
+   for(int i = 0; i < titles.size(); i++)
+      cout << "Title of key " << i << " = " << titles[i] << endl;
 
    if(nrfiles > 1)
       CombineRootfile(Target, FileList, nrkeys, nrevts, filenames);
