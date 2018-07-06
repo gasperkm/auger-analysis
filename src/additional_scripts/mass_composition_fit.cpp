@@ -20,8 +20,9 @@ MassComposition::MassComposition(vector<string> *primVals, char *infile, int int
 
    midLna = new double;
    midFraction = new vector<double>;
-   midFracNerr = new vector<double>;
-   midFracPerr = new vector<double>;
+   midComposition = new vector<double>;
+/*   midFracNerr = new vector<double>;
+   midFracPerr = new vector<double>;*/
 
    // Define the particles that will be used in the mix
    for(int i = 0; i < primVals->size(); i++)
@@ -34,7 +35,6 @@ MassComposition::MassComposition(vector<string> *primVals, char *infile, int int
 
    // Get the proton fraction values from the file
    ReadFromFile(infile, intype);
-//   SelectPoint(0, 0);
 }
 
 MassComposition::~MassComposition()
@@ -50,11 +50,80 @@ MassComposition::~MassComposition()
 
    delete midLna;
    delete midFraction;
-   delete midFracNerr;
-   delete midFracPerr;
+   delete midComposition;
+/*   delete midFracNerr;
+   delete midFracPerr;*/
 
    delete mvafraction;
    delete fractionPoints;
+
+   delete permuteMnp;
+}
+
+void MassComposition::PreparePermutations()
+{
+   // Make permutations of all mean, negative and positive values (for uncertainty calculation)
+   permuteMnp = new vector<string>;
+   string *stemp = new string;
+   *stemp = "MNP";
+
+   vector<int> *permIndex = new vector<int>(stemp->size());
+//   cout << "nrtreat = " << nrtreat << ", nrall = " << nrall << ", nrmix = " << nrmix << endl;
+   icnt = 0;
+//   cout << "icnt = " << icnt << endl;
+   jcnt = 0;
+   startMnp = icnt;
+
+   PermuteMNP(stemp, permIndex, icnt, jcnt);
+
+//   cout << endl << "All permutations:" << endl;
+   for(int i = 0; i < permuteMnp->size(); i++)
+   {
+      *stemp = permuteMnp->at(i);
+      Reverse(stemp);
+      permuteMnp->at(i) = *stemp;
+//      cout << "i = " << i << ": " << permuteMnp->at(i) << endl;
+   }
+   cout << endl;
+
+   nrMnp = permuteMnp->size();
+
+   delete stemp;
+   delete permIndex;
+}
+
+void MassComposition::PermuteMNP(string *st, vector<int> *permIndex, int depth, int count)
+{
+   string *stemp = new string;
+
+   if(depth == st->size())
+   {
+      ++depth;
+      *stemp = "";
+      for(int i = startMnp; i < st->size(); ++i)
+         *stemp += st->at(permIndex->at(i));
+      permuteMnp->push_back(*stemp);
+
+      return;
+   }
+
+   for(int i = 0; i < st->size(); ++i)
+   {
+      permIndex->at(depth) = i;
+      PermuteMNP(st, permIndex, depth+1, count);
+   }
+
+   delete stemp;
+}
+
+int MassComposition::GetNrMnp()
+{
+   return nrMnp;
+}
+
+string MassComposition::GetMnpPermut(int mnp)
+{
+   return permuteMnp->at(mnp);
 }
 
 void MassComposition::ReadFromFile(char *infile, int intype)
@@ -419,15 +488,11 @@ void MassComposition::CalculateFractions()
 
 void MassComposition::SaveResults(int mnp)
 {
-   // Mean values
-   if(mnp == 0)
+   if((mnp >= 0) && (mnp < 27))
+   {
       midFraction->clear();
-   // Negative error
-   else if(mnp == 1)
-      midFracNerr->clear();
-   // Positive error
-   else if(mnp == 2)
-      midFracPerr->clear();
+      midComposition->clear();
+   }
    else
       return;
 
@@ -454,13 +519,9 @@ void MassComposition::SaveResults(int mnp)
       cout << "  y (shift)  = " << (*Shiftmat)(i, 0) << endl;
       dtemp[1] = dtemp[0] + (*Shiftmat)(i, 0);
 
-      // Mean
-      if(mnp == 0)
-      {
-         cout << "Saving mean value (fraction)" << endl;
-         midFraction->push_back(dtemp[1]);
-      }
-      // Negative error
+      cout << "Saving " << permuteMnp->at(mnp) << " value (fraction)" << endl;
+      midFraction->push_back(dtemp[1]);
+/*      // Negative error
       else if(mnp == 1)
       {
          cout << "Saving negative error (fraction)" << endl;
@@ -473,9 +534,7 @@ void MassComposition::SaveResults(int mnp)
          cout << "Saving positive error (fraction)" << endl;
          midFracPerr->push_back(dtemp[1]);
 //         finalFracPerr->push_back(TMath::Abs(finalFraction->at(i) - dtemp[1]));
-      }
-      else
-         return;
+      }*/
    }
 
    // Save lnA
@@ -498,13 +557,9 @@ void MassComposition::SaveResults(int mnp)
 
    cout << dtemp[1] << endl << endl;
 
-   // Mean
-   if(mnp == 0)
-   {
-      cout << "Saving mean value (lnA)" << endl;
-      *midLna = dtemp[1];
-   }
-   // Negative error
+   cout << "Saving " << permuteMnp->at(mnp) << " value (lnA)" << endl;
+   *midLna = dtemp[1];
+/*   // Negative error
    else if(mnp == 1)
    {
       cout << "Saving negative error (lnA)" << endl;
@@ -517,9 +572,7 @@ void MassComposition::SaveResults(int mnp)
       cout << "Saving positive error (lnA)" << endl;
 //      finalLna->push_back(TMath::Abs(finalLna->at(0) - dtemp[1]));
       *midLna = dtemp[1];
-   }
-   else
-      return;
+   }*/
 
    // Print out individual element fractions (mass composition)
    cout << "Mass composition:" << endl;
@@ -530,9 +583,23 @@ void MassComposition::SaveResults(int mnp)
       if(includeElem->at(i) == 1)
       {
          cout << "  " << ptype->GetName(includePart->at(i)) << " =\t" << 100.*(*Fmat)(icnt, 0) << "%" <<  endl;
+	 midComposition->push_back((*Fmat)(icnt, 0));
          icnt++;
       }
+      else
+      {
+	 midComposition->push_back(-404);
+      }
    }
+
+   if(nrall == 3)
+      midComposition->push_back(-404);
+   if(nrall == 2)
+      midComposition->push_back(-404);
+
+   cout << "midComposition (" << midComposition->size() << "):" << endl;
+   for(int i = 0; i < midComposition->size(); i++)
+      cout << "  " << midComposition->at(i) << endl;
 }
 
 int MassComposition::CheckResults()
@@ -639,12 +706,12 @@ void MassComposition::DrawResults(int type, int mnp)
       func[j]->Draw("SAME");
 
    // Draw lines where composition is supposed to end
-   if(mnp == 0)
+//   if(mnp == 0)
       dtemp[0] = GetFinalFraction(type);
-   else if(mnp == 1)
+/*   else if(mnp == 1)
       dtemp[0] = GetFinalFracNerr(type);
    else if(mnp == 2)
-      dtemp[0] = GetFinalFracPerr(type);
+      dtemp[0] = GetFinalFracPerr(type);*/
 
    TLine *l1 = new TLine(GetFinalLna(), -0.1, GetFinalLna(), 1.6);
    l1->SetLineWidth(1);
@@ -717,20 +784,28 @@ void MassComposition::DrawResults(int type, int mnp)
    gr = new TGraph(nrmix, lnval, yval);
    mystyle->SetGraphColor(gr, 0);
    gr->Draw("LP;SAME");
+/*
+   stemp[0] = "mkdir -p " + string(rootdir) + "/results/mass_composition_plots";
+   system(stemp[0].c_str());
 
+   stemp[0] = "rm -fr " + string(rootdir) + "/results/mass_composition_plots/*";
+   system(stemp[0].c_str());
+*/
    if(type == 0)
-      stemp[0] = string(rootdir) + "/results/lnA_fraction_sig-" + ptype->GetShortName(includePart->at(nrall-1)) + "_p-Fe-treatment";
+      stemp[0] = string(rootdir) + "/results/mass_composition_plots/lnA_fraction_sig-" + ptype->GetShortName(includePart->at(nrall-1)) + "_p-Fe-treatment";
    else if(type == 1)
-      stemp[0] = string(rootdir) + "/results/lnA_fraction_sig-" + ptype->GetShortName(includePart->at(nrall-1)) + "_He-Fe-treatment";
+      stemp[0] = string(rootdir) + "/results/mass_composition_plots/lnA_fraction_sig-" + ptype->GetShortName(includePart->at(nrall-1)) + "_He-Fe-treatment";
    else if(type == 2)
-      stemp[0] = string(rootdir) + "/results/lnA_fraction_sig-" + ptype->GetShortName(includePart->at(nrall-1)) + "_O-Fe-treatment";
+      stemp[0] = string(rootdir) + "/results/mass_composition_plots/lnA_fraction_sig-" + ptype->GetShortName(includePart->at(nrall-1)) + "_O-Fe-treatment";
 
-   if(mnp == 0)
+/*   if(mnp == 0)
       stemp[0] += "_mean";
    else if(mnp == 1)
       stemp[0] += "_nerr";
    else if(mnp == 2)
-      stemp[0] += "_perr";
+      stemp[0] += "_perr";*/
+
+   stemp[0] += "_" + permuteMnp->at(mnp);
 
    stemp[0] += ".pdf";
    cout << stemp[0] << endl;
@@ -761,10 +836,18 @@ double MassComposition::GetFinalLna()
 
 double MassComposition::GetFinalFraction(int type)
 {
+/*   cout << "nrfrac = " << midFraction->size() << endl;
+   for(int i = 0; i < midFraction->size(); i++)
+      cout << "i = " << i << ": " << midFraction->at(i) << " (" << midFraction->at(type) << ")" << endl;*/
    return midFraction->at(type);
 }
 
-double MassComposition::GetFinalFracNerr(int type)
+double MassComposition::GetFinalComposition(int type)
+{
+   return midComposition->at(type);
+}
+
+/*double MassComposition::GetFinalFracNerr(int type)
 {
    return midFracNerr->at(type);
 }
@@ -772,11 +855,16 @@ double MassComposition::GetFinalFracNerr(int type)
 double MassComposition::GetFinalFracPerr(int type)
 {
    return midFracPerr->at(type);
-}
+}*/
 
 int MassComposition::GetNrMix()
 {
    return nrmix;
+}
+
+int MassComposition::GetNrTreat()
+{
+   return nrtreat;
 }
 
 int MassComposition::GetNrPoints()
@@ -784,23 +872,59 @@ int MassComposition::GetNrPoints()
    return nrpoints;
 }
 
-void MassComposition::SelectPoint(int point, int mnp)
+int MassComposition::SelectPoint(int point, int mnp)
 {
    if( point >= nrpoints )
    {
-      cout << "Error! Point (" << point << ") does not exist. Selecting highest point instead (" << nrpoints-1 <<  ")." << endl;
+      cout << "Error! Point (" << point << ") does not exist. Highest poins is " << nrpoints-1 <<  ". Rerun analysis and select the correct point." << endl;
       point = nrpoints-1;
+
+      return -1;
    }
 
+   int *itemp = new int[nrtreat];
+   string *stemp = new string;
+
+   *stemp = permuteMnp->at(mnp);
+
    cout.precision(5);
-   cout << "Selecting point " << point << " and type " << mnp << "." << endl;
+   cout << "Selecting point " << point << " and type " << mnp << " (" << *stemp << ")." << endl;
 
    mvafraction->clear();
 
-   // p-Fe treatment
+   for(int i = 0; i < nrtreat; i++)
+   {
+      if( stemp->at(i) == 'M' )
+      {
+         itemp[i] = 0;
+//	 cout << "i = " << i << ": mean" << endl;
+      }
+      else if( stemp->at(i) == 'N' )
+      {
+         itemp[i] = -1;
+//	 cout << "i = " << i << ": neg" << endl;
+      }
+      else if( stemp->at(i) == 'P' )
+      {
+         itemp[i] = 1;
+//	 cout << "i = " << i << ": pos" << endl;
+      }
+   }
+
+   // Take values for treatments treatment
    for(int i = 0; i < nrtreat; i++)
    {
       // Mean value
+      if(itemp[i] == 0)
+         mvafraction->push_back(fractionPoints->at(3*(point+i*nrpoints)));
+      // Negative error
+      else if(itemp[i] == -1)
+         mvafraction->push_back(fractionPoints->at(3*(point+i*nrpoints)) - fractionPoints->at(3*(point+i*nrpoints)+1));
+      // Positive error
+      else if(itemp[i] == 1)
+         mvafraction->push_back(fractionPoints->at(3*(point+i*nrpoints)) + fractionPoints->at(3*(point+i*nrpoints)+2));
+
+/*      // Mean value
       if(mnp == 0)
          mvafraction->push_back(fractionPoints->at(3*(point+i*nrpoints)));
       // Negative error
@@ -808,10 +932,16 @@ void MassComposition::SelectPoint(int point, int mnp)
          mvafraction->push_back(fractionPoints->at(3*(point+i*nrpoints)) - fractionPoints->at(3*(point+i*nrpoints)+1));
       // Positive error
       else if(mnp == 2)
-         mvafraction->push_back(fractionPoints->at(3*(point+i*nrpoints)) + fractionPoints->at(3*(point+i*nrpoints)+2));
+         mvafraction->push_back(fractionPoints->at(3*(point+i*nrpoints)) + fractionPoints->at(3*(point+i*nrpoints)+2));*/
 
+      cout.precision(5);
       cout << "i = " << i << ": Using value = " << mvafraction->at(i) << " (" << fractionPoints->at(3*(point+i*nrpoints)) << ", " << fractionPoints->at(3*(point+i*nrpoints)+1) << ", " << fractionPoints->at(3*(point+i*nrpoints)+2) << ")" << endl;
    }
+
+   delete[] itemp;
+   delete stemp;
+
+   return 0;
 }
 
 void MassComposition::PrintMatrix(TMatrixD *mat, string matname)
@@ -836,6 +966,20 @@ void MassComposition::PrintMatrix(TMatrixD *mat, string matname)
    cout << endl;
 }
 
+void MassComposition::Reverse(string *instring)
+{
+   string *stemp = new string;
+   *stemp = "";
+
+   for(int i = instring->size()-1; i >= 0; i--)
+   {
+      *stemp += instring->at(i);
+   }
+
+   *instring = *stemp;
+   delete stemp;
+}
+
 void MassComposition::DeleteAnalysisMatrices()
 {
    delete Amat;
@@ -851,14 +995,21 @@ void MassComposition::DeleteAnalysisMatrices()
 
 int main(int argc, char **argv)
 {
-   int invalid[] = {-1,-1,-1};
-   int *itemp = new int[5];
+   int invalid[27];
+   for(int i = 0; i < 27; i++)
+      invalid[i] = -1;
+   int *itemp = new int[6];
    string *stemp = new string;
+   double *dtemp = new double[3];
+
+   int allnr = 4;
 
    vector<double> *finalLna = new vector<double>;
+   vector<string> *finalPermut = new vector<string>;
    vector<double> *finalFraction = new vector<double>;
    vector<double> *finalFracNerr = new vector<double>;
    vector<double> *finalFracPerr = new vector<double>;
+   vector<double> *finalComp = new vector<double>;
 
    int filetype;
    if(argc > 1)
@@ -874,8 +1025,16 @@ int main(int argc, char **argv)
    cout << "Select the point to analyze: ";
    cin >> itemp[3];
 
+   itemp[5] = 26;
+   
+   stemp[0] = "mkdir -p " + string(rootdir) + "/results/mass_composition_plots";
+   system(stemp[0].c_str());
+
+   stemp[0] = "rm -fr " + string(rootdir) + "/results/mass_composition_plots/*";
+   system(stemp[0].c_str());
+
    // Go over all mean, negative and positive values
-   for(int i = 0; i < 3; i++)
+   for(int i = 0; i < 27; i++)
    {
       itemp[0] = 0;
       itemp[1] = 0;
@@ -896,20 +1055,42 @@ int main(int argc, char **argv)
          {
             cout << "Using file " << argv[1] << " as input MVA fraction file." << endl;
             massComp = new MassComposition(types, argv[1], filetype);
-            massComp->SelectPoint(itemp[3], i);
+	    massComp->PreparePermutations();
+            if(massComp->SelectPoint(itemp[3], i) == -1)
+	    {
+               delete massComp;
+               delete[] itemp;
+               delete stemp;
+               delete[] dtemp;
+               delete types;
+
+               delete finalLna;
+               delete finalPermut;
+               delete finalFraction;
+               delete finalComp;
+	       return 1;
+	    }
             invalid[i] = massComp->CheckNrYvalues();
          }
          else
          {
             cout << "Error! No input file." << endl;
+	    delete massComp;
             delete[] itemp;
             delete stemp;
+            delete[] dtemp;
             delete types;
+
+            delete finalLna;
+            delete finalPermut;
+            delete finalFraction;
+            delete finalComp;
             return 1;
          }
 
          while(invalid[i] < 0)
          {
+//            massComp->PreparePermutations();
             massComp->PrintMixture();
             massComp->PrepareAmatrix();
             massComp->InvertAmatrix();
@@ -923,25 +1104,30 @@ int main(int argc, char **argv)
             invalid[i] = massComp->CheckResults();
 
             massComp->DeleteAnalysisMatrices();
-
-	    cout << "Continue? ";
-	    cin >> itemp[4];
 	 }
 
 	 // Store results in a separate file
 	 if(invalid[i] == 0)
 	 {
             finalLna->push_back(massComp->GetFinalLna());
+	    finalPermut->push_back(massComp->GetMnpPermut(i));
 
-            for(int j = 0; j < massComp->GetNrMix()-1; j++)
+            for(int j = 0; j < massComp->GetNrTreat(); j++)
 	    {
-	       if(i == 0)
+               if(j < massComp->GetNrMix()-1)
                   finalFraction->push_back(massComp->GetFinalFraction(j));
-	       else if(i == 1)
+	       else
+                  finalFraction->push_back(-1.);
+/*	       if(i == 0)
+                  finalFraction->push_back(massComp->GetFinalFraction(j));*/
+/*	       else if(i == 1)
                   finalFracNerr->push_back(massComp->GetFinalFracNerr(j));
 	       else if(i == 2)
-                  finalFracPerr->push_back(massComp->GetFinalFracPerr(j));
+                  finalFracPerr->push_back(massComp->GetFinalFracPerr(j));*/
 	    }
+
+	    for(int j = 0; j < allnr; j++)
+               finalComp->push_back(massComp->GetFinalComposition(j));
 	 }
 
          delete massComp;
@@ -956,29 +1142,82 @@ int main(int argc, char **argv)
 
          itemp[0]++;
 
+/*         cout << "Continue? ";
+         cin >> itemp[4];*/
       }
+
+/*         cout << "Continue? ";
+         cin >> itemp[4];*/
    }
 
-   cout.precision(4);
+/*   cout.precision(4);
    cout << "Final lnA (" << finalLna->size() <<  "):" << endl;
    for(int i = 0; i < finalLna->size(); i++)
-      cout << "i = " << i << ": " << finalLna->at(i) << endl;
+      cout << "i = " << i << ", permut = " << finalPermut->at(i) << ": " << finalLna->at(i) << endl;
 
    cout << "Final fraction (" << finalFraction->size() <<  "):" << endl;
    for(int i = 0; i < finalFraction->size(); i++)
-      cout << "i = " << i << " (mean) = " << finalFraction->at(i) << endl;
-   for(int i = 0; i < finalFracNerr->size(); i++)
-      cout << "i = " << i << " (nerr) = " << finalFracNerr->at(i) << endl;
-   for(int i = 0; i < finalFracPerr->size(); i++)
-      cout << "i = " << i << " (nerr) = " << finalFracPerr->at(i) << endl;
+      cout << "i = " << i << " (mean) = " << finalFraction->at(i) << endl;*/
+
+   cout.precision(4);
+   cout << endl << "Final results:" << endl;
+   cout << "# nr\trun \tlnA \t\tp/Fe\tHe/Fe\tO/Fe\t\tp   \tHe  \tO   \tFe" << endl;
+   for(int i = 0; i < finalLna->size(); i++)
+   {
+      cout << i << "\t" << finalPermut->at(i) << "\t" << finalLna->at(i);
+      cout << "\t";
+
+      for(int j = 0; j < allnr-1; j++)
+         cout << "\t" << finalFraction->at((allnr-1)*i+j);
+
+      cout << "\t";
+
+      for(int j = 0; j < allnr; j++)
+      {
+	 if(finalComp->at(allnr*i+j) == -404)
+            cout << "\t" << "----";
+	 else
+            cout << "\t" << finalComp->at(allnr*i+j);
+      }
+
+      cout << endl;
+   }
+
+   cout.precision(4);
+   cout << endl << "Mean value and low/high errors on lnA:" << endl;
+
+   for(int i = 0; i < finalLna->size(); i++)
+   {
+      if(finalPermut->at(i) == "MMM")
+      {
+         dtemp[0] = finalLna->at(i);
+	 break;
+      }
+   }
+
+   dtemp[1] = dtemp[0];
+   dtemp[2] = dtemp[0];
+   for(int i = 0; i < finalLna->size(); i++)
+   {
+      if(finalLna->at(i) < dtemp[1])
+         dtemp[1] = finalLna->at(i);
+
+      if(finalLna->at(i) > dtemp[2])
+         dtemp[2] = finalLna->at(i);
+   }
+
+   cout << dtemp[0] << "\t" << dtemp[1] << "\t" << dtemp[2] << endl;
+   cout << dtemp[0] << "\t" << TMath::Abs(dtemp[0] - dtemp[1]) << "\t" << TMath::Abs(dtemp[0] - dtemp[2]) << endl;
 
    delete[] itemp;
    delete stemp;
+   delete[] dtemp;
 
    delete finalLna;
+   delete finalPermut;
    delete finalFraction;
-   delete finalFracNerr;
-   delete finalFracPerr;
+/*   delete finalFracNerr;
+   delete finalFracPerr;*/
 
    return 0;
 }

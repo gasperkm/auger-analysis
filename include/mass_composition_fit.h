@@ -20,6 +20,10 @@ private:
    int nrpoints;
    int nrtreat;
 
+   vector<string> *permuteMnp;
+   int startMnp;
+   int nrMnp;
+
    // Number of all possible elements and number of elements included in the mix
    int nrall;
    int nrmix;
@@ -45,13 +49,18 @@ private:
 
    double *midLna;
    vector<double> *midFraction;
-   vector<double> *midFracNerr;
-   vector<double> *midFracPerr;
+   vector<double> *midComposition;
+/*   vector<double> *midFracNerr;
+   vector<double> *midFracPerr;*/
 
 public:
    MassComposition(vector<string> *primVals, char *infile, int intype);
    virtual ~MassComposition();
 
+   void PreparePermutations();
+   void PermuteMNP(string *st, vector<int> *permIndex, int depth, int count);
+   int GetNrMnp();
+   string GetMnpPermut(int mnp);
    void ReadFromFile(char *infile, int intype);
    void IncludePrimaryType(string type);
    void ActivatePrimaryType(int type);
@@ -71,12 +80,15 @@ public:
    void DrawResults(int type, int mnp);
    double GetFinalLna();
    double GetFinalFraction(int type);
-   double GetFinalFracNerr(int type);
-   double GetFinalFracPerr(int type);
+   double GetFinalComposition(int type);
+/*   double GetFinalFracNerr(int type);
+   double GetFinalFracPerr(int type);*/
    int GetNrMix();
+   int GetNrTreat();
    int GetNrPoints();
-   void SelectPoint(int point, int mnp);
+   int SelectPoint(int point, int mnp);
    void PrintMatrix(TMatrixD *mat, string matname);
+   void Reverse(string *instring);
    void DeleteAnalysisMatrices();
 };
 
