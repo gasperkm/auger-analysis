@@ -140,9 +140,21 @@
 #include "TMVA/Config.h"
 #endif
 
-// Root Minuit includes
+// Root Minuit and fitting includes
 #ifndef ROOT_TMinuit
 #include "TMinuit.h"
+#endif
+#ifndef ROOT_TFitResult
+#include "TFitResult.h"
+#endif
+#ifndef ROOT_FitFitter
+#include "Fit/Fitter.h"
+#endif
+#ifndef ROOT_FitBinData
+#include "Fit/BinData.h"
+#endif
+#ifndef ROOT_FitChi2FCN
+#include "Fit/Chi2FCN.h"
 #endif
 
 #endif

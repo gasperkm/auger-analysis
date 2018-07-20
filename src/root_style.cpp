@@ -1,6 +1,5 @@
 #include "root_style.h"
 #include <iostream>
-#include <string>
 
 using namespace std;
 
@@ -311,3 +310,67 @@ double RootStyle::SetLegendHeight(int nrfigs)
 {
    return nrfigs*legendBaseHeight;
 }
+
+void RootStyle::SetColorScale(TH1 *plot, int cur, int nrscale)
+{
+   int *ci = new int;
+   *ci = 1738+cur;
+   double *colormix = new double;
+   *colormix = (double)cur/(double)(nrscale-1.);
+   TColor *color = new TColor(*ci, *colormix, 0, 1.-(*colormix), "", 1);
+
+   plot->SetMarkerColor(*ci);
+   plot->SetLineColor(*ci);
+
+   delete ci;
+   delete colormix;
+/*   gr->SetMarkerSize(0.9);
+   gr->SetMarkerStyle(20+cur);
+   gr->SetLineWidth(2);*/
+}
+
+void RootStyle::SetColorScale(TGraph *plot, int cur, int nrscale)
+{
+   int *ci = new int;
+   *ci = 1738+cur;
+   double *colormix = new double;
+   *colormix = (double)cur/(double)(nrscale-1.);
+   TColor *color = new TColor(*ci, *colormix, 0, 1.-(*colormix), "", 1);
+
+   plot->SetMarkerColor(*ci);
+   plot->SetLineColor(*ci);
+
+   delete ci;
+   delete colormix;
+}
+
+void RootStyle::SetColorScale(TGraphErrors *plot, int cur, int nrscale)
+{
+   int *ci = new int;
+   *ci = 1738+cur;
+   double *colormix = new double;
+   *colormix = (double)cur/(double)(nrscale-1.);
+   TColor *color = new TColor(*ci, *colormix, 0, 1.-(*colormix), "", 1);
+
+   plot->SetMarkerColor(*ci);
+   plot->SetLineColor(*ci);
+
+   delete ci;
+   delete colormix;
+}
+
+void RootStyle::SetColorScale(TGraphAsymmErrors *plot, int cur, int nrscale)
+{
+   int *ci = new int;
+   *ci = 1738+cur;
+   double *colormix = new double;
+   *colormix = (double)cur/(double)(nrscale-1.);
+   TColor *color = new TColor(*ci, *colormix, 0, 1.-(*colormix), "", 1);
+
+   plot->SetMarkerColor(*ci);
+   plot->SetLineColor(*ci);
+
+   delete ci;
+   delete colormix;
+}
+

@@ -3,6 +3,9 @@
 
 #include "workstation.h"
 #include "root_include.h"
+#include <string>
+
+using namespace std;
 
 class RootStyle
 {
@@ -32,6 +35,11 @@ public:
    void SetHistColorSimple(TH1 *plot, int sigbackdata);
 
    double SetLegendHeight(int nrfigs);
+
+   void SetColorScale(TH1 *plot, int cur, int nrscale);
+   void SetColorScale(TGraph *plot, int cur, int nrscale);
+   void SetColorScale(TGraphErrors *plot, int cur, int nrscale);
+   void SetColorScale(TGraphAsymmErrors *plot, int cur, int nrscale);
 };
 
 #endif

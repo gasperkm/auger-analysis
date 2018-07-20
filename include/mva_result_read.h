@@ -37,6 +37,7 @@ public:
    
    // 0 = background, 1 = signal, 2 = data
    float GetFraction(int sigbackdata, float norm);
+   float GetFraction(int tree);
    void GetFractionError(float *err);
    float GetEnergy();
    void GetEnergyError(float *err);
@@ -45,8 +46,8 @@ public:
    float GetMvaCut(int type);
    int GetNrTrees(int type);
 
-   void PrintVectors();
-   void PrintVectors(int type);
+   void PrintVectors(int output);
+   void PrintVectors(int type, int output);
    int FindPos(int sigbackdata, int type);
    void FindPos(int sigbackdata, int type, vector<int> *out);
 

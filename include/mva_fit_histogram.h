@@ -24,7 +24,7 @@ private:
    TH1F *result[40];
    TH1F *simsig, *simback, *data, *datacomp;
    TH1F *sim1, *sim2, *sim;
-   TH1F *newdata, *newsim, *newback;
+   TH1F *newdata, *newsig, *newback;
 
    // Number of histogram bins, xrange limits and y ranges
    int nrbins, nrkeys;
@@ -35,6 +35,8 @@ private:
    double *norm;
    int *nentries;
 
+   double emptyhisterr;
+
    // Temporary variables for mid-calculations
    string *stemp;
    int *itemp;
@@ -44,15 +46,15 @@ private:
    RootStyle *mystyle;
 
    // Variables for chi2 test
-   double *residVal, chiVal, chiProb;
-   int chiNdf, chiGood;
+   double *residVal;
+   int chiGood;
 
    // Variables for step and initial value during minimization
-   double appvar;
    double mvacut;
    double *minstep;
    double *minvar;
    int nrparam;
+   int nrelem;
 
    // Procedure (0 = range of ratios, 1 = minimization)
    int fitproc;
@@ -74,36 +76,50 @@ private:
    vector<double> *midCompositionErr;
    double *chi2value;
    double *pvalue;
-   double *ndfvalue;
+   int *ndfvalue;
+   double *midEnergy;
+   double *midStep;
 
    PrimPart *ptype;
 
+   int rangeTransform;
+   bool *iszero;
+
+   vector<int> *includePart;
+
    // Filename
    string filename;
-   TFile *f;
+   TFile *ifile;
+
 public:
-   MvaFitHist();
-//   MvaFitHist(int bincount, double xlow, double xhigh);
+   MvaFitHist(vector<string> *primVals);
    virtual ~MvaFitHist();
 
-//   void fcn(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t iflag);
+   double fcnATan(const double *par);
+   double fcnInvATan(const double *par);
    double fcnConstrainedFunc(const double *par);
    double fcnFunc(const double *par);
    double fcn(const double *par);
 
+   void IncludePrimaryType(string type);
    void PrepareHistograms(int run, string *fname, int *proc, double *step);
    void PlotDistributions();
-   void StartFitting();
+   int StartFitting();
    void PlotSumResiduals(double *sigFrac, double *sigFracErr, int status, double selStep);
+   void ResetHistograms();
 
    int GetNrElem();
    double GetFinalLna(int me);
    double GetFinalComposition(int type);
    double GetFinalCompositionErr(int type);
+   double GetFinalEnergy();
    int GetNrBins();
    double GetChi2();
    double GetPvalue();
-   double GetNdf();
+   int GetNdf();
+   double GetStep();
+
+   int GetElemType(int type);
 };
 
 #endif
