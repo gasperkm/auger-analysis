@@ -304,3 +304,23 @@ int FindVecPos(vector<int> intvec, int search)
 
    return retval;
 }
+
+int FindMinElement(vector<double> *invec)
+{
+   int retval = -1;
+   double *dtemp = new double;
+   *dtemp = 1.e+10;
+
+   for(int i = 0; i < invec->size(); i++)
+   {
+      if( invec->at(i) < (*dtemp) )
+      {
+         *dtemp = invec->at(i);
+	 retval = i;
+      }
+   }
+
+   delete dtemp;
+
+   return retval;
+}

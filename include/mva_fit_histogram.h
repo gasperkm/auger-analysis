@@ -41,6 +41,8 @@ private:
    string *stemp;
    int *itemp;
    double *dtemp;
+   double *dFitError;
+   int *iFitError;
 
    // Plotting style information
    RootStyle *mystyle;
@@ -55,6 +57,7 @@ private:
    double *minvar;
    int nrparam;
    int nrelem;
+   int stepsel;
 
    // Procedure (0 = range of ratios, 1 = minimization)
    int fitproc;

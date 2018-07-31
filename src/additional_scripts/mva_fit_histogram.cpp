@@ -3,6 +3,7 @@
 #include <time.h>
 #include <cstdlib>
 #include <iomanip>
+#include <algorithm>
 #include "separate_functions.h"
 #include "mva_methods.h"
 #include "mva_result_read.h"
@@ -13,7 +14,7 @@ using namespace std;
 MvaFitHist::MvaFitHist(vector<string> *primVals)
 {
    stemp = new string[3];
-   itemp = new int[3];
+   itemp = new int[4];
    dtemp = new double[3];
 
    nrbins = -1;
@@ -609,6 +610,8 @@ int MvaFitHist::StartFitting()
          dtemp[0] = (double)i*ratioStep;
          PlotSumResiduals(dtemp, dtemp, 0, 0);
       }
+
+      return -1;
    }
    // Find the best fit with TMinuit
    else if(fitproc == 1)
@@ -623,21 +626,18 @@ int MvaFitHist::StartFitting()
       ROOT::Math::Functor fmin(this,&MvaFitHist::fcn, nrparam);
       srand48(time(NULL));
 
-      itemp[0] = 0;
+      stepsel = 0;
       itemp[1] = -1;
-      while(itemp[0] < 6)
+      while(stepsel < 6)
       {
-         for(int i = 0; i < nrparam; i++)
-         {
 // step#014
-            // As a rule of thumb, it should be between 5-10% of the range (for [0,1] MVA -> 0.05-0.1, for [-1,1] MVA -> 0.1-0.2)
-            if(itemp[0] == 0) minstep[i] = 0.05;
-            if(itemp[0] == 1) minstep[i] = 0.03;
-            if(itemp[0] == 2) minstep[i] = 0.01;
-            if(itemp[0] == 3) minstep[i] = 0.005;
-            if(itemp[0] == 4) minstep[i] = 0.003;
-            if(itemp[0] == 5) minstep[i] = 0.001;
-	 }
+         // As a rule of thumb, it should be between 5-10% of the range (for [0,1] MVA -> 0.05-0.1, for [-1,1] MVA -> 0.1-0.2)
+         if(stepsel == 0) minstep[stepsel] = 0.05;
+         if(stepsel == 1) minstep[stepsel] = 0.025;
+         if(stepsel == 2) minstep[stepsel] = 0.01;
+         if(stepsel == 3) minstep[stepsel] = 0.005;
+         if(stepsel == 4) minstep[stepsel] = 0.0025;
+         if(stepsel == 5) minstep[stepsel] = 0.001;
 
          cout << "New minimization run ------------------------" << endl;
          dtemp[0] = 1.;
@@ -658,24 +658,25 @@ int MvaFitHist::StartFitting()
          {
             stemp[0] = "frac" + ToString(i);
 	    if(rangeTransform == 0)
-               minim->SetLimitedVariable(i, stemp[0].c_str(), minvar[i], minstep[i], 0.0, 1.0);
+               minim->SetLimitedVariable(i, stemp[0].c_str(), minvar[i], minstep[stepsel], 0.0, 1.0);
 	    else
-               minim->SetVariable(i, stemp[0].c_str(), minvar[i], minstep[i]);
+               minim->SetVariable(i, stemp[0].c_str(), minvar[i], minstep[stepsel]);
          }
          minim->Minimize();
 	 minim->PrintResults();
 
-	 itemp[0]++;
 	 itemp[1] = minim->Status();
 
          if(itemp[1] == 0)
 	 {
-            cout << "Minimizer succesfully found a minimum (step = " << minstep[0] << ")." << endl;
+            cout << "Minimizer succesfully found a minimum (step = " << minstep[stepsel] << ")." << endl;
 	    break;
 	 }
          else
-            cout << "Minimizer did not converge and might have not found a correct minimum (step = " << minstep[0] << ")." << endl;
+            cout << "Minimizer did not converge and might have not found a correct minimum (step = " << minstep[stepsel] << ")." << endl;
          cout << endl;
+
+	 stepsel++;
       }
 
       if(itemp[1] != 0)
@@ -759,9 +760,10 @@ int MvaFitHist::StartFitting()
       cout << "lnA value = " << midLna[0] << " +- " << midLna[1] << endl;
 
       // Get the parameter step value
-      *midStep = minstep[0];
+      *midStep = minstep[stepsel];
+      cout << "Parameter step = " << minstep[stepsel] << " (" << stepsel << ")" << endl;
 
-      PlotSumResiduals(bestfrac, bestfracerr, minim->Status(), minstep[0]);
+      PlotSumResiduals(bestfrac, bestfracerr, minim->Status(), minstep[stepsel]);
    }
    else if(fitproc == 2)
    {
@@ -798,6 +800,8 @@ int MvaFitHist::StartFitting()
       PlotSumResiduals(tempcomposition, tempcomposition, 0, 0);
 
       delete[] tempcomposition;
+
+      return -1;
    }
    // Find the best fit with TMinuit (new interface)
    else if(fitproc == 3)
@@ -824,20 +828,17 @@ int MvaFitHist::StartFitting()
 
       ROOT::Fit::FitResult result;
 
-      itemp[0] = 0;
+      stepsel = 0;
       itemp[1] = -1;
-      while(itemp[0] < 6)
+      while(stepsel < 6)
       {
-         for(int i = 0; i < nrparam; i++)
-         {
-            // As a rule of thumb, it should be between 5-10% of the range (for [0,1] MVA -> 0.05-0.1, for [-1,1] MVA -> 0.1-0.2)
-            if(itemp[0] == 0) minstep[i] = 0.05;
-            if(itemp[0] == 1) minstep[i] = 0.03;
-            if(itemp[0] == 2) minstep[i] = 0.01;
-            if(itemp[0] == 3) minstep[i] = 0.005;
-            if(itemp[0] == 4) minstep[i] = 0.003;
-            if(itemp[0] == 5) minstep[i] = 0.001;
-	 }
+         // As a rule of thumb, it should be between 5-10% of the range (for [0,1] MVA -> 0.05-0.1, for [-1,1] MVA -> 0.1-0.2)
+         if(stepsel == 0) minstep[stepsel] = 0.05;
+         if(stepsel == 1) minstep[stepsel] = 0.025;
+         if(stepsel == 2) minstep[stepsel] = 0.01;
+         if(stepsel == 3) minstep[stepsel] = 0.005;
+         if(stepsel == 4) minstep[stepsel] = 0.0025;
+         if(stepsel == 5) minstep[stepsel] = 0.001;
 
          cout << "New minimization run ------------------------" << endl;
          dtemp[0] = 1.;
@@ -858,10 +859,10 @@ int MvaFitHist::StartFitting()
 	    if(rangeTransform == 0)
 	    {
                fitter.Config().ParSettings(i).SetLimits(0.,1.);
-               fitter.Config().ParSettings(i).SetStepSize(minstep[i]);
+               fitter.Config().ParSettings(i).SetStepSize(minstep[stepsel]);
 	    }
             else
-               fitter.Config().ParSettings(i).SetStepSize(minstep[i]);
+               fitter.Config().ParSettings(i).SetStepSize(minstep[stepsel]);
          }
 
 /*	 cout << "# Fit 1 (no helium and oxygen): ---------------------------------" << endl;
@@ -871,39 +872,142 @@ int MvaFitHist::StartFitting()
          cout << "Minos errors: " << fitter.CalculateMinosErrors() << endl;
          result = fitter.Result();
          result.Print(cout);
-/*	 cout << "# Fit 2 (no helium and iron): -----------------------------------" << endl;
-	 fitter.Config().ParSettings(2).Release();
-	 fitter.Config().ParSettings(3).Fix();
-         fitter.FitFCN();
-         cout << "Minos errors: " << fitter.CalculateMinosErrors() << endl;
-         result = fitter.Result();
-         result.Print(cout);
-	 cout << "# Fit 3 (no proton and iron): -----------------------------------" << endl;
-	 fitter.Config().ParSettings(1).Release();
-	 fitter.Config().ParSettings(0).Fix();
-         fitter.FitFCN();
-         cout << "Minos errors: " << fitter.CalculateMinosErrors() << endl;
-         result = fitter.Result();
-         result.Print(cout);
-	 cout << "# Fit 4 (all parameters): ---------------------------------------" << endl;
-	 fitter.Config().ParSettings(0).Release();
-	 fitter.Config().ParSettings(3).Release();*/
-/*         fitter.FitFCN();
-//         cout << "Minos errors: " << fitter.CalculateMinosErrors() << endl;
-         result = fitter.Result();
-         result.Print(cout);*/
 
-	 itemp[0]++;
+/* New stuff -------------------------------------- */
+         dFitError = new double[2];
+         iFitError = new int[2];
+
+	 // Set minimal limit close to the limits (0 or 1)
+	 dFitError[1] = 0.001;
+
+	 if(nrelem > 2)
+	 {
+	    // Set selection numbers
+	    iFitError[0] = -1;
+	    iFitError[1] = -1;
+	    // Fixing first parameter with smallest error
+	    dFitError[0] = 20.;
+	    cout << endl << "Parameters:" << endl;
+	    for(int i = 0; i < nrparam; i++)
+	    {
+               cout << "- par" << i << ": " << result.Parameter(i) << "\t" << result.ParError(i) << endl;
+	       if(result.ParError(i) != 0)
+	       {
+	          if(result.ParError(i) < dFitError[0])
+                  {
+                     dFitError[0] = result.ParError(i);
+	             iFitError[0] = i;
+	          }
+
+	          if(result.Parameter(i) < dFitError[1])
+	          {
+                     iFitError[1] = i;
+	          }
+	       }
+	    }
+	    cout << endl;
+/*	    if(iFitError[0] == iFitError[1])
+	    {
+	       cout << "Parameter " << iFitError[0] << " has smallest error and is close to limiting value, so fixing it." << endl;
+	       fitter.Config().ParSettings(iFitError[0]).Fix();
+	    }
+	    else
+	    {
+               if(iFitError[1] != -1)
+	       {
+	          cout << "Parameter " << iFitError[1] << " is close to limiting value, so fixing it." << endl;
+	          fitter.Config().ParSettings(iFitError[1]).Fix();
+	       }
+	       else
+	       {*/
+	          cout << "Parameter " << iFitError[0] << " has smallest error, so fixing it." << endl;
+                  fitter.Config().ParSettings(iFitError[0]).Fix();
+/*	       }
+	    }*/
+            fitter.FitFCN();
+            cout << "Minos errors: " << fitter.CalculateMinosErrors() << endl;
+            result = fitter.Result();
+            result.Print(cout);
+	 }
+
+	 if(nrelem > 3)
+	 {
+	    // Set selection numbers
+	    iFitError[0] = -1;
+	    iFitError[1] = -1;
+	    // Fixing second parameter with smallest error
+	    dFitError[0] = 20.;
+	    cout << endl << "Parameters:" << endl;
+	    for(int i = 0; i < nrparam; i++)
+	    {
+               cout << "- par" << i << ": " << result.Parameter(i) << "\t" << result.ParError(i) << endl;
+	       if(result.ParError(i) != 0)
+	       {
+	          if(result.ParError(i) < dFitError[0])
+                  {
+                     dFitError[0] = result.ParError(i);
+	             iFitError[0] = i;
+	          }
+
+	          if(result.Parameter(i) < dFitError[1])
+	          {
+                     iFitError[1] = i;
+	          }
+	       }
+	    }
+	    cout << endl;
+/*	    if(iFitError[0] == iFitError[1])
+	    {
+	       cout << "Parameter " << iFitError[0] << " has smallest error and is close to limiting value, so fixing it." << endl;
+	       fitter.Config().ParSettings(iFitError[0]).Fix();
+	    }
+	    else
+	    {
+               if(iFitError[1] != -1)
+	       {
+	          cout << "Parameter " << iFitError[1] << " is close to limiting value, so fixing it." << endl;
+	          fitter.Config().ParSettings(iFitError[1]).Fix();
+	       }
+	       else
+	       {*/
+	          cout << "Parameter " << iFitError[0] << " has smallest error, so fixing it." << endl;
+                  fitter.Config().ParSettings(iFitError[0]).Fix();
+/*	       }
+	    }*/
+            fitter.FitFCN();
+            cout << "Minos errors: " << fitter.CalculateMinosErrors() << endl;
+            result = fitter.Result();
+            result.Print(cout);
+	 }
+
+	 if(nrelem > 2)
+	 {
+	    // Unfix all parameters
+	    cout << "Unfixing all parameters" << endl;
+	    for(int i = 0; i < nrparam; i++)
+	       fitter.Config().ParSettings(i).Release();
+            fitter.FitFCN();
+            cout << "Minos errors: " << fitter.CalculateMinosErrors() << endl;
+            result = fitter.Result();
+            result.Print(cout);
+	 }
+
+	 delete[] dFitError;
+	 delete[] iFitError;
+/* New stuff -------------------------------------- */
+
          itemp[1] = result.Status();
 
          if(itemp[1] == 0)
 	 {
-            cout << "Minimizer succesfully found a minimum (step = " << minstep[0] << ")." << endl;
+            cout << "Minimizer succesfully found a minimum (step = " << minstep[stepsel] << ")." << endl;
 	    break;
 	 }
          else
-            cout << "Minimizer did not converge and might have not found a correct minimum (step = " << minstep[0] << ")." << endl;
+            cout << "Minimizer did not converge and might have not found a correct minimum (step = " << minstep[stepsel] << ")." << endl;
          cout << endl;
+
+	 stepsel++;
 
          cout << "---------------------------------------------" << endl;
       }
@@ -990,12 +1094,222 @@ int MvaFitHist::StartFitting()
       cout << "lnA value = " << midLna[0] << " +- " << midLna[1] << endl;
 
       // Get the parameter step value
-      *midStep = minstep[0];
+      *midStep = minstep[stepsel];
+      cout << "Parameter step = " << minstep[stepsel] << " (" << stepsel << ")" << endl;
 
-      PlotSumResiduals(bestfrac, bestfracerr, result.Status(), 0.05);
+      PlotSumResiduals(bestfrac, bestfracerr, result.Status(), minstep[stepsel]);
 
       delete[] params;
    }
+   else if(fitproc == 4)
+   {
+      // For now only works, if we have 2 elements
+      if(nrelem > 1)
+      {
+         int *elemsteps = new int;
+	 int *nrp = new int;
+         vector<double> *elemval[40];
+	 double *valFrac;
+         vector<double> *chi2vect = new vector<double>;
+         vector<double> *pvalvect = new vector<double>;
+         vector<double> *lnavect = new vector<double>;
+
+	 for(int i = 0; i < nrelem; i++)
+	    elemval[i] = new vector<double>;
+
+	 *elemsteps = (1./ratioStep)+1;
+	 for(int i = 0; i < (*elemsteps); i++)
+	 {
+            for(int j = 0; j < (*elemsteps); j++)
+	    {
+               if(nrelem == 2)
+	       {
+                  if( (double)i*ratioStep + (double)j*ratioStep == 1. )
+	          {
+//                     cout << "Writing: " << i << ", " << j << endl;
+                     elemval[0]->push_back((double)i*ratioStep);
+                     elemval[1]->push_back((double)j*ratioStep);
+	          }
+	       }
+               else if(nrelem > 2)
+	       {
+                  for(int k = 0; k < (*elemsteps); k++)
+		  {
+                     if(nrelem == 3)
+		     {
+                        if( (double)i*ratioStep + (double)j*ratioStep + (double)k*ratioStep == 1. )
+	                {
+//                           cout << "Writing: " << i << ", " << j << ", " << k << endl;
+                           elemval[0]->push_back((double)i*ratioStep);
+                           elemval[1]->push_back((double)j*ratioStep);
+                           elemval[2]->push_back((double)k*ratioStep);
+	                }
+		     }
+		     else if(nrelem > 3)
+		     {
+                        for(int l = 0; l < (*elemsteps); l++)
+		        {
+                           if( (double)i*ratioStep + (double)j*ratioStep + (double)k*ratioStep + (double)l*ratioStep == 1. )
+	                   {
+//                              cout << "Writing: " << i << ", " << j << ", " << k << ", " << l << endl;
+                              elemval[0]->push_back((double)i*ratioStep);
+                              elemval[1]->push_back((double)j*ratioStep);
+                              elemval[2]->push_back((double)k*ratioStep);
+                              elemval[3]->push_back((double)l*ratioStep);
+	                   }
+		        }
+		     }
+		  }
+	       }
+	    }
+	 }
+
+	 *nrp = elemval[0]->size();
+
+	 for(int i = 0; i < *nrp; i++)
+	 {
+            valFrac = new double[nrelem];
+
+//            cout << "Using values:";
+	    for(int j = 0; j < nrelem; j++)
+	    {
+	       valFrac[j] = elemval[j]->at(i);
+//               cout << "\t" << valFrac[j];
+	    }
+//            cout << endl;
+
+            if(constraint == 0)
+               cout << "Constraint = " << fcnConstrainedFunc(valFrac) << endl;
+            else
+               cout << "Constraint = " << fcnFunc(valFrac) << endl;
+
+            *pvalue = sim->Chi2TestX(data, *chi2value, *ndfvalue, chiGood, "WW");
+            cout << "Chi2 = " << *chi2value << ", p-value = " << *pvalue << ", NDF = " << *ndfvalue << ", igood = " << chiGood << endl;
+	    chi2vect->push_back(*chi2value);
+	    pvalvect->push_back(*pvalue);
+
+	    delete[] valFrac;
+	 }
+
+	 cout << endl << "Results:" << endl;
+	 for(int i = 0; i < *nrp; i++)
+	 {
+            cout << i << ": ";
+	    dtemp[0] = 0;
+	    for(int j = 0; j < nrelem; j++)
+	    {
+               dtemp[0] += (elemval[j]->at(i))*TMath::Log(ptype->GetA(includePart->at(j)));
+               cout << "par" << j << " = " << elemval[j]->at(i) << ", ";
+	    }
+	    lnavect->push_back(dtemp[0]);
+            cout << "lnA = " << lnavect->at(i);
+            cout << ", chi2 = " << chi2vect->at(i) << ", p-value = " << pvalvect->at(i) << endl;
+	 }
+
+	 cout << "Minimal value: " << FindMinElement(chi2vect) << ", " << chi2vect->at(FindMinElement(chi2vect)) << endl;
+
+         TCanvas *c1 = new TCanvas("c1","",1200,800);
+         TCanvas *c2 = new TCanvas("c2","",1200,800);
+	 TGraph *plotchi2dep[40];
+	 TGraph *plotpdep[40];
+
+	 for(int j = 0; j < nrelem; j++)
+	 {
+	    plotchi2dep[j] = new TGraph();
+	    plotpdep[j] = new TGraph();
+
+/*	    if(nrelem == 2)
+	    {
+	       for(int i = 0; i < *nrp; i++)
+                  plotchi2dep[j]->SetPoint(i, elemval[j]->at(i), chi2vect->at(i));
+	    }
+	    else
+	    {*/
+               for(int k = 0; k < *elemsteps; k++)
+	       {
+		  itemp[0] = -1;
+		  dtemp[0] = 1.e+10;
+                  for(int i = 0; i < *nrp; i++)
+	          {
+                     if(elemval[j]->at(i) == (double)k*ratioStep)
+		     {
+//			cout << "val = " << elemval[j]->at(i) << ", " << chi2vect->at(i) << endl;
+                        if(chi2vect->at(i) < dtemp[0])
+			{
+                           dtemp[0] = chi2vect->at(i);
+			   itemp[0] = i;
+			}
+		     }
+	          }
+
+		  cout << j << " Min element is: " << dtemp[0] << ", " << itemp[0] << ", " << elemval[j]->at(itemp[0]) << ", " << chi2vect->at(itemp[0]) << ", " << pvalvect->at(itemp[0]) << endl;
+
+                  plotchi2dep[j]->SetPoint(k, elemval[j]->at(itemp[0]), chi2vect->at(itemp[0]));
+                  plotpdep[j]->SetPoint(k, elemval[j]->at(itemp[0]), pvalvect->at(itemp[0]));
+	       }
+//	    }
+
+            c1->cd();
+            plotchi2dep[j]->SetMarkerStyle(20);
+            plotchi2dep[j]->SetMarkerSize(1.2);
+            plotchi2dep[j]->SetLineWidth(2);
+	    plotchi2dep[j]->GetXaxis()->SetRangeUser(0.,1.);
+	    mystyle->SetColorScale(plotchi2dep[j], j, nrelem);
+
+            if(j == 0)
+	    {
+               mystyle->SetAxisTitles(plotchi2dep[j], "Elemental fractions", "Minimal Chi-Squared value");
+	       plotchi2dep[j]->Draw("AL");
+	    }
+	    else
+	    {
+               mystyle->SetAxisTitles(plotchi2dep[j], "Elemental fractions", "Minimal Chi-Squared value");
+               plotchi2dep[j]->Draw("L;SAME");
+	    }
+
+	    c2->cd();
+            plotpdep[j]->SetMarkerStyle(20);
+            plotpdep[j]->SetMarkerSize(1.2);
+            plotpdep[j]->SetLineWidth(2);
+	    plotpdep[j]->GetXaxis()->SetRangeUser(0.,1.);
+	    mystyle->SetColorScale(plotpdep[j], j, nrelem);
+
+            if(j == 0)
+	    {
+               mystyle->SetAxisTitles(plotpdep[j], "Elemental fractions", "p-value");
+	       plotpdep[j]->Draw("AL");
+	    }
+	    else
+	    {
+               mystyle->SetAxisTitles(plotpdep[j], "Elemental fractions", "p-value");
+               plotpdep[j]->Draw("L;SAME");
+	    }
+	 }
+
+         stemp[0] = RemoveFilename(&filename) + "/fithist/chi2_dependence.pdf";
+         c1->SaveAs(stemp[0].c_str());
+
+         stemp[0] = RemoveFilename(&filename) + "/fithist/p-value_dependence.pdf";
+         c2->SaveAs(stemp[0].c_str());
+         stemp[0] = RemoveFilename(&filename) + "/fithist/p-value_dependence.C";
+         c2->SaveAs(stemp[0].c_str());
+
+	 delete c1;
+	 delete c2;
+
+	 delete elemsteps;
+	 delete nrp;
+	 delete pvalvect;
+	 delete chi2vect;
+	 delete lnavect;
+	 for(int i = 0; i < nrelem; i++)
+	    delete elemval[i];
+      }
+
+      return -1;
+   }
+
+   return 0;
 }
 
 double MvaFitHist::GetFinalLna(int me)
@@ -1466,21 +1780,21 @@ int main(int argc, char **argv)
 
       string inname;
 
-      cerr << "Perform histogram fit on a range of ratios (0), perform a minimization (1), select a composition to plot (2) or perform a minimization with a new approach (3)? ";
+      cerr << "Perform histogram fit on a range of ratios (0), perform a minimization (1), select a composition to plot (2), perform a minimization with the new approach (3) or plot parameters versus Chi2 value (4)? ";
       cin >> itemp[0];
       
-      if(itemp[0] == 0)
+      if( (itemp[0] == 0) || (itemp[0] == 4) )
       {
-         cerr << "What should be the step size for ratios (between 0 and 1)? ";
+         cerr << "What should be the step size (between 0 and 1)? ";
 	 cin >> dtemp[0];
 
 	 while( (dtemp[0] > 1) || (dtemp[0] <= 0) )
 	 {
-            cerr << "What should be the step size for ratios (between 0 and 1)? ";
+            cerr << "What should be the step size (between 0 and 1)? ";
 	    cin >> dtemp[0];
 	 }
       }
-      else if( (itemp[0] != 0) && (itemp[0] != 1) && (itemp[0] != 2) && (itemp[0] != 3) )
+      else if( (itemp[0] != 0) && (itemp[0] != 1) && (itemp[0] != 2) && (itemp[0] != 3) && (itemp[0] != 4) )
       {
          cerr << "Error! Wrong fitting procedure." << endl;
 	 delete finalLna;
@@ -1552,6 +1866,9 @@ int main(int argc, char **argv)
 	    nrp++;
 	 }
       }
+
+      if( (itemp[0] == 2) || (itemp[0] == 0) || (itemp[0] == 4) )
+         return 0;
 
       // Printout finar results for each file
       double *xval = new double[nrp];
@@ -1733,7 +2050,10 @@ int main(int argc, char **argv)
 	    grComp[j]->Draw("ALP");
 	 }
 	 else
+	 {
+            mystyle->SetAxisTitles(grComp[j], "FD energy [log(E/eV)]", "Elemental fractions");
             grComp[j]->Draw("LP;SAME");
+	 }
       }
 
       legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(fithist->GetNrElem())), gPad->GetLeftMargin()+.20, 1-gPad->GetTopMargin());
@@ -1760,7 +2080,38 @@ int main(int argc, char **argv)
          c1->SaveAs(stemp[2].c_str());
       }
 
+      // Plot all four on separate pads
+      TCanvas *c2 = new TCanvas("c2", "", 1200, 400.*(fithist->GetNrElem()));
+      c2->Divide(1,fithist->GetNrElem());
+
+      for(int j = 0; j < fithist->GetNrElem(); j++)
+      {
+	 c2->cd(j+1);
+         mystyle->SetAxisTitles(grComp[j], "", "Elemental fractions");
+	 grComp[j]->GetYaxis()->SetTitleOffset(1.9 + (fithist->GetNrElem()-2)*0.45);
+         grComp[j]->Draw("ALP");
+      }
+
+      c2->Update();
+
+      t->SetTextAlign(31);
+      t->SetTextColor(1);
+      t->SetTextSize(17);
+      for(int j = 0; j < fithist->GetNrElem(); j++)
+      {
+         stemp[1] = ptype->GetName(fithist->GetElemType(j));
+	 c2->cd(j+1);
+         t->DrawText(gPad->GetUxmax(), (gPad->GetUymax())+(0.01*(gPad->GetUymax()-gPad->GetUymin())), stemp[1].c_str());
+      }
+
+      stemp[1] = RemoveFilename(&inname);
+      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_combine.pdf";
+      c2->SaveAs(stemp[2].c_str());
+
+      delete c2;
+
       // Plot composition plot with light and heavy compositions together
+      c1->cd();
       double compMassBreak = 7.4;
 
       for(int i = 0; i < nrp; i++)

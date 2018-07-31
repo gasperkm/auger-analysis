@@ -43,4 +43,7 @@ int Find(vector<string> strvec, string search);
 // Searching for location of integer in vector
 int FindVecPos(vector<int> intvec, int search);
 
+// Search vector for a specific value
+int FindMinElement(vector<double> *invec);
+
 #endif
