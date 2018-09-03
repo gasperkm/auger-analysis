@@ -78,6 +78,7 @@ void RootStyle::SetBaseStyle()
    basestyle->SetLabelOffset(0.015,"xyz");
    basestyle->SetTitleOffset(1.6, "x");
    basestyle->SetTitleOffset(1.9, "y");
+   basestyle->SetTitleOffset(1.9, "z");
    basestyle->SetEndErrorSize(10);
 
    gROOT->SetStyle("basestyle");
@@ -120,6 +121,17 @@ void RootStyle::SetAxisTitles(TGraph *plot, string xtitle, string ytitle)
    plot->GetXaxis()->CenterTitle();
    plot->GetYaxis()->SetTitle(ytitle.c_str());
    plot->GetYaxis()->CenterTitle();
+}
+
+void RootStyle::SetAxisTitles(TGraph2D *plot, string xtitle, string ytitle, string ztitle)
+{
+   plot->SetTitle("");
+   plot->GetHistogram()->GetXaxis()->SetTitle(xtitle.c_str());
+   plot->GetHistogram()->GetXaxis()->CenterTitle();
+   plot->GetHistogram()->GetYaxis()->SetTitle(ytitle.c_str());
+   plot->GetHistogram()->GetYaxis()->CenterTitle();
+   plot->GetHistogram()->GetZaxis()->SetTitle(ztitle.c_str());
+   plot->GetHistogram()->GetZaxis()->CenterTitle();
 }
 
 void RootStyle::SetAxisTitles(TGraphErrors *plot, string xtitle, string ytitle)

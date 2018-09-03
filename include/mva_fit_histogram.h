@@ -83,10 +83,19 @@ private:
    double *midEnergy;
    double *midStep;
 
+   TObjArray *mc;
+   TFractionFitter *fracFitter;
+
    PrimPart *ptype;
 
    int rangeTransform;
    bool *iszero;
+
+   bool scaleHist;
+
+//   int equateVal;
+//   bool equateMcEvents;
+   double fitrange[2];
 
    vector<int> *includePart;
 
@@ -114,7 +123,7 @@ public:
    int GetNrElem();
    double GetFinalLna(int me);
    double GetFinalComposition(int type);
-   double GetFinalCompositionErr(int type);
+   double GetFinalCompositionErr(int type, int hilo);
    double GetFinalEnergy();
    int GetNrBins();
    double GetChi2();
@@ -123,6 +132,8 @@ public:
    double GetStep();
 
    int GetElemType(int type);
+
+   double PearsonChi2(TH1 *sim, TH1 *data, int chi2dist);
 };
 
 #endif

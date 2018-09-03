@@ -156,5 +156,11 @@
 #ifndef ROOT_FitChi2FCN
 #include "Fit/Chi2FCN.h"
 #endif
+#ifndef ROOT_TFractionFitter
+#include "TFractionFitter.h"
+#endif
+#ifndef ROOT_TObjArray
+#include "TObjArray.h"
+#endif
 
 #endif

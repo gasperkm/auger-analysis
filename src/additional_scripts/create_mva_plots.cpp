@@ -343,10 +343,18 @@ int main(int argc, char **argv)
 	 // Prepare histograms for all observables
 	 stemp[2] = "basesig" + ToString(i);
          basesig[i] = new TH1F(stemp[2].c_str(), observables[i].c_str(), 100, xhistlimit[0], xhistlimit[1]);
+#if ROOTVER == 5
          basesig[i]->SetBit(TH1::kCanRebin);
+#elif ROOTVER == 6
+         basesig[i]->SetCanExtend(TH1::kXaxis);
+#endif
          stemp[2] = "baseback" + ToString(i);
          baseback[i] = new TH1F(stemp[2].c_str(), observables[i].c_str(), 100, xhistlimit[0], xhistlimit[1]);
+#if ROOTVER == 5
          baseback[i]->SetBit(TH1::kCanRebin);
+#elif ROOTVER == 6
+         baseback[i]->SetCanExtend(TH1::kXaxis);
+#endif
 
 	 // Set maximum value to zero, and signal and background counters to zero
          max[i] = 0.0;

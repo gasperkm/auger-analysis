@@ -46,12 +46,12 @@
    # Functions for coloring
    function colorecho
    {
-     echo -e$2 "\033[33m$1\033[39m"
+     echo -e$2 "\033[1m\033[33m$1\033[0m\033[39m"
    }
    
    function errorecho
    {
-     echo -e "\031[33m$1\033[39m"
+     echo -e "\033[1m\033[31m$1\033[0m\033[39m"
    }
    
    # Function to display help text
@@ -74,7 +74,7 @@
      colorecho "  clean      Clean the installation directory. Does not clean the results directory."
      colorecho "  compress   Compress the source code in a tar-ball."
      colorecho ""
-     colorecho "[install directories] = Directories where ROOT and NET-SNMP are installed (when running with superuser, this is important, otherwise optional):"
+     colorecho "[install directories] = Directory where ROOT is installed (when running with superuser, this is important, otherwise optional):"
      colorecho "  --root-install=/root/install/directory"
      colorecho ""
      colorecho "Example:"
@@ -91,14 +91,25 @@
      if [ $rootdirectory != -1 ]; then
        printenv ROOTSYS > /dev/null
        if [ $? != 0 ]; then
-         colorecho "ROOT environment variables not set. Please run \"source $rootdirectory/bin/thisroot.sh\", before using make."
+         errorecho "ROOT environment variables not set. Please run \"source $rootdirectory/bin/thisroot.sh\", before using make."
+	 exit 1
        fi
      else
        printenv ROOTSYS > /dev/null
        if [ $? != 0 ]; then
          errorecho "Error! ROOT environment variables not set."
+	 exit 1
        else
          colorecho "ROOT found! Current root executable location: $(which root)"
+	 root-config --version | grep -q "5."
+	 if [ $? == 0 ]; then
+           export ROOTVER=5
+         fi
+	 root-config --version | grep -q "6."
+	 if [ $? == 0 ]; then
+           export ROOTVER=6
+         fi
+	 colorecho "Current root version: $ROOTVER" 
        fi
      fi
    }
@@ -270,6 +281,9 @@
      make
      if [ $? == 0 ]; then
        source $TMVASYS/test/setup.sh $TMVASYS
+     else
+       errorecho "Compiling of TMVA has failed..."
+#       exit 1
      fi
    }
 
@@ -283,6 +297,10 @@
      fi
      cd $ADSTROOT
      make
+     if [ $? != 0 ]; then
+       errorecho "Compiling of ADST has failed..."
+       exit 1
+     fi
    }
 
    function SetupStartScript()

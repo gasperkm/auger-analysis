@@ -68,6 +68,7 @@ double GetMethodMin(TString name)
    else if(name.Contains("SVM"))
       return 0.;
    else if(name.Contains("BDT"))
+//      return -1.;
       return -1.1;
    else if(name.Contains("RuleFit"))
       return -1.6;
@@ -100,6 +101,7 @@ double GetMethodMax(TString name)
    else if(name.Contains("SVM"))
       return 1.;
    else if(name.Contains("BDT"))
+//      return 1.;
       return 1.1;
    else if(name.Contains("RuleFit"))
       return 1.6;

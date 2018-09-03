@@ -263,12 +263,20 @@ int main(int argc, char **argv)
          // Prepare histograms for all observables - Signal
          stemp[2] = "treeHistSig" + ToString(i);
          treeHistSig[i] = new TH1F(stemp[2].c_str(), observables[i].c_str(), 100, xhistlimit[0], xhistlimit[1]);
+#if ROOTVER == 5
          treeHistSig[i]->SetBit(TH1::kCanRebin);
+#elif ROOTVER == 6
+         treeHistSig[i]->SetCanExtend(TH1::kXaxis);
+#endif
 
          // Prepare histograms for all observables - Background
          stemp[2] = "treeHistBack" + ToString(i);
          treeHistBack[i] = new TH1F(stemp[2].c_str(), observables[i].c_str(), 100, xhistlimit[0], xhistlimit[1]);
+#if ROOTVER == 5
          treeHistBack[i]->SetBit(TH1::kCanRebin);
+#elif ROOTVER == 6
+         treeHistBack[i]->SetCanExtend(TH1::kXaxis);
+#endif
 
          // Set maximum value to zero, and underflow and overflow counters to zero
          max[i] = 0.0;
@@ -603,18 +611,30 @@ int main(int argc, char **argv)
             // Prepare histograms for all observables
             stemp[2] = "treeHist" + ToString(i);
             treeHist[i] = new TH1F(stemp[2].c_str(), observables[i].c_str(), 100, xhistlimit[0], xhistlimit[1]);
+#if ROOTVER == 5
             treeHist[i]->SetBit(TH1::kCanRebin);
+#elif ROOTVER == 6
+            treeHist[i]->SetCanExtend(TH1::kXaxis);
+#endif
 
             // Special histograms for risetime and recalculated risetime
             if(observables[i] == "risetime")
             {
                riseHist = new TH1F("riseHist", observables[i].c_str(), 100, maxobs[0], maxobs[1]);
+#if ROOTVER == 5
                riseHist->SetBit(TH1::kCanRebin);
+#elif ROOTVER == 6
+               riseHist->SetCanExtend(TH1::kXaxis);
+#endif
             }
             if(observables[i] == "risetimerecalc")
             {
                riserecalcHist = new TH1F("riserecalcHist", observables[i].c_str(), 100, maxobs[0], maxobs[1]);
+#if ROOTVER == 5
                riserecalcHist->SetBit(TH1::kCanRebin);
+#elif ROOTVER == 6
+               riserecalcHist->SetCanExtend(TH1::kXaxis);
+#endif
             }
 
             // Set maximum value to zero, and underflow and overflow counters to zero

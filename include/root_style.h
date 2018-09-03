@@ -24,6 +24,7 @@ public:
    void SetAxisTitles(TH1 *plot, string xtitle, string ytitle);
    void SetAxisTitles(TH2 *plot, string xtitle, string ytitle);
    void SetAxisTitles(TGraph *plot, string xtitle, string ytitle);
+   void SetAxisTitles(TGraph2D *plot, string xtitle, string ytitle, string ztitle);
    void SetAxisTitles(TGraphErrors *plot, string xtitle, string ytitle);
    void SetAxisTitles(TGraphAsymmErrors *plot, string xtitle, string ytitle);
 
