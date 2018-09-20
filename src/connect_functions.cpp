@@ -525,8 +525,10 @@ void MyFrame::RunZenithBinSelect()
 {
    double *arange = new double;
    double *asinlimits = new double[2];
-   asinlimits[0] = SinSquare(cutZenith->GetNumber(cutZenith->widgetNE[0]), true);
-   asinlimits[1] = SinSquare(cutZenith->GetNumber(cutZenith->widgetNE[1]), true);
+//   asinlimits[0] = SinSquare(cutZenith->GetNumber(cutZenith->widgetNE[0]), true);
+//   asinlimits[1] = SinSquare(cutZenith->GetNumber(cutZenith->widgetNE[1]), true);
+   asinlimits[0] = SecTheta(cutZenith->GetNumber(cutZenith->widgetNE[0]), true);
+   asinlimits[1] = SecTheta(cutZenith->GetNumber(cutZenith->widgetNE[1]), true);
 
    string *stemp = new string;
 
@@ -547,10 +549,14 @@ void MyFrame::RunZenithBinSelect()
    // Add all bins to the selection dropbox for zenith angle
    for(int i = 0; i < (int)cutZenithBins->GetNumber(cutZenithBins->widgetNE[0]); i++)
    {
+//      if(i < 9)
+//         *stemp = "0" + ToString(i+1) + " (" + ToString(AsinSqrt(zcutBins[i], true), 1) + " - " + ToString(AsinSqrt(zcutBins[i+1], true), 1) + ")";
+//      else
+//         *stemp = ToString(i+1) + " (" + ToString(AsinSqrt(zcutBins[i], true), 1) + " - " + ToString(AsinSqrt(zcutBins[i+1], true), 1) + ")";
       if(i < 9)
-         *stemp = "0" + ToString(i+1) + " (" + ToString(AsinSqrt(zcutBins[i], true), 1) + " - " + ToString(AsinSqrt(zcutBins[i+1], true), 1) + ")";
+         *stemp = "0" + ToString(i+1) + " (" + ToString(InvSecTheta(zcutBins[i], true), 1) + " - " + ToString(InvSecTheta(zcutBins[i+1], true), 1) + ")";
       else
-         *stemp = ToString(i+1) + " (" + ToString(AsinSqrt(zcutBins[i], true), 1) + " - " + ToString(AsinSqrt(zcutBins[i+1], true), 1) + ")";
+         *stemp = ToString(i+1) + " (" + ToString(InvSecTheta(zcutBins[i], true), 1) + " - " + ToString(InvSecTheta(zcutBins[i+1], true), 1) + ")";
 
       (cutZenithBins->widgetCB)->Append(*stemp);
    }
@@ -697,14 +703,23 @@ void MyFrame::CheckZenithBin(wxCommandEvent& event)
 	    if( (ftemp[i] != -1) && *deleted )
             {
                // Event is inside the zenith angle cut
-	       if((ftemp[i] > AsinSqrt(zcutBins[*selectedBin],false)) && (ftemp[i] <= AsinSqrt(zcutBins[*selectedBin+1],false)))
+	       if((ftemp[i] > InvSecTheta(zcutBins[*selectedBin],false)) && (ftemp[i] <= InvSecTheta(zcutBins[*selectedBin+1],false)))
                   *deleted = false;
                // Event is below the zenith angle cut
-               else if(ftemp[i] <= AsinSqrt(zcutBins[*selectedBin],false))
+               else if(ftemp[i] <= InvSecTheta(zcutBins[*selectedBin],false))
                   uoflow[0] = true;
                // Event is above the zenith angle cut
-               else if(ftemp[i] > AsinSqrt(zcutBins[*selectedBin+1],false))
+               else if(ftemp[i] > InvSecTheta(zcutBins[*selectedBin+1],false))
                   uoflow[1] = true;
+//               // Event is inside the zenith angle cut
+//               if((ftemp[i] > AsinSqrt(zcutBins[*selectedBin],false)) && (ftemp[i] <= AsinSqrt(zcutBins[*selectedBin+1],false)))
+//                  *deleted = false;
+//               // Event is below the zenith angle cut
+//               else if(ftemp[i] <= AsinSqrt(zcutBins[*selectedBin],false))
+//                  uoflow[0] = true;
+//               // Event is above the zenith angle cut
+//               else if(ftemp[i] > AsinSqrt(zcutBins[*selectedBin+1],false))
+//                  uoflow[1] = true;
 	    }
 	 }
 
@@ -1034,20 +1049,35 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
 	       if( (ftemp2[k] != -1) )
                {
                   // Event is inside the zenith angle cut
-                  if((ftemp2[k] > AsinSqrt(zcutBins[selectedBin[1]],false)) && (ftemp2[k] <= AsinSqrt(zcutBins[selectedBin[1]+1],false)))
+                  if((ftemp2[k] > InvSecTheta(zcutBins[selectedBin[1]],false)) && (ftemp2[k] <= InvSecTheta(zcutBins[selectedBin[1]+1],false)))
                      sepcut[1] = true;
 		  // Event is below the zenith angle cut
-	          else if(ftemp2[k] <= AsinSqrt(zcutBins[selectedBin[1]],false))
+	          else if(ftemp2[k] <= InvSecTheta(zcutBins[selectedBin[1]],false))
 		  {
 		     uoflow[2] = true;
 		     sepcut[1] = false;
 		  }
 		  // Event is above the zenith angle cut
-	          else if(ftemp2[k] > AsinSqrt(zcutBins[selectedBin[1]+1],false))
+	          else if(ftemp2[k] > InvSecTheta(zcutBins[selectedBin[1]+1],false))
 		  {
 		     uoflow[3] = true;
 		     sepcut[1] = false;
 		  }
+//                  // Event is inside the zenith angle cut
+//                  if((ftemp2[k] > AsinSqrt(zcutBins[selectedBin[1]],false)) && (ftemp2[k] <= AsinSqrt(zcutBins[selectedBin[1]+1],false)))
+//                     sepcut[1] = true;
+//        	  // Event is below the zenith angle cut
+//                  else if(ftemp2[k] <= AsinSqrt(zcutBins[selectedBin[1]],false))
+//        	  {
+//        	     uoflow[2] = true;
+//        	     sepcut[1] = false;
+//        	  }
+//        	  // Event is above the zenith angle cut
+//                  else if(ftemp2[k] > AsinSqrt(zcutBins[selectedBin[1]+1],false))
+//        	  {
+//        	     uoflow[3] = true;
+//        	     sepcut[1] = false;
+//        	  }
                }
 	       else
 		  sepcut[1] = false;
@@ -2007,6 +2037,9 @@ void MyFrame::SetDefaultMva(wxCommandEvent& event)
 
    (specialMva->widgetChBox[0])->SetValue(false);
    (specialMva->widgetChBox[1])->SetValue(true);
+   (specialMva->widgetChBox[2])->SetValue(true);
+   (specialMva->widgetChBox[3])->SetValue(false);
+   (specialMva->widgetChBox[4])->SetValue(false);
 
    freshAnalysis = false;
 }

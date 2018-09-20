@@ -19,6 +19,8 @@ double DegToRad(double deg);
 // Mathematical functions
 double SinSquare(double input, bool degree);
 double AsinSqrt(double input, bool degree);
+double SecTheta(double input, bool degree);
+double InvSecTheta(double input, bool degree);
 
 // String manipulation
 string RemoveExtension(string *inname);

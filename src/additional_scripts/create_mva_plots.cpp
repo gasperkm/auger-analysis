@@ -252,6 +252,7 @@ int main(int argc, char **argv)
 
    bool isangle[2] = {false, false};	// check if observable is an angle (needs to be converted to degrees from radians) 
    bool isgood[2] = {true, true};	// check if observable has an invalid value -1
+   bool iszenith[2] = {false, false};	// check if observable is a zenith angle 
 
    float *minimumval, *maximumval;	// holders for minimum and maximum values of observables
    minimumval = new float[50];
@@ -404,7 +405,13 @@ int main(int argc, char **argv)
          {
             // Check if observable is an angle in radians
             if( (observables[i] == "zenithSD") || (observables[i] == "azimuthSD") || (observables[i] == "zenithFD") || (observables[i] == "azimuthFD") || (observables[i] == "latitudeSD") || (observables[i] == "longitudeSD") || (observables[i] == "latitudeFD") || (observables[i] == "longitudeFD") )
+	    {
+               if( (observables[i] == "zenithSD") || (observables[i] == "zenithFD") )
+                  iszenith[0] = true;
+	       else
+                  iszenith[0] = false;
                isangle[0] = true;
+	    }
 	    else
                isangle[0] = false;
 
@@ -415,25 +422,24 @@ int main(int argc, char **argv)
                isgood[0] = true;
 
 	    // Check the mean observable value in order to get minimum and maximum values of all trees
-	    if(obsvars[3*i] < minimumval[i])
+	    if(isangle[0])
 	    {
-	       if(isgood[0])
-	       {
-                  if(isangle[0])
-                     minimumval[i] = RadToDeg(obsvars[3*i]);
-	          else
-                     minimumval[i] = obsvars[3*i];
-	       }
+               if(iszenith[0])
+	          ftemp[0] = obsvars[3*i];
+//	          ftemp[0] = SecTheta(obsvars[3*i]);
+//	          ftemp[0] = RadToDeg(obsvars[3*i]);
+	       else
+	          ftemp[0] = RadToDeg(obsvars[3*i]);
 	    }
-	    if(obsvars[3*i] > maximumval[i])
-	    {
-	       if(isgood[0])
-	       {
-                  if(isangle[0])
-                     maximumval[i] = RadToDeg(obsvars[3*i]);
-	          else
-                     maximumval[i] = obsvars[3*i];
-	       }
+	    else
+	       ftemp[0] = obsvars[3*i];
+
+            if(isgood[0])
+            {
+               if(ftemp[0] < minimumval[i])
+                  minimumval[i] = ftemp[0];
+               if(ftemp[0] > maximumval[i])
+                  maximumval[i] = ftemp[0];
 	    }
 
 	    // Write out information for all observables, cut and event number
@@ -458,17 +464,12 @@ int main(int argc, char **argv)
             {
 	       if(isgood[0])
 	       {
-	          if(obsvars[3*i] > xhistlimit[1])
+	          if(ftemp[0] > xhistlimit[1])
                      oflowcount[i]++;
-	          else if(obsvars[3*i] < xhistlimit[0])
+	          else if(ftemp[0] < xhistlimit[0])
                      uflowcount[i]++;
                   else
-	          {
-                     if(isangle[0])
-                        basesig[i]->Fill(RadToDeg(obsvars[3*i]));
-	             else
-                        basesig[i]->Fill(obsvars[3*i]);
-		  }
+                     basesig[i]->Fill(ftemp[0]);
                   sigcount[i]++;
 	       }
 	    }
@@ -477,17 +478,12 @@ int main(int argc, char **argv)
 	    {
 	       if(isgood[0])
 	       {
-	          if(obsvars[3*i] > xhistlimit[1])
+	          if(ftemp[0] > xhistlimit[1])
                      oflowcount[i]++;
-	          else if(obsvars[3*i] < xhistlimit[0])
+	          else if(ftemp[0] < xhistlimit[0])
                      uflowcount[i]++;
                   else
-	          {
-                     if(isangle[0])
-                        baseback[i]->Fill(RadToDeg(obsvars[3*i]));
-	             else
-                        baseback[i]->Fill(obsvars[3*i]);
-		  }
+                     baseback[i]->Fill(ftemp[0]);
 	          backcount[i]++;
 	       }
 	    }
@@ -499,7 +495,13 @@ int main(int argc, char **argv)
 	       {
                   // Check if observable is an angle in radians
                   if( (observables[j] == "zenithSD") || (observables[j] == "azimuthSD") || (observables[j] == "zenithFD") || (observables[j] == "azimuthFD") || (observables[j] == "latitudeSD") || (observables[j] == "longitudeSD") || (observables[j] == "latitudeFD") || (observables[j] == "longitudeFD") )
+	          {
+                     if( (observables[j] == "zenithSD") || (observables[j] == "zenithFD") )
+                        iszenith[1] = true;
+	             else
+                        iszenith[1] = false;
                      isangle[1] = true;
+		  }
 	          else
                      isangle[1] = false;
 
@@ -510,19 +512,24 @@ int main(int argc, char **argv)
                      isgood[1] = true;
 
 	          // Count observables, if above MVA cut (signal) and save them to signal scatter plot
+	          if(isangle[1])
+	          {
+                     if(iszenith[1])
+	                ftemp[1] = obsvars[3*j];
+//	                ftemp[1] = SecTheta(obsvars[3*j]);
+//	                ftemp[1] = RadToDeg(obsvars[3*j]);
+	             else
+	                ftemp[1] = RadToDeg(obsvars[3*j]);
+	          }
+	          else
+	             ftemp[1] = obsvars[3*j];
+
                   if(obsvars[mvanumber] >= mvacut[3])
                   {
 	             if(isgood[0] && isgood[1])
 	             {
-			if(isangle[0] && isangle[1])
-                           scatsig[scatcnt]->SetPoint(scatcntsig[scatcnt], RadToDeg(obsvars[3*i]), RadToDeg(obsvars[3*j]));
-                        if(isangle[0])
-                           scatsig[scatcnt]->SetPoint(scatcntsig[scatcnt], RadToDeg(obsvars[3*i]), obsvars[3*j]);
-			else if(isangle[1])
-                           scatsig[scatcnt]->SetPoint(scatcntsig[scatcnt], obsvars[3*i], RadToDeg(obsvars[3*j]));
-	                else
-                           scatsig[scatcnt]->SetPoint(scatcntsig[scatcnt], obsvars[3*i], obsvars[3*j]);
-
+                        scatsig[scatcnt]->SetPoint(scatcntsig[scatcnt], ftemp[0], ftemp[1]);
+			cout << "sig  " << scatcntsig[scatcnt] << ", " << ftemp[0] << ", " << ftemp[1] << endl;
 			scatcntsig[scatcnt]++;
 	             }
 	          }
@@ -531,15 +538,8 @@ int main(int argc, char **argv)
 	          {
 	             if(isgood[0] && isgood[1])
 	             {
-			if(isangle[0] && isangle[1])
-                           scatback[scatcnt]->SetPoint(scatcntback[scatcnt], RadToDeg(obsvars[3*i]), RadToDeg(obsvars[3*j]));
-                        if(isangle[0])
-                           scatback[scatcnt]->SetPoint(scatcntback[scatcnt], RadToDeg(obsvars[3*i]), obsvars[3*j]);
-			else if(isangle[1])
-                           scatback[scatcnt]->SetPoint(scatcntback[scatcnt], obsvars[3*i], RadToDeg(obsvars[3*j]));
-	                else
-                           scatback[scatcnt]->SetPoint(scatcntback[scatcnt], obsvars[3*i], obsvars[3*j]);
-
+                        scatback[scatcnt]->SetPoint(scatcntback[scatcnt], ftemp[0], ftemp[1]);
+			cout << "back " << scatcntback[scatcnt] << ", " << ftemp[0] << ", " << ftemp[1] << endl;
 			scatcntback[scatcnt]++;
 	             }
 	          }
@@ -741,6 +741,22 @@ int main(int argc, char **argv)
                }
               
                // Save plots as PDF
+               c1->SaveAs(stemp[3].c_str());
+
+               stemp[1] = string((tempkeyslist->At(2*k))->GetName());
+               if(mvacutapply == 0)
+                  stemp[3] = RemoveFilename(&filename) + "/created_plots/mean/scatter_" + stemp[1] + "_" + observables[i] + "-" + observables[j] + ".C";
+               else if(mvacutapply == -1)
+                  stemp[3] = RemoveFilename(&filename) + "/created_plots/negerror/scatter_" + stemp[1] + "_" + observables[i] + "-" + observables[j] + ".C";
+               else if(mvacutapply == 1)
+                  stemp[3] = RemoveFilename(&filename) + "/created_plots/poserror/scatter_" + stemp[1] + "_" + observables[i] + "-" + observables[j] + ".C";
+               else
+               {
+                  cerr << "Error! Wrong cut selected, rerun program." << endl;
+                  return 1;
+               }
+              
+               // Save plots as C script
                c1->SaveAs(stemp[3].c_str());
               
 //               delete legend;

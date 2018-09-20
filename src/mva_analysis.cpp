@@ -204,6 +204,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
    {
       if(DBGSIG > 1)
          cout << "# MvaSetTrees           #: " << i << ": Setting mean variable: " << invalues->GetName(i) << endl;
+      // For systematics estimation, apply uncertainties to mean value
       tempTree->SetBranchAddress((invalues->GetName(i)).c_str(), invalues->obsstruct[i].value);
       if(DBGSIG > 1)
          cout << "# MvaSetTrees           #: " << i << ": Setting neg variable: " << invalues_neg->GetName(i) << endl;
@@ -245,42 +246,43 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
       }
       else
       {
-/*         if( type == (dataSelect->widgetCB)->GetSelection()+1 )
-         {*/
-            // Apply Xmax corrections to Auger FD standard data
-            if((specialMva->widgetChBox[3])->IsChecked())
-            {
-/*	       if(j < 10)
-	       {
-		  for(int eje = 0; eje < ALLEYES; eje++)
-                     cout << j << ", FD stand, eye " << eje+1 << ": E = " << invalues->GetValue("energyFD", eje) << ", Xmax = " << invalues->GetValue("xmax", eje) << endl;
-	       }*/
-               invalues->ApplyCorrectionFD();
-/*	       if(j < 10)
-	       {
-		  for(int eje = 0; eje < ALLEYES; eje++)
-                     cout << j << ", FD stand, eye " << eje+1 << ": Ecor = " << invalues->GetValue("energyFD", eje) << ", Xmaxcor = " << invalues->GetValue("xmax", eje) << endl;
-	       }*/
-            }
+         // Apply Xmax corrections to Auger FD standard data
+         if((specialMva->widgetChBox[3])->IsChecked())
+            invalues->ApplyCorrectionFD();
 
-            // Apply Xmax and energy corrections to Auger HECO data
-            if((specialMva->widgetChBox[4])->IsChecked())
-            {
-/*	       if(j < 10)
-	       {
-		  for(int eje = 0; eje < ALLEYES; eje++)
-                     cout << j << ", HECO, eye " << eje+1 << ": E = " << invalues->GetValue("energyFD", eje) << " (+- " << invalues_neg->GetValue("energyFD", eje) << "), Xmax = " << invalues->GetValue("xmax", eje) << endl;
-	       }*/
-               invalues->ApplyCorrectionHECO();
-               invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
-               invalues_pos->ApplyCorrectionHECOErrors(invalues, 1);
-/*	       if(j < 10)
-	       {
-		  for(int eje = 0; eje < ALLEYES; eje++)
-                     cout << j << ", HECO, eye " << eje+1 << ": Ecor = " << invalues->GetValue("energyFD", eje) << " (+- " << invalues_neg->GetValue("energyFD", eje) << "), Xmaxcor = " << invalues->GetValue("xmax", eje) << endl;
-	       }*/
-            }
-//         }
+         // Apply Xmax and energy corrections to Auger HECO data
+         if((specialMva->widgetChBox[4])->IsChecked())
+         {
+            invalues->ApplyCorrectionHECO();
+            invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
+            invalues_pos->ApplyCorrectionHECOErrors(invalues, 1);
+         }
+
+	 // Apply systematic estimation by adding statistical uncertainties to mean value
+         stemp[0] = "TreeS" + ToString(type);
+         stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
+         stemp[1] = RemovePath(&stemp[1]);
+         if( string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1] )	// set to == if changing data and to != if changing simulations
+	 {
+	    if((specialMva->widgetChBox[5])->IsChecked())
+               invalues->ApplyUncertainty(invalues_neg, invalues_pos, 0);
+
+	    if((specialMva->widgetChBox[6])->IsChecked())
+               invalues->ApplyUncertainty(invalues_neg, invalues_pos, 1);
+	 }
+      }
+
+      // Change zenith angle (theta) to sec(theta) value for MVA analysis
+      ret = Find(observables, "zenithSD");
+      if(ret != -1)
+      {
+         invalues->SetupZenith(ret, invalues_neg, invalues_pos);
+      }
+
+      ret = Find(observables, "zenithFD");
+      if(ret != -1)
+      {
+         invalues->SetupZenith(ret, invalues_neg, invalues_pos);
       }
 
       // Check if event is inside the selected cuts
@@ -716,7 +718,9 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
             {
                if(!split)
 	       {
-                  if((ftemp[0] > AsinSqrt(zcutBins[selectedBin[1]],false)) && (ftemp[0] <= AsinSqrt(zcutBins[selectedBin[1]+1],false)))
+//                  if((ftemp[0] > AsinSqrt(zcutBins[selectedBin[1]],false)) && (ftemp[0] <= AsinSqrt(zcutBins[selectedBin[1]+1],false)))
+//                  if((ftemp[0] > InvSecTheta(zcutBins[selectedBin[1]],false)) && (ftemp[0] <= InvSecTheta(zcutBins[selectedBin[1]+1],false)))
+                  if((ftemp[0] > zcutBins[selectedBin[1]]) && (ftemp[0] <= zcutBins[selectedBin[1]+1]))
                      sepcut[1] = true;
 	          else
                      sepcut[1] = false;
@@ -794,7 +798,9 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
             {
                if(!split)
 	       {
-                  if((ftemp[0] > AsinSqrt(zcutBins[selectedBin[1]],false)) && (ftemp[0] <= AsinSqrt(zcutBins[selectedBin[1]+1],false)))
+//                  if((ftemp[0] > AsinSqrt(zcutBins[selectedBin[1]],false)) && (ftemp[0] <= AsinSqrt(zcutBins[selectedBin[1]+1],false)))
+//                  if((ftemp[0] > InvSecTheta(zcutBins[selectedBin[1]],false)) && (ftemp[0] <= InvSecTheta(zcutBins[selectedBin[1]+1],false)))
+                  if((ftemp[0] > zcutBins[selectedBin[1]]) && (ftemp[0] <= zcutBins[selectedBin[1]+1]))
                      sepcut[1] = true;
 	          else
                      sepcut[1] = false;

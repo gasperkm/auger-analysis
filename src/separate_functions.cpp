@@ -40,7 +40,7 @@ double DegToRad(double deg)
 double SinSquare(double input, bool degree)
 {
    if(degree)
-      return sin(input*TMath::Pi()/180.)*sin(input*TMath::Pi()/180.);
+      return sin(DegToRad(input))*sin(DegToRad(input));
    else
       return sin(input)*sin(input);
 }
@@ -49,9 +49,27 @@ double SinSquare(double input, bool degree)
 double AsinSqrt(double input, bool degree)
 {
    if(degree)
-      return asin(sqrt(input))*180./TMath::Pi();
+      return RadToDeg(asin(sqrt(input)));
    else
       return asin(sqrt(input));
+}
+
+// Calculate secant of an angle (if degree = true, use degrees)
+double SecTheta(double input, bool degree)
+{
+   if(degree)
+      return 1./cos(DegToRad(input));
+   else
+      return 1./cos(input);
+}
+
+// Calculate secant of a value (if degree = true, result is in degrees)
+double InvSecTheta(double input, bool degree)
+{
+   if(degree)
+      return RadToDeg(acos(1./input));
+   else
+      return acos(1./input);
 }
 
 // Remove extension from a string

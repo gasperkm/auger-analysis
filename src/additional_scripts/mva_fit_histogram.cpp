@@ -17,6 +17,8 @@ MvaFitHist::MvaFitHist(vector<string> *primVals)
    itemp = new int[4];
    dtemp = new double[3];
 
+   xmaxAnalysis = false;
+
    nrbins = -1;
    cout << endl;
    while(nrbins < 4)
@@ -33,9 +35,27 @@ MvaFitHist::MvaFitHist(vector<string> *primVals)
    cerr << "Select constraint type (0 = function, 1 = one of the fractions): ";
    cin >> constraint;
 
-   xlim[0] = GetMethodMin(stemp[0]);
-   xlim[1] = GetMethodMax(stemp[0]);
-   cout << "MVA limits (" << stemp[0] << "): " << xlim[0] << ", " << xlim[1] << endl;
+   cerr << "Select if fit is to be performed on MVA distribution (0) or Xmax distribution (1): ";
+   cin >> itemp[0];
+   xmaxAnalysis = (bool)itemp[0];
+
+   cerr << "Remove zero bins from analysis (1 = yes, 0 = no): ";
+   cin >> itemp[0];
+   removeZero = (bool)itemp[0];
+
+   // Use xmax instead of MVA:
+   if(xmaxAnalysis)
+   {
+      xlim[0] = 560.;
+      xlim[1] = 1040.;
+      cout << "Xmax limits (" << stemp[0] << "): " << xlim[0] << ", " << xlim[1] << endl;
+   }
+   else
+   {
+      xlim[0] = GetMethodMin(stemp[0]);
+      xlim[1] = GetMethodMax(stemp[0]);
+      cout << "MVA limits (" << stemp[0] << "): " << xlim[0] << ", " << xlim[1] << endl;
+   }
 
    cerr << "Transform [0,1] range of parameters to [-inf,inf] (0 = don't transform, 1 = transform) or leave parameters unlimited (2)? ";
    cin >> rangeTransform;
@@ -395,8 +415,13 @@ void MvaFitHist::PrepareHistograms(int run, string *fname, int *proc, double *st
       tempTree = (TTree*)ifile->Get(stemp[0].c_str());
       cout << "with title = " << tempTree->GetTitle() << endl;
 
+      // Use xmax instead of MVA
+      if(xmaxAnalysis)
+         tempTree->SetBranchAddress("xmax", &mva);
       // Extract the MVA variable
-      tempTree->SetBranchAddress("MVA", &mva);
+      else
+         tempTree->SetBranchAddress("MVA", &mva);
+      
       nentries[i] = tempTree->GetEntries();
       cout << "  Number of entries = " << nentries[i] << endl;
 /*      if(equateMcEvents && (equateVal < nentries[i]))		// EQUATING
@@ -1774,24 +1799,38 @@ int MvaFitHist::StartFitting()
          for(int i = 0; i < nrelem; i++)
             fracFitter->Constrain(i, 0., 1.);
       }
-      
-      // Exclude any bins that are 0 in simulations or data
-      for(int i = 1; i < nrbins+1; i++)
-      {
-         dtemp[0] = 0;
-         for(int j = 0; j < nrelem; j++)
-            dtemp[0] += simhist[j]->GetBinContent(i);
 
-	 if( (data->GetBinContent(i) == 0) || (dtemp[0] == 0) )
-	 {
-            cout << "Excluding bin " << i-1 << " from further analysis." << endl;
-	    fracFitter->ExcludeBin(i);
-	 }
+      fracVirtFitter = (TVirtualFitter*)fracFitter->GetFitter();
+
+      if(removeZero)
+      {
+         // Exclude any bins that are 0 in simulations or data
+         for(int i = 1; i < nrbins+1; i++)
+         {
+            dtemp[0] = 0;
+            for(int j = 0; j < nrelem; j++)
+               dtemp[0] += simhist[j]->GetBinContent(i);
+
+            if( (data->GetBinContent(i) == 0) || (dtemp[0] == 0) )
+            {
+               cout << "Excluding bin " << i-1 << " from further analysis." << endl;
+               fracFitter->ExcludeBin(i);
+            }
+         }
       }
 
       itemp[0] = fracFitter->Fit();
       fracFitter->ErrorAnalysis(1);
       cout << "Fitting status = " << itemp[0] << endl;
+
+      // Retry to fit with initial values from a previous fit
+      if(itemp[0] != 0)
+      {
+	 cout << "Retrying a fit" << endl;
+         itemp[0] = fracFitter->Fit();
+         fracFitter->ErrorAnalysis(1);
+         cout << "Fitting status = " << itemp[0] << endl;
+      }
 
       if(itemp[0] == 0)
       {
@@ -1833,11 +1872,11 @@ int MvaFitHist::StartFitting()
 	 for(int i = 0; i < nrelem; i++)
 	 {
 //            fracFitter->GetResult(i, bestfrac[i], bestfracerr[i]);
-            bestfrac[i] = (fracFitter->GetFitter())->GetParameter(i);
-	    (fracFitter->GetFitter())->GetErrors(i, bestfracerr[2*i], bestfracerr[2*i+1], dtemp[1], dtemp[0]);
-            dtemp[0] = (fracFitter->GetFitter())->GetParError(i)/dtemp[1];
+            bestfrac[i] = fracVirtFitter->GetParameter(i);
+	    fracVirtFitter->GetErrors(i, bestfracerr[2*i], bestfracerr[2*i+1], dtemp[1], dtemp[0]);
+            dtemp[0] = fracVirtFitter->GetParError(i)/dtemp[1];
 
-	    cout << i << ": Parabolic error: " << (fracFitter->GetFitter())->GetParError(i) << "/" << dtemp[1] << " = " << dtemp[0] << "\t" << "\t";
+	    cout << i << ": Parabolic error: " << fracVirtFitter->GetParError(i) << "/" << dtemp[1] << " = " << dtemp[0] << "\t" << "\t";
             if( (dtemp[0] > 0.9) && (dtemp[0] < 1.1) )
                cout << "(GOOD)" << endl;
 	    else
@@ -1956,8 +1995,8 @@ int MvaFitHist::StartFitting()
 	 for(int i = 0; i < nrelem; i++)
 	 {
 //            fracFitter->GetResult(i, bestfrac[i], bestfracerr[i]);
-            bestfrac[i] = (fracFitter->GetFitter())->GetParameter(i);
-	    (fracFitter->GetFitter())->GetErrors(i, bestfracerr[2*i], bestfracerr[2*i+1], dtemp[1], dtemp[0]);
+            bestfrac[i] = fracVirtFitter->GetParameter(i);
+	    fracVirtFitter->GetErrors(i, bestfracerr[2*i], bestfracerr[2*i+1], dtemp[1], dtemp[0]);
             cout << "frac" << i << " (" << ptype->GetName(includePart->at(i)) << ")\t = " << ToString(bestfrac[i], 5) << "\t+/-\t" << ToString(bestfracerr[2*i], 5) << "/" << ToString(bestfracerr[2*i+1], 5) << endl;
 	 }
 
@@ -2057,11 +2096,17 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
       yrange[1] = data->GetMaximum();
 
       mystyle->SetHistColor((TH1*)sim, 0);
-      mystyle->SetAxisTitles((TH1*)sim, "MVA variable", "Number of events");
+      if(xmaxAnalysis)
+         mystyle->SetAxisTitles((TH1*)sim, "X_{max} (g/cm^{2})", "Number of events");
+      else
+         mystyle->SetAxisTitles((TH1*)sim, "MVA variable", "Number of events");
       sim->Draw();
       
       mystyle->SetHistColor((TH1*)data, 2);
-      mystyle->SetAxisTitles((TH1*)data, "MVA variable", "Number of events");
+      if(xmaxAnalysis)
+         mystyle->SetAxisTitles((TH1*)data, "X_{max} (g/cm^{2})", "Number of events");
+      else
+         mystyle->SetAxisTitles((TH1*)data, "MVA variable", "Number of events");
       sim->SetMaximum(1.1*TMath::MaxElement(2, yrange));
       data->Draw("Ep;same");
 
@@ -2170,7 +2215,12 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
    for(int i = 0; i < residAll->size(); i++)
       tempd[i] = residAll->at(i);
 
-   chiText.SetTextAlign(21);
+   // Use xmax instead of MVA:
+   if(xmaxAnalysis)
+      chiText.SetTextAlign(31);
+   else
+      chiText.SetTextAlign(21);
+
    if(fitproc == 0)
    {
       stemp[0] = "#chi^{2}/NDF = " + ToString((*chi2value), 4) + "/" + ToString((*ndfvalue)) + " = " + ToString((*chi2value)/(double)(*ndfvalue), 4);
@@ -2258,7 +2308,11 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
    else if(fitproc == 5)
    {
       stemp[0] = "#chi^{2}/NDF = " + ToString((*chi2value), 4) + "/" + ToString((*ndfvalue)) + " = " + ToString((*chi2value)/(double)(*ndfvalue), 4) + ", status = " + ToString(status) + ", p-value = " + ToString((*pvalue), 4);
-      chiText.DrawLatex((xlim[0]+xlim[1])/2., TMath::MaxElement(2, yrange), stemp[0].c_str());
+      // Use xmax instead of MVA:
+      if(xmaxAnalysis)
+         chiText.DrawLatex(xlim[1]*0.98, TMath::MaxElement(2, yrange), stemp[0].c_str());
+      else
+         chiText.DrawLatex((xlim[0]+xlim[1])/2., TMath::MaxElement(2, yrange), stemp[0].c_str());
 
       dtemp[0] = 1.;
       dtemp[1] = 0.;
@@ -2266,13 +2320,25 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
       for(int i = 0; i < nrparam; i++)
       {
          stemp[0] = "r_{" + ToString(i+1) + "} = " + ToString(sigFrac[i], 4) + " +" + ToString(sigFracErr[2*i], 4) + "/-" + ToString(sigFracErr[2*i+1], 4) + " (" + treeNames[i] + ")";
-         chiText.DrawLatex((xlim[0]+xlim[1])/2., (1.-0.06*((double)i+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
+         // Use xmax instead of MVA:
+	 if(xmaxAnalysis)
+            chiText.DrawLatex(xlim[1]*0.98, (1.-0.06*((double)i+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
+	 else
+            chiText.DrawLatex((xlim[0]+xlim[1])/2., (1.-0.06*((double)i+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
       }
 
       stemp[0] = "Residuals: mean = " + ToString(TMath::Mean(residAll->size(), tempd), 4) + ", RMS = " + ToString(TMath::RMS(residAll->size(), tempd), 4);
-      chiText.DrawLatex((xlim[0]+xlim[1])/2., (1.-0.06*((double)nrparam+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
+      // Use xmax instead of MVA:
+      if(xmaxAnalysis)
+         chiText.DrawLatex(xlim[1]*0.98, (1.-0.06*((double)nrparam+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
+      else
+         chiText.DrawLatex((xlim[0]+xlim[1])/2., (1.-0.06*((double)nrparam+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
       stemp[0] = "MVA cut = " + ToString(mvacut, 4);
-      chiText.DrawLatex((xlim[0]+xlim[1])/2., (1.-0.06*((double)nrparam+2.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
+      // Use xmax instead of MVA:
+      if(xmaxAnalysis)
+         chiText.DrawLatex(xlim[1]*0.98, (1.-0.06*((double)nrparam+2.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
+      else
+         chiText.DrawLatex((xlim[0]+xlim[1])/2., (1.-0.06*((double)nrparam+2.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
    }
 
    delete residAll;
@@ -2329,7 +2395,10 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
    }
    else if(fitproc == 5)
    {
-      stemp[0] = RemoveFilename(&filename) + "/fithist/" + stemp[1] + "_composition_residuals_fracfitter.pdf";
+      if(xmaxAnalysis)
+         stemp[0] = RemoveFilename(&filename) + "/fithist/" + stemp[1] + "_composition_residuals_fracfitter-xmax.pdf";
+      else
+         stemp[0] = RemoveFilename(&filename) + "/fithist/" + stemp[1] + "_composition_residuals_fracfitter.pdf";
       c1->SaveAs(stemp[0].c_str());
 /*      stemp[0] = RemoveFilename(&filename) + "/fithist/" + stemp[1] + "_composition_residuals_distribution.pdf";
       c2->SaveAs(stemp[0].c_str());*/
@@ -2369,8 +2438,13 @@ double MvaFitHist::GetStep()
    return *midStep;
 }
 
-// Read published lnA results to add them to the plot (type: 0 = EPOS, 1 = QGSJETII, 2 = SIBYLL)
-int ReadLnaResults(vector<float> *val, int type)
+bool MvaFitHist::GetAnalysisType()
+{
+   return xmaxAnalysis;
+}
+
+// Read published lnA FD results to add them to the plot (type: 0 = EPOS, 1 = QGSJETII, 2 = SIBYLL)
+int ReadLnaResultsFD(vector<float> *val, int type)
 {
    ifstream infile;
    char ctemp[1024];
@@ -2418,6 +2492,212 @@ int ReadLnaResults(vector<float> *val, int type)
 
    delete[] ftemp;
 
+   return nrp;
+}
+
+// Read published lnA SD results to add them to the plot (type: 0 = EPOS, 1 = QGSJETII; array: 0 = 750m, 1 = 1500m)
+int ReadLnaResultsSD(vector<float> *val, int type, int array)
+{
+   ifstream infile;
+   char ctemp[1024];
+   float *ftemp;
+   int nrp = 0;
+
+   string stemp;
+   if(type == 0)
+   {
+      if(array == 0)
+         stemp = string(rootdir) + "/input/lnA_moments_sd750_epos.txt";
+      else if(array == 1)
+         stemp = string(rootdir) + "/input/lnA_moments_sd1500_epos.txt";
+      else
+         return -1;
+   }
+   else if(type == 1)
+   {
+      if(array == 0)
+         stemp = string(rootdir) + "/input/lnA_moments_sd750_qgs.txt";
+      else if(array == 1)
+         stemp = string(rootdir) + "/input/lnA_moments_sd1500_qgs.txt";
+      else
+         return -1;
+   }
+   else
+      return -1;
+
+   ftemp = new float[4];
+
+   infile.open(stemp.c_str(), ifstream::in);
+
+   if(infile.is_open())
+   {
+      infile.getline(ctemp, 1024, '\n');
+      
+      while(1)
+      {
+	 for(int i = 0; i < 4; i++)
+            infile >> ftemp[i];
+
+	 if(ftemp[0] > 18.40)
+	 {
+            val->push_back(ftemp[0]);
+            val->push_back(ftemp[1]);
+            val->push_back(ftemp[2]);
+
+	    nrp++;
+	 }
+
+	 infile.ignore(1,' ');
+	 if(infile.eof()) break;
+      }
+   }
+
+   infile.close();
+
+   delete[] ftemp;
+
+   return nrp;
+}
+
+// Read published fraction FD results to add them to the plots (type: 0 = EPOS, 1 = QGSJETII, 2 = SIBYLL)
+int ReadFracResultsFD(vector<float> *val, MvaFitHist *fithist, PrimPart *ptype, int type, bool uselna)
+{
+   ifstream infile;
+   char ctemp[1024];
+   float *ftemp, *lna;
+   int *itemp;
+   int nrp = 0;
+
+   string stemp;
+   stemp = string(rootdir) + "/input/fractions_icrc17.txt";
+
+   ftemp = new float[10];
+   lna = new float[3];
+   itemp = new int[3];
+
+//   cout << "---------------------------------------------------" << endl;
+//   cout << "Opening file: " << stemp << endl;
+   infile.open(stemp.c_str(), ifstream::in);
+
+   if(infile.is_open())
+   {
+      while(1)
+      {
+         lna[0] = 0.;
+         lna[1] = 0.;
+         lna[2] = 0.;
+
+         // Get energy
+         infile >> ftemp[0];
+	 if(infile.eof()) break;
+
+//	 cout << "Reading energy = " << ftemp[0] << endl;
+
+	 if(ftemp[0] > 18.40)
+	 {
+            if(uselna)
+	       val->push_back(ftemp[0]);
+	    else
+	       val->push_back(ftemp[0]);
+
+            // Read any values from other models (before the one we are using)
+            for(int j = 0; j < 20*type; j++)
+	    {
+               infile >> ftemp[0];
+//	       cout << j << " Skipping value = " << ftemp[0] << endl;
+	    }
+
+	    // Get elements
+	    itemp[1] = 0;
+	    for(int i = 0; i < 4; i++)
+	    {
+               itemp[0] = fithist->GetElemType(itemp[1]);
+//	       cout << "Searching for values for " << ptype->GetName(itemp[0]) << " (" << itemp[0] << ")" << endl;
+               // Get mean and errors
+               for(int j = 0; j < 5; j++)
+                  infile >> ftemp[j];
+
+               if( (ptype->GetName(itemp[0]) == "Proton") || (ptype->GetName(itemp[0]) == "Helium") || (ptype->GetName(itemp[0]) == "Oxygen") || (ptype->GetName(itemp[0]) == "Iron") )
+	       {
+		  if(!uselna)
+		  {
+                     val->push_back(ftemp[0]);
+                     val->push_back(ftemp[1]);
+                     val->push_back(ftemp[2]);
+
+//	             cout << "Saving values = " << ftemp[0] << " (" << ftemp[1] << ", " << ftemp[2] << ")" << endl;
+		  }
+
+
+	          if(ptype->GetName(itemp[0]) == "Oxygen")
+                     itemp[0]--;
+
+		  if(uselna)
+		  {
+//	             cout << "Adding to lnA: " << ftemp[0] << ", " << TMath::Log(ptype->GetA(itemp[0])) << ", " << ftemp[0]*TMath::Log(ptype->GetA(itemp[0])) << endl;
+	             lna[0] += ftemp[0]*TMath::Log(ptype->GetA(itemp[0]));
+//	             cout << "Adding to lnA (negerror): " << ftemp[1] << ", " << TMath::Log(ptype->GetA(itemp[0])) << ", " << ftemp[1]*TMath::Log(ptype->GetA(itemp[0])) << endl;
+	             lna[1] += (ftemp[1]*TMath::Log(ptype->GetA(itemp[0])))*(ftemp[1]*TMath::Log(ptype->GetA(itemp[0])));
+//	             cout << "Adding to lnA (poserror): " << ftemp[2] << ", " << TMath::Log(ptype->GetA(itemp[0])) << ", " << ftemp[2]*TMath::Log(ptype->GetA(itemp[0])) << endl;
+	             lna[2] += (ftemp[0]*TMath::Log(ptype->GetA(itemp[0])))*(ftemp[2]*TMath::Log(ptype->GetA(itemp[0])));
+		  }
+
+	          itemp[1]++;
+	       }
+//	       else
+//                  cout << "Not included element." << endl;
+	    }
+
+            // Read any values from other models (after the one we are using)
+            for(int j = 0; j < 20*(2-type); j++)
+	    {
+               infile >> ftemp[0];
+//	       cout << j << " Skipping value = " << ftemp[0] << endl;
+	    }
+
+	    if(uselna)
+	    {
+	       // Save lnA values
+	       val->push_back(lna[0]);
+
+	       lna[1] = TMath::Sqrt(lna[1]);
+	       lna[2] = TMath::Sqrt(lna[2]);
+
+	       val->push_back(lna[1]);
+	       val->push_back(lna[2]);
+	    }
+
+            nrp++;
+	 }
+	 else
+	 {
+            for(int j = 0; j < 60; j++)
+	    {
+               infile >> ftemp[0];
+//	       cout << j << " Skipping value = " << ftemp[0] << endl;
+	    }
+	 }
+      }
+
+/*      if(uselna)
+      {
+         cout << "lnA writeout:" << endl;
+         for(int i = 0; i < val->size(); i++)
+            cout << "lnaval = " << val->at(i) << endl;
+      }
+      else
+      {
+         cout << "Elemental fraction writeout:" << endl;
+         for(int i = 0; i < val->size(); i++)
+            cout << "val = " << val->at(i) << endl;
+      }*/
+   }
+
+   infile.close();
+
+//   cout << "---------------------------------------------------" << endl;
+
+   delete[] ftemp;
    return nrp;
 }
 
@@ -2616,70 +2896,169 @@ int main(int argc, char **argv)
 
       // Prepare lnA plot, with appended published values
       TGraphAsymmErrors *grLna;
-      TGraphAsymmErrors *grPubLna;
+      TGraphAsymmErrors *grPubLnaFD, *grPubLnaSD, *grPubLnaFDFrac;
       TLegend *legend;
       int c_Legend = TColor::GetColor("#ffff66");
 
       grLna = new TGraphAsymmErrors(nrp, xval, yval, xerr, xerr, yerrlo, yerrhi);
       mystyle->SetGraphColor(grLna, 2);
-      grLna->GetXaxis()->SetRangeUser(18.5, 20.0);
+      grLna->GetXaxis()->SetRange(18.4, 20.0);
+      grLna->GetXaxis()->SetRangeUser(18.4, 20.0);
+      grLna->GetXaxis()->SetLimits(18.4, 20.0);
 //      grLna->GetXaxis()->SetLimits(18.5, 20.0);
       grLna->GetYaxis()->SetRangeUser(-0.7, 5.);
 
+      int dset = -1;
       cerr << "Which dataset did you use (EPOS = 0, QGSJET = 1, SIBYLL = 2, NONE = -1)? ";
-      cin >> itemp[2];
+      cin >> dset;
 
-      bool addPublished;
+      bool addPublishedFD, addPublishedSD, addPublishedFrac;
 
-      float *xbinPub[3];
-      float *ybinPubLna[3];
+      float *xbinPubFD[3], *xbinPubSD[3], *xbinPubFDFrac[3];
+      float *ybinPubLnaFD[3], *ybinPubLnaSD[3], *ybinPubLnaFDFrac[3];
+      vector<float> returnFrac;
 
-      if(itemp[2] != -1)
+      if(dset != -1)
       {
-         addPublished = true;
+         addPublishedFD = true;
          vector<float> returnVal;
-         itemp[2] = ReadLnaResults(&returnVal, itemp[2]);
-//         cout << "Number of points = " << itemp[2] << endl;
-         
-         for(int i = 0; i < 3; i++)
-         {
-            xbinPub[i] = new float[itemp[2]];
-            ybinPubLna[i] = new float[itemp[2]];
-         }
-         
-         for(int i = 0; i < itemp[2]; i++)
-         {
-            xbinPub[0][i] = returnVal[3*i];
-            xbinPub[1][i] = 0;
-            xbinPub[2][i] = 0;
-            ybinPubLna[0][i] = returnVal[3*i+1];
-            ybinPubLna[1][i] = returnVal[3*i+2];
-            ybinPubLna[2][i] = returnVal[3*i+2];
-         
-//            cout << i+1 << ", data: " << xbinPub[0][i] << "\t" << ybinPubLna[0][i] << "\t" << ybinPubLna[1][i] << endl;
-         }
-         
-         grPubLna = new TGraphAsymmErrors(itemp[2], xbinPub[0], ybinPubLna[0], xbinPub[1], xbinPub[2], ybinPubLna[1], ybinPubLna[2]);
-         mystyle->SetGraphColor(grPubLna, 0);
-         grPubLna->GetYaxis()->SetRangeUser(-0.7, 5.);
+	 cout << "Reading FD published Xmax results" << endl;
+         itemp[2] = ReadLnaResultsFD(&returnVal, dset);
+	 if(itemp[2] != -1)
+	 {
+            cout << "Number of FD points = " << itemp[2] << endl;
+            
+            for(int i = 0; i < 3; i++)
+            {
+               xbinPubFD[i] = new float[itemp[2]];
+               ybinPubLnaFD[i] = new float[itemp[2]];
+            }
+            
+            for(int i = 0; i < itemp[2]; i++)
+            {
+               xbinPubFD[0][i] = returnVal[3*i];
+               xbinPubFD[1][i] = 0;
+               xbinPubFD[2][i] = 0;
+               ybinPubLnaFD[0][i] = returnVal[3*i+1];
+               ybinPubLnaFD[1][i] = returnVal[3*i+2];
+               ybinPubLnaFD[2][i] = returnVal[3*i+2];
+            
+//               cout << i+1 << ", data: " << xbinPub[0][i] << "\t" << ybinPubLna[0][i] << "\t" << ybinPubLna[1][i] << endl;
+            }
+            
+            grPubLnaFD = new TGraphAsymmErrors(itemp[2], xbinPubFD[0], ybinPubLnaFD[0], xbinPubFD[1], xbinPubFD[2], ybinPubLnaFD[1], ybinPubLnaFD[2]);
+            mystyle->SetGraphColor(grPubLnaFD, 0);
+            grPubLnaFD->GetXaxis()->SetRange(18.5, 20.0);
+            grPubLnaFD->GetXaxis()->SetRangeUser(18.5, 20.0);
+            grPubLnaFD->GetXaxis()->SetLimits(18.5, 20.0);
+            grPubLnaFD->GetYaxis()->SetRangeUser(-0.7, 5.);
+
+	    if(dset != 2)
+	    {
+               addPublishedSD = true;
+               returnVal.clear();
+	       cout << "Reading SD published results" << endl;
+               itemp[2] = ReadLnaResultsSD(&returnVal, dset, 1);
+	       if(itemp[2] != -1)
+	       {
+                  cout << "Number of SD points = " << itemp[2] << endl;
+                  
+                  for(int i = 0; i < 3; i++)
+                  {
+                     xbinPubSD[i] = new float[itemp[2]];
+                     ybinPubLnaSD[i] = new float[itemp[2]];
+                  }
+                  
+                  for(int i = 0; i < itemp[2]; i++)
+                  {
+                     xbinPubSD[0][i] = returnVal[3*i];
+                     xbinPubSD[1][i] = 0;
+                     xbinPubSD[2][i] = 0;
+                     ybinPubLnaSD[0][i] = returnVal[3*i+1];
+                     ybinPubLnaSD[1][i] = returnVal[3*i+2];
+                     ybinPubLnaSD[2][i] = returnVal[3*i+2];
+                  
+//                     cout << i+1 << ", data: " << xbinPub[0][i] << "\t" << ybinPubLna[0][i] << "\t" << ybinPubLna[1][i] << endl;
+                  }
+                  
+                  grPubLnaSD = new TGraphAsymmErrors(itemp[2], xbinPubSD[0], ybinPubLnaSD[0], xbinPubSD[1], xbinPubSD[2], ybinPubLnaSD[1], ybinPubLnaSD[2]);
+                  mystyle->SetGraphColor(grPubLnaSD, 1);
+                  grPubLnaSD->GetXaxis()->SetRange(18.5, 20.0);
+                  grPubLnaSD->GetXaxis()->SetRangeUser(18.5, 20.0);
+                  grPubLnaSD->GetXaxis()->SetLimits(18.5, 20.0);
+                  grPubLnaSD->GetYaxis()->SetRangeUser(-0.7, 5.);
+               }
+	       else
+                  addPublishedSD = false;
+	    }
+	    else
+               addPublishedSD = false;
+	 }
+	 else
+            addPublishedFD = false;
+
+         addPublishedFrac = true;
+	 cout << "Reading FD lnA from published fraction results" << endl;
+         itemp[2] = ReadFracResultsFD(&returnFrac, fithist, ptype, dset, true);
+	 if(itemp[2] != -1)
+	 {
+            cout << "Number of FD points = " << itemp[2] << endl;
+            
+            for(int i = 0; i < 3; i++)
+            {
+               xbinPubFDFrac[i] = new float[itemp[2]];
+               ybinPubLnaFDFrac[i] = new float[itemp[2]];
+            }
+            
+            for(int i = 0; i < itemp[2]; i++)
+            {
+               xbinPubFDFrac[0][i] = returnFrac[4*i];
+               xbinPubFDFrac[1][i] = 0;
+               xbinPubFDFrac[2][i] = 0;
+               ybinPubLnaFDFrac[0][i] = returnFrac[4*i+1];
+               ybinPubLnaFDFrac[1][i] = returnFrac[4*i+2];
+               ybinPubLnaFDFrac[2][i] = returnFrac[4*i+3];
+            
+//               cout << i+1 << ", data: " << xbinPub[0][i] << "\t" << ybinPubLna[0][i] << "\t" << ybinPubLna[1][i] << endl;
+            }
+            
+            grPubLnaFDFrac = new TGraphAsymmErrors(itemp[2], xbinPubFDFrac[0], ybinPubLnaFDFrac[0], xbinPubFDFrac[1], xbinPubFDFrac[2], ybinPubLnaFDFrac[1], ybinPubLnaFDFrac[2]);
+            mystyle->SetGraphColor(grPubLnaFDFrac, 0);
+            grPubLnaFDFrac->GetXaxis()->SetRange(18.5, 20.0);
+            grPubLnaFDFrac->GetXaxis()->SetRangeUser(18.5, 20.0);
+            grPubLnaFDFrac->GetXaxis()->SetLimits(18.5, 20.0);
+            grPubLnaFDFrac->GetYaxis()->SetRangeUser(-0.7, 5.);
+	 }
+	 else
+            addPublishedFrac = false;
       }
       else
-         addPublished = false;
+         addPublishedFD = false;
 
+      // Plot lnA graph, where we add Xmax and Delta analysis
       mystyle->SetAxisTitles(grLna, "FD energy [log(E/eV)]", "<lnA> of data events");
       grLna->Draw("APL");
-      if(addPublished)
-         grPubLna->Draw("PL;SAME");
+      if(addPublishedFD)
+         grPubLnaFD->Draw("PL;SAME");
+      if(addPublishedSD)
+         grPubLnaSD->Draw("PL;SAME");
 
-      if(addPublished)
+      if(addPublishedFD && addPublishedSD)
+         legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(3)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+      else if(addPublishedFD || addPublishedSD)
          legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(2)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
       else
          legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(1)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
       legend->SetFillStyle(1001);
       legend->SetFillColor(c_Legend);
-      legend->AddEntry(grLna, "Data (Histogram fit)", "lp");
-      if(addPublished)
-         legend->AddEntry(grPubLna, "Data (Auger published)", "lp");
+      if(dset == -1)
+         legend->AddEntry(grLna, "Mock data (Histogram fit)", "lp");
+      else
+         legend->AddEntry(grLna, "Data (Histogram fit)", "lp");
+      if(addPublishedFD)
+         legend->AddEntry(grPubLnaFD, "Data (Xmax analysis ICRC2017)", "lp");
+      if(addPublishedSD)
+         legend->AddEntry(grPubLnaSD, "Data (Delta analysis ICRC2017)", "lp");
       legend->SetBorderSize(1);
       legend->SetMargin(0.3);
       legend->Draw("same");
@@ -2720,15 +3099,124 @@ int main(int argc, char **argv)
       stemp[2] = "mkdir -p " + RemoveFilename(&stemp[1]) + "/plots";
       system(stemp[2].c_str());
 
-      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA.pdf";
-      c1->SaveAs(stemp[2].c_str());
+      if(fithist->GetAnalysisType())
+      {
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA_xmax.pdf";
+         c1->SaveAs(stemp[2].c_str());
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA_xmax.C";
+         c1->SaveAs(stemp[2].c_str());
+      }
+      else
+      {
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA.pdf";
+         c1->SaveAs(stemp[2].c_str());
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA.C";
+         c1->SaveAs(stemp[2].c_str());
+      }
+
+      // Plot lnA graph, where we add Xmax analysis from histogram fitting approach
+      mystyle->SetAxisTitles(grLna, "FD energy [log(E/eV)]", "<lnA> of data events");
+      grLna->Draw("APL");
+      if(addPublishedFrac)
+         grPubLnaFDFrac->Draw("PL;SAME");
+      if(addPublishedSD)
+         grPubLnaSD->Draw("PL;SAME");
+
+      if(addPublishedFrac && addPublishedSD)
+         legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(3)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+      else if(addPublishedFrac || addPublishedSD)
+         legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(2)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+      else
+         legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(1)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+      legend->SetFillStyle(1001);
+      legend->SetFillColor(c_Legend);
+      if(dset == -1)
+         legend->AddEntry(grLna, "Mock data (Histogram fit)", "lp");
+      else
+         legend->AddEntry(grLna, "Data (Histogram fit)", "lp");
+      if(addPublishedFrac)
+         legend->AddEntry(grPubLnaFDFrac, "Data (Longitudinal fit analysis ICRC2017)", "lp");
+      if(addPublishedSD)
+         legend->AddEntry(grPubLnaSD, "Data (Delta analysis ICRC2017)", "lp");
+      legend->SetBorderSize(1);
+      legend->SetMargin(0.3);
+      legend->Draw("same");
+
+      t = new TText();
+      t->SetTextAlign(12);
+      t->SetTextColor(28);
+      t->SetTextSize(24);
+      l = new TLine();
+      l->SetLineWidth(2);
+      l->SetLineStyle(7);
+      l->SetLineColor(28);
+
+      // Right side markings and particle type lines
+      c1->Update();
+      stemp[1] = "Proton";
+      dtemp[0] = ptype->GetA(&stemp[1]);
+      t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(dtemp[0]),  "p");
+      l->DrawLine(gPad->GetUxmin(), TMath::Log(dtemp[0]), gPad->GetUxmax(), TMath::Log(dtemp[0]));
+      stemp[1] = "Helium";
+      dtemp[0] = ptype->GetA(&stemp[1]);
+      t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(dtemp[0]),  "He");
+      l->DrawLine(gPad->GetUxmin(), TMath::Log(dtemp[0]), gPad->GetUxmax(), TMath::Log(dtemp[0]));
+      stemp[1] = "Nitrogen";
+      dtemp[0] = ptype->GetA(&stemp[1]);
+      t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(dtemp[0]), "N");
+      l->DrawLine(gPad->GetUxmin(), TMath::Log(dtemp[0]), gPad->GetUxmax(), TMath::Log(dtemp[0]));
+      stemp[1] = "Oxygen";
+      dtemp[0] = ptype->GetA(&stemp[1]);
+      t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(dtemp[0]), "O");
+      l->DrawLine(gPad->GetUxmin(), TMath::Log(dtemp[0]), gPad->GetUxmax(), TMath::Log(dtemp[0]));
+      stemp[1] = "Iron";
+      dtemp[0] = ptype->GetA(&stemp[1]);
+      t->DrawText(gPad->GetUxmax() + (gPad->GetUxmax()-gPad->GetUxmin())/100., TMath::Log(dtemp[0]), "Fe");
+      l->DrawLine(gPad->GetUxmin(), TMath::Log(dtemp[0]), gPad->GetUxmax(), TMath::Log(dtemp[0]));
+
+      stemp[1] = RemoveFilename(&inname);
+      stemp[2] = "mkdir -p " + RemoveFilename(&stemp[1]) + "/plots";
+      system(stemp[2].c_str());
+
+      if(fithist->GetAnalysisType())
+      {
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA-frac_xmax.pdf";
+         c1->SaveAs(stemp[2].c_str());
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA-frac_xmax.C";
+         c1->SaveAs(stemp[2].c_str());
+      }
+      else
+      {
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA-frac.pdf";
+         c1->SaveAs(stemp[2].c_str());
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA-frac.C";
+         c1->SaveAs(stemp[2].c_str());
+      }
      
-      if(addPublished)
+      if(addPublishedFD)
       {
          for(int i = 0; i < 3; i++)
          {
-            delete[] xbinPub[i];
-            delete[] ybinPubLna[i];
+            delete[] xbinPubFD[i];
+            delete[] ybinPubLnaFD[i];
+         }
+      }
+     
+      if(addPublishedFrac)
+      {
+         for(int i = 0; i < 3; i++)
+         {
+            delete[] xbinPubFDFrac[i];
+            delete[] ybinPubLnaFDFrac[i];
+         }
+      }
+     
+      if(addPublishedSD)
+      {
+         for(int i = 0; i < 3; i++)
+         {
+            delete[] xbinPubSD[i];
+            delete[] ybinPubLnaSD[i];
          }
       }
 
@@ -2740,10 +3228,62 @@ int main(int argc, char **argv)
       double *ybinCompErrlo[40];
       double *ybinCompErrhi[40];
 
+      double *xbinCompPub;
+      double *xbinCompPubErr;
+      double *ybinCompPub[40];
+      double *ybinCompPubErrlo[40];
+      double *ybinCompPubErrhi[40];
+
       // Plot composition plots (all together and separate)
       c1 = new TCanvas("c1","",1200,900);
 
-      TGraphAsymmErrors *grComp[40];
+      TGraphAsymmErrors *grComp[40], *grCompPub[40];
+
+      // Get published composition results
+      if(dset != -1)
+      {
+         addPublishedFrac = true;
+         returnFrac.clear();
+	 cout << "Reading FD composition from published fraction results" << endl;
+         itemp[2] = ReadFracResultsFD(&returnFrac, fithist, ptype, dset, false);
+	 if(itemp[2] != -1)
+	 {
+            cout << "Number of FD points = " << itemp[2] << endl;
+
+            xbinCompPub = new double[itemp[2]];
+            xbinCompPubErr = new double[itemp[2]];
+            for(int j = 0; j < fithist->GetNrElem(); j++)
+	    {
+               ybinCompPub[j] = new double[itemp[2]];
+               ybinCompPubErrlo[j] = new double[itemp[2]];
+               ybinCompPubErrhi[j] = new double[itemp[2]];
+	    }
+
+	    cout << "Points:" << endl;
+            for(int i = 0; i < itemp[2]; i++)
+            {
+	       itemp[0] = (3*(fithist->GetNrElem())+1)*i;
+	       cout << i << ", energy = " << returnFrac[itemp[0]];
+	       xbinCompPub[i] = returnFrac[itemp[0]];
+	       xbinCompPubErr[i] = 0.;
+
+               for(int j = 0; j < fithist->GetNrElem(); j++)
+	       {
+	          ybinCompPub[j][i] = returnFrac[3*j+itemp[0]+1];
+	          ybinCompPubErrlo[j][i] = TMath::Abs(returnFrac[3*j+itemp[0]+2]);
+	          ybinCompPubErrhi[j][i] = TMath::Abs(returnFrac[3*j+itemp[0]+3]);
+
+		  cout << ", fraction = " << ybinCompPub[j][i] << ", +" << ybinCompPubErrhi[j][i] << "/-" << ybinCompPubErrlo[j][i];
+	       }
+
+	       cout << endl;
+	    }
+	 }
+	 else
+            addPublishedFrac = false;
+      }
+      else
+         addPublishedFrac = false;
 
       for(int j = 0; j < fithist->GetNrElem(); j++)
       {
@@ -2751,25 +3291,85 @@ int main(int argc, char **argv)
          ybinCompErrlo[j] = new double[nrp];
          ybinCompErrhi[j] = new double[nrp];
 
+	 dtemp[0] = 0.;
+
+/*	 // ERROR QUICK ESTIMATION -> THE SUM SHOULD BE CLOSE TO 1
+         if(j == 0) dtemp[2] = 0.25;
+         else if(j == 1) dtemp[2] = 0.25;
+         else if(j == 2) dtemp[2] = 0.25;
+         else if(j == 3) dtemp[2] = 0.25;*/
+
+//	 cout << "j = " << j << endl;
          for(int i = 0; i < nrp; i++)
          {
 	    itemp[0] = 3*(fithist->GetNrElem());
 	    ybinComp[j][i] = finalComp->at(3*j+itemp[0]*i);
 	    ybinCompErrhi[j][i] = finalComp->at(3*j+1+itemp[0]*i);
 	    ybinCompErrlo[j][i] = finalComp->at(3*j+2+itemp[0]*i);
-//	    cout << "i = " << i << ", j = " << j << ": " << ybinComp[j][i] << "\t" << ybinCompErrlo[j][i] << "\t" << ybinCompErrhi[j][i] << endl;
+
+/*	    if( (ybinCompErrlo[j][i] == 0) && (ybinCompErrhi[j][i] == 0) )
+	    {
+               cout << "Nothing to do" << endl;
+	    }
+	    else if(ybinCompErrlo[j][i] == 0)
+	    {
+               dtemp[1] = TMath::Power((ybinComp[j][i] - dtemp[2]),2)/TMath::Power(ybinCompErrhi[j][i],2);
+               dtemp[0] += dtemp[1];
+//	       cout << i << ": Saving A dtemp[1] = " << dtemp[1] << ", " << ybinComp[j][i] << ", " << ybinCompErrhi[j][i] << " (" << ybinCompErrlo[j][i] << "," << ybinCompErrhi[j][i] << ")" << endl;
+	    }
+	    else if(ybinCompErrhi[j][i] == 0)
+	    {
+               dtemp[1] = TMath::Power((ybinComp[j][i] - dtemp[2]),2)/TMath::Power(ybinCompErrlo[j][i],2);
+               dtemp[0] += dtemp[1];
+//	       cout << i << ": Saving B dtemp[1] = " << dtemp[1] << ", " << ybinComp[j][i] << ", " << ybinCompErrlo[j][i] << " (" << ybinCompErrlo[j][i] << "," << ybinCompErrhi[j][i] << ")" << endl;
+	    }
+	    else
+	    {
+               dtemp[1] = TMath::Power((ybinComp[j][i] - dtemp[2]),2)/TMath::Power((ybinCompErrhi[j][i]+ybinCompErrlo[j][i])/2.,2);
+               dtemp[0] += dtemp[1];
+//	       cout << i << ": Saving C dtemp[1] = " << dtemp[1] << ", " << ybinComp[j][i] << ", " << (ybinCompErrhi[j][i]+ybinCompErrlo[j][i])/2. << " (" << ybinCompErrlo[j][i] << "," << ybinCompErrhi[j][i] << ")" << endl;
+	    }
+//	    cout << "i = " << i << ", j = " << j << ": " << ybinComp[j][i] << "\t" << ybinCompErrlo[j][i] << "\t" << ybinCompErrhi[j][i] << endl;*/
          }
+
+//	 cout << "dtemp[0]/nrp = " << dtemp[0]/nrp << endl;
       }
 
       for(int j = 0; j < fithist->GetNrElem(); j++)
       {
+	 // Composition from histogram fit
          grComp[j] = new TGraphAsymmErrors(nrp, xval, ybinComp[j], xerr, xerr, ybinCompErrlo[j], ybinCompErrhi[j]);
 //         mystyle->SetGraphColor(grComp[j], 2);
          grComp[j]->SetMarkerStyle(20);
          grComp[j]->SetMarkerSize(1.4);
          grComp[j]->SetLineWidth(2);
+         grComp[j]->GetXaxis()->SetRange(18.5, 20.0);
+         grComp[j]->GetXaxis()->SetRangeUser(18.5, 20.0);
+         grComp[j]->GetXaxis()->SetLimits(18.5, 20.0);
          grComp[j]->GetYaxis()->SetRangeUser(0., 1.2);
 	 mystyle->SetColorScale(grComp[j], j, fithist->GetNrElem());
+
+	 // Composition from histogram fit
+	 if(addPublishedFrac)
+	 {
+            grCompPub[j] = new TGraphAsymmErrors(itemp[2], xbinCompPub, ybinCompPub[j], xbinCompPubErr, xbinCompPubErr, ybinCompPubErrlo[j], ybinCompPubErrhi[j]);
+
+            cout << "New element (" << j+1 << "):" << endl;
+	    for(int i = 0; i < itemp[2]; i++)
+               cout << "Point" << i << " = " << xbinCompPub[i] << ", " << ybinCompPub[j][i] << ", +" << ybinCompPubErrhi[j][i] << "/-" << ybinCompPubErrlo[j][i] << endl;
+
+//            mystyle->SetGraphColor(grComp[j], 2);
+            grCompPub[j]->SetMarkerStyle(21);
+            grCompPub[j]->SetMarkerSize(1.4);
+            grCompPub[j]->SetMarkerColor(12);
+            grCompPub[j]->SetLineWidth(2);
+            grCompPub[j]->SetLineColor(12);
+            grCompPub[j]->GetXaxis()->SetRange(18.5, 20.0);
+            grCompPub[j]->GetXaxis()->SetRangeUser(18.5, 20.0);
+            grCompPub[j]->GetXaxis()->SetLimits(18.5, 20.0);
+            grCompPub[j]->GetYaxis()->SetRangeUser(0., 1.2);
+//	    mystyle->SetColorScale(grCompPub[j], j, fithist->GetNrElem());
+	 }
 
          if(j == 0)
 	 {
@@ -2796,15 +3396,40 @@ int main(int argc, char **argv)
       legend->Draw("same");
 
       stemp[1] = RemoveFilename(&inname);
-      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot.pdf";
+      if(fithist->GetAnalysisType())
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_xmax.pdf";
+      else
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot.pdf";
       c1->SaveAs(stemp[2].c_str());
 
       for(int j = 0; j < fithist->GetNrElem(); j++)
       {
-         grComp[j]->GetYaxis()->SetRangeUser(0., 1.);
-         grComp[j]->Draw("ALP");
+	 if(addPublishedFrac)
+	 {
+            grCompPub[j]->GetXaxis()->SetRange(18.5, 20.0);
+            grCompPub[j]->GetXaxis()->SetRangeUser(18.5, 20.0);
+            grCompPub[j]->GetXaxis()->SetLimits(18.5, 20.0);
+            grCompPub[j]->GetYaxis()->SetRangeUser(0., 1.);
+            grCompPub[j]->Draw("ALP");
+            grComp[j]->GetXaxis()->SetRange(18.5, 20.0);
+            grComp[j]->GetXaxis()->SetRangeUser(18.5, 20.0);
+            grComp[j]->GetXaxis()->SetLimits(18.5, 20.0);
+            grComp[j]->GetYaxis()->SetRangeUser(0., 1.);
+            grComp[j]->Draw("LP;SAME");
+	 }
+	 else
+	 {
+            grComp[j]->GetXaxis()->SetRange(18.5, 20.0);
+            grComp[j]->GetXaxis()->SetRangeUser(18.5, 20.0);
+            grComp[j]->GetXaxis()->SetLimits(18.5, 20.0);
+            grComp[j]->GetYaxis()->SetRangeUser(0., 1.);
+            grComp[j]->Draw("ALP");
+	 }
          stemp[1] = RemoveFilename(&inname);
-         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_" + ptype->GetName(fithist->GetElemType(j)) + ".pdf";
+         if(fithist->GetAnalysisType())
+            stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_xmax_" + ptype->GetName(fithist->GetElemType(j)) + ".pdf";
+	 else
+            stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_" + ptype->GetName(fithist->GetElemType(j)) + ".pdf";
          c1->SaveAs(stemp[2].c_str());
       }
 
@@ -2815,11 +3440,36 @@ int main(int argc, char **argv)
       for(int j = 0; j < fithist->GetNrElem(); j++)
       {
 	 c2->cd(j+1);
-         mystyle->SetAxisTitles(grComp[j], "", "Elemental fractions");
-	 grComp[j]->GetYaxis()->SetTitleOffset(1.9 + (fithist->GetNrElem()-2)*0.45);
-         grComp[j]->Draw("ALP");
-	 grComp[j]->GetYaxis()->SetRangeUser(0.,1.);
-//	 grComp[j]->GetYaxis()->SetRangeUser(-0.2,1.2);	// TFractionFitter limits
+	 if(addPublishedFrac)
+	 {
+            mystyle->SetAxisTitles(grCompPub[j], "", "Elemental fractions");
+            grCompPub[j]->GetXaxis()->SetRange(18.5, 20.0);
+            grCompPub[j]->GetXaxis()->SetRangeUser(18.5, 20.0);
+            grCompPub[j]->GetXaxis()->SetLimits(18.5, 20.0);
+	    grCompPub[j]->GetYaxis()->SetTitleOffset(1.9 + (fithist->GetNrElem()-2)*0.45);
+            grCompPub[j]->Draw("ALP");
+	    grCompPub[j]->GetYaxis()->SetRangeUser(0.,1.);
+//	    grCompPub[j]->GetYaxis()->SetRangeUser(-0.2,1.2);	// TFractionFitter limits
+            mystyle->SetAxisTitles(grComp[j], "", "Elemental fractions");
+            grComp[j]->GetXaxis()->SetRange(18.5, 20.0);
+            grComp[j]->GetXaxis()->SetRangeUser(18.5, 20.0);
+            grComp[j]->GetXaxis()->SetLimits(18.5, 20.0);
+	    grComp[j]->GetYaxis()->SetTitleOffset(1.9 + (fithist->GetNrElem()-2)*0.45);
+            grComp[j]->Draw("LP;SAME");
+	    grComp[j]->GetYaxis()->SetRangeUser(0.,1.);
+//	    grComp[j]->GetYaxis()->SetRangeUser(-0.2,1.2);	// TFractionFitter limits
+         }
+	 else
+	 {
+            mystyle->SetAxisTitles(grComp[j], "", "Elemental fractions");
+            grComp[j]->GetXaxis()->SetRange(18.5, 20.0);
+            grComp[j]->GetXaxis()->SetRangeUser(18.5, 20.0);
+            grComp[j]->GetXaxis()->SetLimits(18.5, 20.0);
+	    grComp[j]->GetYaxis()->SetTitleOffset(1.9 + (fithist->GetNrElem()-2)*0.45);
+            grComp[j]->Draw("ALP");
+	    grComp[j]->GetYaxis()->SetRangeUser(0.,1.);
+//	    grComp[j]->GetYaxis()->SetRangeUser(-0.2,1.2);	// TFractionFitter limits
+	 }
       }
 
       c2->Update();
@@ -2831,11 +3481,25 @@ int main(int argc, char **argv)
       {
          stemp[1] = ptype->GetName(fithist->GetElemType(j));
 	 c2->cd(j+1);
-         t->DrawText(gPad->GetUxmax(), (gPad->GetUymax())+(0.01*(gPad->GetUymax()-gPad->GetUymin())), stemp[1].c_str());
+	 if(addPublishedFrac)
+	 {
+            if(stemp[1] == "Oxygen")
+	    {
+               stemp[1] += ", Nitrogen (published)";
+               t->DrawText(gPad->GetUxmax(), (gPad->GetUymax())+(0.01*(gPad->GetUymax()-gPad->GetUymin())), stemp[1].c_str());
+	    }
+	    else
+               t->DrawText(gPad->GetUxmax(), (gPad->GetUymax())+(0.01*(gPad->GetUymax()-gPad->GetUymin())), stemp[1].c_str());
+	 }
+	 else
+            t->DrawText(gPad->GetUxmax(), (gPad->GetUymax())+(0.01*(gPad->GetUymax()-gPad->GetUymin())), stemp[1].c_str());
       }
 
       stemp[1] = RemoveFilename(&inname);
-      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_combine.pdf";
+      if(fithist->GetAnalysisType())
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_xmax_combine.pdf";
+      else
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_combine.pdf";
       c2->SaveAs(stemp[2].c_str());
 
       delete c2;
@@ -2942,7 +3606,10 @@ int main(int argc, char **argv)
       legend->Draw("same");
 
       stemp[1] = RemoveFilename(&inname);
-      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_light-heavy.pdf";
+      if(fithist->GetAnalysisType())
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_xmax_light-heavy.pdf";
+      else
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_light-heavy.pdf";
       c1->SaveAs(stemp[2].c_str());
 
 
@@ -2986,6 +3653,19 @@ int main(int argc, char **argv)
       stemp[1] = RemoveFilename(&stemp[0]);
       stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_light-heavy.pdf";
       c1->SaveAs(stemp[2].c_str());*/
+
+      if(addPublishedFrac)
+      {
+         delete[] xbinCompPub;
+	 delete[] xbinCompPubErr;
+
+         for(int j = 0; j < fithist->GetNrElem(); j++)
+	 {
+            delete[] ybinCompPub[j];
+            delete[] ybinCompPubErrlo[j];
+            delete[] ybinCompPubErrhi[j];
+	 }
+      }
 
       for(int j = 0; j < fithist->GetNrElem(); j++)
       {

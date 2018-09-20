@@ -21,7 +21,7 @@ int main(int argc, char **argv)
    //-----------------------------------------
    ifstream ifs;
    string *stemp = new string[5];
-   int *itemp = new int[2];
+   int *itemp = new int[3];
    float *ftemp = new float[2];
    char *ctemp = new char[1024];
 
@@ -94,25 +94,35 @@ int main(int argc, char **argv)
 
    //-----------------------------------------
    // Give option to plot all separately or plot two trees together TODO
-   bool doublePlot = false;
-   cout << endl << "Would you like to plot trees separately (0) or two trees together (1)? ";
+   int doublePlot = 0;
+   cout << endl << "Would you like to plot trees separately (0) or two trees together (1) or three trees together (2)? ";
    cin >> itemp[0];
-   doublePlot = (bool)itemp[0];
+   doublePlot = itemp[0];
 
    // Create directory structure for plots and delete old plots
    stemp[0] = "mkdir -p " + RemoveFilename(&filename) + "/histograms";
    system(stemp[0].c_str());
-   if(doublePlot)
+   if(doublePlot == 2)
+   {
+      stemp[0] = "rm -fr " + RemoveFilename(&filename) + "/histograms/triphist_*";
+      system(stemp[0].c_str());
+   }
+   else if(doublePlot == 1)
    {
       stemp[0] = "rm -fr " + RemoveFilename(&filename) + "/histograms/dualhist_*";
       system(stemp[0].c_str());
    }
-   else
+   else if(doublePlot == 0)
    {
       stemp[0] = "rm -fr " + RemoveFilename(&filename) + "/histograms/hist_*";
       system(stemp[0].c_str());
       stemp[0] = "rm -fr " + RemoveFilename(&filename) + "/histograms/risetime-comparison_*";
       system(stemp[0].c_str());
+   }
+   else
+   {
+      cout << "Error with plotting selection!" << endl;
+      return 0;
    }
 
    // Prepare colors for MVA cut line
@@ -122,7 +132,7 @@ int main(int argc, char **argv)
    TLegend *legend;
    int nrfigs;  // number of plots on same graph at the same time
    TLine *line[3];
-   TH1F *treeHist[50], *treeHistSig[50], *treeHistBack[50];
+   TH1F *treeHist[50], *treeHistSig[50], *treeHistBack[50], *treeHistData[50];
    TH1F *riseHist;
    TH1F *riserecalcHist;
    TLatex uoflowtext;
@@ -140,19 +150,22 @@ int main(int argc, char **argv)
    maxobs = new float[4];
    int *riseobs;
    riseobs = new int[2];
-   int *uflowcount, *oflowcount, *totcount, *totcountSig, *totcountBack; // counting number of underflow and overflow events
+   int *uflowcount, *oflowcount, *totcount, *totcountSig, *totcountBack, *totcountData; // counting number of underflow and overflow events
    uflowcount = new int[50];
    oflowcount = new int[50];
    totcount = new int[50];
    totcountSig = new int[50];
    totcountBack = new int[50];
+   totcountData = new int[50];
 
    bool isangle[2] = {false, false};	// check if observable is an angle (needs to be converted to degrees from radians) 
    bool isgood[2] = {true, true};	// check if observable has an invalid value -1
+   bool iszenith[2] = {false, false};	// check if observable is a zenith angle
 
    float *obsvars;			// array for variable values that we read from output file
-   obsvars = new float[200];
+   obsvars = new float[300];
    int backShift = 100;	// background shift for saving values
+   int dataShift = 200;	// data shift for saving values
 
    float *minimumval, *maximumval;	// holders for minimum and maximum values of observables
    minimumval = new float[50];
@@ -174,11 +187,469 @@ int main(int argc, char **argv)
 
    // Open output file to read saved values
    TFile *ifile = new TFile(filename.c_str(), "READ");
-   TTree *getTree, *getTreeDual[2];
+   TTree *getTree, *getTreeDual[2], *getTreeTrip[3];
    TList *tempkeyslist = (TList*)ifile->GetListOfKeys();
 
+   // Plot three histograms together
+   if(doublePlot == 2)
+   {
+      string sigTree = "empty";
+      string backTree = "empty";
+      string dataTree = "empty";
+      cout << endl << "Select signal, background and data trees to plot on the same graph. Available trees:" << endl;
+      for(int k = 0; k < ifile->GetNkeys(); k++)
+      {
+         stemp[1] = string((tempkeyslist->At(k))->GetName());
+         cout << "  " << k+1 << " = " << stemp[1] << endl;
+      }
+      cout << "Choose option for signal tree: ";
+      cin >> itemp[0];
+      if(itemp[0] != -1)
+         sigTree = string((tempkeyslist->At(itemp[0]-1))->GetName());
+
+      cout << "Choose option for background tree: ";
+      cin >> itemp[0];
+      if(itemp[0] != -1)
+         backTree = string((tempkeyslist->At(itemp[0]-1))->GetName());
+
+      cout << "Choose option for data tree: ";
+      cin >> itemp[0];
+      if(itemp[0] != -1)
+         dataTree = string((tempkeyslist->At(itemp[0]-1))->GetName());
+
+      cout << "Signal, background and data trees are: " << sigTree << ", " << backTree << ", " << dataTree << endl << endl;
+
+      // Zero minimum and maximum holders for observables
+      for(int i = 0; i < itemp[1]; i++)
+      {
+         minimumval[i] = 1.e+30;
+         maximumval[i] = -1.e+30;
+         uflowcount[i] = 0;
+         oflowcount[i] = 0;
+         totcountSig[i] = 0;
+         totcountBack[i] = 0;
+         totcountData[i] = 0;
+
+/*         if(observables[i] == "risetime")
+            riseobs[0] = i;
+
+         if(observables[i] == "risetimerecalc")
+            riseobs[1] = i;*/
+      }
+
+      // Run over signal tree observables
+      cout << endl << sigTree << " has been selected for evaluation." << endl;
+      getTreeTrip[0] = (TTree*)ifile->Get(sigTree.c_str());
+      cout << "Number of events in the signal tree = " << getTreeTrip[0]->GetEntries() << endl;
+      getTreeTrip[1] = (TTree*)ifile->Get(backTree.c_str());
+      cout << "Number of events in the background tree = " << getTreeTrip[1]->GetEntries() << endl;
+      getTreeTrip[2] = (TTree*)ifile->Get(dataTree.c_str());
+      cout << "Number of events in the background tree = " << getTreeTrip[2]->GetEntries() << endl;
+
+      // Set addresses for reading observables
+      for(int i = 0; i < itemp[1]; i++)
+      {
+         cout << "Signal: Setting observable " << observables[i] << endl;
+         getTreeTrip[0]->SetBranchAddress((observables[i]).c_str(), &obsvars[3*i]); // mean
+         cout << "Mean variable: obsvars[3*" << i << "] = obsvars[" << 3*i << "]" << endl;
+         stemp[2] = observables[i] + "_neg";
+         getTreeTrip[0]->SetBranchAddress(stemp[2].c_str(), &obsvars[3*i+1]); // neg error
+         cout << "Negerror variable: obsvars[3*" << i << "+1] = obsvars[" << 3*i+1 << "]" << endl;
+         stemp[2] = observables[i] + "_pos";
+         getTreeTrip[0]->SetBranchAddress(stemp[2].c_str(), &obsvars[3*i+2]); // pos error
+         cout << "Poserror variable: obsvars[3*" << i << "+2] = obsvars[" << 3*i+2 << "]" << endl;
+
+         cout << "Background: Setting observable " << observables[i] << endl;
+         getTreeTrip[1]->SetBranchAddress((observables[i]).c_str(), &obsvars[3*i+backShift]); // mean
+         cout << "Mean variable: obsvars[3*" << i << "+backShift] = obsvars[" << 3*i+backShift << "]" << endl;
+         stemp[2] = observables[i] + "_neg";
+         getTreeTrip[1]->SetBranchAddress(stemp[2].c_str(), &obsvars[3*i+1+backShift]); // neg error
+         cout << "Negerror variable: obsvars[3*" << i << "+1+backShift] = obsvars[" << 3*i+1+backShift << "]" << endl;
+         stemp[2] = observables[i] + "_pos";
+         getTreeTrip[1]->SetBranchAddress(stemp[2].c_str(), &obsvars[3*i+2+backShift]); // pos error
+         cout << "Poserror variable: obsvars[3*" << i << "+2+backShift] = obsvars[" << 3*i+2+backShift << "]" << endl;
+
+         cout << "Data: Setting observable " << observables[i] << endl;
+         getTreeTrip[2]->SetBranchAddress((observables[i]).c_str(), &obsvars[3*i+dataShift]); // mean
+         cout << "Mean variable: obsvars[3*" << i << "+dataShift] = obsvars[" << 3*i+dataShift << "]" << endl;
+         stemp[2] = observables[i] + "_neg";
+         getTreeTrip[2]->SetBranchAddress(stemp[2].c_str(), &obsvars[3*i+1+dataShift]); // neg error
+         cout << "Negerror variable: obsvars[3*" << i << "+1+dataShift] = obsvars[" << 3*i+1+dataShift << "]" << endl;
+         stemp[2] = observables[i] + "_pos";
+         getTreeTrip[2]->SetBranchAddress(stemp[2].c_str(), &obsvars[3*i+2+dataShift]); // pos error
+         cout << "Poserror variable: obsvars[3*" << i << "+2+dataShift] = obsvars[" << 3*i+2+dataShift << "]" << endl;
+      }
+
+      // Prepare plots to save values into (histograms need to able to rebin)
+      maxobs[2] = (maxobs[1]-maxobs[0])*0.05;
+      maxobs[0] = maxobs[0] - maxobs[2];
+      maxobs[1] = maxobs[1] + maxobs[2];
+
+      for(int i = 0; i < itemp[1]; i++)
+      {
+         xhistlimit[2] = (tempmax[i]-tempmin[i])*0.05;
+         xhistlimit[0] = tempmin[i] - xhistlimit[2];
+         xhistlimit[1] = tempmax[i] + xhistlimit[2];
+
+         // Prepare histograms for all observables - Signal
+         stemp[2] = "treeHistSig" + ToString(i);
+         treeHistSig[i] = new TH1F(stemp[2].c_str(), observables[i].c_str(), 100, xhistlimit[0], xhistlimit[1]);
+#if ROOTVER == 5
+         treeHistSig[i]->SetBit(TH1::kCanRebin);
+#elif ROOTVER == 6
+         treeHistSig[i]->SetCanExtend(TH1::kXaxis);
+#endif
+
+         // Prepare histograms for all observables - Background
+         stemp[2] = "treeHistBack" + ToString(i);
+         treeHistBack[i] = new TH1F(stemp[2].c_str(), observables[i].c_str(), 100, xhistlimit[0], xhistlimit[1]);
+#if ROOTVER == 5
+         treeHistBack[i]->SetBit(TH1::kCanRebin);
+#elif ROOTVER == 6
+         treeHistBack[i]->SetCanExtend(TH1::kXaxis);
+#endif
+
+         // Prepare histograms for all observables - Data
+         stemp[2] = "treeHistData" + ToString(i);
+         treeHistData[i] = new TH1F(stemp[2].c_str(), observables[i].c_str(), 100, xhistlimit[0], xhistlimit[1]);
+#if ROOTVER == 5
+         treeHistData[i]->SetBit(TH1::kCanRebin);
+#elif ROOTVER == 6
+         treeHistData[i]->SetCanExtend(TH1::kXaxis);
+#endif
+
+         // Set maximum value to zero, and underflow and overflow counters to zero
+         max[i] = 0.0;
+         uflowcount[i] = 0;
+         oflowcount[i] = 0;
+      }
+
+      // Loop over all entries (signal)
+      for(int ievt = 0; ievt < getTreeTrip[0]->GetEntries(); ievt++)
+      {
+         // Get an entry from the tree
+         getTreeTrip[0]->GetEntry(ievt);
+
+         // Loop over all observables
+         for(int i = 0; i < itemp[1]; i++)
+         {
+            // Check if observable is an angle in radians
+            if( (observables[i] == "zenithSD") || (observables[i] == "azimuthSD") || (observables[i] == "zenithFD") || (observables[i] == "azimuthFD") || (observables[i] == "latitudeSD") || (observables[i] == "longitudeSD") || (observables[i] == "latitudeFD") || (observables[i] == "longitudeFD") )
+	    {
+               if( (observables[i] == "zenithSD") || (observables[i] == "zenithFD") )
+                  iszenith[0] = true;
+	       else
+                  iszenith[0] = false;
+               isangle[0] = true;
+	    }
+            else
+               isangle[0] = false;
+
+            // Check if observable is invalid and has value -1
+            if(obsvars[3*i] == -1)
+               isgood[0] = false;
+            else
+               isgood[0] = true;
+
+            // Check the mean observable value in order to get minimum and maximum values of all trees
+	    if(isangle[0])
+	    {
+               if(iszenith[0])
+	          ftemp[0] = obsvars[3*i];
+//	          ftemp[0] = SecTheta(obsvars[3*i]);
+//	          ftemp[0] = RadToDeg(obsvars[3*i]);
+	       else
+	          ftemp[0] = RadToDeg(obsvars[3*i]);
+	    }
+	    else
+	       ftemp[0] = obsvars[3*i];
+
+            if(isgood[0])
+            {
+               if(ftemp[0] < minimumval[i])
+                  minimumval[i] = ftemp[0];
+               if(ftemp[0] > maximumval[i])
+                  maximumval[i] = ftemp[0];
+	    }
+
+            // Save observable values into the histograms
+            if(isgood[0])
+            {
+               xhistlimit[2] = (tempmax[i]-tempmin[i])*0.05;
+               xhistlimit[0] = tempmin[i] - xhistlimit[2];
+               xhistlimit[1] = tempmax[i] + xhistlimit[2];
+
+               if(ftemp[0] > xhistlimit[1])
+                  oflowcount[i]++;
+               else if(ftemp[0] < xhistlimit[0])
+                  uflowcount[i]++;
+               else
+                  treeHistSig[i]->Fill(ftemp[0]);
+                  
+               totcountSig[i]++;
+            }
+         } // Loop over all observables
+      } // Loop over all entries (signal)
+
+      // Loop over all entries (background)
+      for(int ievt = 0; ievt < getTreeTrip[1]->GetEntries(); ievt++)
+      {
+         // Get an entry from the tree
+         getTreeTrip[1]->GetEntry(ievt);
+
+         // Loop over all observables
+         for(int i = 0; i < itemp[1]; i++)
+         {
+            // Check if observable is an angle in radians
+            if( (observables[i] == "zenithSD") || (observables[i] == "azimuthSD") || (observables[i] == "zenithFD") || (observables[i] == "azimuthFD") || (observables[i] == "latitudeSD") || (observables[i] == "longitudeSD") || (observables[i] == "latitudeFD") || (observables[i] == "longitudeFD") )
+	    {
+               if( (observables[i] == "zenithSD") || (observables[i] == "zenithFD") )
+                  iszenith[0] = true;
+	       else
+                  iszenith[0] = false;
+               isangle[0] = true;
+	    }
+            else
+               isangle[0] = false;
+
+            // Check if observable is invalid and has value -1
+            if(obsvars[3*i+backShift] == -1)
+               isgood[0] = false;
+            else
+               isgood[0] = true;
+
+            // Check the mean observable value in order to get minimum and maximum values of all trees
+	    if(isangle[0])
+	    {
+               if(iszenith[0])
+	          ftemp[0] = obsvars[3*i+backShift];
+//	          ftemp[0] = SecTheta(obsvars[3*i+backShift]);
+//	          ftemp[0] = RadToDeg(obsvars[3*i+backShift]);
+	       else
+	          ftemp[0] = RadToDeg(obsvars[3*i+backShift]);
+	    }
+	    else
+	       ftemp[0] = obsvars[3*i+backShift];
+
+            if(isgood[0])
+            {
+               if(ftemp[0] < minimumval[i])
+                  minimumval[i] = ftemp[0];
+               if(ftemp[0] > maximumval[i])
+                  maximumval[i] = ftemp[0];
+            }
+
+            // Save observable values into the histograms
+            if(isgood[0])
+            {
+               xhistlimit[2] = (tempmax[i]-tempmin[i])*0.05;
+               xhistlimit[0] = tempmin[i] - xhistlimit[2];
+               xhistlimit[1] = tempmax[i] + xhistlimit[2];
+
+               if(ftemp[0] > xhistlimit[1])
+                  oflowcount[i]++;
+               else if(ftemp[0] < xhistlimit[0])
+                  uflowcount[i]++;
+               else
+               {
+                  if(i == riseobs[0])
+                     riseHist->Fill(ftemp[0]);
+
+                  if(i == riseobs[1])
+                     riserecalcHist->Fill(ftemp[0]);
+
+                  treeHistBack[i]->Fill(ftemp[0]);
+               }
+                  
+               totcountBack[i]++;
+            }
+         } // Loop over all observables
+      } // Loop over all entries (background)
+
+      // Loop over all entries (data)
+      for(int ievt = 0; ievt < getTreeTrip[2]->GetEntries(); ievt++)
+      {
+         // Get an entry from the tree
+         getTreeTrip[2]->GetEntry(ievt);
+
+         // Loop over all observables
+         for(int i = 0; i < itemp[1]; i++)
+         {
+            // Check if observable is an angle in radians
+            if( (observables[i] == "zenithSD") || (observables[i] == "azimuthSD") || (observables[i] == "zenithFD") || (observables[i] == "azimuthFD") || (observables[i] == "latitudeSD") || (observables[i] == "longitudeSD") || (observables[i] == "latitudeFD") || (observables[i] == "longitudeFD") )
+	    {
+               if( (observables[i] == "zenithSD") || (observables[i] == "zenithFD") )
+                  iszenith[0] = true;
+	       else
+                  iszenith[0] = false;
+               isangle[0] = true;
+	    }
+            else
+               isangle[0] = false;
+
+            // Check if observable is invalid and has value -1
+            if(obsvars[3*i+dataShift] == -1)
+               isgood[0] = false;
+            else
+               isgood[0] = true;
+
+            // Check the mean observable value in order to get minimum and maximum values of all trees
+	    if(isangle[0])
+	    {
+               if(iszenith[0])
+	          ftemp[0] = obsvars[3*i+dataShift];
+//	          ftemp[0] = SecTheta(obsvars[3*i+dataShift]);
+//	          ftemp[0] = RadToDeg(obsvars[3*i+dataShift]);
+	       else
+	          ftemp[0] = RadToDeg(obsvars[3*i+dataShift]);
+	    }
+	    else
+	       ftemp[0] = obsvars[3*i+dataShift];
+
+            if(isgood[0])
+            {
+               if(ftemp[0] < minimumval[i])
+                  minimumval[i] = ftemp[0];
+               if(ftemp[0] > maximumval[i])
+                  maximumval[i] = ftemp[0];
+            }
+
+            // Save observable values into the histograms
+            if(isgood[0])
+            {
+               xhistlimit[2] = (tempmax[i]-tempmin[i])*0.05;
+               xhistlimit[0] = tempmin[i] - xhistlimit[2];
+               xhistlimit[1] = tempmax[i] + xhistlimit[2];
+
+               if(ftemp[0] > xhistlimit[1])
+                  oflowcount[i]++;
+               else if(ftemp[0] < xhistlimit[0])
+                  uflowcount[i]++;
+               else
+               {
+                  if(i == riseobs[0])
+                     riseHist->Fill(ftemp[0]);
+
+                  if(i == riseobs[1])
+                     riserecalcHist->Fill(ftemp[0]);
+
+                  treeHistData[i]->Fill(ftemp[0]);
+               }
+                  
+               totcountData[i]++;
+            }
+         } // Loop over all observables
+      } // Loop over all entries (data)
+
+      // Write the valid event information
+      cout << "Valid events (" << getTreeTrip[0]->GetTitle() << ", " << getTreeTrip[1]->GetTitle() << " and " << getTreeTrip[2]->GetTitle() << "):" << endl;
+      for(int i = 0; i < itemp[1]; i++)
+      {
+         cout << " - " << observables[i] << " = " << totcountSig[i]+totcountBack[i]+totcountData[i] << " (UFLOW=" << uflowcount[i] << ", OFLOW=" << oflowcount[i] << ")" << endl;
+      }
+      cout << endl;
+
+      // Find energy observable (FD)
+      for(int i = 0; i < itemp[1]; i++)
+      {
+         if(observables[i] == "energyFD")
+            itemp[2] = i;
+      }
+
+      // Plot all observables
+      for(int i = 0; i < itemp[1]; i++)
+      {
+         c1->cd();
+
+	 treeHistSig[i]->Scale(1./totcountSig[i]);
+	 treeHistBack[i]->Scale(1./totcountBack[i]);
+	 treeHistData[i]->Scale(1./totcountData[i]);
+
+         // Check maximum value in a histogram
+         if((treeHistSig[i]->GetMaximum()) > max[i])
+            max[i] = treeHistSig[i]->GetMaximum();
+         if((treeHistBack[i]->GetMaximum()) > max[i])
+            max[i] = treeHistBack[i]->GetMaximum();
+         if((treeHistData[i]->GetMaximum()) > max[i])
+            max[i] = treeHistData[i]->GetMaximum();
+
+         // Set line and fill attributes for histograms
+         mystyle->SetHistColor((TH1*)treeHistBack[i], 0);
+         mystyle->SetHistColor((TH1*)treeHistSig[i], 1);
+         mystyle->SetHistColor((TH1*)treeHistData[i], 2);
+
+         // Draw signal and background histograms
+         treeHistSig[i]->Draw();
+         treeHistBack[i]->Draw("SAME");
+         treeHistData[i]->Draw("SAME");
+
+/*	 cout << "Observable name = " << observables[i] << ", observable min = " << minimumval[i] << ", observable max = " << maximumval[i] << endl;
+
+         // Set axis ranges
+	 if( (observables[i] == "energyFD") )
+	 {
+            xhistlimit[2] = (maximumval[i]-minimumval[i])*0.05;
+            xhistlimit[0] = minimumval[i] - xhistlimit[2];
+            xhistlimit[1] = maximumval[i] + xhistlimit[2];
+            cout << "  limits = " << xhistlimit[0] << ", " << xhistlimit[1] << endl;
+	 }
+	 else if(observables[i] == "shwsize")
+	 {
+            xhistlimit[1] = TMath::Exp(-38.+2.238*TMath::Log10((minimumval[itemp[2]]+maximumval[itemp[2]])/2.));
+            xhistlimit[2] = (xhistlimit[1]-tempmin[i])*0.05;
+            xhistlimit[0] = tempmin[i] - xhistlimit[2];
+            xhistlimit[1] += xhistlimit[2];
+            cout << "  limits = " << xhistlimit[0] << ", " << xhistlimit[1] << endl;
+	 }
+	 else
+	 {*/
+            xhistlimit[2] = (tempmax[i]-tempmin[i])*0.05;
+            xhistlimit[0] = tempmin[i] - xhistlimit[2];
+            xhistlimit[1] = tempmax[i] + xhistlimit[2];
+/*            cout << "  overwritten = " << xhistlimit[0] << ", " << xhistlimit[1] << endl;
+	 }*/
+         treeHistSig[i]->GetYaxis()->SetRangeUser(0.,max[i]+0.25*max[i]);
+         treeHistSig[i]->SetMaximum(max[i]*1.2);
+         treeHistSig[i]->GetXaxis()->SetRange(xhistlimit[0], xhistlimit[1]);
+         treeHistSig[i]->GetXaxis()->SetRangeUser(xhistlimit[0], xhistlimit[1]);
+
+         // Setup axis (title, labels)
+         mystyle->SetAxisTitles((TH1*)treeHistSig[i], tempdesc[i], "Number of events (normalized)");
+
+         // Draw a legend with info on signal and background events
+	 nrfigs = 3;
+         legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(nrfigs)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+         legend->SetFillStyle(legendFill);
+         legend->SetFillColor(c_MvaCut);
+         stemp[0] = "Pure signal (" + ToString(totcountSig[i]) + ")";
+         legend->AddEntry(treeHistSig[i], stemp[0].c_str(),"f");
+         stemp[0] = "Pure background (" + ToString(totcountBack[i]) + ")";
+         legend->AddEntry(treeHistBack[i], stemp[0].c_str(),"f");
+         stemp[0] = "Data (" + ToString(totcountData[i]) + ")";
+         legend->AddEntry(treeHistData[i], stemp[0].c_str(),"f");
+         legend->SetBorderSize(1);
+         legend->SetMargin(0.3);
+         legend->Draw("same");
+
+         // Write down the underflow and overflow information
+         uoflowtext.SetTextSize(0.017);
+         uoflowtext.SetTextAlign(11);
+         stemp[0] = "UFLOW = " + ToString(uflowcount[i]);
+         uoflowtext.DrawLatex(xhistlimit[0], max[i]*1.205, stemp[0].c_str());
+         uoflowtext.SetTextAlign(31);
+         stemp[0] = "OFLOW = " + ToString(oflowcount[i]);
+         uoflowtext.DrawLatex(xhistlimit[1], max[i]*1.205, stemp[0].c_str());
+
+         // Prepare save name for plots
+         stemp[1] = sigTree + "_" + backTree + "_" + dataTree;
+         stemp[3] = RemoveFilename(&filename) + "/histograms/triphist_" + stemp[1] + "_" + observables[i] + ".pdf";
+
+         // Save plots as PDF
+         c1->SaveAs(stemp[3].c_str());
+      } // Plot all observables
+   }
    // Plot two histograms together
-   if(doublePlot)
+   else if(doublePlot == 1)
    {
       // Decide which tree will be "signal" and which "background"
       string sigTree = "empty";
@@ -295,7 +766,13 @@ int main(int argc, char **argv)
          {
             // Check if observable is an angle in radians
             if( (observables[i] == "zenithSD") || (observables[i] == "azimuthSD") || (observables[i] == "zenithFD") || (observables[i] == "azimuthFD") || (observables[i] == "latitudeSD") || (observables[i] == "longitudeSD") || (observables[i] == "latitudeFD") || (observables[i] == "longitudeFD") )
+	    {
+               if( (observables[i] == "zenithSD") || (observables[i] == "zenithFD") )
+                  iszenith[0] = true;
+	       else
+                  iszenith[0] = false;
                isangle[0] = true;
+	    }
             else
                isangle[0] = false;
 
@@ -306,25 +783,24 @@ int main(int argc, char **argv)
                isgood[0] = true;
 
             // Check the mean observable value in order to get minimum and maximum values of all trees
-            if(obsvars[3*i] < minimumval[i])
+	    if(isangle[0])
+	    {
+               if(iszenith[0])
+	          ftemp[0] = obsvars[3*i];
+//	          ftemp[0] = SecTheta(obsvars[3*i]);
+//	          ftemp[0] = RadToDeg(obsvars[3*i]);
+	       else
+	          ftemp[0] = RadToDeg(obsvars[3*i]);
+	    }
+	    else
+	       ftemp[0] = obsvars[3*i];
+
+            if(isgood[0])
             {
-               if(isgood[0])
-               {
-                  if(isangle[0])
-                     minimumval[i] = RadToDeg(obsvars[3*i]);
-                  else
-                     minimumval[i] = obsvars[3*i];
-               }
-            }
-            if(obsvars[3*i] > maximumval[i])
-            {
-               if(isgood[0])
-               {
-                  if(isangle[0])
-                     maximumval[i] = RadToDeg(obsvars[3*i]);
-                  else
-                     maximumval[i] = obsvars[3*i];
-               }
+               if(ftemp[0] < minimumval[i])
+                  minimumval[i] = ftemp[0];
+               if(ftemp[0] > maximumval[i])
+                  maximumval[i] = ftemp[0];
             }
 
             // Save observable values into the histograms
@@ -334,17 +810,12 @@ int main(int argc, char **argv)
                xhistlimit[0] = tempmin[i] - xhistlimit[2];
                xhistlimit[1] = tempmax[i] + xhistlimit[2];
 
-               if(obsvars[3*i] > xhistlimit[1])
+               if(ftemp[0] > xhistlimit[1])
                   oflowcount[i]++;
-               else if(obsvars[3*i] < xhistlimit[0])
+               else if(ftemp[0] < xhistlimit[0])
                   uflowcount[i]++;
                else
-               {
-                  if(isangle[0])
-                     treeHistSig[i]->Fill(RadToDeg(obsvars[3*i]));
-                  else
-                     treeHistSig[i]->Fill(obsvars[3*i]);
-               }
+                  treeHistSig[i]->Fill(ftemp[0]);
                   
                totcountSig[i]++;
             }
@@ -362,7 +833,13 @@ int main(int argc, char **argv)
          {
             // Check if observable is an angle in radians
             if( (observables[i] == "zenithSD") || (observables[i] == "azimuthSD") || (observables[i] == "zenithFD") || (observables[i] == "azimuthFD") || (observables[i] == "latitudeSD") || (observables[i] == "longitudeSD") || (observables[i] == "latitudeFD") || (observables[i] == "longitudeFD") )
+	    {
+               if( (observables[i] == "zenithSD") || (observables[i] == "zenithFD") )
+                  iszenith[0] = true;
+	       else
+                  iszenith[0] = false;
                isangle[0] = true;
+	    }
             else
                isangle[0] = false;
 
@@ -373,25 +850,24 @@ int main(int argc, char **argv)
                isgood[0] = true;
 
             // Check the mean observable value in order to get minimum and maximum values of all trees
-            if(obsvars[3*i+backShift] < minimumval[i])
+	    if(isangle[0])
+	    {
+               if(iszenith[0])
+	          ftemp[0] = obsvars[3*i+backShift];
+//	          ftemp[0] = SecTheta(obsvars[3*i+backShift]);
+//	          ftemp[0] = RadToDeg(obsvars[3*i+backShift]);
+	       else
+	          ftemp[0] = RadToDeg(obsvars[3*i+backShift]);
+	    }
+	    else
+	       ftemp[0] = obsvars[3*i+backShift];
+
+            if(isgood[0])
             {
-               if(isgood[0])
-               {
-                  if(isangle[0])
-                     minimumval[i] = RadToDeg(obsvars[3*i+backShift]);
-                  else
-                     minimumval[i] = obsvars[3*i+backShift];
-               }
-            }
-            if(obsvars[3*i+backShift] > maximumval[i])
-            {
-               if(isgood[0])
-               {
-                  if(isangle[0])
-                     maximumval[i] = RadToDeg(obsvars[3*i+backShift]);
-                  else
-                     maximumval[i] = obsvars[3*i+backShift];
-               }
+               if(ftemp[0] < minimumval[i])
+                  minimumval[i] = ftemp[0];
+               if(ftemp[0] > maximumval[i])
+                  maximumval[i] = ftemp[0];
             }
 
             // Save observable values into the histograms
@@ -401,22 +877,19 @@ int main(int argc, char **argv)
                xhistlimit[0] = tempmin[i] - xhistlimit[2];
                xhistlimit[1] = tempmax[i] + xhistlimit[2];
 
-               if(obsvars[3*i+backShift] > xhistlimit[1])
+               if(ftemp[0] > xhistlimit[1])
                   oflowcount[i]++;
-               else if(obsvars[3*i+backShift] < xhistlimit[0])
+               else if(ftemp[0] < xhistlimit[0])
                   uflowcount[i]++;
                else
                {
                   if(i == riseobs[0])
-                     riseHist->Fill(obsvars[3*i+backShift]);
+                     riseHist->Fill(ftemp[0]);
 
                   if(i == riseobs[1])
-                     riserecalcHist->Fill(obsvars[3*i+backShift]);
+                     riserecalcHist->Fill(ftemp[0]);
 
-                  if(isangle[0])
-                     treeHistBack[i]->Fill(RadToDeg(obsvars[3*i+backShift]));
-                  else
-                     treeHistBack[i]->Fill(obsvars[3*i+backShift]);
+                  treeHistBack[i]->Fill(ftemp[0]);
                }
                   
                totcountBack[i]++;
@@ -451,10 +924,31 @@ int main(int argc, char **argv)
          treeHistSig[i]->Draw();
          treeHistBack[i]->Draw("SAME");
 
+/*	 cout << "Observable name = " << observables[i] << ", observable min = " << minimumval[i] << ", observable max = " << maximumval[i] << endl;
+
          // Set axis ranges
-         xhistlimit[2] = (tempmax[i]-tempmin[i])*0.05;
-         xhistlimit[0] = tempmin[i] - xhistlimit[2];
-         xhistlimit[1] = tempmax[i] + xhistlimit[2];
+	 if( (observables[i] == "energyFD") )
+	 {
+            xhistlimit[2] = (maximumval[i]-minimumval[i])*0.05;
+            xhistlimit[0] = minimumval[i] - xhistlimit[2];
+            xhistlimit[1] = maximumval[i] + xhistlimit[2];
+            cout << "  limits = " << xhistlimit[0] << ", " << xhistlimit[1] << endl;
+	 }
+	 else if(observables[i] == "shwsize")
+	 {
+            xhistlimit[1] = TMath::Exp(-38.+2.238*TMath::Log10((minimumval[itemp[2]]+maximumval[itemp[2]])/2.));
+            xhistlimit[2] = (xhistlimit[1]-tempmin[i])*0.05;
+            xhistlimit[0] = tempmin[i] - xhistlimit[2];
+            xhistlimit[1] += xhistlimit[2];
+            cout << "  limits = " << xhistlimit[0] << ", " << xhistlimit[1] << endl;
+	 }
+	 else
+	 {*/
+            xhistlimit[2] = (tempmax[i]-tempmin[i])*0.05;
+            xhistlimit[0] = tempmin[i] - xhistlimit[2];
+            xhistlimit[1] = tempmax[i] + xhistlimit[2];
+/*            cout << "  overwritten = " << xhistlimit[0] << ", " << xhistlimit[1] << endl;
+	 }*/
          treeHistSig[i]->GetYaxis()->SetRangeUser(0.,max[i]+0.25*max[i]);
          treeHistSig[i]->SetMaximum(max[i]*1.1);
          treeHistSig[i]->GetXaxis()->SetRange(xhistlimit[0], xhistlimit[1]);
@@ -604,9 +1098,31 @@ int main(int argc, char **argv)
 
          for(int i = 0; i < itemp[1]; i++)
          {
-            xhistlimit[2] = (tempmax[i]-tempmin[i])*0.05;
-            xhistlimit[0] = tempmin[i] - xhistlimit[2];
-            xhistlimit[1] = tempmax[i] + xhistlimit[2];
+/*	    cout << "Observable name = " << observables[i] << ", observable min = " << minimumval[i] << ", observable max = " << maximumval[i] << endl;
+
+            // Set axis ranges
+	    if( (observables[i] == "energyFD") )
+	    {
+               xhistlimit[2] = (maximumval[i]-minimumval[i])*0.05;
+               xhistlimit[0] = minimumval[i] - xhistlimit[2];
+               xhistlimit[1] = maximumval[i] + xhistlimit[2];
+               cout << "  limits = " << xhistlimit[0] << ", " << xhistlimit[1] << endl;
+	    }
+	    else if(observables[i] == "shwsize")
+	    {
+               xhistlimit[1] = TMath::Exp(-38.+2.238*TMath::Log10((minimumval[itemp[2]]+maximumval[itemp[2]])/2.));
+               xhistlimit[2] = (xhistlimit[1]-tempmin[i])*0.05;
+               xhistlimit[0] = tempmin[i] - xhistlimit[2];
+               xhistlimit[1] += xhistlimit[2];
+               cout << "  limits = " << xhistlimit[0] << ", " << xhistlimit[1] << endl;
+	    }
+	    else
+	    {*/
+               xhistlimit[2] = (tempmax[i]-tempmin[i])*0.05;
+               xhistlimit[0] = tempmin[i] - xhistlimit[2];
+               xhistlimit[1] = tempmax[i] + xhistlimit[2];
+/*               cout << "  overwritten = " << xhistlimit[0] << ", " << xhistlimit[1] << endl;
+	    }*/
 
             // Prepare histograms for all observables
             stemp[2] = "treeHist" + ToString(i);
@@ -654,7 +1170,13 @@ int main(int argc, char **argv)
             {
                // Check if observable is an angle in radians
                if( (observables[i] == "zenithSD") || (observables[i] == "azimuthSD") || (observables[i] == "zenithFD") || (observables[i] == "azimuthFD") || (observables[i] == "latitudeSD") || (observables[i] == "longitudeSD") || (observables[i] == "latitudeFD") || (observables[i] == "longitudeFD") )
+	       {
+                  if( (observables[i] == "zenithSD") || (observables[i] == "zenithFD") )
+                     iszenith[0] = true;
+	          else
+                     iszenith[0] = false;
                   isangle[0] = true;
+	       }
                else
                   isangle[0] = false;
 
@@ -665,25 +1187,24 @@ int main(int argc, char **argv)
                   isgood[0] = true;
 
                // Check the mean observable value in order to get minimum and maximum values of all trees
-               if(obsvars[3*i] < minimumval[i])
+	       if(isangle[0])
+	       {
+                  if(iszenith[0])
+	             ftemp[0] = obsvars[3*i];
+//	             ftemp[0] = SecTheta(obsvars[3*i]);
+//	             ftemp[0] = RadToDeg(obsvars[3*i]);
+	          else
+	             ftemp[0] = RadToDeg(obsvars[3*i]);
+	       }
+	       else
+	          ftemp[0] = obsvars[3*i];
+
+               if(isgood[0])
                {
-                  if(isgood[0])
-                  {
-                     if(isangle[0])
-                        minimumval[i] = RadToDeg(obsvars[3*i]);
-                     else
-                        minimumval[i] = obsvars[3*i];
-                  }
-               }
-               if(obsvars[3*i] > maximumval[i])
-               {
-                  if(isgood[0])
-                  {
-                     if(isangle[0])
-                        maximumval[i] = RadToDeg(obsvars[3*i]);
-                     else
-                        maximumval[i] = obsvars[3*i];
-                  }
+                  if(ftemp[0] < minimumval[i])
+                     minimumval[i] = ftemp[0];
+                  if(ftemp[0] > maximumval[i])
+                     maximumval[i] = ftemp[0];
                }
 
                // Save observable values into the histograms
@@ -693,22 +1214,19 @@ int main(int argc, char **argv)
                   xhistlimit[0] = tempmin[i] - xhistlimit[2];
                   xhistlimit[1] = tempmax[i] + xhistlimit[2];
 
-                  if(obsvars[3*i] > xhistlimit[1])
+                  if(ftemp[0] > xhistlimit[1])
                      oflowcount[i]++;
-                  else if(obsvars[3*i] < xhistlimit[0])
+                  else if(ftemp[0] < xhistlimit[0])
                      uflowcount[i]++;
                   else
                   {
                      if(i == riseobs[0])
-                        riseHist->Fill(obsvars[3*i]);
+                        riseHist->Fill(ftemp[0]);
 
                      if(i == riseobs[1])
-                        riserecalcHist->Fill(obsvars[3*i]);
+                        riserecalcHist->Fill(ftemp[0]);
 
-                     if(isangle[0])
-                        treeHist[i]->Fill(RadToDeg(obsvars[3*i]));
-                     else
-                        treeHist[i]->Fill(obsvars[3*i]);
+                     treeHist[i]->Fill(ftemp[0]);
                   }
                      
                   totcount[i]++;

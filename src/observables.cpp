@@ -1,4 +1,5 @@
 #include "observables.h"
+#include "separate_functions.h"
 #include "root_include.h"
 
 Observables::Observables(vector<string> obs)
@@ -249,4 +250,103 @@ void Observables::ApplyCorrectionHECOErrors(Observables *mean, int type)
 
    delete logE;
    delete[] ftemp;
+}
+
+// Applying Xmax and energy corrections to Auger HECO data
+void Observables::ApplyUncertainty(Observables *errneg, Observables *errpos, int type)
+{
+   if((type == 0) || (type == 1))
+   {
+//      cout << "Changing value (" << type << "):" << endl;
+      float *ftemp = new float[3];
+
+      for(int i = 0; i < nrobs; i++)
+      {
+         // TESTING!
+	 if(GetName(i) == "xmax")
+	 {
+            for(int j = 0; j < ALLEYES; j++)
+	    {
+               ftemp[0] = GetValue(i, j);
+               ftemp[1] = errneg->GetValue(i, j);
+               ftemp[2] = errpos->GetValue(i, j);
+//               ftemp[1] = 10.;
+//               ftemp[2] = 10.;
+//	       cout << i << "\teye" << j << ", " << GetName(i) << "\t" << ftemp[0] << "\t" << ftemp[1] << "\t" << ftemp[2] << "\tnewVal = ";
+
+	       if(ftemp[0] != -1)
+	       {
+	          if(type == 0)
+                     ftemp[0] -= ftemp[1];
+
+	          if(type == 1)
+                     ftemp[0] += ftemp[2];
+
+	          SetValue(i, ftemp[0], j);
+	       }
+
+//	       cout << GetValue(i, j) << endl;
+	    }
+	 }
+      }
+//      cout << endl;
+
+      delete[] ftemp;
+   }
+}
+
+// Setting up zenith as sec(theta) for analysis
+void Observables::SetupZenith(int type, Observables *errneg, Observables *errpos)
+{
+   float *ftemp = new float[4];
+
+   for(int i = 0; i < ALLEYES; i++)
+   {
+      ftemp[0] = GetValue(type, i);
+      ftemp[1] = errneg->GetValue(type, i);
+      ftemp[2] = errpos->GetValue(type, i);
+
+      // Only apply calculation, if we have a valid value
+      if( (ftemp[0] != -1) && (ftemp[1] != -1) && (ftemp[2] != -1) )
+      {
+//         cout << "theta = " << RadToDeg(ftemp[0]) << ", " << ftemp[0] << " (" << ftemp[1] << ", " << ftemp[2] << ")" << ", sec(theta) = " << SecTheta(ftemp[0], false) << endl;
+
+	 ftemp[3] = tan(ftemp[0])/cos(ftemp[0]);
+
+//         cout << "sin(theta)/cos2(theta) = " << ftemp[3] << ", dsec(theta) = " << ftemp[1]*ftemp[3] << endl;
+
+	 ftemp[0] = SecTheta(ftemp[0], false);
+	 ftemp[1] = ftemp[1]*ftemp[3];
+	 ftemp[2] = ftemp[2]*ftemp[3];
+
+	 SetValue(type, ftemp[0], i);
+	 errneg->SetValue(type, ftemp[1], i);
+	 errpos->SetValue(type, ftemp[2], i);
+
+//         cout << "final = " << ftemp[0] << " (" << ftemp[1] << ", " << ftemp[2] << ")" << endl;
+
+      }
+   }
+
+   delete[] ftemp;
+
+/*   float *logE = new float;
+   float *ftemp = new float[3];
+
+   for(int i = 0; i < ALLEYES; i++)
+   {
+      ftemp[0] = mean->GetValue("energyFD", i);
+      ftemp[1] = GetValue("energyFD", i);
+      // Only apply correction, if we have a valid value
+      if( (ftemp[0] != -1) && (ftemp[1] != -1) )
+      {
+         *logE = TMath::Log10(ftemp[0]); 
+	 ftemp[2] = TMath::Log(*logE - 16.5);
+	 ftemp[1] = (ftemp[1])*(1 + 0.04536243 - 0.08317193*ftemp[2]);
+         SetValue("energyFD", ftemp[1], i);
+      }
+   }
+
+   delete logE;
+   delete[] ftemp;*/
 }

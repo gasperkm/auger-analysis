@@ -72,6 +72,8 @@ private:
    vector<string> treeNames;
    // Type of constraint (with all parameters or all-1)
    int constraint;
+   bool xmaxAnalysis;
+   bool removeZero;
 
    // Composition and lnA values
    double *midLna;
@@ -85,6 +87,7 @@ private:
 
    TObjArray *mc;
    TFractionFitter *fracFitter;
+   TVirtualFitter *fracVirtFitter;
 
    PrimPart *ptype;
 
@@ -130,6 +133,7 @@ public:
    double GetPvalue();
    int GetNdf();
    double GetStep();
+   bool GetAnalysisType();
 
    int GetElemType(int type);
 

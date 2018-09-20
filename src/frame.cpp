@@ -381,7 +381,7 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    vstemp->push_back("Automatically run analysis over all energy bins");
    vitemp->push_back(0);
    vitemp2->push_back(-1);
-   vstemp->push_back("Open MVA graphical interface after training and testing");
+   vstemp->push_back("Manually select an MVA cut after method training");
    vitemp->push_back(1);
    vitemp2->push_back(-1);
    vstemp->push_back("Determine MVA cut error through calculation of data tree standard deviation");
@@ -391,6 +391,12 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    vitemp->push_back(0);
    vitemp2->push_back(-1);
    vstemp->push_back("Apply bias correction for Auger HECO data files (AugerWiki/XmaxHeatIcrc2017)");
+   vitemp->push_back(0);
+   vitemp2->push_back(-1);
+   vstemp->push_back("Apply negative uncertainty to mean values (systematics estimation)");
+   vitemp->push_back(0);
+   vitemp2->push_back(-1);
+   vstemp->push_back("Apply positive uncertainty to mean values (systematics estimation)");
    vitemp->push_back(0);
    vitemp2->push_back(-1);
    specialMva = new CheckList(rightmvapanel, vitemp, vstemp, vitemp2, rwidth, "vertical");

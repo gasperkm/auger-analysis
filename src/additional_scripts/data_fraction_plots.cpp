@@ -934,36 +934,50 @@ int main(int argc, char **argv)
             grDataLnaNorm->GetYaxis()->SetRangeUser(-0.7, 5.);
          }
 
-	 cout << "Which dataset did you use (EPOS = 0, QGSJET = 1, SIBYLL = 2)? ";
-	 cin >> itemp[1];
+	 int dset = -1;
+	 cout << "Which dataset did you use (EPOS = 0, QGSJET = 1, SIBYLL = 2, NONE = -1)? ";
+	 cin >> dset;
 
-	 vector<float> returnVal;
-	 itemp[1] = ReadLnaResults(&returnVal, itemp[1]);
-	 cout << "Number of points = " << itemp[1] << endl;
+         bool addPublishedFD;
 	 float *xbinPub[3];
 	 float *ybinPubLna[3];
 
-	 for(int i = 0; i < 3; i++)
+	 if(dset != -1)
 	 {
-            xbinPub[i] = new float[itemp[1]];
-            ybinPubLna[i] = new float[itemp[1]];
+            addPublishedFD = true;
+	    vector<float> returnVal;
+	    itemp[1] = ReadLnaResults(&returnVal, dset);
+	    if(itemp[1] != -1)
+	    {
+	       cout << "Number of points = " << itemp[1] << endl;
+
+	       for(int i = 0; i < 3; i++)
+	       {
+                  xbinPub[i] = new float[itemp[1]];
+                  ybinPubLna[i] = new float[itemp[1]];
+	       }
+
+	       for(int i = 0; i < itemp[1]; i++)
+	       {
+                  xbinPub[0][i] = returnVal[3*i];
+	          xbinPub[1][i] = 0;
+	          xbinPub[2][i] = 0;
+	          ybinPubLna[0][i] = returnVal[3*i+1];
+	          ybinPubLna[1][i] = returnVal[3*i+2];
+	          ybinPubLna[2][i] = returnVal[3*i+2];
+
+	          cout << i+1 << ", data: " << xbinPub[0][i] << "\t" << ybinPubLna[0][i] << "\t" << ybinPubLna[1][i] << endl;
+	       }
+
+               grPubLna = new TGraphAsymmErrors(itemp[1], xbinPub[0], ybinPubLna[0], xbinPub[1], xbinPub[2], ybinPubLna[1], ybinPubLna[2]);
+               mystyle->SetGraphColor(grPubLna, 0);
+               grPubLna->GetYaxis()->SetRangeUser(-0.7, 5.);
+	    }
+	    else
+               addPublishedFD = false;
 	 }
-
-	 for(int i = 0; i < itemp[1]; i++)
-	 {
-            xbinPub[0][i] = returnVal[3*i];
-	    xbinPub[1][i] = 0;
-	    xbinPub[2][i] = 0;
-	    ybinPubLna[0][i] = returnVal[3*i+1];
-	    ybinPubLna[1][i] = returnVal[3*i+2];
-	    ybinPubLna[2][i] = returnVal[3*i+2];
-
-	    cout << i+1 << ", data: " << xbinPub[0][i] << "\t" << ybinPubLna[0][i] << "\t" << ybinPubLna[1][i] << endl;
-	 }
-
-         grPubLna = new TGraphAsymmErrors(itemp[1], xbinPub[0], ybinPubLna[0], xbinPub[1], xbinPub[2], ybinPubLna[1], ybinPubLna[2]);
-         mystyle->SetGraphColor(grPubLna, 0);
-         grPubLna->GetYaxis()->SetRangeUser(-0.7, 5.);
+	 else
+            addPublishedFD = false;
 
          // Plotting each graph separately
 	 // MVA cut only
@@ -1402,17 +1416,22 @@ int main(int argc, char **argv)
          l->SetLineStyle(7);
 	 l->SetLineColor(28);
 
-	 nrfigs = 2;
+	 if(addPublishedFD)
+	    nrfigs = 2;
+	 else
+	    nrfigs = 1;
 
 	 // LnA raw data only
          mystyle->SetAxisTitles(grDataLna, "FD energy [log(E/eV)]", "<lnA> of data events");
          grDataLna->Draw(plotInstr[0].c_str());
-         grPubLna->Draw(plotInstr[1].c_str());
+	 if(addPublishedFD)
+            grPubLna->Draw(plotInstr[1].c_str());
 	 legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(nrfigs)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
 	 legend->SetFillStyle(1001);
 	 legend->SetFillColor(c_Legend);
-	 legend->AddEntry(grDataLna, "Data (raw)", "lp");
-	 legend->AddEntry(grPubLna, "Data (Auger published)", "lp");
+	 legend->AddEntry(grDataLna, "Data (MVA cut)", "lp");
+	 if(addPublishedFD)
+            legend->AddEntry(grPubLna, "Data (Xmax analysis ICRC2017)", "lp");
          legend->SetBorderSize(1);
          legend->SetMargin(0.3);
          legend->Draw("same");
@@ -1453,12 +1472,14 @@ int main(int argc, char **argv)
 	    // LnA normalized data only
             mystyle->SetAxisTitles(grDataLnaNorm, "FD energy [log(E/eV)]", "<lnA> of data events");
             grDataLnaNorm->Draw(plotInstr[0].c_str());
-            grPubLna->Draw(plotInstr[1].c_str());
+	    if(addPublishedFD)
+               grPubLna->Draw(plotInstr[1].c_str());
 	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(nrfigs)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
 	    legend->SetFillStyle(1001);
 	    legend->SetFillColor(c_Legend);
-	    legend->AddEntry(grDataLnaNorm, "Data (normalized)", "lp");
-	    legend->AddEntry(grPubLna, "Data (Auger published)", "lp");
+	    legend->AddEntry(grDataLnaNorm, "Data (MVA cut, normalized)", "lp");
+	    if(addPublishedFD)
+	       legend->AddEntry(grPubLna, "Data (Xmax analysis ICRC2017)", "lp");
             legend->SetBorderSize(1);
             legend->SetMargin(0.3);
             legend->Draw("same");
@@ -1495,18 +1516,23 @@ int main(int argc, char **argv)
 //            grDataLnaNorm->Write(("datalnanorm_" + stemp[1]).c_str());
 
 	    // LnA data/data-norm
-	    nrfigs = 3;
+	    if(addPublishedFD)
+	       nrfigs = 3;
+	    else
+	       nrfigs = 2;
             mystyle->SetAxisTitles(grDataLna, "FD energy [log(E/eV)]", "<lnA> of data events");
 //	    grDataLna->SetLineStyle(9);
             grDataLna->Draw(plotInstr[0].c_str());
             grDataLnaNorm->Draw(plotInstr[1].c_str());
-            grPubLna->Draw(plotInstr[1].c_str());
+	    if(addPublishedFD)
+               grPubLna->Draw(plotInstr[1].c_str());
 	    legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(nrfigs)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
 	    legend->SetFillStyle(1001);
 	    legend->SetFillColor(c_Legend);
-	    legend->AddEntry(grDataLna, "Data (raw)", "lp");
-	    legend->AddEntry(grDataLnaNorm, "Data (normalized)", "lp");
-	    legend->AddEntry(grPubLna, "Data (Auger published)", "lp");
+	    legend->AddEntry(grDataLna, "Data (MVA cut)", "lp");
+	    legend->AddEntry(grDataLnaNorm, "Data (MVA cut, normalized)", "lp");
+	    if(addPublishedFD)
+	       legend->AddEntry(grPubLna, "Data (Xmax analysis ICRC2017)", "lp");
             legend->SetBorderSize(1);
             legend->SetMargin(0.3);
             legend->Draw("same");
@@ -1554,8 +1580,11 @@ int main(int argc, char **argv)
             delete[] ybinDataLna[i];
             delete[] ybinDataLnaNorm[i];
 
-            delete[] xbinPub[i];
-            delete[] ybinPubLna[i];
+	    if(addPublishedFD)
+	    {
+               delete[] xbinPub[i];
+               delete[] ybinPubLna[i];
+	    }
 
 	    delete[] ymvaCut[i];
 
