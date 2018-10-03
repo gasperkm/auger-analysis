@@ -298,8 +298,12 @@
      cd $ADSTROOT
      make
      if [ $? != 0 ]; then
-       errorecho "Compiling of ADST has failed..."
-       exit 1
+       if [ ! -f $ADSTROOT/lib/libAnalysisKG.so ] || [ ! -f $ADSTROOT/lib/libRecEventKG.so ] || [ ! -f $ADSTROOT/bin/EventBrowser ]; then
+         errorecho "Compiling of ADST has failed..."
+         exit 1
+       else
+         errorecho "Compiling of ADST documentation has failed..."
+       fi
      fi
    }
 
