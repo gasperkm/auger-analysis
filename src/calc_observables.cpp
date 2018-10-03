@@ -579,6 +579,9 @@ void AdstMva::CalculateRisetime()
                   {
 //cout << time->at(k)/25. << "\t" << yvalue->at(k)/(*maxval) << endl;
 
+                     if(yvalue->at(k)/(*maxval) > 0.95)
+                        break;
+
                      if(yvalue->at(k)/(*maxval) <= 0.10)
                      {
                         byrange[0] = yvalue->at(k)/(*maxval);

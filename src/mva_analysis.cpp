@@ -292,6 +292,8 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
          cout << "# MvaSetTrees           #: " << "Event = " << j << endl;
       ret = IsInsideCuts(invalues, invalues_neg, invalues_pos, seleye, false, 0);
 
+      bool *sdobservable = new bool;
+
       // Combine stereo FD events
       if(ret == 0)
       {
@@ -305,8 +307,10 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
             ftemp[3] = 0;
             ftemp[4] = 0;
             ftemp[5] = 0;
-            ftemp[6] = 0;
+//            ftemp[6] = 0;
 	    outobs[i] = 0;
+
+	    *sdobservable = false;
 
 	    itemp[2] = 0;
 	    itemp[3] = 0;
@@ -316,6 +320,11 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
 	       itemp[2]++;
 	       if(invalues->GetValue(i, k) != -1)
 	       {
+                  if((k > 0) && (ftemp[6] == invalues->GetValue(i, k)))
+                     *sdobservable = true;
+		  else
+                     *sdobservable = false;
+
 	          ftemp[6] = invalues->GetValue(i, k);
 	          ftemp[7] = invalues_neg->GetValue(i, k);
 	          ftemp[8] = invalues_pos->GetValue(i, k);
@@ -354,7 +363,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
 	    }
 
             if(DBGSIG > 1)
-	       cout << "# MvaSetTrees           #: " << "Number of eyes = " << itemp[2] << ", Number of valid eyes = " << itemp[3] << endl;
+	       cout << "# MvaSetTrees           #: " << "Number of eyes = " << itemp[2] << ", Number of valid eyes = " << itemp[3] << ", SD observable = " << *sdobservable << endl;
 
 	    ftemp[4] = ftemp[0]/ftemp[2];
             if(DBGSIG > 1)
@@ -375,7 +384,8 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
 	       outobs_pos[i] = TMath::Sqrt(1./ftemp[3]);
 
 	    // if all 4 values are the same, the errors should also be the same (for instance when going through 4 saved values for SD variables)
-	    if( ((itemp[2] == ALLEYES) && (itemp[3] == ALLEYES)) || (itemp[3] == 1) )
+//	    if( ((itemp[2] == ALLEYES) && (itemp[3] == ALLEYES)) || (itemp[3] == 1) )
+	    if( (*sdobservable) || (itemp[3] == 1) )
             {
 	       outobs[i] = ftemp[6];
 	       outobs_neg[i] = ftemp[7];
@@ -481,6 +491,8 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
 	 }
          outtree->Fill();
       }
+
+      delete sdobservable;
    }
 
    cout << "# MvaSetTrees           #: " << "Number of events inside the cuts = " << itemp[0] << endl;
@@ -856,7 +868,7 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
       *isinside = sepcut[0] & sepcut[1] & sepcut[2];
 
       if(DBGSIG > 1)
-         cout << endl << "# IsInsideCuts          #: " << "isinside = " << (int)*isinside << ", sepcut[0] = " << (int)sepcut[0] << ", sepcut[1] = " << (int)sepcut[1] << ", sepcut[2] = " << (int)sepcut[2] << endl;
+         cout << "# IsInsideCuts          #: " << "isinside = " << (int)*isinside << ", sepcut[0] = " << (int)sepcut[0] << ", sepcut[1] = " << (int)sepcut[1] << ", sepcut[2] = " << (int)sepcut[2] << endl;
 
       if(*isinside)
          seleye->push_back(i);

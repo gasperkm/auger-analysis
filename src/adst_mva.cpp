@@ -162,7 +162,7 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
    for(int j = 0; j < itemp[0]; j++)
    {
       // Update the progress bar
-      if(itemp[0] < 10)
+      if(itemp[0] < 20)
       {
 #if _STANDALONE_ == 0
          progress->Update(j);
