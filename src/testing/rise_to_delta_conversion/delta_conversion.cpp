@@ -477,7 +477,7 @@ int main(int argc, char **argv)
 //   int nrstations, nevents;
    string *stemp = new string[3];
    int *itemp = new int[4];
-   double *dtemp = new double[3];
+   double *dtemp = new double[6];
    bool goodrec;
 
    // Limits for risetime calculations
@@ -499,6 +499,8 @@ int main(int argc, char **argv)
    vector<double> riseVectLow;
    vector<double> distVectHigh;
    vector<double> riseVectHigh;
+   vector<double> energyVect;
+   vector<double> deltaVect;
 //   vector<double> tempVect;
 
    // Vectors and variables needed for calculation of risetime
@@ -521,6 +523,7 @@ int main(int argc, char **argv)
    RootStyle *mystyle;
    TCanvas *c1;
    TGraphErrors *allRise, *allRiseLowGain, *allRiseHighGain;
+   TGraphErrors *allDelta;
    int allcount = 0;
    int allcountLow = 0;
    int allcountHigh = 0;
@@ -529,6 +532,9 @@ int main(int argc, char **argv)
    double fitparamLowErr[4];
    double fitparamHigh[4];
    double fitparamHighErr[4];
+   double fitparam[6];
+
+   double tbench[2];
 
    // Graphing variables for A, B and N parameters
    TGraphErrors *parA, *parB, *parN;
@@ -551,6 +557,7 @@ int main(int argc, char **argv)
    zenithnr = ReadCustomBinning(stemp[0], zenithbins, zenithlimitFull);
 
    ofstream *ofs = new ofstream;
+   ifstream *ifs = new ifstream;
    AdstFile *adfile = new AdstFile();
 
    string inname;
@@ -915,7 +922,7 @@ cout << "New station (" << stationVector[i].GetId() << ")" << endl;
 
 	    if(goodrec)
 	    {
-               cout << "Station " << sdidVect->at(i) << ", energy = " << energy->at(2*i) << " (" << energy->at(2*i+1)  << "), zenith = " << SecTheta(zenith->at(2*i),false) << " (" << SecTheta(zenith->at(2*i+1),false) << ")" << endl;
+               cout << "Station " << sdidVect->at(i) << ", energy = " << energy->at(2*i) << " ± " << energy->at(2*i+1)  << ", zenith = " << SecTheta(zenith->at(2*i),false) << " ± " << (TMath::Sin(zenith->at(2*i))*zenith->at(2*i+1))/TMath::Power(TMath::Cos(zenith->at(2*i)),2) << endl;
                if(HGsat->at(i))
                {
                   // Save distance of station to shower axis
@@ -982,6 +989,8 @@ cout << "New station (" << stationVector[i].GetId() << ")" << endl;
             allRise->SetMarkerStyle(20);
             allRise->SetMarkerSize(0.8);
             mystyle->SetAxisTitles(allRise, "Distance from shower axis [m]", "t_{1/2} [ns]");
+            c1->SetLogx(kFALSE);
+            c1->SetLogy(kFALSE);
 /*            allRise->GetXaxis()->SetRange((limitTankDistance[0]-100.)/1000., (limitTankDistance[1]+100.)/1000.);
             allRise->GetXaxis()->SetRangeUser((limitTankDistance[0]-100.)/1000., (limitTankDistance[1]+100.)/1000.);
             allRise->GetXaxis()->SetLimits((limitTankDistance[0]-100.)/1000., (limitTankDistance[1]+100.)/1000.);
@@ -1107,6 +1116,8 @@ cout << "New station (" << stationVector[i].GetId() << ")" << endl;
       parA->SetMarkerStyle(20);
       parA->SetMarkerSize(0.8);
       mystyle->SetAxisTitles(parA, "SD zenith angle [sec(#theta)]", "Fitting parameter A [ns]");
+      c1->SetLogx(kFALSE);
+      c1->SetLogy(kFALSE);
       parA->Draw("AP");
 
       parfit[0] = new TF1("parfit0", "[0]+[1]*TMath::Power(x,-4)", 1.0, 2.0);
@@ -1129,6 +1140,8 @@ cout << "New station (" << stationVector[i].GetId() << ")" << endl;
       parB->SetMarkerStyle(20);
       parB->SetMarkerSize(0.8);
       mystyle->SetAxisTitles(parB, "SD zenith angle [sec(#theta)]", "Fitting parameter B [ns^{2}/m^{2}]");
+      c1->SetLogx(kFALSE);
+      c1->SetLogy(kFALSE);
       parB->Draw("AP");
 
       parfit[1] = new TF1("parfit1", "[0]+[1]*TMath::Power(x,-4)", 1.0, 2.0);
@@ -1151,6 +1164,8 @@ cout << "New station (" << stationVector[i].GetId() << ")" << endl;
       parN->SetMarkerStyle(20);
       parN->SetMarkerSize(0.8);
       mystyle->SetAxisTitles(parN, "SD zenith angle [sec(#theta)]", "Fitting parameter N");
+      c1->SetLogx(kFALSE);
+      c1->SetLogy(kFALSE);
       parN->Draw("AP");
 
       parfit[2] = new TF1("parfit2", "[0]+[1]*TMath::Power(x,2)+[2]*TMath::Exp(x)", 1.0, 2.0);
@@ -1170,10 +1185,155 @@ cout << "New station (" << stationVector[i].GetId() << ")" << endl;
 //      stemp[0] = "./plots/fitting_parN.C";
 //      c1->SaveAs(stemp[0].c_str());
 
-      delete adfile;
-
       ofs->close();
       delete ofs;
+
+      // Convert risetimes into delta, using benchmark functions from before
+      stemp[0] = "./benchmark_functions_en_" + ToString(energybins->at(2*energyref),2) + "-" + ToString(energybins->at(2*energyref+1),2) + ".txt";
+      ifs->open(stemp[0].c_str(), ifstream::in);
+
+      allcount = 0;
+      allevts = 0;
+      cout << "Converting risetimes into delta values" << endl;
+
+      allDelta = new TGraphErrors();
+
+      energyVect.clear();
+      deltaVect.clear();
+
+      if(ifs->is_open())
+      {
+         for(int iZen = 0; iZen < zenithnr; iZen++)
+         {
+            zenithlimit[0] = zenithbins->at(2*iZen);
+            zenithlimit[1] = zenithbins->at(2*iZen+1);
+
+            cout << "Chosen zenith angle limit = " << zenithlimit[0] << ", " << zenithlimit[1] << endl;
+
+//          cout << "distVect size = " << distVect.size() << ", riseVect  size = " << riseVect.size() << ", energy size = " << energy.size() << ", zenith size = " << zenith.size() << ", sdidVect size = " << sdidVect.size() << ", HGsat size = " << HGsat.size() << endl;
+
+	    for(int i = 0; i < 4; i++)
+	       *ifs >> dtemp[0];
+	    for(int i = 0; i < 6; i++)
+	       *ifs >> fitparam[i];
+
+	    dtemp[0] = 0.;
+
+            for(int i = 0; i < sdidVect->size(); i++)
+            {
+               goodrec = true;
+           
+               if(SecTheta(zenith->at(2*i),false) < zenithlimit[0])
+                  goodrec = false;
+               if(SecTheta(zenith->at(2*i),false) > zenithlimit[1])
+                  goodrec = false;
+
+	       if(i == sdidVect->size()-1)
+	       {
+                  dtemp[1] = dtemp[1]/itemp[0];
+ 	          cout << "Last: Mean Delta value from " << itemp[0] << " SD station for event " << sdidVect->at(i) << " = " << dtemp[1] << endl;
+ 
+ 	          // Save energy of the event
+                  energyVect.push_back(energy->at(2*i));
+                  energyVect.push_back(energy->at(2*i+1));
+ 	 	  // Save Delta of the event
+                  deltaVect.push_back(dtemp[1]);
+                  deltaVect.push_back(dtemp[2]);
+ 	          allevts++;
+	       }
+           
+               if(goodrec)
+               {
+                  // Check if this is already a new event or not
+                  if(dtemp[0] != energy->at(2*i))
+		  {
+                     if(allcount > 0)
+		     {
+		        dtemp[1] = dtemp[1]/itemp[0];
+		        cout << "Mean Delta value from " << itemp[0] << " SD station for event " << sdidVect->at(i) << " = " << dtemp[1] << endl;
+
+		        // Save energy of the event
+                        energyVect.push_back(energy->at(2*i));
+                        energyVect.push_back(energy->at(2*i+1));
+			// Save Delta of the event
+                        deltaVect.push_back(dtemp[1]);
+                        deltaVect.push_back(dtemp[2]);
+		        allevts++;
+		     }
+
+                     itemp[0] = 0;
+		     dtemp[1] = 0.;
+		     dtemp[2] = 0.;
+		     cout << "New event (" << allevts << ")" << endl;
+		  }
+
+                  cout << "Station " << sdidVect->at(i) << ", energy = " << energy->at(2*i)/1.e+18 << " ± " << energy->at(2*i+1)/1.e+18 << ", zenith = " << SecTheta(zenith->at(2*i),false) << " ± " << (TMath::Sin(zenith->at(2*i))*zenith->at(2*i+1))/TMath::Power(TMath::Cos(zenith->at(2*i)),2) << ", A = " << fitparam[0] << " ± " << fitparam[1] << ", B = " << fitparam[2] << " ± " << fitparam[3] << ", N = " << fitparam[4] << " ± " << fitparam[5] << endl;
+
+                  if(HGsat->at(i))
+                  {
+		     tbench[0] = 40 + fitparam[4]*(TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(distVect->at(2*i),2)) - fitparam[0]);
+		     tbench[1] = 0.;
+                  }
+                  else
+                  {
+		     tbench[0] = 40 + TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(distVect->at(2*i),2)) - fitparam[0];
+		     tbench[1] = 0.;
+                  }
+
+		  dtemp[3] = riseVect->at(2*i);
+		  dtemp[4] = riseVect->at(2*i+1);
+
+		  cout << itemp[0] << ": distance = " << distVect->at(2*i) << " ± " << distVect->at(2*i+1) << ", t_bench = " << tbench[0] << " ± " << tbench[1] << ", risetime = " << dtemp[3] << " ± " << dtemp[4] << ", delta = " << (dtemp[3] - tbench[0])/dtemp[4] << " ± " << 0. << endl;
+
+		  dtemp[1] += (dtemp[3] - tbench[0])/dtemp[4];
+		  dtemp[2] += 0.;
+
+		  itemp[0]++;
+		  allcount++;
+                  dtemp[0] = energy->at(2*i);
+               }
+            }
+	 }
+      }
+
+      cout << "Surviving a total of " << allcount << " deltas from " << allevts << " valid events." << endl;
+      cerr << "Surviving a total of " << allcount << " deltas from " << allevts << " valid events." << endl;
+
+      for(int i = 0; i < energyVect.size()/2; i++)
+      {
+         allDelta->SetPoint(i, energyVect[2*i]/1.e+18, deltaVect[2*i]);
+         allDelta->SetPointError(i, energyVect[2*i+1]/1.e+18, deltaVect[2*i+1]);
+
+//	 cout << i << ": " << energyVect[2*i]/1.e+18 << " ± " << energyVect[2*i+1]/1.e+18 << ", " << deltaVect[2*i] << " ± " << deltaVect[2*i+1] << endl;
+      }
+
+      mystyle->SetGraphColor(allDelta, 1);
+      allDelta->SetMarkerStyle(21);
+      allDelta->SetMarkerSize(0.8);
+      mystyle->SetAxisTitles(allDelta, "SD energy (EeV)", "#Delta_{s}");
+      c1->SetLogx(kTRUE);
+      c1->SetLogy(kFALSE);
+      allDelta->GetXaxis()->SetMoreLogLabels(kTRUE);
+      allDelta->Draw("AP");
+
+      stemp[0] = "rm ./plots/delta_vs_energySD.pdf";
+//      BinNaming(&stemp[0], energylimit, zenithlimit);
+//      stemp[0] += "*";
+      system(stemp[0].c_str());
+
+      stemp[1] = "./plots/delta_vs_energySD.pdf";
+//      BinNaming(&stemp[0], energylimit, zenithlimit);
+
+//      stemp[1] = stemp[0] + ".pdf";
+      cout << stemp[1] << endl;
+      c1->SaveAs(stemp[1].c_str());
+
+      delete allDelta;
+
+      delete adfile;
+
+      ifs->close();
+      delete ifs;
 
       delete parfit[0];
       delete parfit[1];

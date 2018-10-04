@@ -437,6 +437,9 @@ int main(int argc, char **argv)
       c1 = new TCanvas("c1","",1200,900);
       gStyle->SetEndErrorSize(3);
 
+      stemp[0] = "mkdir -p ./plots";
+      system(stemp[0].c_str());
+
       // Read all FD energy, FD zenith and S1000 values inside the energy and zenith angle ranges
       for(int k = 0; k < argc-1; k++)
       {
@@ -610,8 +613,8 @@ int main(int argc, char **argv)
                result[2]->SetPoint(i, energyVect[2*i]/1.e+18, s38Vect[2*i]);
                result[2]->SetPointError(i, energyVect[2*i+1]/1.e+18, s38Vect[2*i+1]);
 
-               allS38->SetPoint(i, energyVect[2*i]/1.e+18, s38Vect[2*i]);
-               allS38->SetPointError(i, energyVect[2*i+1]/1.e+18, s38Vect[2*i+1]);
+               allS38->SetPoint(s38count, energyVect[2*i]/1.e+18, s38Vect[2*i]);
+               allS38->SetPointError(s38count, energyVect[2*i+1]/1.e+18, s38Vect[2*i+1]);
 	       s38count++;
 	    }
 
