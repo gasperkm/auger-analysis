@@ -369,6 +369,65 @@ void CalculateS38(vector<double> *shwsize, vector<double> *zenith, double *fitpa
    delete[] seczenith;
 }
 
+// Calculate the DeltaS38 value and it's uncertainty
+//   DeltaS38 = S38 - (E/A)^(1/B)
+//   dDeltaS38 = sqrt((dS38)^2 + (-((E/A)^(1/B))*dE/(B*E))^2 + (((E/A)^(1/B))*dA/(A*B))^2 + (((E/A)^(1/B))*ln(E/A)*dB/B^2)^2)
+void CalculateDeltaS38(int count, TGraphErrors *s38vals, TF1 *fitfunc, vector<double> *outVect)
+{
+   double *dtemp = new double[6];
+   double *en = new double[2];
+   double *s38 = new double[2];
+   double *Apar = new double[2];
+   double *Bpar = new double[2];
+
+   // E, dE, S38, dS38
+   s38vals->GetPoint(count, en[0], s38[0]);
+   en[1] = s38vals->GetErrorX(count);
+   s38[1] = s38vals->GetErrorY(count);
+   cout << "E = " << en[0] << " ± " << en[1] << ", S38 = " << s38[0] << " ± " << s38[1]; 
+
+   // A, B
+   Apar[0] = fitfunc->GetParameter(0);
+   Apar[1] = fitfunc->GetParError(0);
+   Bpar[0] = fitfunc->GetParameter(1);
+   Bpar[1] = fitfunc->GetParError(1);
+   cout << ", A = " << Apar[0] << " ± " << Apar[1] << ", B = " << Bpar[0] << " ± " << Bpar[1] << endl; 
+
+   // (E/A)^(1/B)
+   dtemp[0] = fitfunc->Eval(en[0]);
+   cout << "  (E/A)^(1/B) = " << dtemp[0]; 
+
+   // DeltaS38
+   dtemp[1] = s38[0] - dtemp[0];
+   outVect->push_back(dtemp[1]);
+   cout << ", DeltaS38 = " << dtemp[1]; 
+
+   // (dS38)^2
+   dtemp[2] = s38[1];
+   dtemp[3] = TMath::Power(dtemp[2],2);
+   cout << ", S38 err = " << dtemp[2];
+   // (-((E/A)^(1/B))*dE/(B*E))^2
+   dtemp[2] = dtemp[0]*en[1]/(Bpar[0]*en[0]);
+   dtemp[3] += TMath::Power(dtemp[2],2);
+   cout << ", E err = " << dtemp[2];
+   // (((E/A)^(1/B))*dA/(A*B))^2
+   dtemp[2] = dtemp[0]*Apar[1]/(Apar[0]*Bpar[0]);
+   dtemp[3] += TMath::Power(dtemp[2],2);
+   cout << ", A err = " << dtemp[2];
+   // (((E/A)^(1/B))*ln(E/A)*dB/B^2)^2
+   dtemp[2] = dtemp[0]*TMath::Log(en[0]/Apar[0])*Bpar[1]/TMath::Power(Bpar[0],2);
+   dtemp[3] += TMath::Power(dtemp[2],2);
+   cout << ", B err = " << dtemp[2];
+   
+   dtemp[3] = TMath::Sqrt(dtemp[3]);
+   cout << ", dDeltaS38 = " << dtemp[3] << endl;
+   outVect->push_back(dtemp[3]);
+
+   delete[] dtemp;
+   delete[] en;
+   delete[] s38;
+}
+
 int main(int argc, char **argv)
 {
    gSystem->Load("libTree.so");
@@ -528,7 +587,7 @@ int main(int argc, char **argv)
 	    cout << "Mean value of S1000 = " << dtemp[4] << endl;
 
             // Plotting S1000 vs sec(theta)
-            mystyle->SetGraphColor(result[0], 1);
+            mystyle->SetGraphColor(result[0], 0);
 	    result[0]->SetMarkerStyle(20);
 	    result[0]->SetMarkerSize(0.8);
             mystyle->SetAxisTitles(result[0], "FD zenith angle (sec#theta)", "S_{1000} (VEM)");
@@ -619,7 +678,7 @@ int main(int argc, char **argv)
 	    }
 
             // Plotting S38 vs sec(theta)
-            mystyle->SetGraphColor(result[1], 1);
+            mystyle->SetGraphColor(result[1], 0);
 	    result[1]->SetMarkerStyle(20);
 	    result[1]->SetMarkerSize(0.8);
             mystyle->SetAxisTitles(result[1], "FD zenith angle (sec#theta)", "S_{38} (VEM)");
@@ -639,7 +698,7 @@ int main(int argc, char **argv)
 	    c1->SaveAs(stemp[1].c_str());
 
             // Plotting S38 vs energy
-            mystyle->SetGraphColor(result[2], 1);
+            mystyle->SetGraphColor(result[2], 0);
 	    result[2]->SetMarkerStyle(20);
 	    result[2]->SetMarkerSize(0.8);
             mystyle->SetAxisTitles(result[2], "FD energy (EeV)", "S_{38} (VEM)");
@@ -672,7 +731,7 @@ int main(int argc, char **argv)
 
       for(int i = 0; i < 3; i++)
       {
-         mystyle->SetGraphColor(allFitparam[i], 1);
+         mystyle->SetGraphColor(allFitparam[i], 0);
          allFitparam[i]->SetMarkerStyle(20);
          allFitparam[i]->SetMarkerSize(0.8);
 
@@ -697,7 +756,7 @@ int main(int argc, char **argv)
       }
 
       // Plot the S38 values for all energies
-      mystyle->SetGraphColor(allS38, 1);
+      mystyle->SetGraphColor(allS38, 0);
       allS38->SetMarkerStyle(20);
       allS38->SetMarkerSize(0.8);
       mystyle->SetAxisTitles(allS38, "FD energy (EeV)", "S_{38} (VEM)");
@@ -708,21 +767,52 @@ int main(int argc, char **argv)
       allS38->GetYaxis()->SetRangeUser(4.,500.);*/
       allS38->GetXaxis()->SetMoreLogLabels(kTRUE);
       allS38->Draw("AP");
-      fitfunc[1] = new TF1("fitfunc1", "TMath::Power(x/[0],1./[1])", 3., 100.);
+      fitfunc[1] = new TF1("fitfunc1", "TMath::Power(x/[0],1./[1])", 2., 100.);
       fitfunc[1]->SetParameters(0.1,1.);
-      allS38->Fit("fitfunc1");
-      tempfunc = (TF1*)allS38->GetFunction("fitfunc1");
-      tempfunc->Draw("L;SAME");
-
-      stemp[0] = "rm ./plots/s38_vs_energyFD_all*";
-      system(stemp[0].c_str());
-      stemp[1] = "./plots/s38_vs_energyFD_all.pdf";
-      c1->SaveAs(stemp[1].c_str());
+      allS38->Fit("fitfunc1", "0");
      
       cout << endl << "Fitting parameters for linear dependence between FD energy and S38:" << endl;
       cout << "- A = " << fitfunc[1]->GetParameter(0) << " ± " << fitfunc[1]->GetParError(0) << endl;
       cout << "- B = " << fitfunc[1]->GetParameter(1) << " ± " << fitfunc[1]->GetParError(1) << endl;
       cout << endl;
+      cerr << endl << "Fitting parameters for linear dependence between FD energy and S38:" << endl;
+      cerr << "- A = " << fitfunc[1]->GetParameter(0) << " ± " << fitfunc[1]->GetParError(0) << endl;
+      cerr << "- B = " << fitfunc[1]->GetParameter(1) << " ± " << fitfunc[1]->GetParError(1) << endl;
+      cerr << endl;
+
+      // Select a fitting function
+      cerr << "Use the fitted function (0) or select a new one (1)? ";
+      cin >> itemp[0];
+      if(itemp[0] == 1)
+      {
+         char *ctemp = new char;
+         cerr << "Enter parameter A and its uncertainty (comma separated): ";
+         cin >> dtemp[1] >> *ctemp >> dtemp[2];
+	 fitfunc[1]->SetParameter(0, dtemp[1]);
+	 fitfunc[1]->SetParError(0, dtemp[2]);
+         cerr << "Enter parameter B and its uncertainty (comma separated): ";
+         cin >> dtemp[1] >> *ctemp >> dtemp[2];
+	 fitfunc[1]->SetParameter(1, dtemp[1]);
+	 fitfunc[1]->SetParError(1, dtemp[2]);
+	 delete ctemp;
+      }
+      cout << endl << "Using parameters for function (E/A)^(1/B):" << endl;
+      cout << "- A = " << fitfunc[1]->GetParameter(0) << " ± " << fitfunc[1]->GetParError(0) << endl;
+      cout << "- B = " << fitfunc[1]->GetParameter(1) << " ± " << fitfunc[1]->GetParError(1) << endl;
+      cout << endl;
+      cerr << endl << "Using parameters for function (E/A)^(1/B):" << endl;
+      cerr << "- A = " << fitfunc[1]->GetParameter(0) << " ± " << fitfunc[1]->GetParError(0) << endl;
+      cerr << "- B = " << fitfunc[1]->GetParameter(1) << " ± " << fitfunc[1]->GetParError(1) << endl;
+      cerr << endl;
+
+/*      tempfunc = (TF1*)allS38->GetFunction("fitfunc1");
+      tempfunc->Draw("L;SAME");*/
+      fitfunc[1]->Draw("L;SAME");
+
+      stemp[0] = "rm ./plots/s38_vs_energyFD_all*";
+      system(stemp[0].c_str());
+      stemp[1] = "./plots/s38_vs_energyFD_all.pdf";
+      c1->SaveAs(stemp[1].c_str());
 
       // Prepare reference value of S38 (at energy 10^19)
       alldeltaS38 = new TGraphErrors();
@@ -733,29 +823,34 @@ int main(int argc, char **argv)
       cout << "Number of points = " << allS38->GetN() << endl;
       cout << "Energy points = " << energy->size()/2 << endl;
       dtemp[5] = 0.;
-      dtemp[6] = 0.;
+      // Calculate DeltaS38 and its uncertainty for all events
       for(int i = 0; i < allS38->GetN(); i++)
       {
+         cout << "Point " << i << ": ";
+	 CalculateDeltaS38(i, allS38, fitfunc[1], deltas38);
          allS38->GetPoint(i, dtemp[1], dtemp[2]);
-         dtemp[3] = dtemp[2] - fitfunc[1]->Eval(dtemp[1]);
-	 deltas38->push_back(dtemp[3]);
+         dtemp[3] = allS38->GetErrorX(i);
+/*         allS38->GetPoint(i, dtemp[1], dtemp[2]);
          dtemp[3] = allS38->GetErrorX(i);
 	 dtemp[4] = allS38->GetErrorY(i);
-	 deltas38->push_back(dtemp[4]);
+         dtemp[3] = dtemp[2] - fitfunc[1]->Eval(dtemp[1]);
+	 deltas38->push_back(dtemp[3]);
+	 deltas38->push_back(dtemp[4]);*/
 
-	 cout << "Point " << i << ": energy = " << dtemp[1] << " ± " << dtemp[3] << ", s38 = " << dtemp[2] << " ± " << dtemp[4] << ", deltas38 = " << deltas38->at(2*i) << " ± " << deltas38->at(2*i+1) << endl; 
+/*	 cout << "Point " << i << ": energy = " << dtemp[1] << " ± " << dtemp[3] << ", s38 = " << dtemp[2] << " ± " << dtemp[4] << ", deltas38 = " << deltas38->at(2*i) << " ± " << deltas38->at(2*i+1) << endl; */
 
          if(TMath::Abs(deltas38->at(2*i)) > dtemp[5])
+	 {
             dtemp[5] = TMath::Abs(deltas38->at(2*i));
-         if(deltas38->at(2*i+1) > dtemp[6])
 	    dtemp[6] = deltas38->at(2*i+1);
+	 }
 
 	 alldeltaS38->SetPoint(i, dtemp[1], deltas38->at(2*i));
 	 alldeltaS38->SetPointError(i, dtemp[3], deltas38->at(2*i+1));
       }
 
       // Plot the deltaS38 values for all energies
-      mystyle->SetGraphColor(alldeltaS38, 1);
+      mystyle->SetGraphColor(alldeltaS38, 0);
       alldeltaS38->SetMarkerStyle(20);
       alldeltaS38->SetMarkerSize(0.8);
       mystyle->SetAxisTitles(alldeltaS38, "FD energy (EeV)", "#deltaS_{38} (VEM)");
