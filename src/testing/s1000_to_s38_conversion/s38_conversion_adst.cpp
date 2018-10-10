@@ -853,7 +853,7 @@ int main(int argc, char **argv)
       mystyle->SetGraphColor(alldeltaS38, 0);
       alldeltaS38->SetMarkerStyle(20);
       alldeltaS38->SetMarkerSize(0.8);
-      mystyle->SetAxisTitles(alldeltaS38, "FD energy (EeV)", "#deltaS_{38} (VEM)");
+      mystyle->SetAxisTitles(alldeltaS38, "FD energy (EeV)", "#DeltaS_{38} (VEM)");
      
       c1->SetLogx(kTRUE);
       c1->SetLogy(kFALSE);
@@ -897,6 +897,8 @@ int main(int argc, char **argv)
    delete[] stemp;
    delete[] itemp;
    delete[] dtemp;
+
+   delete line;
 
    return 0;
 }

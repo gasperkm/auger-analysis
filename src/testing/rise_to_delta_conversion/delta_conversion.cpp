@@ -64,7 +64,7 @@ public:
    AdstFile();
    virtual ~AdstFile();
 
-   void ReadAdstFile(string inname, double *energylimitFull, double *zenithlimitFull, vector<double> *sdidVect, vector<bool> *HGsat, vector<double> *distVect, vector<double> *riseVect, vector<double> *energy, vector<double> *zenith, vector<double> *shwsize, int *allcount, int *allevts);
+   void ReadAdstFile(string inname, double *energylimitFull, double *zenithlimitFull, vector<double> *sdidVect, vector<bool> *HGsat, vector<double> *distVect, vector<double> *riseVect, vector<double> *energy, vector<double> *zenith, vector<double> *shwsize, vector<int> *eventVect, int *allcount, int *allevts);
 
    double GetDistanceLimit(int type);
 };
@@ -115,7 +115,7 @@ double AdstFile::GetDistanceLimit(int type)
    return limitTankDistance[type];
 }
 
-void AdstFile::ReadAdstFile(string inname, double *energylimitFull, double *zenithlimitFull, vector<double> *sdidVect, vector<bool> *HGsat, vector<double> *distVect, vector<double> *riseVect, vector<double> *energy, vector<double> *zenith, vector<double> *shwsize, int *allcount, int *allevts)
+void AdstFile::ReadAdstFile(string inname, double *energylimitFull, double *zenithlimitFull, vector<double> *sdidVect, vector<bool> *HGsat, vector<double> *distVect, vector<double> *riseVect, vector<double> *energy, vector<double> *zenith, vector<double> *shwsize, vector<int> *eventVect, int *allcount, int *allevts)
 {
    cout << endl << "Opening file: " << inname << " -------------------------------------------------------" << endl;
    cerr << endl << "Opening file: " << inname << " -------------------------------------------------------" << endl;
@@ -385,7 +385,13 @@ void AdstFile::ReadAdstFile(string inname, double *energylimitFull, double *zeni
                // Save event S1000 value
                shwsize->push_back(tempVect[12*i+10]);
                shwsize->push_back(tempVect[12*i+11]);
+               // Save the current event number
+               eventVect->push_back(*allevts);
+
                (*allcount)++;
+
+	       if(i == itemp[3]-1)
+                  cout << "Risetime value from " << itemp[3] << " SD stations for event " << *allevts << " = " << tempVect[12*i+4] << " ± " << tempVect[12*i+5] << endl;
             }
    
             (*allevts)++;
@@ -462,6 +468,120 @@ int ReadCustomBinning(string infile, vector<double> *outBins, double *maxRange)
    return itemp;
 }
 
+// Calculate SD fit parameters A, B and N from zenith angle
+void CalculateSdFitParams(double *inpar, double *outpar, double zenith, double zenithErr)
+{
+   double *dtemp = new double[6];
+
+   dtemp[0] = SecTheta(zenith,false);
+   dtemp[1] = TMath::Sin(zenith);
+   dtemp[2] = TMath::Cos(zenith);
+   dtemp[3] = TMath::Tan(zenith);
+
+   // A = a0 + a1*(sec(theta))^-4 = (inpar[0]+inpar[2]*TMath::Power(SecTheta(zenith,false),-4))
+   outpar[0] = inpar[0]+inpar[2]*TMath::Power(dtemp[0],-4);
+   // B = b0 + b1*(sec(theta))^-4 = (inpar[4]+inpar[6]*TMath::Power(SecTheta(zenith,false),-4))
+   outpar[2] = inpar[4]+inpar[6]*TMath::Power(dtemp[0],-4);
+   // N = n0 + n1*(sec(theta))^2 + n2*exp(sec(theta)) = (inpar[8]+inpar[10]*TMath::Power(SecTheta(zenith,false),2) + inpar[12]*TMath::Exp(SecTheta(zenith,false)))
+   outpar[4] = inpar[8]+inpar[10]*TMath::Power(dtemp[0],2) + inpar[12]*TMath::Exp(dtemp[0]);
+
+   // dA = sqrt( da0^2 + (da1/sec(theta)^4)^2 + (-4*dtheta*a1*sin(theta)*cos(theta)^3)^2 )
+   //   a0 = inpar[0], da0 = inpar[1], a1 = inpar[2], da1 = inpar[3]
+   dtemp[4] = inpar[1];
+   dtemp[5] = TMath::Power(dtemp[4],2);
+   cout << "  da0 = " << dtemp[4]; 
+   dtemp[4] = inpar[3]*TMath::Power(dtemp[0],-4);
+   dtemp[5] += TMath::Power(dtemp[4],2);
+   cout << ", da1 = " << dtemp[4]; 
+   dtemp[4] = -4*zenithErr*inpar[2]*dtemp[1]*TMath::Power(dtemp[2],3);
+   dtemp[5] += TMath::Power(dtemp[4],2);
+   cout << ", dtheta = " << dtemp[4] << endl; 
+   outpar[1] = TMath::Sqrt(dtemp[5]);
+   // dB = sqrt( db0^2 + (db1/sec(theta)^4)^2 + (-4*dtheta*b1*sin(theta)*cos(theta)^3)^2 )
+   //   b0 = inpar[4], db0 = inpar[5], b1 = inpar[6], db1 = inpar[7]
+   dtemp[4] = inpar[5];
+   dtemp[5] = TMath::Power(dtemp[4],2);
+   cout << "  db0 = " << dtemp[4]; 
+   dtemp[4] = inpar[7]*TMath::Power(dtemp[0],-4);
+   dtemp[5] += TMath::Power(dtemp[4],2);
+   cout << ", db1 = " << dtemp[4]; 
+   dtemp[4] = -4*zenithErr*inpar[6]*dtemp[1]*TMath::Power(dtemp[2],3);
+   dtemp[5] += TMath::Power(dtemp[4],2);
+   cout << ", dtheta = " << dtemp[4] << endl; 
+   outpar[3] = TMath::Sqrt(dtemp[5]);
+   // dN = sqrt( dn0^2 + (dn1*sec(theta)^2)^2 + (dn2*exp(sec(theta)))^2 + (dtheta*tan(theta)*sec(theta)*(2*n1*sec(theta)+n2*exp(sec(theta))))^2 )
+   //   n0 = inpar[8], dn0 = inpar[9], n1 = inpar[10], dn1 = inpar[11], n2 = inpar[12], dn2 = inpar[13]
+   dtemp[4] = inpar[9];
+   dtemp[5] = TMath::Power(dtemp[4],2);
+   cout << "  dn0 = " << dtemp[4]; 
+   dtemp[4] = inpar[11]*TMath::Power(dtemp[0],2);
+   dtemp[5] += TMath::Power(dtemp[4],2);
+   cout << ", dn1 = " << dtemp[4]; 
+   dtemp[4] = inpar[13]*TMath::Exp(dtemp[0]);
+   dtemp[5] += TMath::Power(dtemp[4],2);
+   cout << ", dn2 = " << dtemp[4]; 
+   dtemp[4] = zenithErr*dtemp[3]*dtemp[0]*(2*inpar[10]*dtemp[0]+inpar[12]*TMath::Exp(dtemp[0]));
+   dtemp[5] += TMath::Power(dtemp[4],2);
+   cout << ", dtheta = " << dtemp[4] << endl; 
+   outpar[5] = TMath::Sqrt(dtemp[5]);
+
+   delete[] dtemp;
+}
+
+// Calculate benchmark functions
+void CalculateBenchmark(double *tbench, double *fitparam, double dist, double distErr, bool sat)
+{
+   double *dtemp = new double[2];
+
+   // The SD station is high-gain saturated
+   //   tbench = 40 + sqrt(A^2 + B*r^2) - A
+   if(sat)
+   {
+      tbench[0] = 40 + TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(dist,2)) - fitparam[0];
+      cout << "  tbench[0] = " << tbench[0];
+      // (dA)^2 = (dA*(A/sqrt(A^2 + B*r^2) - 1))^2
+      dtemp[0] = fitparam[1]*(fitparam[0]/TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(dist,2)) - 1);
+      dtemp[1] = TMath::Power(dtemp[0],2);
+      cout << ", dA = " << dtemp[0];
+      // (dB)^2 = (dB*r^2/(2*sqrt(A^2 + B*r^2)))^2
+      dtemp[0] = fitparam[3]*TMath::Power(dist,2)/(2*TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(dist,2)));
+      dtemp[1] += TMath::Power(dtemp[0],2);
+      cout << ", dB = " << dtemp[0];
+      // (dr)^2 = (dr*B*r/(sqrt(A^2 + B*r^2)))^2
+      dtemp[0] = distErr*fitparam[2]*dist/(TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(dist,2)));
+      dtemp[1] += TMath::Power(dtemp[0],2);
+      cout << ", dr = " << dtemp[0];
+   }
+   // The SD station has a valid high-gain trace
+   //   tbench = 40 + N*(sqrt(A^2 + B*r^2) - A)
+   else
+   {
+      tbench[0] = 40 + fitparam[4]*(TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(dist,2)) - fitparam[0]);
+      cout << "  tbench[0] = " << tbench[0];
+      // (dA)^2 = (N*dA*(A/sqrt(A^2 + B*r^2) - 1))^2
+      dtemp[0] = fitparam[4]*fitparam[1]*(fitparam[0]/TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(dist,2)) - 1);
+      dtemp[1] = TMath::Power(dtemp[0],2);
+      cout << ", dA = " << dtemp[0];
+      // (dB)^2 = (N*dB*r^2/(2*sqrt(A^2 + B*r^2)))^2
+      dtemp[0] = fitparam[4]*fitparam[3]*TMath::Power(dist,2)/(2*TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(dist,2)));
+      dtemp[1] += TMath::Power(dtemp[0],2);
+      cout << ", dB = " << dtemp[0];
+      // (dN)^2 = (dN*(sqrt(A^2 + B*r^2) - A))^2
+      dtemp[0] = fitparam[5]*(TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(dist,2)) - fitparam[0]);
+      dtemp[1] += TMath::Power(dtemp[0],2);
+      cout << ", dN = " << dtemp[0];
+      // (dr)^2 = (dr*B*N*r/(sqrt(A^2 + B*r^2)))^2
+      dtemp[0] = distErr*fitparam[2]*fitparam[4]*dist/(TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(dist,2)));
+      dtemp[1] += TMath::Power(dtemp[0],2);
+      cout << ", dr = " << dtemp[0];
+   }
+
+   tbench[1] = TMath::Sqrt(dtemp[1]);
+   cout << ", tbench[1] = " << tbench[1] << endl;
+
+   delete[] dtemp;
+}
+
 int main(int argc, char **argv)
 {
    gSystem->Load("libTree.so");
@@ -477,7 +597,7 @@ int main(int argc, char **argv)
 //   int nrstations, nevents;
    string *stemp = new string[3];
    int *itemp = new int[4];
-   double *dtemp = new double[6];
+   double *dtemp = new double[7];
    bool goodrec;
 
    // Limits for risetime calculations
@@ -493,6 +613,7 @@ int main(int argc, char **argv)
    vector<double> *energy = new vector<double>;
    vector<double> *zenith = new vector<double>;
    vector<double> *shwsize = new vector<double>;
+   vector<int> *eventVect = new vector<int>;
    vector<bool> *HGsat = new vector<bool>;
 
    vector<double> distVectLow;
@@ -524,6 +645,15 @@ int main(int argc, char **argv)
    TCanvas *c1;
    TGraphErrors *allRise, *allRiseLowGain, *allRiseHighGain;
    TGraphErrors *allDelta;
+   TH1D *riseErrDist, *riseErrDistLow, *riseErrDistHigh;
+   TLine *line = new TLine();
+   line->SetLineWidth(2);
+   line->SetLineStyle(7);
+   line->SetLineColor(28);
+   TLine *line2 = new TLine();
+   line2->SetLineWidth(2);
+   line2->SetLineStyle(7);
+   line2->SetLineColor(28);
    int allcount = 0;
    int allcountLow = 0;
    int allcountHigh = 0;
@@ -533,12 +663,30 @@ int main(int argc, char **argv)
    double fitparamHigh[4];
    double fitparamHighErr[4];
    double fitparam[6];
+   double sdfitparam[14];
+
+   // Fitting parameters of benchmark functions from the SD analysis
+   sdfitparam[0] = -72.;
+   sdfitparam[1] = 10.;
+   sdfitparam[2] = 410.;
+   sdfitparam[3] = 30.;
+   sdfitparam[4] = -0.049;
+   sdfitparam[5] = 0.007;
+   sdfitparam[6] = 0.36;
+   sdfitparam[7] = 0.02;
+   sdfitparam[8] = -0.07;
+   sdfitparam[9] = 0.02;
+   sdfitparam[10] = -1.14;
+   sdfitparam[11] = 0.02;
+   sdfitparam[12] = 0.84;
+   sdfitparam[13] = 0.02;
 
    double tbench[2];
 
    // Graphing variables for A, B and N parameters
    TGraphErrors *parA, *parB, *parN;
    TF1 *parfit[3];
+   TF1 *tempfunc;
 
    // Variables for setting energy and zenith angle limits
    double energylimit[2] = {-1,-1};
@@ -550,6 +698,7 @@ int main(int argc, char **argv)
    double zenithlimitFull[2] = {-1,-1};
    int zenithnr = 9;
    vector<double> *zenithbins = new vector<double>;
+   int sdBenchmark = 1;
 
    stemp[0] = string(rootdir) + "/input/custom_energy_bins.txt";
    energynr = ReadCustomBinning(stemp[0], energybins, energylimitFull);
@@ -564,11 +713,31 @@ int main(int argc, char **argv)
 
    if(argc > 1)
    {
-      cerr << "Energy bins:" << endl;
-      for(int i = 0; i < energynr; i++)
-         cerr << "[" << i << "] = " << energybins->at(2*i) << ", " << energybins->at(2*i+1) << endl;
-      cerr << "Select the energy bin to be used as reference (use number in square brackets): ";
-      cin >> energyref;
+      cerr << "Use fitted benchmark functions (0) or those defined in SD analysis (1): ";
+      cin >> sdBenchmark;
+
+      if(sdBenchmark == 1)
+      {
+         cerr << "Using benchmark functions defined in the SD analysis." << endl;
+         cout << "Using benchmark functions defined in the SD analysis." << endl;
+         for(int i = 0; i < energynr; i++)
+	 {
+            if(energybins->at(2*i) == 19.1)
+               energyref = i;
+	 }
+      }
+      else
+      {
+         cerr << "Using fitted benchmark functions from this analysis." << endl;
+         cout << "Using fitted benchmark functions from this analysis." << endl;
+
+         cerr << "Energy bins:" << endl;
+         for(int i = 0; i < energynr; i++)
+            cerr << "[" << i << "] = " << energybins->at(2*i) << ", " << energybins->at(2*i+1) << endl;
+         cerr << "Select the energy bin to be used as reference (use number in square brackets): ";
+         cin >> energyref;
+      }
+
       cerr << "Energy bin used for reference = (" << energybins->at(2*energyref) << ", " << energybins->at(2*energyref+1) << ")" << endl;
       cout << "Energy bin used for reference = (" << energybins->at(2*energyref) << ", " << energybins->at(2*energyref+1) << ")" << endl;
 
@@ -586,13 +755,14 @@ int main(int argc, char **argv)
       energy->clear();
       zenith->clear();
       shwsize->clear();
+      eventVect->clear();
       HGsat->clear();
 
       for(int k = 0; k < argc-1; k++)
       {
          inname = string(argv[k+1]);
 /*----------------------------------------------*/
-	 adfile->ReadAdstFile(inname, energylimitFull, zenithlimitFull, sdidVect, HGsat, distVect, riseVect, energy, zenith, shwsize, &allcount, &allevts);
+	 adfile->ReadAdstFile(inname, energylimitFull, zenithlimitFull, sdidVect, HGsat, distVect, riseVect, energy, zenith, shwsize, eventVect, &allcount, &allevts);
 /*----------------------------------------------*/
 /*         cout << endl << "Opening file: " << inname << " -------------------------------------------------------" << endl;
          cerr << endl << "Opening file: " << inname << " -------------------------------------------------------" << endl;
@@ -881,13 +1051,17 @@ cout << "New station (" << stationVector[i].GetId() << ")" << endl;
 
       TF1 *fitfuncLow;
       TF1 *fitfuncHigh;
-      parA = new TGraphErrors();
-      parB = new TGraphErrors();
-      parN = new TGraphErrors();
       itemp[0] = 0;
 
-      stemp[0] = "./benchmark_functions_en_" + ToString(energybins->at(2*energyref),2) + "-" + ToString(energybins->at(2*energyref+1),2) + ".txt";
-      ofs->open(stemp[0].c_str(), ofstream::out);
+      if(sdBenchmark != 1)
+      {
+         parA = new TGraphErrors();
+         parB = new TGraphErrors();
+         parN = new TGraphErrors();
+
+         stemp[0] = "./benchmark_functions_en_" + ToString(energybins->at(2*energyref),2) + "-" + ToString(energybins->at(2*energyref+1),2) + ".txt";
+         ofs->open(stemp[0].c_str(), ofstream::out);
+      }
 
       for(int iZen = 0; iZen < zenithnr; iZen++)
       {
@@ -922,7 +1096,7 @@ cout << "New station (" << stationVector[i].GetId() << ")" << endl;
 
 	    if(goodrec)
 	    {
-               cout << "Station " << sdidVect->at(i) << ", energy = " << energy->at(2*i) << " ± " << energy->at(2*i+1)  << ", zenith = " << SecTheta(zenith->at(2*i),false) << " ± " << (TMath::Sin(zenith->at(2*i))*zenith->at(2*i+1))/TMath::Power(TMath::Cos(zenith->at(2*i)),2) << endl;
+               cout << "Event " << eventVect->at(i) << ", station " << sdidVect->at(i) << ", energy = " << energy->at(2*i) << " ± " << energy->at(2*i+1)  << ", zenith = " << SecTheta(zenith->at(2*i),false) << " ± " << (TMath::Sin(zenith->at(2*i))*zenith->at(2*i+1))/TMath::Power(TMath::Cos(zenith->at(2*i)),2) << endl;
                if(HGsat->at(i))
                {
                   // Save distance of station to shower axis
@@ -952,6 +1126,10 @@ cout << "New station (" << stationVector[i].GetId() << ")" << endl;
          allRise = new TGraphErrors();
          allRiseLowGain = new TGraphErrors();
          allRiseHighGain = new TGraphErrors();
+
+/*         riseErrDist = new TH1D();
+         riseErrDistLow = new TH1D();
+         riseErrDistHigh = new TH1D();*/
 
          for(int i = 0; i < distVectLow.size()/2; i++)
          {
@@ -991,87 +1169,134 @@ cout << "New station (" << stationVector[i].GetId() << ")" << endl;
             mystyle->SetAxisTitles(allRise, "Distance from shower axis [m]", "t_{1/2} [ns]");
             c1->SetLogx(kFALSE);
             c1->SetLogy(kFALSE);
-/*            allRise->GetXaxis()->SetRange((limitTankDistance[0]-100.)/1000., (limitTankDistance[1]+100.)/1000.);
-            allRise->GetXaxis()->SetRangeUser((limitTankDistance[0]-100.)/1000., (limitTankDistance[1]+100.)/1000.);
-            allRise->GetXaxis()->SetLimits((limitTankDistance[0]-100.)/1000., (limitTankDistance[1]+100.)/1000.);
-            allRise->GetYaxis()->SetRange(0., 1100.);
-            allRise->GetYaxis()->SetRangeUser(0., 1100.);
-            allRise->GetYaxis()->SetLimits(0., 1100.);*/
             allRise->Draw("AP");
 
             mystyle->SetGraphColor(allRiseLowGain, 0);
             allRiseLowGain->SetMarkerStyle(20);
             allRiseLowGain->SetMarkerSize(0.8);
             mystyle->SetAxisTitles(allRiseLowGain, "Distance from shower axis [m]", "t_{1/2} [ns]");
-//            allRiseLowGain->GetXaxis()->SetRange((limitTankDistance[0]-100.)/1000., (limitTankDistance[1]+100.)/1000.);
-//            allRiseLowGain->GetXaxis()->SetRangeUser((limitTankDistance[0]-100.)/1000., (limitTankDistance[1]+100.)/1000.);
-//            allRiseLowGain->GetXaxis()->SetLimits((limitTankDistance[0]-100.)/1000., (limitTankDistance[1]+100.)/1000.);
             allRiseLowGain->Draw("P;SAME");
 
             mystyle->SetGraphColor(allRiseHighGain, 1);
             allRiseHighGain->SetMarkerStyle(21);
             allRiseHighGain->SetMarkerSize(0.8);
             mystyle->SetAxisTitles(allRiseHighGain, "Distance from shower axis [m]", "t_{1/2} [ns]");
-//            allRiseHighGain->GetXaxis()->SetRange((limitTankDistance[0]-100.)/1000., (limitTankDistance[1]+100.)/1000.);
-//            allRiseHighGain->GetXaxis()->SetRangeUser((limitTankDistance[0]-100.)/1000., (limitTankDistance[1]+100.)/1000.);
-//            allRiseHighGain->GetXaxis()->SetLimits((limitTankDistance[0]-100.)/1000., (limitTankDistance[1]+100.)/1000.);
             allRiseHighGain->Draw("P;SAME");
 
-            fitfuncLow = new TF1("fitfuncLow", "40+TMath::Sqrt(TMath::Power([0],2)+[1]*TMath::Power(x,2))-[0]", adfile->GetDistanceLimit(0), adfile->GetDistanceLimit(1));
-            fitfuncLow->SetParameters(100.,0.1);
-            fitfuncLow->SetParLimits(0,0.,1000.);
-            fitfuncLow->SetParLimits(1,0.,1.);
-/*	    [0] = ([0]+[1]*TMath::Power([7],-4))
-	    [1] = ([2]+[3]*TMath::Power([7],-4))
-	    [2] = ([4]+[5]*TMath::Power([7],2)+[6]*TMath::Exp([7]))*/
-/*            fitfuncLow = new TF1("fitfuncLow", "40+TMath::Sqrt(TMath::Power(([0]+[1]*TMath::Power([4],-4)),2)+([2]+[3]*TMath::Power([4],-4))*TMath::Power(x,2))-([0]+[1]*TMath::Power([4],-4))", limitTankDistance[0]/1000., limitTankDistance[1]/1000.);
-            fitfuncLow->SetParameters(1.,1.,1.,1.);
-	    fitfuncLow->FixParameter(4,(zenithlimit[0]+zenithlimit[1])/2.);*/
-            allRiseLowGain->Fit("fitfuncLow");
-
-	    for(int j = 0; j < 2; j++)
+	    if(sdBenchmark == 1)
 	    {
-               fitparamLow[j] = fitfuncLow->GetParameter(j);
-               fitparamLowErr[j] = fitfuncLow->GetParError(j);
+               fitfuncLow = new TF1("fitfuncLow", "40+TMath::Sqrt(TMath::Power(([0]+[1]*TMath::Power([4],-4)),2)+([2]+[3]*TMath::Power([4],-4))*TMath::Power(x,2))-([0]+[1]*TMath::Power([4],-4))", adfile->GetDistanceLimit(0), adfile->GetDistanceLimit(1));
+               fitfuncLow->SetParameter(0, sdfitparam[0]);
+               fitfuncLow->SetParameter(1, sdfitparam[2]);
+               fitfuncLow->SetParameter(2, sdfitparam[4]);
+               fitfuncLow->SetParameter(3, sdfitparam[6]);
+               fitfuncLow->SetParameter(4, (zenithlimit[0]+zenithlimit[1])/2.);
+               fitfuncLow->SetParError(0, sdfitparam[1]);
+               fitfuncLow->SetParError(1, sdfitparam[3]);
+               fitfuncLow->SetParError(2, sdfitparam[5]);
+               fitfuncLow->SetParError(3, sdfitparam[7]);
+
+	       cout << endl << "Fitting parameters from low gain fit (SD analysis):" << endl;
+	       cout << "- a0 = " << fitfuncLow->GetParameter(0) << " ± " << fitfuncLow->GetParError(0) << endl;
+	       cout << "- a1 = " << fitfuncLow->GetParameter(1) << " ± " << fitfuncLow->GetParError(1) << endl;
+	       cout << "- b0 = " << fitfuncLow->GetParameter(2) << " ± " << fitfuncLow->GetParError(2) << endl;
+	       cout << "- b1 = " << fitfuncLow->GetParameter(3) << " ± " << fitfuncLow->GetParError(3) << endl;
+	       cout << endl;
+
+	       fitfuncLow->SetLineColor(1);
+	       fitfuncLow->SetLineWidth(2);
+	       fitfuncLow->SetLineStyle(1);
+	       fitfuncLow->Draw("SAME");
+
+               fitfuncHigh = new TF1("fitfuncHigh", "40+([4]+[5]*TMath::Power([7],2)+[6]*TMath::Exp([7]))*(TMath::Sqrt(TMath::Power(([0]+[1]*TMath::Power([7],-4)),2)+([2]+[3]*TMath::Power([7],-4))*TMath::Power(x,2))-([0]+[1]*TMath::Power([7],-4)))", adfile->GetDistanceLimit(0), adfile->GetDistanceLimit(1));
+               fitfuncHigh->SetParameter(0, sdfitparam[0]);
+               fitfuncHigh->SetParameter(1, sdfitparam[2]);
+               fitfuncHigh->SetParameter(2, sdfitparam[4]);
+               fitfuncHigh->SetParameter(3, sdfitparam[6]);
+               fitfuncHigh->SetParameter(4, sdfitparam[8]);
+               fitfuncHigh->SetParameter(5, sdfitparam[10]);
+               fitfuncHigh->SetParameter(6, sdfitparam[12]);
+               fitfuncHigh->SetParameter(7, (zenithlimit[0]+zenithlimit[1])/2.);
+               fitfuncHigh->SetParError(0, sdfitparam[1]);
+               fitfuncHigh->SetParError(1, sdfitparam[3]);
+               fitfuncHigh->SetParError(2, sdfitparam[5]);
+               fitfuncHigh->SetParError(3, sdfitparam[7]);
+               fitfuncHigh->SetParError(4, sdfitparam[9]);
+               fitfuncHigh->SetParError(5, sdfitparam[11]);
+               fitfuncHigh->SetParError(6, sdfitparam[13]);
+
+	       cout << endl << "Fitting parameters from high gain fit (SD analysis):" << endl;
+	       cout << "- n0 = " << fitfuncHigh->GetParameter(4) << " ± " << fitfuncHigh->GetParError(4) << endl;
+	       cout << "- n1 = " << fitfuncHigh->GetParameter(5) << " ± " << fitfuncHigh->GetParError(5) << endl;
+	       cout << "- n2 = " << fitfuncHigh->GetParameter(6) << " ± " << fitfuncHigh->GetParError(6) << endl;
+	       cout << endl;
+
+	       fitfuncHigh->SetLineColor(1);
+	       fitfuncHigh->SetLineWidth(2);
+	       fitfuncHigh->SetLineStyle(9);
+	       fitfuncHigh->Draw("SAME");
 	    }
-
-	    cout << endl << "Fitting parameters from low gain fit (chi2/ndf = " << fitfuncLow->GetChisquare() << "/" << fitfuncLow->GetNDF() << " = " << (fitfuncLow->GetChisquare())/(fitfuncLow->GetNDF()) << "):" << endl;
-	    cout << "- A = " << fitparamLow[0] << " ± " << fitparamLowErr[0] << endl;
-	    cout << "- B = " << fitparamLow[1] << " ± " << fitparamLowErr[1] << endl;
-	    cout << endl;
-
-	    parA->SetPoint(itemp[0], (zenithlimit[0]+zenithlimit[1])/2., fitparamLow[0]);
-	    parA->SetPointError(itemp[0], 0., fitparamLowErr[0]);
-	    parB->SetPoint(itemp[0], (zenithlimit[0]+zenithlimit[1])/2., fitparamLow[1]);
-	    parB->SetPointError(itemp[0], 0., fitparamLowErr[1]);
-
-	    *ofs << energylimit[0] << "\t" << energylimit[1] << "\t" << zenithlimit[0] << "\t" << zenithlimit[1] << "\t" << fitfuncLow->GetParameter(0) << "\t" << fitfuncLow->GetParError(0) << "\t" << fitfuncLow->GetParameter(1) << "\t" << fitfuncLow->GetParError(1) << "\t";
-
-            fitfuncHigh = new TF1("fitfuncHigh", "40+[2]*(TMath::Sqrt(TMath::Power([0],2)+[1]*TMath::Power(x,2))-[0])", adfile->GetDistanceLimit(0), adfile->GetDistanceLimit(1));
-            fitfuncHigh->FixParameter(0, fitfuncLow->GetParameter(0));
-            fitfuncHigh->FixParameter(1, fitfuncLow->GetParameter(1));
-            fitfuncHigh->SetParameter(2, 1.1);
-/*            fitfuncHigh = new TF1("fitfuncHigh", "40+([4]+[5]*TMath::Power([7],2)+[6]*TMath::Exp([7]))*(TMath::Sqrt(TMath::Power(([0]+[1]*TMath::Power([7],-4)),2)+([2]+[3]*TMath::Power([7],-4))*TMath::Power(x,2))-([0]+[1]*TMath::Power([7],-4)))", limitTankDistance[0]/1000., limitTankDistance[1]/1000.);
-            fitfuncHigh->SetParameters(1.,1.,1.,1.,1.,1.,1.);
-	    fitfuncHigh->FixParameter(7,(zenithlimit[0]+zenithlimit[1])/2.);*/
-            allRiseHighGain->Fit("fitfuncHigh");
-
-	    for(int j = 0; j < 3; j++)
+	    else
 	    {
-               fitparamHigh[j] = fitfuncHigh->GetParameter(j);
-               fitparamHighErr[j] = fitfuncHigh->GetParError(j);
+               fitfuncLow = new TF1("fitfuncLow", "40+TMath::Sqrt(TMath::Power([0],2)+[1]*TMath::Power(x,2))-[0]", adfile->GetDistanceLimit(0), adfile->GetDistanceLimit(1));
+               fitfuncLow->SetParameters(100.,0.1);
+               fitfuncLow->SetParLimits(0,0.,1000.);
+               fitfuncLow->SetParLimits(1,0.,1.);
+               allRiseLowGain->Fit("fitfuncLow","0");
+
+	       tempfunc = (TF1*)allRiseLowGain->GetFunction("fitfuncLow");
+	       tempfunc->SetLineColor(1);
+	       tempfunc->SetLineWidth(2);
+	       tempfunc->SetLineStyle(1);
+	       tempfunc->Draw("SAME");
+
+	       for(int j = 0; j < 2; j++)
+	       {
+                  fitparamLow[j] = fitfuncLow->GetParameter(j);
+                  fitparamLowErr[j] = fitfuncLow->GetParError(j);
+	       }
+
+	       cout << endl << "Fitting parameters from low gain fit (chi2/ndf = " << fitfuncLow->GetChisquare() << "/" << fitfuncLow->GetNDF() << " = " << (fitfuncLow->GetChisquare())/(fitfuncLow->GetNDF()) << "):" << endl;
+	       cout << "- A = " << fitparamLow[0] << " ± " << fitparamLowErr[0] << endl;
+	       cout << "- B = " << fitparamLow[1] << " ± " << fitparamLowErr[1] << endl;
+	       cout << endl;
+
+	       parA->SetPoint(itemp[0], (zenithlimit[0]+zenithlimit[1])/2., fitparamLow[0]);
+	       parA->SetPointError(itemp[0], 0., fitparamLowErr[0]);
+	       parB->SetPoint(itemp[0], (zenithlimit[0]+zenithlimit[1])/2., fitparamLow[1]);
+	       parB->SetPointError(itemp[0], 0., fitparamLowErr[1]);
+
+	       *ofs << energylimit[0] << "\t" << energylimit[1] << "\t" << zenithlimit[0] << "\t" << zenithlimit[1] << "\t" << fitparamLow[0] << "\t" << fitparamLowErr[0] << "\t" << fitparamLow[1] << "\t" << fitparamLowErr[1] << "\t";
+
+               fitfuncHigh = new TF1("fitfuncHigh", "40+[2]*(TMath::Sqrt(TMath::Power([0],2)+[1]*TMath::Power(x,2))-[0])", adfile->GetDistanceLimit(0), adfile->GetDistanceLimit(1));
+               fitfuncHigh->FixParameter(0, fitfuncLow->GetParameter(0));
+               fitfuncHigh->FixParameter(1, fitfuncLow->GetParameter(1));
+               fitfuncHigh->SetParameter(2, 1.1);
+               allRiseHighGain->Fit("fitfuncHigh","0");
+
+	       tempfunc = (TF1*)allRiseHighGain->GetFunction("fitfuncHigh");
+	       tempfunc->SetLineColor(1);
+	       tempfunc->SetLineWidth(2);
+	       tempfunc->SetLineStyle(9);
+	       tempfunc->Draw("SAME");
+
+	       for(int j = 0; j < 3; j++)
+	       {
+                  fitparamHigh[j] = fitfuncHigh->GetParameter(j);
+                  fitparamHighErr[j] = fitfuncHigh->GetParError(j);
+	       }
+
+	       cout << endl << "Fitting parameters from high gain fit (chi2/ndf = " << fitfuncHigh->GetChisquare() << "/" << fitfuncHigh->GetNDF() << " = " << (fitfuncHigh->GetChisquare())/(fitfuncHigh->GetNDF()) << "):" << endl;
+	       cout << "- A = " << fitparamHigh[0] << " ± " << fitparamHighErr[0] << endl;
+	       cout << "- B = " << fitparamHigh[1] << " ± " << fitparamHighErr[1] << endl;
+	       cout << "- N = " << fitparamHigh[2] << " ± " << fitparamHighErr[2] << endl;
+	       cout << endl;
+
+	       parN->SetPoint(itemp[0], (zenithlimit[0]+zenithlimit[1])/2., fitparamHigh[2]);
+	       parN->SetPointError(itemp[0], 0., fitparamHighErr[2]);
+
+	       *ofs << fitparamHigh[2] << "\t" << fitparamHighErr[2] << endl;
 	    }
-
-	    cout << endl << "Fitting parameters from high gain fit (chi2/ndf = " << fitfuncHigh->GetChisquare() << "/" << fitfuncHigh->GetNDF() << " = " << (fitfuncHigh->GetChisquare())/(fitfuncHigh->GetNDF()) << "):" << endl;
-	    cout << "- A = " << fitparamHigh[0] << " ± " << fitparamHighErr[0] << endl;
-	    cout << "- B = " << fitparamHigh[1] << " ± " << fitparamHighErr[1] << endl;
-	    cout << "- N = " << fitparamHigh[2] << " ± " << fitparamHighErr[2] << endl;
-	    cout << endl;
-
-	    parN->SetPoint(itemp[0], (zenithlimit[0]+zenithlimit[1])/2., fitparamHigh[2]);
-	    parN->SetPointError(itemp[0], 0., fitparamHighErr[2]);
-
-	    *ofs << fitfuncHigh->GetParameter(2) << "\t" << fitfuncHigh->GetParError(2) << endl;
 
 	    itemp[0]++;
 
@@ -1099,9 +1324,9 @@ cout << "New station (" << stationVector[i].GetId() << ")" << endl;
             stemp[1] = stemp[0] + ".pdf";
             cout << stemp[1] << endl;
             c1->SaveAs(stemp[1].c_str());
-/*            stemp[1] = stemp[0] + ".C";
+            stemp[1] = stemp[0] + ".C";
             cout << stemp[1] << endl;
-            c1->SaveAs(stemp[1].c_str());*/
+            c1->SaveAs(stemp[1].c_str());
 
 	    delete fitfuncLow;
 	    delete fitfuncHigh;
@@ -1110,87 +1335,97 @@ cout << "New station (" << stationVector[i].GetId() << ")" << endl;
 	 delete allRise;
 	 delete allRiseLowGain;
 	 delete allRiseHighGain;
+
+/*	 delete riseErrDist;
+	 delete riseErrDistLow;
+	 delete riseErrDistHigh;*/
       }
 
-      mystyle->SetGraphColor(parA, 1);
-      parA->SetMarkerStyle(20);
-      parA->SetMarkerSize(0.8);
-      mystyle->SetAxisTitles(parA, "SD zenith angle [sec(#theta)]", "Fitting parameter A [ns]");
-      c1->SetLogx(kFALSE);
-      c1->SetLogy(kFALSE);
-      parA->Draw("AP");
+      if(sdBenchmark != 1)
+      {
+         mystyle->SetGraphColor(parA, 0);
+         parA->SetMarkerStyle(20);
+         parA->SetMarkerSize(0.8);
+         mystyle->SetAxisTitles(parA, "SD zenith angle [sec(#theta)]", "Fitting parameter A [ns]");
+         c1->SetLogx(kFALSE);
+         c1->SetLogy(kFALSE);
+         parA->Draw("AP");
 
-      parfit[0] = new TF1("parfit0", "[0]+[1]*TMath::Power(x,-4)", 1.0, 2.0);
-      parfit[0]->SetParameters(-50.,100.);
-      parA->Fit("parfit0");
+         parfit[0] = new TF1("parfit0", "[0]+[1]*TMath::Power(x,-4)", 1.0, 2.0);
+         parfit[0]->SetParameters(-50.,100.);
+         parA->Fit("parfit0");
 
-      cout << endl << "Fitting parameters from sec(theta) vs A (chi2/ndf = " << parfit[0]->GetChisquare() << "/" << parfit[0]->GetNDF() << " = " << (parfit[0]->GetChisquare())/(parfit[0]->GetNDF()) << "):" << endl;
-      cout << "- a0 = " << parfit[0]->GetParameter(0) << " ± " << parfit[0]->GetParError(0) << endl;
-      cout << "- a1 = " << parfit[0]->GetParameter(1) << " ± " << parfit[0]->GetParError(1) << endl;
-      cout << endl;
+         cout << endl << "Fitting parameters from sec(theta) vs A (chi2/ndf = " << parfit[0]->GetChisquare() << "/" << parfit[0]->GetNDF() << " = " << (parfit[0]->GetChisquare())/(parfit[0]->GetNDF()) << "):" << endl;
+         cout << "- a0 = " << parfit[0]->GetParameter(0) << " ± " << parfit[0]->GetParError(0) << endl;
+         cout << "- a1 = " << parfit[0]->GetParameter(1) << " ± " << parfit[0]->GetParError(1) << endl;
+         cout << endl;
 
-      stemp[0] = "rm ./plots/fitting_parA.*";
-      system(stemp[0].c_str());
-      stemp[0] = "./plots/fitting_parA.pdf";
-      c1->SaveAs(stemp[0].c_str());
-//      stemp[0] = "./plots/fitting_parA.C";
-//      c1->SaveAs(stemp[0].c_str());
+         stemp[0] = "rm ./plots/fitting_parA.*";
+         system(stemp[0].c_str());
+         stemp[0] = "./plots/fitting_parA.pdf";
+         c1->SaveAs(stemp[0].c_str());
+//         stemp[0] = "./plots/fitting_parA.C";
+//         c1->SaveAs(stemp[0].c_str());
 
-      mystyle->SetGraphColor(parB, 1);
-      parB->SetMarkerStyle(20);
-      parB->SetMarkerSize(0.8);
-      mystyle->SetAxisTitles(parB, "SD zenith angle [sec(#theta)]", "Fitting parameter B [ns^{2}/m^{2}]");
-      c1->SetLogx(kFALSE);
-      c1->SetLogy(kFALSE);
-      parB->Draw("AP");
+         mystyle->SetGraphColor(parB, 0);
+         parB->SetMarkerStyle(20);
+         parB->SetMarkerSize(0.8);
+         mystyle->SetAxisTitles(parB, "SD zenith angle [sec(#theta)]", "Fitting parameter B [ns^{2}/m^{2}]");
+         c1->SetLogx(kFALSE);
+         c1->SetLogy(kFALSE);
+         parB->Draw("AP");
 
-      parfit[1] = new TF1("parfit1", "[0]+[1]*TMath::Power(x,-4)", 1.0, 2.0);
-      parfit[1]->SetParameters(-0.1,0.1);
-      parB->Fit("parfit1");
+         parfit[1] = new TF1("parfit1", "[0]+[1]*TMath::Power(x,-4)", 1.0, 2.0);
+         parfit[1]->SetParameters(-0.1,0.1);
+         parB->Fit("parfit1");
 
-      cout << endl << "Fitting parameters from sec(theta) vs B (chi2/ndf = " << parfit[1]->GetChisquare() << "/" << parfit[1]->GetNDF() << " = " << (parfit[1]->GetChisquare())/(parfit[1]->GetNDF()) << "):" << endl;
-      cout << "- b0 = " << parfit[1]->GetParameter(0) << " ± " << parfit[1]->GetParError(0) << endl;
-      cout << "- b1 = " << parfit[1]->GetParameter(1) << " ± " << parfit[1]->GetParError(1) << endl;
-      cout << endl;
+         cout << endl << "Fitting parameters from sec(theta) vs B (chi2/ndf = " << parfit[1]->GetChisquare() << "/" << parfit[1]->GetNDF() << " = " << (parfit[1]->GetChisquare())/(parfit[1]->GetNDF()) << "):" << endl;
+         cout << "- b0 = " << parfit[1]->GetParameter(0) << " ± " << parfit[1]->GetParError(0) << endl;
+         cout << "- b1 = " << parfit[1]->GetParameter(1) << " ± " << parfit[1]->GetParError(1) << endl;
+         cout << endl;
 
-      stemp[0] = "rm ./plots/fitting_parB.*";
-      system(stemp[0].c_str());
-      stemp[0] = "./plots/fitting_parB.pdf";
-      c1->SaveAs(stemp[0].c_str());
-//      stemp[0] = "./plots/fitting_parB.C";
-//      c1->SaveAs(stemp[0].c_str());
+         stemp[0] = "rm ./plots/fitting_parB.*";
+         system(stemp[0].c_str());
+         stemp[0] = "./plots/fitting_parB.pdf";
+         c1->SaveAs(stemp[0].c_str());
+//         stemp[0] = "./plots/fitting_parB.C";
+//         c1->SaveAs(stemp[0].c_str());
 
-      mystyle->SetGraphColor(parN, 1);
-      parN->SetMarkerStyle(20);
-      parN->SetMarkerSize(0.8);
-      mystyle->SetAxisTitles(parN, "SD zenith angle [sec(#theta)]", "Fitting parameter N");
-      c1->SetLogx(kFALSE);
-      c1->SetLogy(kFALSE);
-      parN->Draw("AP");
+         mystyle->SetGraphColor(parN, 0);
+         parN->SetMarkerStyle(20);
+         parN->SetMarkerSize(0.8);
+         mystyle->SetAxisTitles(parN, "SD zenith angle [sec(#theta)]", "Fitting parameter N");
+         c1->SetLogx(kFALSE);
+         c1->SetLogy(kFALSE);
+         parN->Draw("AP");
 
-      parfit[2] = new TF1("parfit2", "[0]+[1]*TMath::Power(x,2)+[2]*TMath::Exp(x)", 1.0, 2.0);
-      parfit[2]->SetParameters(-0.1,-1.1,1.);
-      parN->Fit("parfit2");
+         parfit[2] = new TF1("parfit2", "[0]+[1]*TMath::Power(x,2)+[2]*TMath::Exp(x)", 1.0, 2.0);
+         parfit[2]->SetParameters(-0.1,-1.1,1.);
+         parN->Fit("parfit2");
 
-      cout << endl << "Fitting parameters from sec(theta) vs N (chi2/ndf = " << parfit[2]->GetChisquare() << "/" << parfit[2]->GetNDF() << " = " << (parfit[2]->GetChisquare())/(parfit[2]->GetNDF()) << "):" << endl;
-      cout << "- n0 = " << parfit[2]->GetParameter(0) << " ± " << parfit[2]->GetParError(0) << endl;
-      cout << "- n1 = " << parfit[2]->GetParameter(1) << " ± " << parfit[2]->GetParError(1) << endl;
-      cout << "- n2 = " << parfit[2]->GetParameter(2) << " ± " << parfit[2]->GetParError(2) << endl;
-      cout << endl;
+         cout << endl << "Fitting parameters from sec(theta) vs N (chi2/ndf = " << parfit[2]->GetChisquare() << "/" << parfit[2]->GetNDF() << " = " << (parfit[2]->GetChisquare())/(parfit[2]->GetNDF()) << "):" << endl;
+         cout << "- n0 = " << parfit[2]->GetParameter(0) << " ± " << parfit[2]->GetParError(0) << endl;
+         cout << "- n1 = " << parfit[2]->GetParameter(1) << " ± " << parfit[2]->GetParError(1) << endl;
+         cout << "- n2 = " << parfit[2]->GetParameter(2) << " ± " << parfit[2]->GetParError(2) << endl;
+         cout << endl;
 
-      stemp[0] = "rm ./plots/fitting_parN.*";
-      system(stemp[0].c_str());
-      stemp[0] = "./plots/fitting_parN.pdf";
-      c1->SaveAs(stemp[0].c_str());
-//      stemp[0] = "./plots/fitting_parN.C";
-//      c1->SaveAs(stemp[0].c_str());
+         stemp[0] = "rm ./plots/fitting_parN.*";
+         system(stemp[0].c_str());
+         stemp[0] = "./plots/fitting_parN.pdf";
+         c1->SaveAs(stemp[0].c_str());
+//         stemp[0] = "./plots/fitting_parN.C";
+//         c1->SaveAs(stemp[0].c_str());
 
-      ofs->close();
+         ofs->close();
+      }
       delete ofs;
 
-      // Convert risetimes into delta, using benchmark functions from before
-      stemp[0] = "./benchmark_functions_en_" + ToString(energybins->at(2*energyref),2) + "-" + ToString(energybins->at(2*energyref+1),2) + ".txt";
-      ifs->open(stemp[0].c_str(), ifstream::in);
+      if(sdBenchmark != 1)
+      {
+         // Convert risetimes into delta, using benchmark functions from before
+         stemp[0] = "./benchmark_functions_en_" + ToString(energybins->at(2*energyref),2) + "-" + ToString(energybins->at(2*energyref+1),2) + ".txt";
+         ifs->open(stemp[0].c_str(), ifstream::in);
+      }
 
       allcount = 0;
       allevts = 0;
@@ -1201,99 +1436,176 @@ cout << "New station (" << stationVector[i].GetId() << ")" << endl;
       energyVect.clear();
       deltaVect.clear();
 
-      if(ifs->is_open())
+      dtemp[6] = 0.;
+
+      for(int iZen = 0; iZen < zenithnr; iZen++)
       {
-         for(int iZen = 0; iZen < zenithnr; iZen++)
+         zenithlimit[0] = zenithbins->at(2*iZen);
+         zenithlimit[1] = zenithbins->at(2*iZen+1);
+
+         cout << "Chosen zenith angle limit = " << zenithlimit[0] << ", " << zenithlimit[1] << endl;
+
+	 if(sdBenchmark != 1)
+	 {
+            for(int i = 0; i < 4; i++)
+               *ifs >> dtemp[0];
+            for(int i = 0; i < 6; i++)
+               *ifs >> fitparam[i];
+
+            cout << "Fitting parameters for benchmark function:" << endl;
+            for(int i = 0; i < 3; i++)
+               cout << "- fitparam[" << i << "] = " << fitparam[2*i] << " ± " << fitparam[2*i+1] << endl;
+            cout << endl;
+	 }
+
+         dtemp[0] = 0.;
+         itemp[1] = 0;
+         itemp[2] = 0;
+
+         for(int i = 0; i < sdidVect->size(); i++)
          {
-            zenithlimit[0] = zenithbins->at(2*iZen);
-            zenithlimit[1] = zenithbins->at(2*iZen+1);
+            goodrec = true;
+        
+            if(SecTheta(zenith->at(2*i),false) < zenithlimit[0])
+               goodrec = false;
+            if(SecTheta(zenith->at(2*i),false) > zenithlimit[1])
+               goodrec = false;
 
-            cout << "Chosen zenith angle limit = " << zenithlimit[0] << ", " << zenithlimit[1] << endl;
-
-//          cout << "distVect size = " << distVect.size() << ", riseVect  size = " << riseVect.size() << ", energy size = " << energy.size() << ", zenith size = " << zenith.size() << ", sdidVect size = " << sdidVect.size() << ", HGsat size = " << HGsat.size() << endl;
-
-	    for(int i = 0; i < 4; i++)
-	       *ifs >> dtemp[0];
-	    for(int i = 0; i < 6; i++)
-	       *ifs >> fitparam[i];
-
-	    dtemp[0] = 0.;
-
-            for(int i = 0; i < sdidVect->size(); i++)
+            if(i == sdidVect->size()-1)
             {
-               goodrec = true;
-           
-               if(SecTheta(zenith->at(2*i),false) < zenithlimit[0])
-                  goodrec = false;
-               if(SecTheta(zenith->at(2*i),false) > zenithlimit[1])
-                  goodrec = false;
-
-	       if(i == sdidVect->size()-1)
+	       if(itemp[1] == 0)
+                  cout << "Error! No valid events found!" << endl;
+	       else
 	       {
                   dtemp[1] = dtemp[1]/itemp[0];
- 	          cout << "Last: Mean Delta value from " << itemp[0] << " SD station for event " << sdidVect->at(i) << " = " << dtemp[1] << endl;
- 
- 	          // Save energy of the event
-                  energyVect.push_back(energy->at(2*i));
-                  energyVect.push_back(energy->at(2*i+1));
- 	 	  // Save Delta of the event
-                  deltaVect.push_back(dtemp[1]);
-                  deltaVect.push_back(dtemp[2]);
- 	          allevts++;
-	       }
-           
-               if(goodrec)
-               {
-                  // Check if this is already a new event or not
-                  if(dtemp[0] != energy->at(2*i))
+                  dtemp[2] = TMath::Sqrt(dtemp[2])/itemp[0];
+
+	          if(deltaVect[2*(allevts-1)] == dtemp[1])
+                     cout << "Error! Last value already inserted!" << endl;
+		  else
 		  {
-                     if(allcount > 0)
-		     {
-		        dtemp[1] = dtemp[1]/itemp[0];
-		        cout << "Mean Delta value from " << itemp[0] << " SD station for event " << sdidVect->at(i) << " = " << dtemp[1] << endl;
+                     cout << "Last: Delta value from " << itemp[0] << " SD stations for event " << allevts << " (evt " << itemp[2] << ") = " << dtemp[1] << " ± " << dtemp[2] << endl;
+ 
+                     // Save energy of the event
+                     energyVect.push_back(energy->at(2*i));
+                     energyVect.push_back(energy->at(2*i+1));
+      	             // Save Delta of the event
+                     deltaVect.push_back(dtemp[1]);
+                     deltaVect.push_back(dtemp[2]);
+                     allevts++;
 
-		        // Save energy of the event
-                        energyVect.push_back(energy->at(2*i));
-                        energyVect.push_back(energy->at(2*i+1));
-			// Save Delta of the event
-                        deltaVect.push_back(dtemp[1]);
-                        deltaVect.push_back(dtemp[2]);
-		        allevts++;
-		     }
-
-                     itemp[0] = 0;
-		     dtemp[1] = 0.;
-		     dtemp[2] = 0.;
-		     cout << "New event (" << allevts << ")" << endl;
+                     if(TMath::Abs(dtemp[1]) > dtemp[6])
+                        dtemp[6] = TMath::Abs(dtemp[1]);
 		  }
-
-                  cout << "Station " << sdidVect->at(i) << ", energy = " << energy->at(2*i)/1.e+18 << " ± " << energy->at(2*i+1)/1.e+18 << ", zenith = " << SecTheta(zenith->at(2*i),false) << " ± " << (TMath::Sin(zenith->at(2*i))*zenith->at(2*i+1))/TMath::Power(TMath::Cos(zenith->at(2*i)),2) << ", A = " << fitparam[0] << " ± " << fitparam[1] << ", B = " << fitparam[2] << " ± " << fitparam[3] << ", N = " << fitparam[4] << " ± " << fitparam[5] << endl;
-
-                  if(HGsat->at(i))
-                  {
-		     tbench[0] = 40 + fitparam[4]*(TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(distVect->at(2*i),2)) - fitparam[0]);
-		     tbench[1] = 0.;
-                  }
-                  else
-                  {
-		     tbench[0] = 40 + TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(distVect->at(2*i),2)) - fitparam[0];
-		     tbench[1] = 0.;
-                  }
-
-		  dtemp[3] = riseVect->at(2*i);
-		  dtemp[4] = riseVect->at(2*i+1);
-
-		  cout << itemp[0] << ": distance = " << distVect->at(2*i) << " ± " << distVect->at(2*i+1) << ", t_bench = " << tbench[0] << " ± " << tbench[1] << ", risetime = " << dtemp[3] << " ± " << dtemp[4] << ", delta = " << (dtemp[3] - tbench[0])/dtemp[4] << " ± " << 0. << endl;
-
-		  dtemp[1] += (dtemp[3] - tbench[0])/dtemp[4];
-		  dtemp[2] += 0.;
-
-		  itemp[0]++;
-		  allcount++;
-                  dtemp[0] = energy->at(2*i);
-               }
+	       }
             }
-	 }
+        
+            if(goodrec)
+            {
+               // Calculate parameters A, B and N for the event
+	       if(sdBenchmark == 1)
+               {
+		  CalculateSdFitParams(sdfitparam, fitparam, zenith->at(2*i), zenith->at(2*i+1));
+
+                  cout << "Fitting parameters for benchmark function (from SD analysis):" << endl;
+                  for(int i = 0; i < 3; i++)
+                     cout << "- fitparam[" << i << "] = " << fitparam[2*i] << " ± " << fitparam[2*i+1] << endl;
+                  cout << endl;
+	       }
+
+               // Check if this is already a new event or not
+//               if(dtemp[0] != energy->at(2*i))
+               if(itemp[2] != eventVect->at(i))
+               {
+                  if(allcount > 0)
+                  {
+                     dtemp[1] = dtemp[1]/itemp[0];
+                     dtemp[2] = TMath::Sqrt(dtemp[2])/itemp[0];
+                     cout << "Delta value from " << itemp[0] << " SD stations for event " << allevts << " (evt " << itemp[2] << ") = " << dtemp[1] << " ± " << dtemp[2] << endl;
+
+                     // Save energy of the event
+                     energyVect.push_back(energy->at(2*i));
+                     energyVect.push_back(energy->at(2*i+1));
+             	     // Save Delta of the event
+                     deltaVect.push_back(dtemp[1]);
+                     deltaVect.push_back(dtemp[2]);
+                     allevts++;
+
+             	     if(TMath::Abs(dtemp[1]) > dtemp[6])
+                        dtemp[6] = TMath::Abs(dtemp[1]);
+                  }
+
+                  itemp[0] = 0;
+                  dtemp[1] = 0.;
+                  dtemp[2] = 0.;
+                  cout << "New event (" << allevts << ")" << endl;
+               }
+
+               cout << "Event " << eventVect->at(i) << ", station " << sdidVect->at(i) << ", energy = " << energy->at(2*i)/1.e+18 << " ± " << energy->at(2*i+1)/1.e+18 << ", zenith = " << SecTheta(zenith->at(2*i),false) << " ± " << (TMath::Sin(zenith->at(2*i))*zenith->at(2*i+1))/TMath::Power(TMath::Cos(zenith->at(2*i)),2) << ", A = " << fitparam[0] << " ± " << fitparam[1] << ", B = " << fitparam[2] << " ± " << fitparam[3] << ", N = " << fitparam[4] << " ± " << fitparam[5] << endl;
+
+               CalculateBenchmark(tbench, fitparam, distVect->at(2*i), distVect->at(2*i+1), HGsat->at(i));
+               // Benchmark function (HGsat) and its uncertainty
+               //   tbench = 40 + sqrt(A^2 + B*r^2) - A
+/*               if(HGsat->at(i))
+               {
+                  tbench[0] = 40 + TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(distVect->at(2*i),2)) - fitparam[0];
+                  cout << "  tbench[0] = " << tbench[0];
+                  // (dA)^2 = (dA*(A/sqrt(A^2 + B*r^2) - 1))^2
+                  dtemp[3] = fitparam[1]*(fitparam[0]/TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(distVect->at(2*i),2)) - 1);
+                  dtemp[4] = TMath::Power(dtemp[3],2);
+                  cout << ", dA = " << dtemp[3];
+                  // (dB)^2 = (dB*r^2/(2*sqrt(A^2 + B*r^2)))^2
+                  dtemp[3] = fitparam[3]*TMath::Power(distVect->at(2*i),2)/(2*TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(distVect->at(2*i),2)));
+                  dtemp[4] += TMath::Power(dtemp[3],2);
+                  cout << ", dB = " << dtemp[3];
+                  // (dr)^2 = (dr*B*r/(sqrt(A^2 + B*r^2)))^2
+                  dtemp[3] = (distVect->at(2*i+1))*fitparam[2]*(distVect->at(2*i))/(TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(distVect->at(2*i),2)));
+                  dtemp[4] += TMath::Power(dtemp[3],2);
+                  cout << ", dr = " << dtemp[3];
+               }
+               // Benchmark function and its uncertainty
+               //   tbench = 40 + N*(sqrt(A^2 + B*r^2) - A)
+               else
+               {
+                  tbench[0] = 40 + fitparam[4]*(TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(distVect->at(2*i),2)) - fitparam[0]);
+                  cout << "  tbench[0] = " << tbench[0];
+                  // (dA)^2 = (N*dA*(A/sqrt(A^2 + B*r^2) - 1))^2
+                  dtemp[3] = fitparam[4]*fitparam[1]*(fitparam[0]/TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(distVect->at(2*i),2)) - 1);
+                  dtemp[4] = TMath::Power(dtemp[3],2);
+                  cout << ", dA = " << dtemp[3];
+                  // (dB)^2 = (N*dB*r^2/(2*sqrt(A^2 + B*r^2)))^2
+                  dtemp[3] = fitparam[4]*fitparam[3]*TMath::Power(distVect->at(2*i),2)/(2*TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(distVect->at(2*i),2)));
+                  dtemp[4] += TMath::Power(dtemp[3],2);
+                  cout << ", dB = " << dtemp[3];
+                  // (dN)^2 = (dN*(sqrt(A^2 + B*r^2) - A))^2
+                  dtemp[3] = fitparam[5]*(TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(distVect->at(2*i),2)) - fitparam[0]);
+                  dtemp[4] += TMath::Power(dtemp[3],2);
+                  cout << ", dN = " << dtemp[3];
+                  // (dr)^2 = (dr*B*N*r/(sqrt(A^2 + B*r^2)))^2
+                  dtemp[3] = (distVect->at(2*i+1))*fitparam[2]*fitparam[4]*(distVect->at(2*i))/(TMath::Sqrt(TMath::Power(fitparam[0],2) + fitparam[2]*TMath::Power(distVect->at(2*i),2)));
+                  dtemp[4] += TMath::Power(dtemp[3],2);
+                  cout << ", dr = " << dtemp[3];
+               }
+
+               tbench[1] = TMath::Sqrt(dtemp[4]);
+               cout << ", tbench[1] = " << tbench[1] << endl;*/
+
+               dtemp[3] = riseVect->at(2*i);
+               dtemp[4] = riseVect->at(2*i+1);
+
+               cout << itemp[0] << ": distance = " << distVect->at(2*i) << " ± " << distVect->at(2*i+1) << ", t_bench = " << tbench[0] << " ± " << tbench[1] << ", risetime = " << dtemp[3] << " ± " << dtemp[4] << ", delta = " << /*(*/dtemp[3] - tbench[0]/*)/dtemp[4]*/ << " ± " << TMath::Sqrt(TMath::Power(dtemp[4],2) + TMath::Power(tbench[1],2)) << endl;
+
+//             dtemp[1] += (dtemp[3] - tbench[0])/dtemp[4];
+               dtemp[1] += dtemp[3] - tbench[0];
+               dtemp[2] += TMath::Power(dtemp[4],2) + TMath::Power(tbench[1],2);
+
+               itemp[0]++;
+	       itemp[1]++;
+               allcount++;
+//               dtemp[0] = energy->at(2*i);
+	       itemp[2] = eventVect->at(i);
+            }
+         }
       }
 
       cout << "Surviving a total of " << allcount << " deltas from " << allevts << " valid events." << endl;
@@ -1307,14 +1619,22 @@ cout << "New station (" << stationVector[i].GetId() << ")" << endl;
 //	 cout << i << ": " << energyVect[2*i]/1.e+18 << " ± " << energyVect[2*i+1]/1.e+18 << ", " << deltaVect[2*i] << " ± " << deltaVect[2*i+1] << endl;
       }
 
-      mystyle->SetGraphColor(allDelta, 1);
+      mystyle->SetGraphColor(allDelta, 0);
       allDelta->SetMarkerStyle(21);
       allDelta->SetMarkerSize(0.8);
-      mystyle->SetAxisTitles(allDelta, "SD energy (EeV)", "#Delta_{s}");
+//      mystyle->SetAxisTitles(allDelta, "SD energy (EeV)", "#Delta_{s}");
+      mystyle->SetAxisTitles(allDelta, "SD energy (EeV)", "t_{1/2} - t_{1/2}^{bench} (ns)");
       c1->SetLogx(kTRUE);
       c1->SetLogy(kFALSE);
       allDelta->GetXaxis()->SetMoreLogLabels(kTRUE);
+/*      dtemp[6] = 1.1*dtemp[6];
+      allDelta->GetYaxis()->SetRange(-dtemp[6], dtemp[6]);
+      allDelta->GetYaxis()->SetRangeUser(-dtemp[6], dtemp[6]);*/
       allDelta->Draw("AP");
+      c1->Update();
+      cout << TMath::Power(10.,energylimit[0])/1.e+18 << "\t" << TMath::Power(10.,energylimit[1])/1.e+18 << "\t" << gPad->GetUymin() << "\t" << gPad->GetUymax() << endl;
+      line->DrawLine(TMath::Power(10.,energylimit[0])/1.e+18, gPad->GetUymin(), TMath::Power(10.,energylimit[0])/1.e+18, gPad->GetUymax());
+      line2->DrawLine(TMath::Power(10.,energylimit[1])/1.e+18, gPad->GetUymin(), TMath::Power(10.,energylimit[1])/1.e+18, gPad->GetUymax());
 
       stemp[0] = "rm ./plots/delta_vs_energySD.pdf";
 //      BinNaming(&stemp[0], energylimit, zenithlimit);
@@ -1327,21 +1647,27 @@ cout << "New station (" << stationVector[i].GetId() << ")" << endl;
 //      stemp[1] = stemp[0] + ".pdf";
       cout << stemp[1] << endl;
       c1->SaveAs(stemp[1].c_str());
+      stemp[1] = "./plots/delta_vs_energySD.C";
+      c1->SaveAs(stemp[1].c_str());
 
       delete allDelta;
 
       delete adfile;
 
-      ifs->close();
+      if(sdBenchmark != 1)
+      {
+         ifs->close();
+
+         delete parfit[0];
+         delete parfit[1];
+         delete parfit[2];
+
+         delete parA;
+         delete parB;
+         delete parN;
+      }
+
       delete ifs;
-
-      delete parfit[0];
-      delete parfit[1];
-      delete parfit[2];
-
-      delete parA;
-      delete parB;
-      delete parN;
 
       delete mystyle;
       delete c1;
@@ -1370,6 +1696,9 @@ cout << "New station (" << stationVector[i].GetId() << ")" << endl;
    delete[] stemp;
    delete[] itemp;
    delete[] dtemp;
+
+   delete line;
+   delete line2;
 
    return 0;
 }
