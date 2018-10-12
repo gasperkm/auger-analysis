@@ -137,7 +137,7 @@ public:
     CheckNEntry *cutZenith;
     CheckNEntry *cutRisetime;
     LabelNEntryDropButton *cutZenithBins;
-    LabelDrop *eyeSelection;
+//    LabelDrop *eyeSelection;
     LabelDrop *dataSelect;
     CheckList *specialMva;
     LabelButton *startMva;
@@ -179,7 +179,8 @@ public:
     int MvaNoteObservables(int count);
     int MvaTreeFile(string *infilename, string *outfilename, int *nrEvents);
     int MvaSetTrees(int type, TFile *ifile, TTree *outtree);
-    int IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, vector<int> *seleye, bool split, int splitbin);
+//    int IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, vector<int> *seleye, bool split, int splitbin);
+    int IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, bool split, int splitbin);
     int PerformMvaAnalysis(string *infilename, string *outfilename, int *curcount);
     void SetTmvaType(TMVA::Factory *factory, int nr, string *formula);
     int BookTheMethod(TMVA::Factory *factory);

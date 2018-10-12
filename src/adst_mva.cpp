@@ -54,13 +54,13 @@ void AdstMva::PrepareOtherTrees(unsigned int nrfiles, int innr, vector<string> o
    for(int i = 0; i < othersig->Count(); i++)
    { 
       stemp[0] = othersig->GetName(i);
-      stemp[1] = othersig->GetName(i) + "[" + ToString(ALLEYES) + "]/F";
+      stemp[1] = othersig->GetName(i) + "/F";
       other_sig_tree->Branch(stemp[0].c_str(), &(othersig->obsstruct[i].value), stemp[1].c_str());
       stemp[0] = othersig->GetName(i) + "_neg";
-      stemp[1] = othersig->GetName(i) + "_neg[" + ToString(ALLEYES) + "]/F";
+      stemp[1] = othersig->GetName(i) + "_neg/F";
       other_sig_tree->Branch(stemp[0].c_str(), &(othersig_neg->obsstruct[i].value), stemp[1].c_str());
       stemp[0] = othersig->GetName(i) + "_pos";
-      stemp[1] = othersig->GetName(i) + "_pos[" + ToString(ALLEYES) + "]/F";
+      stemp[1] = othersig->GetName(i) + "_pos/F";
       other_sig_tree->Branch(stemp[0].c_str(), &(othersig_neg->obsstruct[i].value), stemp[1].c_str());
    }
 
@@ -107,17 +107,17 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
          if(j == 0)
 	 {
             stemp[2] = sig[j]->GetName(i);
-            stemp[3] = sig[j]->GetName(i) + "[" + ToString(ALLEYES) + "]/F";
+            stemp[3] = sig[j]->GetName(i) + "/F";
 	 }
 	 else if(j == 1)
 	 {
             stemp[2] = sig[j]->GetName(i) + "_neg";
-            stemp[3] = sig[j]->GetName(i) + "_neg[" + ToString(ALLEYES) + "]/F";
+            stemp[3] = sig[j]->GetName(i) + "_neg/F";
 	 }
 	 else if(j == 2)
 	 {
             stemp[2] = sig[j]->GetName(i) + "_pos";
-            stemp[3] = sig[j]->GetName(i) + "_pos[" + ToString(ALLEYES) + "]/F";
+            stemp[3] = sig[j]->GetName(i) + "_pos/F";
 	 }
 
          // Set branch address for the rewrite code (defines if rewrite has failed at some point)
@@ -265,7 +265,7 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
 
       // Prepare FD eye events ----------------------------------------------
       if(DBGSIG > 0)
-         cout << "# RewriteObservables    #: " << "   Number of eyes: " << fRecEvent->GetNEyes() << endl;
+         cout << "# RewriteObservables    #: " << "   Number of eyes = " << fRecEvent->GetNEyes() << endl;
       if(fRecEvent->GetNEyes() == 0)
       {
          // If event has no FD eyes, disregard the event
@@ -282,7 +282,7 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
          acteyes = fRecEvent->GetFDEvents();
 	 nreyes = acteyes.size();
          if(DBGSIG > 0)
-	    cout << "# RewriteObservables    #: " << "   Size: " << nreyes << endl;
+	    cout << "# RewriteObservables    #: " << "   Number of active eyes = " << nreyes << endl;
 
          // Check if the saved event is considered to be hybrid (SD+FD) or not
          for(int i = 0; i < nreyes; i++)
@@ -296,7 +296,7 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
             else
             {
                if(DBGSIG > 0)
-                  cout << "# RewriteObservables    #: " << "   Eye " << acteyes[i].GetEyeId() << " is a hybrid event." << endl;
+                  cout << "# RewriteObservables    #: " << "   Event is a hybrid event." << endl;
                goodrec = true;
                break;
             }

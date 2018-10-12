@@ -218,10 +218,6 @@ void MyFrame::CheckEnergyBin(wxCommandEvent& event)
    selcuttype = (cutObservables->widgetCB)->GetSelection();
    if(DBGSIG > 0)
       cout << "# CheckEnergyBin        #: " << "selcuttype = " << selcuttype << endl;
-   // Determine how eye selection should be handled (any eye inside selection or average)
-   seleyetype = (eyeSelection->widgetCB)->GetSelection();
-   if(DBGSIG > 0)
-      cout << "# CheckEnergyBin        #: " << "seleyetype = " << seleyetype << endl;
 
    string *stemp = new string[2];
    stemp[0] = string((selectedMva->widgetTE)->GetLineText(0));
@@ -235,8 +231,7 @@ void MyFrame::CheckEnergyBin(wxCommandEvent& event)
    }
 
    float *ftemp;
-   ftemp = new float[ALLEYES];
-   float *ftempaver;
+   ftemp = new float;
    int *avercount;
    int *evtcount;
    bool *deleted;
@@ -268,7 +263,7 @@ void MyFrame::CheckEnergyBin(wxCommandEvent& event)
          {
             AlertPopup("No SD energy observable found", "No SD energy observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable energySD.");
             delete[] stemp;
-            delete[] ftemp;
+            delete ftemp;
 	    ifile->Close();
 	    delete deleted;
 	    delete selectedBin;
@@ -285,7 +280,7 @@ void MyFrame::CheckEnergyBin(wxCommandEvent& event)
          {
             AlertPopup("No FD energy observable found", "No FD energy observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable energyFD.");
             delete[] stemp;
-            delete[] ftemp;
+            delete ftemp;
 	    ifile->Close();
 	    delete deleted;
 	    delete selectedBin;
@@ -301,7 +296,6 @@ void MyFrame::CheckEnergyBin(wxCommandEvent& event)
 
       uoflow = new bool[2];
 
-      ftempaver = new float;
       avercount = new int;
 
       for(int j = 0; j < tempTree->GetEntries(); j++)
@@ -312,27 +306,6 @@ void MyFrame::CheckEnergyBin(wxCommandEvent& event)
 	 uoflow[0] = false;
 	 uoflow[1] = false;
 
-	 // Calculate averages for all eyes
-	 if(seleyetype == 2)
-	 {
-	    *ftempaver = 0;
-	    *avercount = 0;
-
-	    for(int i = 0; i < ALLEYES; i++)
-	    {
-               if(ftemp[i] != -1)
-	       {
-                  (*ftempaver) += ftemp[i];
-	          (*avercount)++;
-	       }
-	    }
-
-	    if(*avercount > 0)
-               *ftempaver = (*ftempaver)/(*avercount);
-	    else
-               *ftempaver = -1;
-	 }
-
 	 if(DBGSIG > 1)
             cout << "# CheckEnergyBin        #: ";
 	 
@@ -340,21 +313,18 @@ void MyFrame::CheckEnergyBin(wxCommandEvent& event)
 	 for(int i = 0; i < ALLEYES; i++)
 	 {
             if(DBGSIG > 1)
-               cout << ftemp[i] << " ";
+               cout << *ftemp << " ";
 
-            if(seleyetype == 2)
-               ftemp[i] = *ftempaver;
-
-	    if((ftemp[i] != -1) && *deleted)
+	    if((*ftemp != -1) && *deleted)
             {
                // Event is inside the energy cut
-	       if((ftemp[i] > ecutBins[2*(*selectedBin)]) && (ftemp[i] <= ecutBins[2*(*selectedBin+1)]))
+	       if((*ftemp > ecutBins[2*(*selectedBin)]) && (*ftemp <= ecutBins[2*(*selectedBin+1)]))
                   *deleted = false;
                // Event is below the energy cut
-               else if(ftemp[i] <= ecutBins[2*(*selectedBin)])
+               else if(*ftemp <= ecutBins[2*(*selectedBin)])
                   uoflow[0] = true;
                // Event is above the energy cut
-               else if(ftemp[i] > ecutBins[2*(*selectedBin+1)])
+               else if(*ftemp > ecutBins[2*(*selectedBin+1)])
                   uoflow[1] = true;
 	    }
 	 }
@@ -401,7 +371,6 @@ void MyFrame::CheckEnergyBin(wxCommandEvent& event)
 
       delete[] evtcount;
       delete[] uoflow;
-      delete ftempaver;
       delete avercount;
    }
 
@@ -412,7 +381,7 @@ void MyFrame::CheckEnergyBin(wxCommandEvent& event)
    delete deleted;
    delete selectedBin;
    delete[] stemp;
-   delete[] ftemp;
+   delete ftemp;
 }
 // Use a file to define custom energy bins
 void MyFrame::CustomEnergyBins(wxCommandEvent& event)
@@ -575,10 +544,6 @@ void MyFrame::CheckZenithBin(wxCommandEvent& event)
    selcuttype = (cutObservables->widgetCB)->GetSelection();
    if(DBGSIG > 0)
       cout << "# CheckZenithBin        #: " << "selcuttype = " << selcuttype << endl;
-   // Determine how eye selection should be handled (any eye inside selection or average)
-   seleyetype = (eyeSelection->widgetCB)->GetSelection();
-   if(DBGSIG > 0)
-      cout << "# CheckZenithBin        #: " << "seleyetype = " << seleyetype << endl;
 
    string *stemp = new string[2];
    stemp[0] = string((selectedMva->widgetTE)->GetLineText(0));
@@ -592,8 +557,7 @@ void MyFrame::CheckZenithBin(wxCommandEvent& event)
    }
 
    float *ftemp;
-   ftemp = new float[ALLEYES];
-   float *ftempaver;
+   ftemp = new float;
    int *avercount;
    int *evtcount;
    bool *deleted;
@@ -623,7 +587,7 @@ void MyFrame::CheckZenithBin(wxCommandEvent& event)
          {
             AlertPopup("No SD zenith angle observable found", "No SD zenith angle observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable zenithSD.");
             delete[] stemp;
-            delete[] ftemp;
+            delete ftemp;
 	    ifile->Close();
 	    delete deleted;
 	    delete selectedBin;
@@ -640,7 +604,7 @@ void MyFrame::CheckZenithBin(wxCommandEvent& event)
          {
             AlertPopup("No FD zenith angle observable found", "No FD zenith angle observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable zenithFD.");
             delete[] stemp;
-            delete[] ftemp;
+            delete ftemp;
 	    ifile->Close();
 	    delete deleted;
 	    delete selectedBin;
@@ -656,7 +620,6 @@ void MyFrame::CheckZenithBin(wxCommandEvent& event)
 
       uoflow = new bool[2];
 
-      ftempaver = new float;
       avercount = new int;
 
       for(int j = 0; j < tempTree->GetEntries(); j++)
@@ -666,27 +629,6 @@ void MyFrame::CheckZenithBin(wxCommandEvent& event)
 	 *deleted = true;
 	 uoflow[0] = false;
 	 uoflow[1] = false;
-	 
-	 // Calculate averages for all eyes
-	 if(seleyetype == 2)
-	 {
-	    *ftempaver = 0;
-	    *avercount = 0;
-
-	    for(int i = 0; i < ALLEYES; i++)
-	    {
-               if(ftemp[i] != -1)
-	       {
-                  (*ftempaver) += ftemp[i];
-	          (*avercount)++;
-	       }
-	    }
-
-	    if(*avercount > 0)
-               *ftempaver = (*ftempaver)/(*avercount);
-	    else
-               *ftempaver = -1;
-	 }
 
 	 if(DBGSIG > 1) 
             cout << "# CheckZenithBin        #: ";
@@ -695,30 +637,27 @@ void MyFrame::CheckZenithBin(wxCommandEvent& event)
 	 for(int i = 0; i < ALLEYES; i++)
 	 {
 	    if(DBGSIG > 1)
-               cout << ftemp[i] << " ";
+               cout << *ftemp << " ";
 
-            if(seleyetype == 2)
-               ftemp[i] = *ftempaver;
-
-	    if( (ftemp[i] != -1) && *deleted )
+	    if( (*ftemp != -1) && *deleted )
             {
                // Event is inside the zenith angle cut
-	       if((ftemp[i] > InvSecTheta(zcutBins[*selectedBin],false)) && (ftemp[i] <= InvSecTheta(zcutBins[*selectedBin+1],false)))
+	       if((*ftemp > InvSecTheta(zcutBins[*selectedBin],false)) && (*ftemp <= InvSecTheta(zcutBins[*selectedBin+1],false)))
                   *deleted = false;
                // Event is below the zenith angle cut
-               else if(ftemp[i] <= InvSecTheta(zcutBins[*selectedBin],false))
+               else if(*ftemp <= InvSecTheta(zcutBins[*selectedBin],false))
                   uoflow[0] = true;
                // Event is above the zenith angle cut
-               else if(ftemp[i] > InvSecTheta(zcutBins[*selectedBin+1],false))
+               else if(*ftemp > InvSecTheta(zcutBins[*selectedBin+1],false))
                   uoflow[1] = true;
 //               // Event is inside the zenith angle cut
-//               if((ftemp[i] > AsinSqrt(zcutBins[*selectedBin],false)) && (ftemp[i] <= AsinSqrt(zcutBins[*selectedBin+1],false)))
+//               if((*ftemp > AsinSqrt(zcutBins[*selectedBin],false)) && (*ftemp <= AsinSqrt(zcutBins[*selectedBin+1],false)))
 //                  *deleted = false;
 //               // Event is below the zenith angle cut
-//               else if(ftemp[i] <= AsinSqrt(zcutBins[*selectedBin],false))
+//               else if(*ftemp <= AsinSqrt(zcutBins[*selectedBin],false))
 //                  uoflow[0] = true;
 //               // Event is above the zenith angle cut
-//               else if(ftemp[i] > AsinSqrt(zcutBins[*selectedBin+1],false))
+//               else if(*ftemp > AsinSqrt(zcutBins[*selectedBin+1],false))
 //                  uoflow[1] = true;
 	    }
 	 }
@@ -765,7 +704,6 @@ void MyFrame::CheckZenithBin(wxCommandEvent& event)
 
       delete[] evtcount;
       delete[] uoflow;
-      delete ftempaver;
       delete avercount;
    }
 
@@ -776,7 +714,7 @@ void MyFrame::CheckZenithBin(wxCommandEvent& event)
    delete deleted;
    delete selectedBin;
    delete[] stemp;
-   delete[] ftemp;
+   delete ftemp;
 }
 
 // Check the amount of events inside the selected energy, zenith angle and risetime bins
@@ -786,10 +724,6 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
    selcuttype = (cutObservables->widgetCB)->GetSelection();
    if(DBGSIG > 0)
       cout << "# CheckBothBins         #: " << "selcuttype = " << selcuttype << endl;
-   // Determine how eye selection should be handled (any eye inside selection or average)
-   seleyetype = (eyeSelection->widgetCB)->GetSelection();
-   if(DBGSIG > 0)
-      cout << "# CheckBothBins         #: " << "seleyetype = " << seleyetype << endl;
 
    string *stemp = new string[2];
    stemp[0] = string((selectedMva->widgetTE)->GetLineText(0));
@@ -811,11 +745,10 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
    }
 
    float *ftemp1, *ftemp2, *ftemp3, *ftemp3_err;
-   ftemp1 = new float[ALLEYES];
-   ftemp2 = new float[ALLEYES];
-   ftemp3 = new float[ALLEYES];
-   ftemp3_err = new float[ALLEYES];
-   float *ftempaver;
+   ftemp1 = new float;
+   ftemp2 = new float;
+   ftemp3 = new float;
+   ftemp3_err = new float;
    int *avercount;
    int *evtcount;
    bool *sepcut, *uoflow;
@@ -843,10 +776,10 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
          {
             AlertPopup("No SD energy observable found", "No SD energy observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable energySD.");
             delete[] stemp;
-            delete[] ftemp1;
-            delete[] ftemp2;
-            delete[] ftemp3;
-            delete[] ftemp3_err;
+            delete ftemp1;
+            delete ftemp2;
+            delete ftemp3;
+            delete ftemp3_err;
 	    ifile->Close();
 	    delete[] selectedBin;
             return;
@@ -859,10 +792,10 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
          {
             AlertPopup("No SD zenith angle observable found", "No SD zenith angle observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable zenithSD.");
             delete[] stemp;
-            delete[] ftemp1;
-            delete[] ftemp2;
-            delete[] ftemp3;
-            delete[] ftemp3_err;
+            delete ftemp1;
+            delete ftemp2;
+            delete ftemp3;
+            delete ftemp3_err;
 	    ifile->Close();
 	    delete[] selectedBin;
             return;
@@ -878,10 +811,10 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
          {
             AlertPopup("No FD energy observable found", "No FD energy observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable energyFD.");
             delete[] stemp;
-            delete[] ftemp1;
-            delete[] ftemp2;
-            delete[] ftemp3;
-            delete[] ftemp3_err;
+            delete ftemp1;
+            delete ftemp2;
+            delete ftemp3;
+            delete ftemp3_err;
 	    ifile->Close();
 	    delete[] selectedBin;
             return;
@@ -894,10 +827,10 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
          {
             AlertPopup("No FD zenith angle observable found", "No FD zenith angle observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable zenithFD.");
             delete[] stemp;
-            delete[] ftemp1;
-            delete[] ftemp2;
-            delete[] ftemp3;
-            delete[] ftemp3_err;
+            delete ftemp1;
+            delete ftemp2;
+            delete ftemp3;
+            delete ftemp3_err;
 	    ifile->Close();
 	    delete[] selectedBin;
             return;
@@ -914,10 +847,10 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
       {
          AlertPopup("No risetime observable found", "No risetime observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable risetimerecalc.");
          delete[] stemp;
-         delete[] ftemp1;
-         delete[] ftemp2;
-         delete[] ftemp3;
-         delete[] ftemp3_err;
+         delete ftemp1;
+         delete ftemp2;
+         delete ftemp3;
+         delete ftemp3_err;
 	 ifile->Close();
 	 delete[] selectedBin;
 	 return;
@@ -938,7 +871,6 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
       sepcutend = new bool;
       *sepcutend = false;
 
-      ftempaver = new float[2];
       avercount = new int[2];
 
       for(int j = 0; j < tempTree->GetEntries(); j++)
@@ -955,49 +887,6 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
 	 uoflow[4] = false;	// Above risetime
 	 uoflow[5] = false;	// No VEM signal (no risetime)
 	 *sepcutend = false;	// All
-
-	 // Calculate averages for all eyes
-	 if(seleyetype == 2)
-	 {
-	    ftempaver[0] = 0;
-	    ftempaver[1] = 0;
-	    avercount[0] = 0;
-	    avercount[1] = 0;
-
-	    for(int k = 0; k < ALLEYES; k++)
-	    {
-               if((cutEnergy->widgetChBox)->IsChecked()) 
-	       {
-                  if(ftemp1[k] != -1)
-	          {
-                     (ftempaver[0]) += ftemp1[k];
-	             (avercount[0])++;
-	          }
-	       }
-
-               if((cutZenith->widgetChBox)->IsChecked()) 
-	       {
-                  if(ftemp2[k] != -1)
-	          {
-                     (ftempaver[1]) += ftemp2[k];
-	             (avercount[1])++;
-	          }
-	       }
-	    }
-
-	    if(avercount[0] > 0)
-               ftempaver[0] = (ftempaver[0])/(avercount[0]);
-	    else
-               ftempaver[0] = -1;
-
-	    if(avercount[1] > 0)
-               ftempaver[1] = (ftempaver[1])/(avercount[1]);
-	    else
-               ftempaver[1] = -1;
-
-	    if(DBGSIG > 1)
-	       cout << "# CheckBothBins         #: " << "Number of eyes = " << avercount[0] << ", " << avercount[1] << endl;
-	 }
 	 
 	 if(DBGSIG > 1) 
             cout << "# CheckBothBins         #: ";
@@ -1007,32 +896,26 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
          {
 	    if(DBGSIG > 1)
 	    {
-               cout << ftemp1[k] << " ";
-               cout << ftemp2[k] << " ";
-	       cout << TMath::Abs(ftemp3[k]-ftemp3_err[k])/ftemp3[k] << ", ";
-	    }
-
-            if(seleyetype == 2)
-	    {
-               ftemp1[k] = ftempaver[0];
-               ftemp2[k] = ftempaver[1];
+               cout << *ftemp1 << " ";
+               cout << *ftemp2 << " ";
+	       cout << TMath::Abs((*ftemp3)-(*ftemp3_err))/(*ftemp3) << ", ";
 	    }
 
             if((cutEnergy->widgetChBox)->IsChecked()) 
 	    {
-	       if( (ftemp1[k] != -1) )
+	       if( (*ftemp1 != -1) )
                {
                   // Event is inside the energy cut
-                  if((ftemp1[k] > ecutBins[2*(selectedBin[0])]) && (ftemp1[k] <= ecutBins[2*(selectedBin[0])+1]))
+                  if((*ftemp1 > ecutBins[2*(selectedBin[0])]) && (*ftemp1 <= ecutBins[2*(selectedBin[0])+1]))
                      sepcut[0] = true;
 		  // Event is below the energy cut
-	          else if(ftemp1[k] <= ecutBins[2*(selectedBin[0])])
+	          else if(*ftemp1 <= ecutBins[2*(selectedBin[0])])
 		  {
 		     uoflow[0] = true;
 		     sepcut[0] = false;
 		  }
 		  // Event is above the energy cut
-	          else if(ftemp1[k] > ecutBins[2*(selectedBin[0])+1])
+	          else if(*ftemp1 > ecutBins[2*(selectedBin[0])+1])
 		  {
 		     uoflow[1] = true;
 		     sepcut[0] = false;
@@ -1046,34 +929,34 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
 			 
 	    if((cutZenith->widgetChBox)->IsChecked())
 	    {
-	       if( (ftemp2[k] != -1) )
+	       if( (*ftemp2 != -1) )
                {
                   // Event is inside the zenith angle cut
-                  if((ftemp2[k] > InvSecTheta(zcutBins[selectedBin[1]],false)) && (ftemp2[k] <= InvSecTheta(zcutBins[selectedBin[1]+1],false)))
+                  if((*ftemp2 > InvSecTheta(zcutBins[selectedBin[1]],false)) && (*ftemp2 <= InvSecTheta(zcutBins[selectedBin[1]+1],false)))
                      sepcut[1] = true;
 		  // Event is below the zenith angle cut
-	          else if(ftemp2[k] <= InvSecTheta(zcutBins[selectedBin[1]],false))
+	          else if(*ftemp2 <= InvSecTheta(zcutBins[selectedBin[1]],false))
 		  {
 		     uoflow[2] = true;
 		     sepcut[1] = false;
 		  }
 		  // Event is above the zenith angle cut
-	          else if(ftemp2[k] > InvSecTheta(zcutBins[selectedBin[1]+1],false))
+	          else if(*ftemp2 > InvSecTheta(zcutBins[selectedBin[1]+1],false))
 		  {
 		     uoflow[3] = true;
 		     sepcut[1] = false;
 		  }
 //                  // Event is inside the zenith angle cut
-//                  if((ftemp2[k] > AsinSqrt(zcutBins[selectedBin[1]],false)) && (ftemp2[k] <= AsinSqrt(zcutBins[selectedBin[1]+1],false)))
+//                  if((*ftemp2 > AsinSqrt(zcutBins[selectedBin[1]],false)) && (*ftemp2 <= AsinSqrt(zcutBins[selectedBin[1]+1],false)))
 //                     sepcut[1] = true;
 //        	  // Event is below the zenith angle cut
-//                  else if(ftemp2[k] <= AsinSqrt(zcutBins[selectedBin[1]],false))
+//                  else if(*ftemp2 <= AsinSqrt(zcutBins[selectedBin[1]],false))
 //        	  {
 //        	     uoflow[2] = true;
 //        	     sepcut[1] = false;
 //        	  }
 //        	  // Event is above the zenith angle cut
-//                  else if(ftemp2[k] > AsinSqrt(zcutBins[selectedBin[1]+1],false))
+//                  else if(*ftemp2 > AsinSqrt(zcutBins[selectedBin[1]+1],false))
 //        	  {
 //        	     uoflow[3] = true;
 //        	     sepcut[1] = false;
@@ -1087,10 +970,10 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
 			 
 	    if((cutRisetime->widgetChBox)->IsChecked())
 	    {
-	       if( ((ftemp3[k] != -1) && (ftemp3_err[k] != -1)) )
+	       if( ((*ftemp3 != -1) && (*ftemp3_err != -1)) )
                {
                   // Event is below the risetime cut
-                  if(TMath::Abs(ftemp3[k]-ftemp3_err[k])/ftemp3[k] <= (cutRisetime->widgetNE[0])->GetValue())
+                  if(TMath::Abs((*ftemp3)-(*ftemp3_err))/(*ftemp3) <= (cutRisetime->widgetNE[0])->GetValue())
                      sepcut[2] = true;
 		  // Event is above the risetime cut
 	          else
@@ -1193,7 +1076,6 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
       delete[] evtcount;
       delete[] sepcut;
       delete[] uoflow;
-      delete[] ftempaver;
       delete[] avercount;
    }
 
@@ -1203,10 +1085,10 @@ void MyFrame::CheckBothBins(wxCommandEvent& event)
 
    delete[] stemp;
    delete[] selectedBin;
-   delete[] ftemp1;
-   delete[] ftemp2;
-   delete[] ftemp3;
-   delete[] ftemp3_err;
+   delete ftemp1;
+   delete ftemp2;
+   delete ftemp3;
+   delete ftemp3_err;
 }
 
 // Update the list of selected observables, when we select new ones
@@ -1464,7 +1346,7 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
          stemp[2] = "Currently performing the MVA analysis, please wait for it to finish.";
          ShowProgress(wxT("Performing MVA analysis"), stemp[2], itemp[0]);
 
-	 // Open input file and rewrite it into a teporary file temporary_mvatree_file.root
+	 // Open input file and rewrite it into a temporary file temporary_mvatree_file.root
          cout << "# StartMvaAnalysis      #: " << "Opening file " << mvafile[0] << " for MVA analysis." << endl;
 
          mvafile[1] = (selectedMva->widgetTE)->GetLineText(0);
@@ -2033,7 +1915,6 @@ void MyFrame::SetDefaultMva(wxCommandEvent& event)
    RunZenithBinSelect();
    (cutRisetime->widgetChBox)->SetValue(true);
    (cutRisetime->widgetNE[0])->SetValue(0.3);
-   (eyeSelection->widgetCB)->SetSelection(0);
 
    (specialMva->widgetChBox[0])->SetValue(false);
    (specialMva->widgetChBox[1])->SetValue(true);
@@ -2188,8 +2069,7 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
       // Determine the type of observables to cut on (SD or FD)
       selcuttype = (cutObservables->widgetCB)->GetSelection();
       // Determine how eye selection should be handled (any eye inside selection or average)
-      seleyetype = (eyeSelection->widgetCB)->GetSelection();
-      vector<int> seleye;
+//      vector<int> seleye;
 
       // Prepare observables for reading and writing
       Observables *obser = new Observables(observables);
@@ -2207,9 +2087,9 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
       tempTree->SetBranchAddress("rewritecode", &rewritecode);
       for(int j = 0; j < nrobs; j++)
       {
-         tempTree->SetBranchAddress((obser->GetName(j)).c_str(), obser->obsstruct[j].value);
-         tempTree->SetBranchAddress((obser->GetName(j) + "_neg").c_str(), obser_neg->obsstruct[j].value);
-         tempTree->SetBranchAddress((obser->GetName(j) + "_pos").c_str(), obser_pos->obsstruct[j].value);
+         tempTree->SetBranchAddress((obser->GetName(j)).c_str(), &(obser->obsstruct[j].value));
+         tempTree->SetBranchAddress((obser->GetName(j) + "_neg").c_str(), &(obser_neg->obsstruct[j].value));
+         tempTree->SetBranchAddress((obser->GetName(j) + "_pos").c_str(), &(obser_pos->obsstruct[j].value));
       }
 
       // Preparing shuffled list for sampling
@@ -2220,10 +2100,11 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
       {
          tempTree->GetEntry(j);
 
-         // Check if event is inside the selected cuts
-         if(!seleye.empty()) seleye.erase(seleye.begin(), seleye.end());
+/*         // Check if event is inside the selected cuts
+         if(!seleye.empty()) seleye.erase(seleye.begin(), seleye.end());*/
 
-         ret = IsInsideCuts(obser, obser_neg, obser_pos, &seleye, true, ebin);
+//         ret = IsInsideCuts(obser, obser_neg, obser_pos, &seleye, true, ebin);
+         ret = IsInsideCuts(obser, obser_neg, obser_pos, true, ebin);
 
          // If event is inside selected cuts, enter it into the list for shuffling
          if(ret != -1)
@@ -2440,9 +2321,9 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
                readTree->SetBranchAddress("rewritecode", &rewritecode);
                for(int j = 0; j < nrobs; j++)
                {
-                  readTree->SetBranchAddress((obser->GetName(j)).c_str(), obser->obsstruct[j].value);
-                  readTree->SetBranchAddress((obser->GetName(j) + "_neg").c_str(), obser_neg->obsstruct[j].value);
-                  readTree->SetBranchAddress((obser->GetName(j) + "_pos").c_str(), obser_pos->obsstruct[j].value);
+                  readTree->SetBranchAddress((obser->GetName(j)).c_str(), &(obser->obsstruct[j].value));
+                  readTree->SetBranchAddress((obser->GetName(j) + "_neg").c_str(), &(obser_neg->obsstruct[j].value));
+                  readTree->SetBranchAddress((obser->GetName(j) + "_pos").c_str(), &(obser_pos->obsstruct[j].value));
                }
 
                // Prepare tree for writing
@@ -2469,9 +2350,9 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
                writeTree->Branch("rewritecode", &rewritecode, "rewritecode/I");
                for(int j = 0; j < nrobs; j++)
                {
-                  writeTree->Branch((obser->GetName(j)).c_str(), &(obser->obsstruct[j].value), (obser->GetName(j) + "[" + ToString(ALLEYES) + "]/F").c_str());
-                  writeTree->Branch((obser->GetName(j) + "_neg").c_str(), &(obser_neg->obsstruct[j].value), (obser->GetName(j) + "_neg[" + ToString(ALLEYES) + "]/F").c_str());
-                  writeTree->Branch((obser->GetName(j) + "_pos").c_str(), &(obser_pos->obsstruct[j].value), (obser->GetName(j) + "_pos[" + ToString(ALLEYES) + "]/F").c_str());
+                  writeTree->Branch((obser->GetName(j)).c_str(), &(obser->obsstruct[j].value), (obser->GetName(j) + "/D").c_str());
+                  writeTree->Branch((obser->GetName(j) + "_neg").c_str(), &(obser_neg->obsstruct[j].value), (obser->GetName(j) + "_neg/D").c_str());
+                  writeTree->Branch((obser->GetName(j) + "_pos").c_str(), &(obser_pos->obsstruct[j].value), (obser->GetName(j) + "_pos/D").c_str());
                }
 
                // Check if the values in this tree are valid

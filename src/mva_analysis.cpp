@@ -205,13 +205,13 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
       if(DBGSIG > 1)
          cout << "# MvaSetTrees           #: " << i << ": Setting mean variable: " << invalues->GetName(i) << endl;
       // For systematics estimation, apply uncertainties to mean value
-      tempTree->SetBranchAddress((invalues->GetName(i)).c_str(), invalues->obsstruct[i].value);
+      tempTree->SetBranchAddress((invalues->GetName(i)).c_str(), &(invalues->obsstruct[i].value));
       if(DBGSIG > 1)
          cout << "# MvaSetTrees           #: " << i << ": Setting neg variable: " << invalues_neg->GetName(i) << endl;
-      tempTree->SetBranchAddress((invalues_neg->GetName(i) + "_neg").c_str(), invalues_neg->obsstruct[i].value);
+      tempTree->SetBranchAddress((invalues_neg->GetName(i) + "_neg").c_str(), &(invalues_neg->obsstruct[i].value));
       if(DBGSIG > 1)
          cout << "# MvaSetTrees           #: " << i << ": Setting pos variable: " << invalues_pos->GetName(i) << endl;
-      tempTree->SetBranchAddress((invalues_pos->GetName(i) + "_pos").c_str(), invalues_pos->obsstruct[i].value);
+      tempTree->SetBranchAddress((invalues_pos->GetName(i) + "_pos").c_str(), &(invalues_pos->obsstruct[i].value));
    }
 
    itemp[0] = 0;
@@ -219,8 +219,8 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
    itemp[2] = 0;
    itemp[3] = 0;
 
-   vector<int> *seleye;
-   seleye = new vector<int>;
+/*   vector<int> *seleye;
+   seleye = new vector<int>;*/
 
    for(int j = 0; j < tempTree->GetEntries(); j++)
    {
@@ -231,7 +231,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
       if(ret == -1)
       {
          AlertPopup("No xmax observable found", "No xmax observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable xmax.");
-         delete seleye;
+//         delete seleye;
          delete tempTree;
          delete[] outobs;
          delete[] outobs_neg;
@@ -286,11 +286,12 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
       }
 
       // Check if event is inside the selected cuts
-      if(!seleye->empty()) seleye->erase(seleye->begin(), seleye->end());
+//      if(!seleye->empty()) seleye->erase(seleye->begin(), seleye->end());
 
       if(DBGSIG > 1)
          cout << "# MvaSetTrees           #: " << "Event = " << j << endl;
-      ret = IsInsideCuts(invalues, invalues_neg, invalues_pos, seleye, false, 0);
+//      ret = IsInsideCuts(invalues, invalues_neg, invalues_pos, seleye, false, 0);
+      ret = IsInsideCuts(invalues, invalues_neg, invalues_pos, false, 0);
 
       bool *sdobservable = new bool;
 
@@ -301,7 +302,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
 
          for(int i = 0; i < nrobs; i++)
 	 {
-            ftemp[0] = 0;
+/*            ftemp[0] = 0;
             ftemp[1] = 0;
             ftemp[2] = 0;
             ftemp[3] = 0;
@@ -401,93 +402,11 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
 	    }
 
 	    if(DBGSIG > 1)
-               cout << "# MvaSetTrees           #: " << "Writeout values (combined), " << observables[i] << ": " << outobs[i] << ", " << outobs_neg[i] << ", " << outobs_pos[i] << endl;
-	 }
-         outtree->Fill();
-      }
-      // Any of the eyes is inside the cut
-      else if(ret == 1)
-      {
-         if(DBGSIG > 1)
-	    cout << "# MvaSetTrees           #: " << "Event " << j << " IsInsideCuts (" << seleye->size() << ")" << endl;
-         itemp[2] = seleye->at(0);
+               cout << "# MvaSetTrees           #: " << "Writeout values (combined), " << observables[i] << ": " << outobs[i] << ", " << outobs_neg[i] << ", " << outobs_pos[i] << endl;*/
 
-         itemp[0]++;
-         if(seleye->size() > 1)
-         {
-            itemp[1]++;
-
-            if(DBGSIG > 1)
-	    {
-               cout << "# MvaSetTrees           #: " << "Event " << j << " has multiple eyes inside the cuts = ";
-               for(int i = 0; i < seleye->size(); i++)
-                  cout << seleye->at(i) << " ";
-               cout << endl;
-            }
-
-            // Determine which FD eye has the smallest error on xmax
-            ftemp[3] = 100.;
-
-	    for(int k = 0; k < seleye->size(); k++)
-	    {
-               // Get error on xmax value (relative)
-               ftemp[0] = invalues->GetValue(generalObservables->GetInt("xmax"), seleye->at(k));
-               ftemp[1] = invalues_neg->GetValue(generalObservables->GetInt("xmax"), seleye->at(k));
-
-            if(DBGSIG > 1)
-	       cout << "# MvaSetTrees           #: " << "Values: " << ftemp[0] << ", " << ftemp[1] << endl;
-
-	       ftemp[0] = ftemp[1]/ftemp[0];
-
-            if(DBGSIG > 1)
-	       cout << "# MvaSetTrees           #: " << "Old relative error: " << ftemp[3] << endl;
-	       cout << "# MvaSetTrees           #: " << "New relative error: " << ftemp[0] << endl;
-	       
-	       // If error is smaller, save them
-	       if(ftemp[0] < ftemp[3])
-	       {
-                  ftemp[3] = ftemp[0];
-		  itemp[2] = seleye->at(k);
-	       }
-	    }
-	    
-            if(DBGSIG > 1)
-	       cout << "# MvaSetTrees           #: " << "Best eye is: " << itemp[2] << endl;
-	 }
-
-         for(int i = 0; i < nrobs; i++)
-	 {
-            outobs[i] = invalues->GetValue(i, itemp[2]);
-            outobs_neg[i] = invalues_neg->GetValue(i, itemp[2]);
-            outobs_pos[i] = invalues_pos->GetValue(i, itemp[2]);
-            if(DBGSIG > 1)
-	       cout << "# MvaSetTrees           #: " << "Saving data " << i << ": " << outobs[i] << " (" << outobs_neg[i] << ", " << outobs_pos[i] << ")" << endl;
-	 }
-	 outtree->Fill();
-      }
-      // Average of eyes is inside the cut
-      else if(ret == 2)
-      {
-         itemp[0]++;
-         for(int i = 0; i < nrobs; i++)
-	 {
-	    outobs[i] = 0;
-            for(int k = 0; k < seleye->size(); k++)
-            {
-	       if(invalues->GetValue(i, k) != -1)
-	       {
-                  outobs[i] += invalues->GetValue(i, k);
-                  outobs_neg[i] += invalues_neg->GetValue(i, k);
-                  outobs_pos[i] += invalues_pos->GetValue(i, k);
-	       }
-	    }
-
-	    outobs[i] = outobs[i]/(seleye->size());
-	    outobs_neg[i] = outobs_neg[i]/(seleye->size());
-	    outobs_pos[i] = outobs_pos[i]/(seleye->size());
-
-	    if(DBGSIG > 0)
-               cout << "# MvaSetTrees           #: " << "Writeout values (average): " << outobs[i] << ", " << outobs_neg[i] << ", " << outobs_pos[i] << endl;
+            outobs[i] = invalues->GetValue(i);
+            outobs_neg[i] = invalues_neg->GetValue(i);
+            outobs_pos[i] = invalues_pos->GetValue(i);
 	 }
          outtree->Fill();
       }
@@ -500,7 +419,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
 
    ret = itemp[0];
 
-   delete seleye;
+//   delete seleye;
    delete tempTree;
    delete[] outobs;
    delete[] outobs_neg;
@@ -515,7 +434,8 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
    return ret;
 }
 
-int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, vector<int> *seleye, bool split, int splitbin)
+//int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, vector<int> *seleye, bool split, int splitbin)
+int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, bool split, int splitbin)
 {
    bool *sepcut, *isinside;
    bool *btemp;
@@ -548,11 +468,6 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
       selcuttype = (cutObservables->widgetCB)->GetSelection();
    else
       selcuttype = (splitCutObservables->widgetCB)->GetSelection();
-   // Determine how eye selection should be handled (any eye inside selection or average)
-   if(!split)
-      seleyetype = (eyeSelection->widgetCB)->GetSelection();
-   else
-      seleyetype = (splitEyeSelection->widgetCB)->GetSelection();
 
    for(int i = 0; i < 2; i++)
    {
@@ -576,7 +491,7 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
       btemp[2] = (splitCutRisetime->widgetChBox)->IsChecked();
    }
 
-   // Calculate averages for all eyes
+/*   // Calculate averages for all eyes
    for(int i = 0; i < ALLEYES; i++)
    {
       if(selcuttype == 0)
@@ -605,14 +520,9 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
          {
             if(mean->GetValue(mean->GetInt("energyFD"), i) != -1)
             {
-	       if(seleyetype == 0)
-	       {
-	          wQuantity[0] = 1/TMath::Power(neg->GetValue(mean->GetInt("energyFD"), i), 2);
-	          quantitySum[0] += (mean->GetValue(mean->GetInt("energyFD"), i))*wQuantity[0];
-	          wQuantitySum[0] += wQuantity[0];
-	       }
-	       else
-                  ftempaver[0] += mean->GetValue(mean->GetInt("energyFD"), i);
+	       wQuantity[0] = 1/TMath::Power(neg->GetValue(mean->GetInt("energyFD"), i), 2);
+	       quantitySum[0] += (mean->GetValue(mean->GetInt("energyFD"), i))*wQuantity[0];
+	       wQuantitySum[0] += wQuantity[0];
 	       avercount[0]++;
             }
          }
@@ -621,69 +531,39 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
          {
             if(mean->GetValue(mean->GetInt("zenithFD"), i) != -1)
             {
-	       if(seleyetype == 0)
-	       {
-	          wQuantity[1] = 1/TMath::Power(neg->GetValue(mean->GetInt("zenithFD"), i), 2);
-	          quantitySum[1] += (mean->GetValue(mean->GetInt("zenithFD"), i))*wQuantity[1];
-	          wQuantitySum[1] += wQuantity[1];
-	       }
-	       else
-                  ftempaver[1] += mean->GetValue(mean->GetInt("zenithFD"), i);
+	       wQuantity[1] = 1/TMath::Power(neg->GetValue(mean->GetInt("zenithFD"), i), 2);
+	       quantitySum[1] += (mean->GetValue(mean->GetInt("zenithFD"), i))*wQuantity[1];
+	       wQuantitySum[1] += wQuantity[1];
 	       avercount[1]++;
             }
          }
       }
-   }
+   }*/
 
-   if(avercount[0] > 0)
-   {
-      if(seleyetype == 0)
-         quantitySum[0] = quantitySum[0]/wQuantitySum[0];
-      else
-         ftempaver[0] = ftempaver[0]/avercount[0];
-   }
+/*   if(avercount[0] > 0)
+      quantitySum[0] = quantitySum[0]/wQuantitySum[0];
    else
-   {
-      if(seleyetype == 0)
-         quantitySum[0] = -1;
-      else
-         ftempaver[0] = -1;
-   }
+      quantitySum[0] = -1;
 
    if(avercount[1] > 0)
-   {
-      if(seleyetype == 0)
-         quantitySum[1] = quantitySum[1]/wQuantitySum[1];
-      else
-         ftempaver[1] = ftempaver[1]/avercount[1];
-   }
+      quantitySum[1] = quantitySum[1]/wQuantitySum[1];
    else
-   {
-      if(seleyetype == 0)
-         quantitySum[1] = -1;
-      else
-         ftempaver[1] = -1;
-   }
+      quantitySum[1] = -1;*/
 
-   if(DBGSIG > 1)
-      cout << "# IsInsideCuts          #: " << "All values: Nr. eyes = " << avercount[0] << ", " << avercount[1] << ", Average = " << ftempaver[0] << ", " << ftempaver[1] << ", Combined = " << quantitySum[0] << ", " << quantitySum[1] << endl;
+/*   if(DBGSIG > 1)
+      cout << "# IsInsideCuts          #: " << "All values: Nr. eyes = " << avercount[0] << ", " << avercount[1] << ", Average = " << ftempaver[0] << ", " << ftempaver[1] << ", Combined = " << quantitySum[0] << ", " << quantitySum[1] << endl;*/
 
    if(DBGSIG > 1)
       cout << "# IsInsideCuts          #: ";
 
-   for(int i = 0; i < ALLEYES; i++)
-   {
+/*   for(int i = 0; i < ALLEYES; i++)
+   {*/
       // SD observables for cut
       if(selcuttype == 0)
       {
          if(btemp[0])
          {
-	    if(seleyetype == 0)		// combined
-               ftemp[0] = mean->GetValue(mean->GetInt("energySD"), i);
-	    else if(seleyetype == 1)	// any eye
-               ftemp[0] = mean->GetValue(mean->GetInt("energySD"), i);
-	    else if(seleyetype == 2)	// average
-               ftemp[0] = ftempaver[0];
+            ftemp[0] = mean->GetValue("energySD");
 
 	    if(DBGSIG > 1)
 	       cout << "Energy = " << ftemp[0] << "\t";
@@ -716,12 +596,7 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
 
          if(btemp[1]) 
          {
-	    if(seleyetype == 0)		// combined
-               ftemp[0] = mean->GetValue(mean->GetInt("zenithSD"), i);
-	    else if(seleyetype == 1)	// any eye
-               ftemp[0] = mean->GetValue(mean->GetInt("zenithSD"), i);
-	    else if(seleyetype == 2)	// average
-               ftemp[0] = ftempaver[1];
+            ftemp[0] = mean->GetValue("zenithSD");
 
 	    if(DBGSIG > 1)
 	       cout << "Zenith = " << ftemp[0] << "\t";
@@ -758,12 +633,7 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
       {
          if(btemp[0]) 
          {
-	    if(seleyetype == 0)		// combined
-               ftemp[0] = quantitySum[0];
-	    else if(seleyetype == 1)	// any eye
-               ftemp[0] = mean->GetValue(mean->GetInt("energyFD"), i);
-	    else if(seleyetype == 2)	// average
-               ftemp[0] = ftempaver[0];
+            ftemp[0] = mean->GetValue("energyFD");
 
 	    if(DBGSIG > 1)
 	       cout << ftemp[0] << " ";
@@ -796,12 +666,7 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
 
          if(btemp[1]) 
          {
-	    if(seleyetype == 0)		// combined
-               ftemp[0] = quantitySum[1];
-	    else if(seleyetype == 1)	// any eye
-               ftemp[0] = mean->GetValue(mean->GetInt("zenithFD"), i);
-	    else if(seleyetype == 2)	// average
-               ftemp[0] = ftempaver[1];
+            ftemp[0] = mean->GetValue("zenithFD");
 
 	    if(DBGSIG > 1)
   	       cout << ftemp[0] << " ";
@@ -836,8 +701,8 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
 
       if(btemp[2]) 
       {
-         ftemp[0] = mean->GetValue(mean->GetInt("risetimerecalc"), i);
-         ftemp[1] = neg->GetValue(neg->GetInt("risetimerecalc"), i);
+         ftemp[0] = mean->GetValue("risetimerecalc");
+         ftemp[1] = neg->GetValue("risetimerecalc");
 
 	 if(DBGSIG > 1)
 	    cout << ftemp[1]/ftemp[0] << " ";
@@ -870,12 +735,11 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
       if(DBGSIG > 1)
          cout << "# IsInsideCuts          #: " << "isinside = " << (int)*isinside << ", sepcut[0] = " << (int)sepcut[0] << ", sepcut[1] = " << (int)sepcut[1] << ", sepcut[2] = " << (int)sepcut[2] << endl;
 
-      if(*isinside)
-         seleye->push_back(i);
-   }
+/*      if(*isinside)
+         seleye->push_back(i);*/
+//   }
 
    delete[] sepcut;
-   delete isinside;
    delete[] btemp;
    delete[] ftemp;
    delete[] ftempaver;
@@ -885,18 +749,33 @@ int MyFrame::IsInsideCuts(Observables *mean, Observables *neg, Observables *pos,
    delete[] wQuantitySum;
    delete[] selectedBin;
 
-   if(DBGSIG > 1)
-      cout << "# IsInsideCuts          #: " << "return code = " << seleyetype << endl;
-
-   if(seleye->size() > 0)
+   if(*isinside)
    {
-      if( (seleyetype >= 0) && (seleyetype < 3) )
-         return seleyetype;
-      else
-         return -1;
+      if(DBGSIG > 1)
+         cout << "# IsInsideCuts          #: " << "return code = 0" << endl;
+      delete isinside;
+      return 0;
    }
    else
+   {
+      if(DBGSIG > 1)
+         cout << "# IsInsideCuts          #: " << "return code = -1" << endl;
+      delete isinside;
       return -1;
+   }
+
+/*   if(seleye->size() > 0)
+   {
+      if(DBGSIG > 1)
+         cout << "# IsInsideCuts          #: " << "return code = 0" << endl;
+      return 0;
+   }
+   else
+   {
+      if(DBGSIG > 1)
+         cout << "# IsInsideCuts          #: " << "return code = -1" << endl;
+      return -1;
+   }*/
 }
 
 // Perform the MVA analysis on a collection of observables

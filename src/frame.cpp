@@ -356,15 +356,6 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    cutRisetime->SetNEntryFormat(cutRisetime->widgetNE[0], 3, 0.001, 2, 0., 10.);
    vbox->Add(cutRisetime->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
 
-   // Label and combo box for selecting the eye selection method
-   if(!vstemp->empty()) vstemp->erase(vstemp->begin(), vstemp->end());
-   vstemp->push_back("Combine stereo FD events");
-   vstemp->push_back("Any FD eye inside cut");
-   vstemp->push_back("Average of active eyes");
-   eyeSelection = new LabelDrop(rightmvapanel, wxT("Eye selection method, if more than one FD eye:"), vstemp, vstemp->at(0), -1, rwidth);
-   vbox->Add(eyeSelection->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
-   (eyeSelection->widgetCB)->SetSelection(0);
-
    // Label and combo box for selecting data tree
    if(!vstemp->empty()) vstemp->erase(vstemp->begin(), vstemp->end());
    vstemp->push_back("Select data...");

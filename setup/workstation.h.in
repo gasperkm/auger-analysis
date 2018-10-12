@@ -12,6 +12,7 @@
 
 #define OFFVER SOMETHING
 
+// ALLEYES = LL, LM, LA, CO (CO+HE = HeCo)
 #define ALLEYES 4
 
 #endif

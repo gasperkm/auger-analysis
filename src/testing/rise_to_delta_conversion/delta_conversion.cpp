@@ -1627,9 +1627,9 @@ cout << "New station (" << stationVector[i].GetId() << ")" << endl;
       c1->SetLogx(kTRUE);
       c1->SetLogy(kFALSE);
       allDelta->GetXaxis()->SetMoreLogLabels(kTRUE);
-/*      dtemp[6] = 1.1*dtemp[6];
-      allDelta->GetYaxis()->SetRange(-dtemp[6], dtemp[6]);
-      allDelta->GetYaxis()->SetRangeUser(-dtemp[6], dtemp[6]);*/
+/*      dtemp[6] = 1.1*dtemp[6];*/
+      allDelta->GetYaxis()->SetRange(-400., 500.);
+      allDelta->GetYaxis()->SetRangeUser(-400., 500.);
       allDelta->Draw("AP");
       c1->Update();
       cout << TMath::Power(10.,energylimit[0])/1.e+18 << "\t" << TMath::Power(10.,energylimit[1])/1.e+18 << "\t" << gPad->GetUymin() << "\t" << gPad->GetUymax() << endl;

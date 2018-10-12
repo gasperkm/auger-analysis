@@ -17,8 +17,8 @@ IDIR=./include
 LDIR=./lib
 
 # Compiler options
-COMPOPT=-fPIC -g -std=c++11
-#COMPOPT=-fPIC -std=c++11
+COMPOPT=-fPIC -g -std=c++11 -Wno-deprecated
+#COMPOPT=-fPIC -g -std=c++11
 
 # Include directories
 INC=-I. -I$(IDIR) -I$(ADSTROOT)/include/adst -I$(ROOTINC) -I$(TMVASYS)/inc

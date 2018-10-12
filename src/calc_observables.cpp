@@ -14,13 +14,10 @@ int AdstMva::SetSimObservables(Observables **cursig)
    cout << "# SetSimObservables     #: " << "Entering function AdstMva::SetSimObservables()" << endl;
    SetBinary(0, 1, &rewritecode);
 
-   // Go over a loop of mean, neg and pos values - also save values in all four observables, used for eyes
+   // Go over a loop of mean, neg and pos values
    for(int j = 0; j < 3; j++)
    {
-      for(int i = 0; i < ALLEYES; i++)
-      {
-         cursig[j]->SetValue("nrmu", GetNrMuons(i, j), i);
-      }
+      cursig[j]->SetValue("nrmu", GetNrMuons(j));
    }
    return 0;
 }
@@ -30,26 +27,23 @@ int AdstMva::SetSdObservables(Observables **cursig)
    cout << "# SetSdObservables      #: " << "Entering function AdstMva::SetSdObservables()" << endl;
    SetBinary(1, 1, &rewritecode);
 
-   // Go over a loop of mean, neg and pos values - also save values in all four observables, used for eyes
+   // Go over a loop of mean, neg and pos values
    for(int j = 0; j < 3; j++)
    {
-      for(int i = 0; i < ALLEYES; i++)
-      {
-         cursig[j]->SetValue("shwsize", GetShowerSize(i, j), i);
-         cursig[j]->SetValue("energySD", GetSdEnergy(i, j), i);
-         cursig[j]->SetValue("ldfbeta", GetBeta(i, j), i);
-         cursig[j]->SetValue("curvature", GetCurvature(i, j), i);
-         cursig[j]->SetValue("risetime", GetRisetime(i, j, false), i);
-	 InitRisetimeVariables();
-	 CalculateRisetime();
-         cursig[j]->SetValue("risetimerecalc", GetRisetime(i, j, true), i);
-         cursig[j]->SetValue("zenithSD", GetSdZenith(i, j), i);
-         cursig[j]->SetValue("azimuthSD", GetSdAzimuth(i, j), i);
-         cursig[j]->SetValue("latitudeSD", GetSdLatitude(i, j), i);
-         cursig[j]->SetValue("longitudeSD", GetSdLongitude(i, j), i);
-	 CalculateAoP();
-         cursig[j]->SetValue("aop", GetAoP(i, j), i);
-      }
+      cursig[j]->SetValue("shwsize", GetShowerSize(j));
+      cursig[j]->SetValue("energySD", GetSdEnergy(j));
+      cursig[j]->SetValue("ldfbeta", GetBeta(j));
+      cursig[j]->SetValue("curvature", GetCurvature(j));
+      cursig[j]->SetValue("risetime", GetRisetime(j, false));
+      InitRisetimeVariables();
+      CalculateRisetime();
+      cursig[j]->SetValue("risetimerecalc", GetRisetime(j, true));
+      cursig[j]->SetValue("zenithSD", GetSdZenith(j));
+      cursig[j]->SetValue("azimuthSD", GetSdAzimuth(j));
+      cursig[j]->SetValue("latitudeSD", GetSdLatitude(j));
+      cursig[j]->SetValue("longitudeSD", GetSdLongitude(j));
+      CalculateAoP();
+      cursig[j]->SetValue("aop", GetAoP(j));
    }
    return 0;
 }
@@ -58,10 +52,287 @@ int AdstMva::SetFdObservables(Observables **cursig)
 {
    cout << "# SetFdObservables      #: " << "# Entering function AdstMva::SetFdObservables()" << endl;
    int *count = new int;
+   double *dtemp = new double[3];
+   bool *fdobservable = new bool;
+   *fdobservable = true;
+   int *realnr = new int;
+   string *stemp = new string;
+   isheco = false;
+
+   // Zero all variables used for combining stereo events
+   wQuantity = new double[2*((*cursig)->Count())];
+   quantitySum = new double[2*((*cursig)->Count())];
+   wQuantitySum = new double[2*((*cursig)->Count())];
+   quantitySumErr = new double[2*((*cursig)->Count())];
+   for(int i = 0; i < 2*((*cursig)->Count()); i++)
+   {
+      wQuantity[i] = 0;
+      quantitySum[i] = 0;
+      quantitySumErr[i] = 0;
+      wQuantitySum[i] = 0;
+   }
 
    SetBinary(2, 1, &rewritecode);
 
-   // Go over a loop of mean, neg and pos values and all eyes
+   // Check if we have HeCo and use it instead of CO or HE, and evaluate if nreyes was defined correctly
+   *realnr = 0;
+   for(int j = 0; j < nreyes; j++)
+   {
+      if(acteyes[j].GetEyeId() == 6)
+      {
+         isheco = true;
+	 cout << "# SetFdObservables      #: " << "   Selected eye is HeCo." << endl;
+      }
+
+      if(acteyes[j].IsHybridEvent())
+         (*realnr)++;
+   }
+
+   if(*realnr != nreyes)
+      cout << "Nr. eyes vs. real nr. = " << nreyes << "/" << *realnr << endl;
+
+   // Go over all observables and all eyes, and calculate the combined value from active eyes
+   for(int j = 0; j < (*cursig)->Count(); j++)
+   {
+      *count = 0;
+      for(int i = 0; i < nreyes; i++)
+      {
+         cout << "i = " << i << ", nreyes = " << nreyes << ", eyeID-1 = " << acteyes[i].GetEyeId()-1 << endl;
+
+         if(isheco && (acteyes[i].GetEyeId()-1 == 3) && (nreyes > 1))
+	 {
+            i++;
+	    cout << "new i = " << i << ", nreyes = " << nreyes << ", eyeID-1 = " << acteyes[i].GetEyeId()-1 << endl;
+	 }
+         else if(isheco && (acteyes[i].GetEyeId()-1 == 3) && (nreyes > 1))
+	 {
+            i++;
+	    cout << "new i = " << i << ", nreyes = " << nreyes << ", eyeID-1 = " << acteyes[i].GetEyeId()-1 << endl;
+	 }
+
+//         if(DBGSIG > 1)
+            cout << "Rewritting eye " << i+1 << "/" << nreyes << endl;
+
+/*         // For some reason sometimes extra eyes remain in vector, but number of eyes is correct && if eye is not active, set value to -1
+         if( (nreyes == *count) || (acteyes[*count].GetEyeId()-1 != i) )
+         {
+//            if(DBGSIG > 1)
+               cout << "Extra eye without active value!" << endl;
+         }
+         // If we get active eye, set the values
+         else if(acteyes[*count].GetEyeId()-1 == i)
+         {*/
+            if(DBGSIG > 1)
+               cout << "Active eye!" << endl;
+
+            CalculateShowerFoot(i);
+
+	    for(int k = 0; k < 3; k++)
+	    {
+               if(j == 0)
+                  dtemp[k] = GetXmax(i, k);
+               else if(j == 1)
+                  dtemp[k] = GetX0(i, k);
+               else if(j == 2)
+                  dtemp[k] = GetLambda(i, k);
+               else if(j == 3)
+                  dtemp[k] = GetFdEnergy(i, k);
+               else if(j == 4)
+                  dtemp[k] = GetFdZenith(i, k);
+               else if(j == 5)
+                  dtemp[k] = GetFdAzimuth(i, k);
+               else if(j == 6)
+                  dtemp[k] = GetFdLatitude(i, k);
+               else if(j == 7)
+                  dtemp[k] = GetFdLongitude(i, k);
+               else if(j == 8)
+                  dtemp[k] = GetShowerFoot(i, k);
+	       else
+	       {
+                  *fdobservable = false;
+                  break;
+	       }
+	    }
+
+            if(!(*fdobservable))
+               break;
+
+	    cout << "Input values: " << dtemp[0] << ", " << dtemp[1] << ", " << dtemp[2] << endl;
+
+            wQuantity[2*j]   = 1./TMath::Power(dtemp[1],2);
+            wQuantity[2*j+1] = 1./TMath::Power(dtemp[2],2);
+            quantitySum[2*j]   += dtemp[0]*wQuantity[2*j];
+            quantitySum[2*j+1] += dtemp[0]*wQuantity[2*j+1];
+            wQuantitySum[2*j]   += wQuantity[2*j];
+            wQuantitySum[2*j+1] += wQuantity[2*j+1];
+
+            (*count)++;
+//         }
+      }
+
+/*      for(int i = 0; i < ALLEYES+2; i++)
+      {
+         cout << "i = " << i << ", nreyes = " << nreyes << ", count = " << *count << ", eyeID-1 = " << acteyes[*count].GetEyeId()-1 << endl;
+
+         if(isheco && (i == 3) && (nreyes > 1))
+	 {
+            i = i + 2;
+	    (*count)++;
+	 }
+         else if(isheco && (i == 4) && (nreyes > 1))
+	 {
+            i = i + 1;
+	    (*count)++;
+	 }
+
+	 cout << "new i = " << i << ", nreyes = " << nreyes << ", count = " << *count << ", eyeID-1 = " << acteyes[*count].GetEyeId()-1 << endl;
+
+//         if(DBGSIG > 1)
+            cout << "Rewritting eye " << i+1 << "/" << ALLEYES+2 << endl;
+
+         // For some reason sometimes extra eyes remain in vector, but number of eyes is correct && if eye is not active, set value to -1
+         if( (nreyes == *count) || (acteyes[*count].GetEyeId()-1 != i) )
+         {
+//            if(DBGSIG > 1)
+               cout << "Extra eye without active value!" << endl;
+         }
+         // If we get active eye, set the values
+         else if(acteyes[*count].GetEyeId()-1 == i)
+         {
+//            if(DBGSIG > 1)
+               cout << "Active eye!" << endl;
+
+            CalculateShowerFoot(*count);
+
+            if(j == 0)
+            {
+               dtemp[0] = GetXmax(*count, 0);
+               dtemp[1] = GetXmax(*count, 1);
+               dtemp[2] = GetXmax(*count, 2);
+            }
+            else if(j == 1)
+            {
+               dtemp[0] = GetX0(*count, 0);
+               dtemp[1] = GetX0(*count, 1);
+               dtemp[2] = GetX0(*count, 2);
+            }
+            else if(j == 2)
+            {
+               dtemp[0] = GetLambda(*count, 0);
+               dtemp[1] = GetLambda(*count, 1);
+               dtemp[2] = GetLambda(*count, 2);
+            }
+            else if(j == 3)
+            {
+               dtemp[0] = GetFdEnergy(*count, 0);
+               dtemp[1] = GetFdEnergy(*count, 1);
+               dtemp[2] = GetFdEnergy(*count, 2);
+            }
+            else if(j == 4)
+            {
+               dtemp[0] = GetFdZenith(*count, 0);
+               dtemp[1] = GetFdZenith(*count, 1);
+               dtemp[2] = GetFdZenith(*count, 2);
+            }
+            else if(j == 5)
+            {
+               dtemp[0] = GetFdAzimuth(*count, 0);
+               dtemp[1] = GetFdAzimuth(*count, 1);
+               dtemp[2] = GetFdAzimuth(*count, 2);
+            }
+            else if(j == 6)
+            {
+               dtemp[0] = GetFdLatitude(*count, 0);
+               dtemp[1] = GetFdLatitude(*count, 1);
+               dtemp[2] = GetFdLatitude(*count, 2);
+            }
+            else if(j == 7)
+            {
+               dtemp[0] = GetFdLongitude(*count, 0);
+               dtemp[1] = GetFdLongitude(*count, 1);
+               dtemp[2] = GetFdLongitude(*count, 2);
+            }
+            else if(j == 8)
+            {
+               dtemp[0] = GetShowerFoot(*count, 0);
+               dtemp[1] = GetShowerFoot(*count, 1);
+               dtemp[2] = GetShowerFoot(*count, 2);
+            }
+	    else
+	    {
+               *fdobservable = false;
+               break;
+	    }
+
+	    cout << "Input values: " << dtemp[0] << ", " << dtemp[1] << ", " << dtemp[2] << endl;
+
+            wQuantity[2*j]   = 1./TMath::Power(dtemp[1],2);
+            wQuantity[2*j+1] = 1./TMath::Power(dtemp[2],2);
+            quantitySum[2*j]   += dtemp[0]*wQuantity[2*j];
+            quantitySum[2*j+1] += dtemp[0]*wQuantity[2*j+1];
+            wQuantitySum[2*j]   += wQuantity[2*j];
+            wQuantitySum[2*j+1] += wQuantity[2*j+1];
+
+            (*count)++;
+         }
+      }*/
+
+      if(*fdobservable)
+      {
+         if(j == 0)
+            *stemp = "xmax";
+         else if(j == 1)
+            *stemp = "x0";
+         else if(j == 2)
+            *stemp = "lambda";
+         else if(j == 3)
+            *stemp = "energyFD";
+         else if(j == 4)
+            *stemp = "zenithFD";
+         else if(j == 5)
+            *stemp = "azimuthFD";
+         else if(j == 6)
+            *stemp = "latitudeFD";
+         else if(j == 7)
+            *stemp = "longitudeFD";
+         else if(j == 8)
+            *stemp = "shfoot";
+
+         if(nreyes > 0)
+	 {
+            quantitySumErr[2*j]   = TMath::Sqrt(1./wQuantitySum[2*j]);
+            quantitySumErr[2*j+1] = TMath::Sqrt(1./wQuantitySum[2*j+1]);
+            quantitySum[2*j]   = quantitySum[2*j]/wQuantitySum[2*j];
+            quantitySum[2*j+1] = quantitySum[2*j+1]/wQuantitySum[2*j+1];
+
+	    if(quantitySum[2*j] != quantitySum[2*j+1])
+	    {
+               quantitySum[2*j] = (quantitySum[2*j] + quantitySum[2*j+1])/2.;
+               quantitySumErr[2*j] += TMath::Abs(quantitySum[2*j+1] - quantitySum[2*j]);
+               quantitySumErr[2*j+1] += TMath::Abs(quantitySum[2*j+1] - quantitySum[2*j]);
+	    }
+
+            cout << "Writing out FD observable: qSum = " << quantitySum[2*j] << ", qSumErr = " << quantitySumErr[2*j] << ", " << quantitySumErr[2*j+1] << endl;
+
+	    cursig[0]->SetValue(*stemp, (float)quantitySum[2*j]);
+	    cursig[1]->SetValue(*stemp, (float)quantitySumErr[2*j]);
+	    cursig[2]->SetValue(*stemp, (float)quantitySumErr[2*j+1]);
+	 }
+	 else
+	 {
+
+            cout << "FD event has no valid eyes!" << endl;
+
+	    cursig[0]->SetValue(*stemp, -1.);
+	    cursig[1]->SetValue(*stemp, -1.);
+	    cursig[2]->SetValue(*stemp, -1.);
+	 }
+      }
+      else
+         break;
+   }
+
+/*   // Go over a loop of mean, neg and pos values and all eyes
    for(int j = 0; j < 3; j++)
    {
       *count = 0;
@@ -107,15 +378,24 @@ int AdstMva::SetFdObservables(Observables **cursig)
 
       if(DBGSIG > 1)
          cout << "Finished value type" << endl;
-   }
+   }*/
 
+   delete[] wQuantity;
+   delete[] quantitySum;
+   delete[] quantitySumErr;
+   delete[] wQuantitySum;
+
+   delete fdobservable;
+   delete realnr;
+   delete stemp;
+   delete[] dtemp;
    delete count;
    return 0;
 }
 // Functions to hold rules for saving observables ------------------------------
 
 // User defined functions for getting observable values ------------------------
-double AdstMva::GetXmax(int eye, int type)
+float AdstMva::GetXmax(int eye, int type)
 {
    // Mean value
    if(type == 0)
@@ -130,7 +410,7 @@ double AdstMva::GetXmax(int eye, int type)
       return -1.0;
 }
 
-double AdstMva::GetX0(int eye, int type)
+float AdstMva::GetX0(int eye, int type)
 {
    // Mean value
    if(type == 0)
@@ -145,7 +425,7 @@ double AdstMva::GetX0(int eye, int type)
       return -1.0;
 }
 
-double AdstMva::GetLambda(int eye, int type)
+float AdstMva::GetLambda(int eye, int type)
 {
    // Mean value
    if(type == 0)
@@ -160,7 +440,7 @@ double AdstMva::GetLambda(int eye, int type)
       return -1.0;
 }
 
-double AdstMva::GetFdEnergy(int eye, int type)
+float AdstMva::GetFdEnergy(int eye, int type)
 {
    // Mean value
    if(type == 0)
@@ -175,7 +455,7 @@ double AdstMva::GetFdEnergy(int eye, int type)
       return -1.0;
 }
 
-double AdstMva::GetFdZenith(int eye, int type)
+float AdstMva::GetFdZenith(int eye, int type)
 {
    // Mean value
    if(type == 0)
@@ -190,7 +470,7 @@ double AdstMva::GetFdZenith(int eye, int type)
       return -1.0;
 }
 
-double AdstMva::GetFdAzimuth(int eye, int type)
+float AdstMva::GetFdAzimuth(int eye, int type)
 {
    // Mean value
    if(type == 0)
@@ -205,7 +485,7 @@ double AdstMva::GetFdAzimuth(int eye, int type)
       return -1.0;
 }
 
-double AdstMva::GetFdLatitude(int eye, int type)
+float AdstMva::GetFdLatitude(int eye, int type)
 {
    // Mean value
    if(type == 0)
@@ -220,7 +500,7 @@ double AdstMva::GetFdLatitude(int eye, int type)
       return -1.0;
 }
 
-double AdstMva::GetFdLongitude(int eye, int type)
+float AdstMva::GetFdLongitude(int eye, int type)
 {
    // Mean value
    if(type == 0)
@@ -344,7 +624,7 @@ void AdstMva::CalculateShowerFoot(int eye)
    delete[] dtemp;
 }
 
-double AdstMva::GetShowerFoot(int eye, int type)
+float AdstMva::GetShowerFoot(int eye, int type)
 {
    // Mean value
    if(type == 0)
@@ -359,7 +639,7 @@ double AdstMva::GetShowerFoot(int eye, int type)
       return -1.0;
 }
 
-double AdstMva::GetShowerSize(int eye, int type)
+float AdstMva::GetShowerSize(int type)
 {
    // Mean value
    if(type == 0)
@@ -374,7 +654,7 @@ double AdstMva::GetShowerSize(int eye, int type)
       return -1.0;
 }
 
-double AdstMva::GetSdEnergy(int eye, int type)
+float AdstMva::GetSdEnergy(int type)
 {
    // Mean value
    if(type == 0)
@@ -389,7 +669,7 @@ double AdstMva::GetSdEnergy(int eye, int type)
       return -1.0;
 }
 
-double AdstMva::GetBeta(int eye, int type)
+float AdstMva::GetBeta(int type)
 {
    // Mean value
    if(type == 0)
@@ -404,7 +684,7 @@ double AdstMva::GetBeta(int eye, int type)
       return -1.0;
 }
 
-double AdstMva::GetCurvature(int eye, int type)
+float AdstMva::GetCurvature(int type)
 {
    // Mean value
    if(type == 0)
@@ -728,7 +1008,7 @@ void AdstMva::CalculateRisetime()
    delete distVectErr;
 }
 
-double AdstMva::GetRisetime(int eye, int type, bool recalc)
+float AdstMva::GetRisetime(int type, bool recalc)
 {
    // Recalculated risetime
    if(recalc)
@@ -761,7 +1041,7 @@ double AdstMva::GetRisetime(int eye, int type, bool recalc)
    }
 }
 
-double AdstMva::GetSdZenith(int eye, int type)
+float AdstMva::GetSdZenith(int type)
 {
    // Mean value
    if(type == 0)
@@ -776,7 +1056,7 @@ double AdstMva::GetSdZenith(int eye, int type)
       return -1.0;
 }
 
-double AdstMva::GetSdAzimuth(int eye, int type)
+float AdstMva::GetSdAzimuth(int type)
 {
    // Mean value
    if(type == 0)
@@ -791,7 +1071,7 @@ double AdstMva::GetSdAzimuth(int eye, int type)
       return -1.0;
 }
 
-double AdstMva::GetSdLatitude(int eye, int type)
+float AdstMva::GetSdLatitude(int type)
 {
    // Mean value
    if(type == 0)
@@ -806,7 +1086,7 @@ double AdstMva::GetSdLatitude(int eye, int type)
       return -1.0;
 }
 
-double AdstMva::GetSdLongitude(int eye, int type)
+float AdstMva::GetSdLongitude(int type)
 {
    // Mean value
    if(type == 0)
@@ -895,7 +1175,7 @@ void AdstMva::CalculateAoP()
    delete[] midAop;
 }
 
-double AdstMva::GetAoP(int eye, int type)
+float AdstMva::GetAoP(int type)
 {
    // Mean value
    if(type == 0)
@@ -910,7 +1190,7 @@ double AdstMva::GetAoP(int eye, int type)
       return -1.0;
 }
 
-double AdstMva::GetNrMuons(int eye, int type)
+float AdstMva::GetNrMuons(int type)
 {
    // Mean value
    if(type == 0)

@@ -36,6 +36,7 @@ public:
    vector<SdRecStation> actstations;
    int nreyes;
    vector<FDEvent> acteyes;
+   bool isheco;
 //   int besteye;
    bool goodrec;
    double risemean, risemin, risemax;
@@ -56,6 +57,12 @@ public:
    int minPoints;
    double evalDistance;
 
+   // Settings and variables for combining stereo events
+   double *wQuantity;
+   double *quantitySum;
+   double *wQuantitySum;
+   double *quantitySumErr;
+
    // Functions to get all active SD stations and FD eyes in an event
 /*   int GetActiveStations();
    int GetActiveEyes();*/
@@ -73,33 +80,33 @@ public:
    int SetSdObservables(Observables **cursig);
    int SetFdObservables(Observables **cursig);
 //   int GetBestEye();
-   double GetXmax(int eye, int type);
-   double GetX0(int eye, int type);
-   double GetLambda(int eye, int type);
-   double GetFdEnergy(int eye, int type);
-   double GetFdZenith(int eye, int type);
-   double GetFdAzimuth(int eye, int type);
-   double GetFdLatitude(int eye, int type);
-   double GetFdLongitude(int eye, int type);
+   float GetXmax(int eye, int type);
+   float GetX0(int eye, int type);
+   float GetLambda(int eye, int type);
+   float GetFdEnergy(int eye, int type);
+   float GetFdZenith(int eye, int type);
+   float GetFdAzimuth(int eye, int type);
+   float GetFdLatitude(int eye, int type);
+   float GetFdLongitude(int eye, int type);
    void CalculateShowerFoot(int eye);
-   double GetShowerFoot(int eye, int type);
+   float GetShowerFoot(int eye, int type);
 
-   double GetShowerSize(int eye, int type);
-   double GetSdEnergy(int eye, int type);
-   double GetBeta(int eye, int type);
-   double GetCurvature(int eye, int type);
+   float GetShowerSize(int type);
+   float GetSdEnergy(int type);
+   float GetBeta(int type);
+   float GetCurvature(int type);
    void InitRisetimeVariables();
    void RisetimeFunction(double zenith, double energy, TF1 *risetimeFit);
    void CalculateRisetime();
-   double GetRisetime(int eye, int type, bool recalc);
-   double GetSdZenith(int eye, int type);
-   double GetSdAzimuth(int eye, int type);
-   double GetSdLatitude(int eye, int type);
-   double GetSdLongitude(int eye, int type);
+   float GetRisetime(int type, bool recalc);
+   float GetSdZenith(int type);
+   float GetSdAzimuth(int type);
+   float GetSdLatitude(int type);
+   float GetSdLongitude(int type);
    void CalculateAoP();
-   double GetAoP(int eye, int type);
+   float GetAoP(int type);
 
-   double GetNrMuons(int eye, int type);
+   float GetNrMuons(int type);
 };
 
 #endif
