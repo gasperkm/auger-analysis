@@ -93,7 +93,6 @@ void MyFrame::EnableMvaFile(wxCommandEvent& event)
 	    }
 	 }
       }
-      // TODO - Add mixed combinations for background trees
 
       // Select the signal tree
       if(oldselect[0] >= *cnt)
@@ -1320,16 +1319,11 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
             stemp[2] = RemoveExtension(&mvafile[0]);
             stemp[3] = ToString(TMath::Log10(ecutBins[2*imva]),2) + "-" + ToString(TMath::Log10(ecutBins[2*imva+1]),2);
 	    stemp[2] = stemp[2] + "_" + stemp[3];
-/*            ReplacePart(&stemp[2], "ENERGY", stemp[3]);
-            *currentAnalysisDir = stemp[2];
-            stemp[2] = "mkdir " + stemp[2];*/
             *currentAnalysisDir = stemp[2];
             stemp[2] = "mkdir " + stemp[2];
             cout << "Creating directory: " << *currentAnalysisDir << endl;
             system(stemp[2].c_str());
 
-/*            ReplacePart(&mvafile[0], "ENERGY", stemp[3]);
-            mvafile[0] = (*currentAnalysisDir) + "/" + RemovePath(&mvafile[0]);*/
             stemp[2] = RemoveExtension(&mvafile[0]);
             stemp[3] = ToString(TMath::Log10(ecutBins[2*imva]),2) + "-" + ToString(TMath::Log10(ecutBins[2*imva+1]),2);
 	    stemp[2] = stemp[2] + "_" + stemp[3];
@@ -1367,7 +1361,6 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
          progress->Update(itemp[1]);
 
 /*-------------TODO-------------*/
-/*--- PerformMvaAnalysis(&tempAnalysisFile, &mvafile[0], 0)--------*/
 	 ret = PerformMvaAnalysis(&tempAnalysisFile, &mvafile[0], &itemp[1]);
          if(ret == -1)
 	 {
@@ -1378,167 +1371,6 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
             delete[] itemp;
 	    return;
 	 }
-/*         TFile *ifile = TFile::Open(tempAnalysisFile.c_str(), "READ");
-
-         // Open the file to write out to
-         TFile *ofile = TFile::Open(mvafile[0].c_str(), "RECREATE");
-         // Prepare the MVA Factory
-         // Factory usage:
-         // - user-defined job name, reappearing in names of weight files for training results ("TMVAClassification")
-         // - pointer to an output file (ofile)
-         // - options
-         // Factory has the following options:
-         //        V = verbose
-         //        Silent = batch mode
-         //        Color = colored screen output
-         //        DrawProgressBar = progress bar display during training and testing
-         //        Transformations = the transformations to make (identity, decorrelation, PCA, uniform, gaussian, gaussian decorrelation)
-         //        AnalysisType = setting the analysis type (Classification, Regression, Multiclass, Auto)
-         // Default values = !V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Auto
-         TMVA::Factory *factory = new TMVA::Factory("TMVAClassification",ofile,"!V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Classification");
-
-         // Selecting the weights directory
-         (TMVA::gConfig().GetIONames()).fWeightFileDir = ((*currentAnalysisDir) + "/weights").c_str();
-         cout << "# StartMvaAnalysis      #: " << "Weights directory after = " << (TMVA::gConfig().GetIONames()).fWeightFileDir << endl;
-         itemp[1]++;
-         progress->Update(itemp[1]);
-
-         // Adding observables to the Factory
-         nrTreeEvents[0] = 0;
-         for(int i = 0; i < nrobs; i++)
-         {
-            if(obssel[i])
-            {
-               factory->AddVariable(observables[i].c_str(), 'F');
-               cout << "# StartMvaAnalysis      #: " << "Adding variable: " << observables[i] << " (" << (int)obssel[i] << ")" << endl;
-               nrTreeEvents[0]++;
-            }
-         }
-         nrselobs = MvaNoteObservables(nrTreeEvents[0]);
-         itemp[1]++;
-         progress->Update(itemp[1]);
-
-         // Select signal and background trees (from the temporary input file)
-//         TTree *signalTree, *backgroundTree[mixednum];
-         TTree *signalTree = new TTree;
-	 TTree *backgroundTree[mixednum];
-	 for(int j = 0; j < mixednum; j++)
-            backgroundTree[j] = new TTree;
-         itemp[2] = 0;
-
-         nrTreeEvents[0] = -1;
-         nrTreeEvents[1] = -1;
-	 TList *tempkeyslist = (TList*) ifile->GetListOfKeys();
-         for(int j = 1; j <= ifile->GetNkeys(); j++)
-         {
-            stemp[0] = string((tempkeyslist->At(j-1))->GetName());
-            stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
-            stemp[1] = RemovePath(&stemp[1]);
-
-            // Signal tree setup
-            if( string((signalSelect->widgetCB)->GetStringSelection()) == stemp[1] )
-            {
-               cout << "# StartMvaAnalysis      #: " << "Using signal tree: " << stemp[1] << endl;
-               signalTree = (TTree*)ifile->Get(stemp[0].c_str());
-               nrTreeEvents[0] = signalTree->GetEntries();
-            }
-
-            // Background tree setup
-            stemp[3] = string((backgroundSelect->widgetCB)->GetStringSelection());
-            if( stemp[3].find(stemp[1]) != string::npos )
-            {
-               cout << "# StartMvaAnalysis      #: " << "Using background tree " << itemp[2] << ": " << stemp[1] << endl;
-               backgroundTree[itemp[2]] = (TTree*)ifile->Get(stemp[0].c_str());
-               nrTreeEvents[1] = backgroundTree[itemp[2]]->GetEntries();
-               itemp[2]++;
-            }
-         }
-
-         itemp[1]++;
-         progress->Update(itemp[1]);
-
-         cout << "# StartMvaAnalysis      #: " << "Number of entries in signal tree = " << nrTreeEvents[0] << endl;
-         cout << "# StartMvaAnalysis      #: " << "Number of entries in background tree = " << nrTreeEvents[1] << endl;
-
-         // Add signal and background tree
-         factory->AddSignalTree(signalTree, 1.0);
-         for(int i = 0; i < itemp[2]; i++)
-            factory->AddBackgroundTree(backgroundTree[i], 1.0);
-
-         // Preparing and training from the trees:
-         // - preselection cuts make cuts on input variables, before even starting the MVA
-         // - options
-         // These are the possible options:
-         //        nTrain_Signal = number of training events of class Signal (0 takes all)
-         //        nTrain_Background = number of training events of class Background (0 takes all)
-         //        nTest_Signal = number of test events of class Signal (0 takes all)
-         //        nTest_Background = number of test events of class Background (0 takes all)
-         //        SplitMode = method of choosing training and testing events (Random, Alternate, Block)
-         //        NormMode = renormalisation of event-by-event weights for training (NumEvents: average weight of 1 per event for signal and background, EqualNumEvents: average weight of 1 per event for signal and sum of weights for background equal to sum of weights for signal, None)
-         //        V = verbose
-         //        MixMode = method of mixing events of different classes into one dataset (SameAsSplitMode, Random, Alternate, Block)
-         //        SplitSeed = seed for random event shuffling (default = 100)
-         //        VerboseLevel = level of verbose (Debug, Verbose, Info)
-         factory->PrepareTrainingAndTestTree("", "", "nTrain_Signal=0:nTrain_Background=0:SplitMode=Random:NormMode=NumEvents:!V");
-         itemp[1]++;
-         progress->Update(itemp[1]);
-
-         // Booking MVA methods:
-         // - type of MVA method to be used (all defined in src/Types.h)
-         // - the unique name for the MVA method suplied by the user
-         // - options
-         // The possible options for each method are defined here: http://tmva.sourceforge.net/optionRef.html
-         // For example:
-         //        H = print method-specific help message
-         //        V = verbose
-         //        NeuronType = neuron activation function type (default = sigmoid)
-         //        VarTransform = list of variable transformations to do before training (D_Background,P_Signal,G,N_AllClasses -> N = Normalization for all classes)
-         //        NCycles = number of training cycles
-         //        HiddenLayers = hidden layer architecture (default = N,N-1)
-         //        TestRate = test for overtraining at each #th epoch (default = 10)
-         //        TrainingMethod = train with back propagation (BP), BFGS algorithm (BFGS) or generic algorithm (GA)
-         //        UseRegulator = use regulator to avoid overtraining
-         if(BookTheMethod(factory) == -1)
-         {
-            progress->Update(itemp[0]);
-	    delete signalTree;
-	    for(int j = 0; j < mixednum; j++)
-	       delete backgroundTree[j];
-            ifile->Close();
-            delete factory;
-            ofile->Close();
-
-            AlertPopup("Invalid MVA method", "The selected MVA method is invalid. Please make sure it is correctly defined.");
-            delete[] mvafile;
-            delete[] stemp;
-            delete[] nrTreeEvents;
-            delete[] itemp;
-            return;
-         }
-         itemp[1]++;
-         progress->Update(itemp[1]);
-
-         // Train the selected methods and save them to the weights folder
-         factory->TrainAllMethods();
-         itemp[1]++;
-         progress->Update(itemp[1]);
-         // Test the selected methods by applying the trained data to the test data set -> outputs saved to TestTree output file and then to the output ROOT file
-         factory->TestAllMethods();
-         itemp[1]++;
-         progress->Update(itemp[1]);
-         // Evaluation of methods printed to stdout
-         factory->EvaluateAllMethods();
-         itemp[1]++;
-         progress->Update(itemp[1]);
-
-         // Close the open files
-	 delete signalTree;
-	 for(int j = 0; j < mixednum; j++)
-	    delete backgroundTree[j];
-         ifile->Close();
-         delete factory;
-         ofile->Close();*/
-/*-------------TODO-------------*/
 /*-------------TODO-------------*/
 /*---Errors: PerformMvaAnalysis(&tempAnalysisFile, &mvafile[0], 1)--------*/
 /*-------------TODO-------------*/
@@ -1817,15 +1649,6 @@ void MyFrame::MvaApplication(string *infilename, bool application, int mean)
       else
          mvaprintout = mvaprintout + ToString(0) + "\t";
 
-/*      if( string((signalSelect->widgetCB)->GetStringSelection()).find(stemp[4]) != string::npos )
-         mvaprintout = mvaprintout + ToString(1) + "\t";
-      else if( string((backgroundSelect->widgetCB)->GetStringSelection()).find(stemp[4]) != string::npos )
-         mvaprintout = mvaprintout + ToString(2) + "\t";
-      else if( string((dataSelect->widgetCB)->GetStringSelection()).find(stemp[4]) != string::npos )
-         mvaprintout = mvaprintout + ToString(3) + "\t";
-      else
-         mvaprintout = mvaprintout + ToString(0) + "\t";*/
-
       TTree *signalApp = (TTree*)ofile->Get(stemp[2].c_str());
 
       itemp[1] = 0;
@@ -2068,8 +1891,6 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
 
       // Determine the type of observables to cut on (SD or FD)
       selcuttype = (cutObservables->widgetCB)->GetSelection();
-      // Determine how eye selection should be handled (any eye inside selection or average)
-//      vector<int> seleye;
 
       // Prepare observables for reading and writing
       Observables *obser = new Observables(observables);
@@ -2100,10 +1921,6 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
       {
          tempTree->GetEntry(j);
 
-/*         // Check if event is inside the selected cuts
-         if(!seleye.empty()) seleye.erase(seleye.begin(), seleye.end());*/
-
-//         ret = IsInsideCuts(obser, obser_neg, obser_pos, &seleye, true, ebin);
          ret = IsInsideCuts(obser, obser_neg, obser_pos, true, ebin);
 
          // If event is inside selected cuts, enter it into the list for shuffling
@@ -2334,15 +2151,11 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
                   // Splitting by fraction or number of events
                   if(!(*singlefile))
                   {
-/*                     ftemp[1] = 100.*((float)itemp[i+1])/((float)itemp[3]);
-                     stemp[4] = stemp[3] + " (" + ToString((double)ftemp[1],2) + "%)";
-//                     stemp[4] = stemp[3] + "-split" + ToString(i+1);*/
                      stemp[4] = stemp[3];
                   }
                   // Filtering a file
                   else
                   {
-//                     stemp[4] = stemp[3] + " (filtered)";
                      stemp[4] = stemp[3];
                   }
                }

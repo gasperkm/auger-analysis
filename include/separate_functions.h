@@ -48,4 +48,7 @@ int FindVecPos(vector<int> intvec, int search);
 // Search vector for a specific value
 int FindMinElement(vector<double> *invec);
 
+// Search vector for the number of elements passing a selection
+int SelectionPass(vector<double> *invec, double lowVal, double highVal);
+
 #endif

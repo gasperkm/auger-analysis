@@ -14,7 +14,6 @@ AdstMva::AdstMva()
    // Initialise number of stations, eyes and best eye
    nrstations = 0;
    nreyes = 0;
-//   besteye = 0;
 
    // Risetime calculation settings
    fRTWeights = new TFormula("RiseTimeWeights", "(80.0+(5.071e-7+6.48e-4*y-3.051e-4*y*y)*x*x)/z-16.46*y+36.16");
@@ -228,41 +227,6 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
       if(DBGSIG > 1)
          cout << "# RewriteObservables    #: " << "rewritecode (Sim) = " << rewritecode << endl;
 
-      // Prepare SD station events -------------------------------------------
-      *sdrecshw = fRecEvent->GetSDEvent().GetSdRecShower();
-
-      // Check if there are triggered SD stations
-      if(!(fRecEvent->GetSDEvent().HasTriggeredStations()))
-      {
-         if(DBGSIG > 0)
-            cout << "# RewriteObservables    #: " << "Error! No triggered stations in SD reconstruction." << endl;
-         if(goodrec) (recfail->at(3))++;
-         goodrec = false;
-      }
-
-      // Check if there are any SD stations in the event
-      if(!(fRecEvent->GetSDEvent().HasStations()))
-      {
-         if(DBGSIG > 0)
-            cout << "# RewriteObservables    #: " << "Error! No stations in SD reconstruction." << endl;
-         if(goodrec) (recfail->at(4))++;
-         goodrec = false;
-      }
-
-      // Check if SD stations have a VEM trace
-      if(!(fRecEvent->GetSDEvent().HasVEMTraces()))
-      {
-         if(DBGSIG > 0)
-            cout << "# RewriteObservables    #: " << "Error! No VEM traces in SD tanks." << endl;
-         if(goodrec) (recfail->at(5))++;
-         goodrec = false;
-      }
-
-      itemp[1] = SetSdObservables(sig);
-      itemp[1] = SetSdObservables(all);
-      if(DBGSIG > 1)
-         cout << "# RewriteObservables    #: " << "rewritecode (SD) = " << rewritecode << endl;
-
       // Prepare FD eye events ----------------------------------------------
       if(DBGSIG > 0)
          cout << "# RewriteObservables    #: " << "   Number of eyes = " << fRecEvent->GetNEyes() << endl;
@@ -314,6 +278,93 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
          if(DBGSIG > 1)
             cout << "# RewriteObservables    #: " << "rewritecode (FD) = " << rewritecode << endl;
       }
+
+      // Prepare SD station events -------------------------------------------
+      *sdrecshw = fRecEvent->GetSDEvent().GetSdRecShower();
+
+      // Check if there are triggered SD stations
+      if(!(fRecEvent->GetSDEvent().HasTriggeredStations()))
+      {
+         if(DBGSIG > 0)
+            cout << "# RewriteObservables    #: " << "Error! No triggered stations in SD reconstruction." << endl;
+         if(goodrec) (recfail->at(3))++;
+         goodrec = false;
+      }
+
+      // Check if there are any SD stations in the event
+      if(!(fRecEvent->GetSDEvent().HasStations()))
+      {
+         if(DBGSIG > 0)
+            cout << "# RewriteObservables    #: " << "Error! No stations in SD reconstruction." << endl;
+         if(goodrec) (recfail->at(4))++;
+         goodrec = false;
+      }
+
+      // Check if SD stations have a VEM trace
+      if(!(fRecEvent->GetSDEvent().HasVEMTraces()))
+      {
+         if(DBGSIG > 0)
+            cout << "# RewriteObservables    #: " << "Error! No VEM traces in SD tanks." << endl;
+         if(goodrec) (recfail->at(5))++;
+         goodrec = false;
+      }
+
+      itemp[1] = SetSdObservables(sig);
+      itemp[1] = SetSdObservables(all);
+      if(DBGSIG > 1)
+         cout << "# RewriteObservables    #: " << "rewritecode (SD) = " << rewritecode << endl;
+
+/*      // Prepare FD eye events ----------------------------------------------
+      if(DBGSIG > 0)
+         cout << "# RewriteObservables    #: " << "   Number of eyes = " << fRecEvent->GetNEyes() << endl;
+      if(fRecEvent->GetNEyes() == 0)
+      {
+         // If event has no FD eyes, disregard the event
+         if(DBGSIG > 0)
+            cout << "# RewriteObservables    #: " << "   Error! No reconstructed eyes for this event." << endl;
+         if(goodrec)
+	    (recfail->at(0))++;
+         goodrec = false;
+      }
+      else
+      {
+         // Save all active FD eyes
+	 if(!acteyes.empty()) acteyes.erase(acteyes.begin(), acteyes.end());
+         acteyes = fRecEvent->GetFDEvents();
+	 nreyes = acteyes.size();
+         if(DBGSIG > 0)
+	    cout << "# RewriteObservables    #: " << "   Number of active eyes = " << nreyes << endl;
+
+         // Check if the saved event is considered to be hybrid (SD+FD) or not
+         for(int i = 0; i < nreyes; i++)
+         {
+            if(!acteyes[i].IsHybridEvent())
+            {
+               if(DBGSIG > 0)
+                  cout << "# RewriteObservables    #: " << "   Error! Eye " << acteyes[i].GetEyeId() << " not a hybrid event." << endl;
+               goodrec = false;
+            }
+            else
+            {
+               if(DBGSIG > 0)
+                  cout << "# RewriteObservables    #: " << "   Event is a hybrid event." << endl;
+               goodrec = true;
+               break;
+            }
+         }
+
+         if(!goodrec)
+	    (recfail->at(1))++;
+
+         if(goodrec)
+	 {
+            itemp[1] = SetFdObservables(sig);
+            itemp[1] = SetFdObservables(all);
+	 }
+
+         if(DBGSIG > 1)
+            cout << "# RewriteObservables    #: " << "rewritecode (FD) = " << rewritecode << endl;
+      }*/
 
       if(goodrec)
       {

@@ -342,3 +342,19 @@ int FindMinElement(vector<double> *invec)
 
    return retval;
 }
+
+int SelectionPass(vector<double> *invec, double lowVal, double highVal)
+{
+   int retval = 0;
+
+   if(invec->size() == 0)
+      return -1;
+
+   for(int i = 0; i < invec->size(); i++)
+   {
+      if( (invec->at(i) > lowVal) && (invec->at(i) <= highVal) )
+         retval++;
+   }
+
+   return retval;
+}

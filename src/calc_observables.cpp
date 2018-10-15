@@ -31,6 +31,7 @@ int AdstMva::SetSdObservables(Observables **cursig)
    for(int j = 0; j < 3; j++)
    {
       cursig[j]->SetValue("shwsize", GetShowerSize(j));
+      cursig[j]->SetValue("deltas38", 0.);
       cursig[j]->SetValue("energySD", GetSdEnergy(j));
       cursig[j]->SetValue("ldfbeta", GetBeta(j));
       cursig[j]->SetValue("curvature", GetCurvature(j));
@@ -38,6 +39,7 @@ int AdstMva::SetSdObservables(Observables **cursig)
       InitRisetimeVariables();
       CalculateRisetime();
       cursig[j]->SetValue("risetimerecalc", GetRisetime(j, true));
+      cursig[j]->SetValue("deltarisetime", 0.);
       cursig[j]->SetValue("zenithSD", GetSdZenith(j));
       cursig[j]->SetValue("azimuthSD", GetSdAzimuth(j));
       cursig[j]->SetValue("latitudeSD", GetSdLatitude(j));
@@ -113,169 +115,49 @@ int AdstMva::SetFdObservables(Observables **cursig)
 //         if(DBGSIG > 1)
             cout << "Rewritting eye " << i+1 << "/" << nreyes << endl;
 
-/*         // For some reason sometimes extra eyes remain in vector, but number of eyes is correct && if eye is not active, set value to -1
-         if( (nreyes == *count) || (acteyes[*count].GetEyeId()-1 != i) )
-         {
-//            if(DBGSIG > 1)
-               cout << "Extra eye without active value!" << endl;
-         }
-         // If we get active eye, set the values
-         else if(acteyes[*count].GetEyeId()-1 == i)
-         {*/
-            if(DBGSIG > 1)
-               cout << "Active eye!" << endl;
+         CalculateShowerFoot(i);
 
-            CalculateShowerFoot(i);
-
-	    for(int k = 0; k < 3; k++)
-	    {
-               if(j == 0)
-                  dtemp[k] = GetXmax(i, k);
-               else if(j == 1)
-                  dtemp[k] = GetX0(i, k);
-               else if(j == 2)
-                  dtemp[k] = GetLambda(i, k);
-               else if(j == 3)
-                  dtemp[k] = GetFdEnergy(i, k);
-               else if(j == 4)
-                  dtemp[k] = GetFdZenith(i, k);
-               else if(j == 5)
-                  dtemp[k] = GetFdAzimuth(i, k);
-               else if(j == 6)
-                  dtemp[k] = GetFdLatitude(i, k);
-               else if(j == 7)
-                  dtemp[k] = GetFdLongitude(i, k);
-               else if(j == 8)
-                  dtemp[k] = GetShowerFoot(i, k);
-	       else
-	       {
-                  *fdobservable = false;
-                  break;
-	       }
-	    }
-
-            if(!(*fdobservable))
-               break;
-
-	    cout << "Input values: " << dtemp[0] << ", " << dtemp[1] << ", " << dtemp[2] << endl;
-
-            wQuantity[2*j]   = 1./TMath::Power(dtemp[1],2);
-            wQuantity[2*j+1] = 1./TMath::Power(dtemp[2],2);
-            quantitySum[2*j]   += dtemp[0]*wQuantity[2*j];
-            quantitySum[2*j+1] += dtemp[0]*wQuantity[2*j+1];
-            wQuantitySum[2*j]   += wQuantity[2*j];
-            wQuantitySum[2*j+1] += wQuantity[2*j+1];
-
-            (*count)++;
-//         }
-      }
-
-/*      for(int i = 0; i < ALLEYES+2; i++)
-      {
-         cout << "i = " << i << ", nreyes = " << nreyes << ", count = " << *count << ", eyeID-1 = " << acteyes[*count].GetEyeId()-1 << endl;
-
-         if(isheco && (i == 3) && (nreyes > 1))
+	 for(int k = 0; k < 3; k++)
 	 {
-            i = i + 2;
-	    (*count)++;
-	 }
-         else if(isheco && (i == 4) && (nreyes > 1))
-	 {
-            i = i + 1;
-	    (*count)++;
-	 }
-
-	 cout << "new i = " << i << ", nreyes = " << nreyes << ", count = " << *count << ", eyeID-1 = " << acteyes[*count].GetEyeId()-1 << endl;
-
-//         if(DBGSIG > 1)
-            cout << "Rewritting eye " << i+1 << "/" << ALLEYES+2 << endl;
-
-         // For some reason sometimes extra eyes remain in vector, but number of eyes is correct && if eye is not active, set value to -1
-         if( (nreyes == *count) || (acteyes[*count].GetEyeId()-1 != i) )
-         {
-//            if(DBGSIG > 1)
-               cout << "Extra eye without active value!" << endl;
-         }
-         // If we get active eye, set the values
-         else if(acteyes[*count].GetEyeId()-1 == i)
-         {
-//            if(DBGSIG > 1)
-               cout << "Active eye!" << endl;
-
-            CalculateShowerFoot(*count);
-
             if(j == 0)
-            {
-               dtemp[0] = GetXmax(*count, 0);
-               dtemp[1] = GetXmax(*count, 1);
-               dtemp[2] = GetXmax(*count, 2);
-            }
+               dtemp[k] = GetXmax(i, k);
             else if(j == 1)
-            {
-               dtemp[0] = GetX0(*count, 0);
-               dtemp[1] = GetX0(*count, 1);
-               dtemp[2] = GetX0(*count, 2);
-            }
+               dtemp[k] = GetX0(i, k);
             else if(j == 2)
-            {
-               dtemp[0] = GetLambda(*count, 0);
-               dtemp[1] = GetLambda(*count, 1);
-               dtemp[2] = GetLambda(*count, 2);
-            }
+               dtemp[k] = GetLambda(i, k);
             else if(j == 3)
-            {
-               dtemp[0] = GetFdEnergy(*count, 0);
-               dtemp[1] = GetFdEnergy(*count, 1);
-               dtemp[2] = GetFdEnergy(*count, 2);
-            }
+               dtemp[k] = GetFdEnergy(i, k);
             else if(j == 4)
-            {
-               dtemp[0] = GetFdZenith(*count, 0);
-               dtemp[1] = GetFdZenith(*count, 1);
-               dtemp[2] = GetFdZenith(*count, 2);
-            }
+               dtemp[k] = GetFdZenith(i, k);
             else if(j == 5)
-            {
-               dtemp[0] = GetFdAzimuth(*count, 0);
-               dtemp[1] = GetFdAzimuth(*count, 1);
-               dtemp[2] = GetFdAzimuth(*count, 2);
-            }
+               dtemp[k] = GetFdAzimuth(i, k);
             else if(j == 6)
-            {
-               dtemp[0] = GetFdLatitude(*count, 0);
-               dtemp[1] = GetFdLatitude(*count, 1);
-               dtemp[2] = GetFdLatitude(*count, 2);
-            }
+               dtemp[k] = GetFdLatitude(i, k);
             else if(j == 7)
-            {
-               dtemp[0] = GetFdLongitude(*count, 0);
-               dtemp[1] = GetFdLongitude(*count, 1);
-               dtemp[2] = GetFdLongitude(*count, 2);
-            }
+               dtemp[k] = GetFdLongitude(i, k);
             else if(j == 8)
-            {
-               dtemp[0] = GetShowerFoot(*count, 0);
-               dtemp[1] = GetShowerFoot(*count, 1);
-               dtemp[2] = GetShowerFoot(*count, 2);
-            }
+               dtemp[k] = GetShowerFoot(i, k);
 	    else
 	    {
                *fdobservable = false;
                break;
 	    }
+	 }
 
-	    cout << "Input values: " << dtemp[0] << ", " << dtemp[1] << ", " << dtemp[2] << endl;
+         if(!(*fdobservable))
+            break;
 
-            wQuantity[2*j]   = 1./TMath::Power(dtemp[1],2);
-            wQuantity[2*j+1] = 1./TMath::Power(dtemp[2],2);
-            quantitySum[2*j]   += dtemp[0]*wQuantity[2*j];
-            quantitySum[2*j+1] += dtemp[0]*wQuantity[2*j+1];
-            wQuantitySum[2*j]   += wQuantity[2*j];
-            wQuantitySum[2*j+1] += wQuantity[2*j+1];
+	 cout << "Input values: " << dtemp[0] << ", " << dtemp[1] << ", " << dtemp[2] << endl;
 
-            (*count)++;
-         }
-      }*/
+         wQuantity[2*j]   = 1./TMath::Power(dtemp[1],2);
+         wQuantity[2*j+1] = 1./TMath::Power(dtemp[2],2);
+         quantitySum[2*j]   += dtemp[0]*wQuantity[2*j];
+         quantitySum[2*j+1] += dtemp[0]*wQuantity[2*j+1];
+         wQuantitySum[2*j]   += wQuantity[2*j];
+         wQuantitySum[2*j+1] += wQuantity[2*j+1];
+
+         (*count)++;
+      }
 
       if(*fdobservable)
       {
@@ -331,54 +213,6 @@ int AdstMva::SetFdObservables(Observables **cursig)
       else
          break;
    }
-
-/*   // Go over a loop of mean, neg and pos values and all eyes
-   for(int j = 0; j < 3; j++)
-   {
-      *count = 0;
-      for(int i = 0; i < ALLEYES; i++)
-      {
- 	 if(DBGSIG > 1)
-            cout << "Rewritting eye " << i << " (" << ALLEYES << ")" << endl;
-         // For some reason sometimes extra eyes remain in vector, but number of eyes is correct && if eye is not active, set value to -1
-	 if( (nreyes == *count) || (acteyes[*count].GetEyeId()-1 != i) )
-	 {
- 	    if(DBGSIG > 1)
-	       cout << "Extra eye!" << endl;
-
-            cursig[j]->SetValue("xmax", GetXmax(*count, -1), i);
-            cursig[j]->SetValue("x0", GetX0(*count, -1), i);
-            cursig[j]->SetValue("lambda", GetLambda(*count, -1), i);
-            cursig[j]->SetValue("energyFD", GetFdEnergy(*count, -1), i);
-            cursig[j]->SetValue("zenithFD", GetFdZenith(*count, -1), i);
-            cursig[j]->SetValue("azimuthFD", GetFdAzimuth(*count, -1), i);
-            cursig[j]->SetValue("latitudeFD", GetFdLatitude(*count, -1), i);
-            cursig[j]->SetValue("longitudeFD", GetFdLongitude(*count, -1), i);
-            cursig[j]->SetValue("shfoot", GetShowerFoot(*count, -1), i);
-	 }
-         // If we get active eye, set the values
-         else if(acteyes[*count].GetEyeId()-1 == i)
-         {
- 	    if(DBGSIG > 1)
-               cout << "Active eye!" << endl;
-
-            cursig[j]->SetValue("xmax", GetXmax(*count, j), i);
-            cursig[j]->SetValue("x0", GetX0(*count, j), i);
-            cursig[j]->SetValue("lambda", GetLambda(*count, j), i);
-            cursig[j]->SetValue("energyFD", GetFdEnergy(*count, j), i);
-            cursig[j]->SetValue("zenithFD", GetFdZenith(*count, j), i);
-            cursig[j]->SetValue("azimuthFD", GetFdAzimuth(*count, j), i);
-            cursig[j]->SetValue("latitudeFD", GetFdLatitude(*count, j), i);
-            cursig[j]->SetValue("longitudeFD", GetFdLongitude(*count, j), i);
-            CalculateShowerFoot(*count);
-            cursig[j]->SetValue("shfoot", GetShowerFoot(*count, j), i);
-            (*count)++;
-         }
-      }
-
-      if(DBGSIG > 1)
-         cout << "Finished value type" << endl;
-   }*/
 
    delete[] wQuantity;
    delete[] quantitySum;

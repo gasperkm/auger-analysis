@@ -179,6 +179,9 @@ public:
     int MvaNoteObservables(int count);
     int MvaTreeFile(string *infilename, string *outfilename, int *nrEvents);
     int MvaSetTrees(int type, TFile *ifile, TTree *outtree);
+    int SetDeltas(int s38rise, int type, TFile *ifile, bool isdata);
+    void CalculateS38(vector<double> *shwsize, vector<double> *zenith, float *fitpar, float *fitparErr, vector<double> *outVect);
+    void WriteoutS38Fits(int tree, int type, float minEn, float maxEn, int nrpar, float *fitpar, float *fitparErr);
 //    int IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, vector<int> *seleye, bool split, int splitbin);
     int IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, bool split, int splitbin);
     int PerformMvaAnalysis(string *infilename, string *outfilename, int *curcount);
