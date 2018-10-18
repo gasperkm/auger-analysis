@@ -312,3 +312,227 @@ void Observables::SetupZenith(int type, Observables *errneg, Observables *errpos
 
    delete[] ftemp;
 }
+
+// Converting S1000 to S38
+void Observables::ConvertToS38(int type, Observables *errneg, Observables *errpos, vector<float> *fitresults)
+{
+   cout << "# Convert to S38  #: " << "Converting S1000 to S38 for " << GetName(type) << endl;
+
+   int *itemp = new int;
+   *itemp = 0;
+
+   float *ftemp = new float[4];
+   double *seczenith = new double[3];
+   float *s1000temp = new float[3];
+   float *entemp = new float[3];
+   float *fitpar = new float[4];
+   float *fitparErr = new float[4];
+
+   ftemp[0] = GetValue("zenithFD");
+   ftemp[1] = errneg->GetValue("zenithFD");
+   ftemp[2] = errpos->GetValue("zenithFD");
+
+   s1000temp[0] = GetValue("shwsize");
+   s1000temp[1] = errneg->GetValue("shwsize");
+   s1000temp[2] = errpos->GetValue("shwsize");
+
+   entemp[0] = GetValue("energyFD");
+   entemp[1] = errneg->GetValue("energyFD");
+   entemp[2] = errpos->GetValue("energyFD");
+
+   cout << "zenith = " << ftemp[0] << ", " << ftemp[1] << ", " << ftemp[2] << ", S1000 = " << s1000temp[0] << ", " << s1000temp[1] << ", " << s1000temp[2] << ", energy = " << TMath::Log10(entemp[0]) << ", " << TMath::Log10(entemp[1]) << ", " << TMath::Log10(entemp[2]) << endl;
+
+   for(int i = 0; i < fitresults->size()/10; i++)
+   {
+      if( (TMath::Log10(entemp[0]) > fitresults->at(10*i)) && (TMath::Log10(entemp[0]) <= fitresults->at(10*i+1)) )
+      {
+//         cout << "Bin " << fitresults->at(10*i) << "-" << fitresults->at(10*i+1) << ", Energy = " << TMath::Log10(entemp[0]) << endl;
+         for(int j = 2; j < 10; j++)
+         {
+//            cout << "(j-2)/2 = " << (j-2)/2 << ", 10*i+j = " << 10*i+j << endl;
+            fitpar[(j-2)/2] = fitresults->at(10*i+j);
+            fitparErr[(j-2)/2] = fitresults->at(10*i+j+1);
+	    j++;
+	 }
+	 *itemp = i;
+
+         break;
+      }
+   }
+
+/*   cout << "Fit parameters:" << endl;
+   cout << "  Energy = " << fitresults->at(10*(*itemp)) << "-" << fitresults->at(10*(*itemp)+1) << endl;
+   cout << "  S = " << fitpar[0] << " ± " << fitparErr[0] << endl;
+   cout << "  a = " << fitpar[1] << " ± " << fitparErr[1] << endl;
+   cout << "  b = " << fitpar[2] << " ± " << fitparErr[2] << endl;
+   cout << "  c = " << fitpar[3] << " ± " << fitparErr[3] << endl;
+   cout << endl;*/
+
+   // Calculate sec(theta) from zenith angle
+   seczenith[0] = SecTheta(ftemp[0],false);
+   seczenith[1] = (TMath::Sin(ftemp[0])*ftemp[1])/TMath::Power(TMath::Cos(ftemp[0]),2);
+   seczenith[2] = (TMath::Sin(ftemp[0])*ftemp[2])/TMath::Power(TMath::Cos(ftemp[0]),2);
+
+   cout << "sec(theta) = " << seczenith[0] << ", " << seczenith[1] << ", " << seczenith[2]/* << ", S1000 = " << s1000temp[0] << ", " << s1000temp[1] << ", " << s1000temp[2] << ", energy = " << TMath::Log10(entemp[0]) << ", " << TMath::Log10(entemp[1]) << ", " << TMath::Log10(entemp[2])*/;
+
+   // x = (1/sec(theta))^2 - (cos(thetaref))^2
+   ftemp[0] = TMath::Power(1./seczenith[0],2) - TMath::Power(TMath::Cos(DegToRad(38.)),2);
+   cout << ", x = " << ftemp[0];
+   // fCIC = 1 + a*x + b*x^2 + c*x^3
+   ftemp[1] = 1.+fitpar[1]*ftemp[0]+fitpar[2]*TMath::Power(ftemp[0],2)+fitpar[3]*TMath::Power(ftemp[0],3);
+   cout << ", fCIC = " << ftemp[1];
+   // S38 = S1000/fCIC
+   ftemp[2] = s1000temp[0]/ftemp[1];
+   cout << ", S38 = " << ftemp[2] << endl;
+   
+   SetValue(type, ftemp[2]);
+   
+   // (dS1000/fCIC)^2
+   ftemp[2] = s1000temp[1]/ftemp[1];
+   ftemp[3] = TMath::Power(ftemp[2],2);
+   cout << "  S1000 err = " << ftemp[2];
+   // (-S1000*da*x/fCIC^2)^2
+   ftemp[2] = -(s1000temp[0]*fitparErr[1]*ftemp[0])/TMath::Power(ftemp[1],2);
+   ftemp[3] += TMath::Power(ftemp[2],2);
+   cout << ", a err = " << ftemp[2];
+   // (-S1000*db*x^2/fCIC^2)^2
+   ftemp[2] = -(s1000temp[0]*fitparErr[2]*TMath::Power(ftemp[0],2))/TMath::Power(ftemp[1],2);
+   ftemp[3] += TMath::Power(ftemp[2],2);
+   cout << ", b err = " << ftemp[2];
+   // (-S1000*dc*x^3/fCIC^2)^2
+   ftemp[2] = -(s1000temp[0]*fitparErr[3]*TMath::Power(ftemp[0],3))/TMath::Power(ftemp[1],2);
+   ftemp[3] += TMath::Power(ftemp[2],2);
+   cout << ", c err = " << ftemp[2];
+   // (-S1000*dx*(a+2b*x+3c*x^2)/fCIC^2)^2
+   // dx = 2*cos(theta)*sin(theta)*dtheta
+   ftemp[2] = 2*seczenith[1]/TMath::Power(seczenith[0],3);
+   cout << ", dx = " << ftemp[2];
+   ftemp[2] = -(s1000temp[0]*ftemp[2]*(fitpar[1]+2*fitpar[2]*ftemp[0]+3*fitpar[3]*TMath::Power(ftemp[0],2)))/TMath::Power(ftemp[1],2);
+   ftemp[3] += TMath::Power(ftemp[2],2);
+   cout << ", x err = " << ftemp[2];
+   
+   ftemp[3] = TMath::Sqrt(ftemp[3]);
+   cout << ", dS38 neg = " << ftemp[3] << endl;
+   errneg->SetValue(type, ftemp[3]);
+   
+   // (dS1000/fCIC)^2
+   ftemp[2] = s1000temp[2]/ftemp[1];
+   ftemp[3] = TMath::Power(ftemp[2],2);
+   cout << "  S1000 err = " << ftemp[2];
+   // (-S1000*da*x/fCIC^2)^2
+   ftemp[2] = -(s1000temp[0]*fitparErr[1]*ftemp[0])/TMath::Power(ftemp[1],2);
+   ftemp[3] += TMath::Power(ftemp[2],2);
+   cout << ", a err = " << ftemp[2];
+   // (-S1000*db*x^2/fCIC^2)^2
+   ftemp[2] = -(s1000temp[0]*fitparErr[2]*TMath::Power(ftemp[0],2))/TMath::Power(ftemp[1],2);
+   ftemp[3] += TMath::Power(ftemp[2],2);
+   cout << ", b err = " << ftemp[2];
+   // (-S1000*dc*x^3/fCIC^2)^2
+   ftemp[2] = -(s1000temp[0]*fitparErr[3]*TMath::Power(ftemp[0],3))/TMath::Power(ftemp[1],2);
+   ftemp[3] += TMath::Power(ftemp[2],2);
+   cout << ", c err = " << ftemp[2];
+   // (-S1000*dx*(a+2b*x+3c*x^2)/fCIC^2)^2
+   // dx = 2*cos(theta)*sin(theta)*dtheta
+   ftemp[2] = 2*seczenith[2]/TMath::Power(seczenith[0],3);
+   cout << ", dx = " << ftemp[2];
+   ftemp[2] = -(s1000temp[0]*ftemp[2]*(fitpar[1]+2*fitpar[2]*ftemp[0]+3*fitpar[3]*TMath::Power(ftemp[0],2)))/TMath::Power(ftemp[1],2);
+   ftemp[3] += TMath::Power(ftemp[2],2);
+   cout << ", x err = " << ftemp[2];
+   
+   ftemp[3] = TMath::Sqrt(ftemp[3]);
+   cout << ", dS38 pos = " << ftemp[3] << endl;
+   errpos->SetValue(type, ftemp[3]);
+
+   delete itemp;
+   delete[] fitpar;
+   delete[] fitparErr;
+   delete[] s1000temp;
+   delete[] entemp;
+   delete[] seczenith;
+   delete[] ftemp;
+}
+
+// Converting S38 to DeltaS38
+void Observables::ConvertToDeltaS38(int type, Observables *errneg, Observables *errpos, float *fitresults)
+{
+   cout << "# Convert to Delta S38  #: " << "Converting S38 to DeltaS38 for " << GetName(type) << endl;
+
+   float *ftemp = new float[4];
+   float *s38temp = new float[3];
+   float *entemp = new float[3];
+
+   // E, dE, S38, dS38
+   s38temp[0] = GetValue(type);
+   s38temp[1] = errneg->GetValue(type);
+   s38temp[2] = errpos->GetValue(type);
+
+   entemp[0] = GetValue("energyFD")/1.e+18;
+   entemp[1] = errneg->GetValue("energyFD")/1.e+18;
+   entemp[2] = errpos->GetValue("energyFD")/1.e+18;
+
+   cout << "E = " << entemp[0] << ", " << entemp[1] << ", " << entemp[2] << ", S38 = " << s38temp[0] << ", " << s38temp[1] << ", " << s38temp[2]; 
+
+   // A, B
+   cout << ", A = " << fitresults[0] << " ± " << fitresults[1] << ", B = " << fitresults[2] << " ± " << fitresults[3] << endl; 
+
+   // (E/A)^(1/B)
+   ftemp[0] = TMath::Power(entemp[0]/fitresults[0], 1./fitresults[2]);
+   cout << "  (E/A)^(1/B) = " << ftemp[0]; 
+
+   // DeltaS38
+   ftemp[1] = s38temp[0] - ftemp[0];
+   SetValue(type, ftemp[1]);
+   cout << ", DeltaS38 = " << ftemp[1]; 
+
+   // (dS38)^2
+   ftemp[2] = s38temp[1];
+   ftemp[3] = TMath::Power(ftemp[2],2);
+   cout << ", S38 err = " << ftemp[2];
+   // (-((E/A)^(1/B))*dE/(B*E))^2
+   ftemp[2] = ftemp[0]*entemp[1]/(fitresults[2]*entemp[0]);
+   ftemp[3] += TMath::Power(ftemp[2],2);
+   cout << ", E err = " << ftemp[2];
+   // (((E/A)^(1/B))*dA/(A*B))^2
+   ftemp[2] = ftemp[0]*fitresults[1]/(fitresults[0]*fitresults[2]);
+   ftemp[3] += TMath::Power(ftemp[2],2);
+   cout << ", A err = " << ftemp[2];
+   // (((E/A)^(1/B))*ln(E/A)*dB/B^2)^2
+   ftemp[2] = ftemp[0]*TMath::Log(entemp[0]/fitresults[0])*fitresults[3]/TMath::Power(fitresults[2],2);
+   ftemp[3] += TMath::Power(ftemp[2],2);
+   cout << ", B err = " << ftemp[2];
+   
+   ftemp[3] = TMath::Sqrt(ftemp[3]);
+   cout << ", dDeltaS38 neg = " << ftemp[3] << endl;
+   errneg->SetValue(type, ftemp[3]);
+
+   // (dS38)^2
+   ftemp[2] = s38temp[2];
+   ftemp[3] = TMath::Power(ftemp[2],2);
+   cout << ", S38 err = " << ftemp[2];
+   // (-((E/A)^(1/B))*dE/(B*E))^2
+   ftemp[2] = ftemp[0]*entemp[2]/(fitresults[2]*entemp[0]);
+   ftemp[3] += TMath::Power(ftemp[2],2);
+   cout << ", E err = " << ftemp[2];
+   // (((E/A)^(1/B))*dA/(A*B))^2
+   ftemp[2] = ftemp[0]*fitresults[1]/(fitresults[0]*fitresults[2]);
+   ftemp[3] += TMath::Power(ftemp[2],2);
+   cout << ", A err = " << ftemp[2];
+   // (((E/A)^(1/B))*ln(E/A)*dB/B^2)^2
+   ftemp[2] = ftemp[0]*TMath::Log(entemp[0]/fitresults[0])*fitresults[3]/TMath::Power(fitresults[2],2);
+   ftemp[3] += TMath::Power(ftemp[2],2);
+   cout << ", B err = " << ftemp[2];
+   
+   ftemp[3] = TMath::Sqrt(ftemp[3]);
+   cout << ", dDeltaS38 pos = " << ftemp[3] << endl;
+   errpos->SetValue(type, ftemp[3]);
+
+   delete[] s38temp;
+   delete[] entemp;
+   delete[] ftemp;
+}
+
+// Converting risetime to Delta Risetime
+void Observables::ConvertToDelta(int type, Observables *errneg, Observables *errpos, vector<float> *fitresults)
+{
+   cout << "# Convert to Delta      #: " << "Converting risetime to Risetime Delta for " << GetName(type) << endl;
+}

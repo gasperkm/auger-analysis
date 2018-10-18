@@ -1257,7 +1257,7 @@ void MyFrame::CreateTempEventFile(wxCommandEvent& event)
    tempfile[1] = RemovePath(&tempfile[0]);
    tempAnalysisFile = RemoveFilename(&tempfile[0]) + "/temporary_event_file_" + tempfile[1];
    nrTreeEvents = new int[nrkeys];
-   ret = MvaTreeFile(&tempfile[0], &tempAnalysisFile, nrTreeEvents);
+   ret = MvaTreeFile(&tempfile[0], &tempAnalysisFile, nrTreeEvents, 0);
    if(ret == -1)
    {
       AlertPopup("Invalid selection of signal and background trees", "The selected signal or background trees are invalid. Please make sure to correctly select them and that they are present inside the input file.");
@@ -1303,7 +1303,11 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
    {
       if((specialMva->widgetChBox[0])->IsChecked())
          mvafile[2] = mvafile[0];
+
+      multipleEnergyBins = true;
    }
+   else
+      multipleEnergyBins = false;
 
    // Run over all energy bins automatically
    for(int imva = 0; imva < (cutEnergyBins->widgetNE[0])->GetValue(); imva++)
@@ -1346,7 +1350,7 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
          mvafile[1] = (selectedMva->widgetTE)->GetLineText(0);
          tempAnalysisFile = RemoveFilename(&mvafile[0]) + "/temporary_mvatree_file.root";
          nrTreeEvents = new int[nrkeys];
-         ret = MvaTreeFile(&mvafile[1], &tempAnalysisFile, nrTreeEvents);
+         ret = MvaTreeFile(&mvafile[1], &tempAnalysisFile, nrTreeEvents, imva);
          if(ret == -1)
          {
             progress->Update(itemp[0]);

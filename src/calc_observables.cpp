@@ -30,6 +30,7 @@ int AdstMva::SetSdObservables(Observables **cursig)
    // Go over a loop of mean, neg and pos values
    for(int j = 0; j < 3; j++)
    {
+      cursig[j]->SetValue("nrstations", GetNrStations(j));
       cursig[j]->SetValue("shwsize", GetShowerSize(j));
       cursig[j]->SetValue("deltas38", 0.);
       cursig[j]->SetValue("energySD", GetSdEnergy(j));
@@ -224,6 +225,291 @@ int AdstMva::SetFdObservables(Observables **cursig)
    delete stemp;
    delete[] dtemp;
    delete count;
+   return 0;
+}
+
+int AdstMva::SetStationValues()
+{
+   cout << "# SetStationValues      #: " << "# Entering function AdstMva::SetFdObservables()" << endl;
+
+   string *stemp = new string[3];
+   int *itemp = new int[4];
+   float *ftemp = new float[3];
+
+   int *start_bin = new int;
+   int *stop_bin = new int;
+
+   double *xp = new double;
+   double *yp = new double;
+   double *maxval = new double;
+
+   double *byrange = new double[2];
+   double *bzrange = new double[2];
+   byrange[0] = 1.e+40;
+   byrange[1] = -1.e+40;
+   bzrange[0] = 1.e+40;
+   bzrange[1] = -1.e+40;
+
+   vector<float> *time = new vector<float>;
+   vector<float> *vemtrace = new vector<float>;
+   vector<float> *yvalue = new vector<float>;
+   vector<float> *tempVect = new vector<float>;
+
+   float *eventThetaRec = new float;
+   float *secZenith = new float;
+   float *alpha = new float;
+   float *gamma = new float;
+   float *g = new float;
+   float *zeta = new float;
+
+   for(int i = 0; i < 3; i++)
+   {
+      stationDistance[i].clear();
+      stationRisetime[i].clear();
+   }
+   stationHSat.clear();
+
+   tempVect->clear();
+
+   actstations = fRecEvent->GetSDEvent().GetStationVector();
+
+   ftemp[0] = 0;
+   itemp[0] = 0;
+   itemp[3] = 0;
+
+   if(TMath::Log10((fRecEvent->GetSDEvent().GetSdRecShower()).GetEnergy()) > 19.6)
+      limitTankDistance[1] = 2000.;
+   else
+      limitTankDistance[1] = 1400.;
+
+   for(int i = 0; i < actstations.size(); i++)
+   {
+      // Use only the stations that are valid candidates
+      if(actstations[i].IsCandidate())
+      {
+/*-----------------------------------*/
+         cout << "New station (" << actstations[i].GetId() << ")" << endl;	// DEBUG
+         *start_bin = actstations[i].GetSignalStartSlot() - 4;
+         *stop_bin = actstations[i].GetSignalEndSlot();
+   
+         if( (*start_bin >= *stop_bin) || (*start_bin < 0) || (*start_bin > 5000) )
+            *start_bin = 0;
+
+         ftemp[1] = 0;
+         itemp[1] = 0;
+
+	 // Check all PMTs
+	 for(int iPMT = 1; iPMT <= 3; iPMT++)
+	 {
+            time->clear();
+            yvalue->clear();
+            vemtrace->clear();
+   
+            *yp = 0;
+            *maxval = -1.e40;
+   
+            *vemtrace = actstations[i].GetVEMTrace(iPMT);
+   
+            //cout << "PMT " << iPMT << ": Number of points in the VEM trace: " << vemtrace->size() << " --------------------------------------------------------" << endl;	// DEBUG
+   
+            // Continue if there is a VEM trace
+            if(vemtrace->size() > 0)
+            {
+               itemp[0]++;
+               itemp[1]++;
+   
+               ftemp[2] = 0;
+   
+               // Prepare the time vector (each point is multiplied by 25 to get nanoseconds)
+               for(int iVEM = 0; iVEM < vemtrace->size(); iVEM++)
+               {
+                  if( (iVEM >= *start_bin) && (iVEM <= *stop_bin) )
+                  {
+                     time->push_back((float)iVEM*25.);
+   
+                     *yp += vemtrace->at(iVEM);
+                     if(*yp > *maxval)
+                        *maxval = *yp;
+                  
+                     yvalue->push_back(*yp);
+                     ftemp[2] += *yp;
+                  }
+               }
+   
+               //cout << "Number of points in the signal slot: " << yvalue.size() << ", Maxval: " << *maxval << endl;	// DEBUG
+   
+               if(ftemp[2] < 0)
+               {
+                  cout << "Rejected PMT " << iPMT << " in tank " << actstations[i].GetId() << ": Negative signal integral value = " << ftemp[2] << endl;
+                  itemp[0]--;
+                  itemp[1]--;
+               }
+               else
+               {
+                  for(int iy = 0; iy < yvalue->size(); iy++)
+                  {
+                     //cout << time->at(iy)/25. << "\t" << yvalue->at(iy)/(*maxval) << endl;	// DEBUG
+   
+                     if(yvalue->at(iy)/(*maxval) > 0.95)
+                        break;
+   
+                     if(yvalue->at(iy)/(*maxval) <= 0.10)
+                     {
+                        byrange[0] = yvalue->at(iy)/(*maxval);
+                        byrange[1] = yvalue->at(iy+1)/(*maxval);
+   
+                        *yp = 0.1;
+                        //cout << "yp = " << *yp << ", byrange = " << byrange[0] << ", " << byrange[1] << ", time = " << time->at(iy) << ", " << time->at(iy+1) << endl;	// DEBUG
+                           // Find the x value of point with y value = yp = 0.1, that lies on a line between two points
+                        // y = k*x + a
+                        //    k = (y2 - y1)/(x2 - x1)
+                        //    a = y2 - (y2 - y1)/(x2 - x1)*x2
+                        // x = ((x2 - x1)/(y2 - y1))*(y - y2) + x2
+                        *xp = ((time->at(iy+1) - time->at(iy))*(*yp - byrange[1]))/(byrange[1] - byrange[0]) + time->at(iy+1);
+   
+                        byrange[0] = *xp;
+                        byrange[1] = *yp;
+                     }
+   
+                     if(yvalue->at(iy)/(*maxval) <= 0.50)
+                     {
+                        bzrange[0] = yvalue->at(iy)/(*maxval);
+                        bzrange[1] = yvalue->at(iy+1)/(*maxval);
+   
+                        *yp = 0.5;
+                        // Find the x value of point with y value = yp = 0.5, that lies on a line between two points
+                        // y = k*x + a
+                        //    k = (y2 - y1)/(x2 - x1)
+                        //    a = y2 - (y2 - y1)/(x2 - x1)*x2
+                        // x = ((x2 - x1)/(y2 - y1))*(y - y2) + x2
+                        *xp = ((time->at(iy+1) - time->at(iy))*(*yp - bzrange[1]))/(bzrange[1] - bzrange[0]) + time->at(iy+1);
+   
+                        bzrange[0] = *xp;
+                        bzrange[1] = *yp;
+                     }
+                  }
+   
+                  //cout << "Calculated risetime (" << byrange[0]/25. << "," << bzrange[0]/25. << ") = " << bzrange[0] - byrange[0] << endl;	// DEBUG
+   
+                  ftemp[0] += bzrange[0] - byrange[0];
+                  ftemp[1] += bzrange[0] - byrange[0];
+               }
+            }
+	 }
+   
+         ftemp[1] = ftemp[1]/itemp[1];
+
+         // Asymmetry correction
+         *eventThetaRec = fRecEvent->GetSDEvent().GetSdRecShower().GetZenith();
+         *secZenith = 1./cos(*eventThetaRec);
+         *alpha = 96.73 + (*secZenith)*(-282.40 + (*secZenith)*(241.80 - 62.61*(*secZenith)));
+         *gamma = -0.0009572 + (*secZenith)*(0.002068 + (*secZenith)*(-0.001362 + 0.0002861*(*secZenith)));
+         *g = (*alpha) + (*gamma) * actstations[i].GetSPDistance()*actstations[i].GetSPDistance();
+         *zeta = actstations[i].GetAzimuthSP();
+   
+         risemean = ftemp[1] - (*g)*cos(*zeta);
+         riseerr = fRTWeights->Eval(actstations[i].GetSPDistance(), (*secZenith), actstations[i].GetTotalSignal());
+   
+         if( (actstations[i].GetTotalSignal() > minSignal) )
+         {
+            if( (!actstations[i].IsLowGainSaturated()) && (!includeSaturated) )
+            {
+               if( (actstations[i].GetSPDistance() >= limitTankDistance[0]) && (actstations[i].GetSPDistance() <= limitTankDistance[1]) )
+               {
+                  tempVect->push_back((double)actstations[i].IsHighGainSaturated());
+                  tempVect->push_back(actstations[i].GetSPDistance());
+                  tempVect->push_back(actstations[i].GetSPDistanceError());
+                  tempVect->push_back(risemean);
+                  tempVect->push_back(riseerr);
+   
+                  itemp[3]++;
+               }
+/*               else
+                  cout << "Rejected: Station distance " << stationVector[i].GetSPDistance() << " is outside the limits (" << limitTankDistance[0] << "m, " << limitTankDistance[1] << "m)." << endl;*/
+            }
+/*            else
+               cout << "Rejected: Station signal is low gain saturated." << endl;*/
+         }
+/*         else
+            cout << "Rejected: Station signal " << stationVector[i].GetTotalSignal() << " is below the minimum accepted (" << minSignal << " VEM)." << endl;*/
+      }
+   }
+
+   if(itemp[3] < minPoints)
+   {
+      cout << "Rejected: Only " << itemp[3] << " valid tanks." << endl;
+      cout << "Event reconstruction has failed." << endl;
+
+      delete eventThetaRec;
+      delete secZenith;
+      delete alpha;
+      delete gamma;
+      delete g;
+      delete zeta;
+
+      delete xp;
+      delete yp;
+      delete maxval;
+
+      delete[] byrange;
+
+      delete time;
+      delete vemtrace;
+      delete yvalue;
+      delete tempVect;
+
+      delete start_bin;
+      delete stop_bin;
+
+      delete[] stemp;
+      delete[] itemp;
+      delete[] ftemp;
+      return -1;
+   }
+   else
+   {
+      for(int i = 0; i < itemp[3]; i++)
+      {
+         // Save if station is high gain saturated
+         stationHSat.push_back((bool)tempVect->at(5*i));
+         // Save distance of station to shower axis
+         stationDistance[0].push_back(tempVect->at(5*i+1));
+         stationDistance[1].push_back(tempVect->at(5*i+2));
+         stationDistance[2].push_back(tempVect->at(5*i+2));
+         // Save risetime for each station
+         stationRisetime[0].push_back(tempVect->at(5*i+3));
+         stationRisetime[1].push_back(tempVect->at(5*i+4));
+         stationRisetime[2].push_back(tempVect->at(5*i+4));
+      }
+   }
+
+   nractstations = stationHSat.size();
+/*-----------------------------------*/
+
+   delete eventThetaRec;
+   delete secZenith;
+   delete alpha;
+   delete gamma;
+   delete g;
+   delete zeta;
+
+   delete xp;
+   delete yp;
+   delete maxval;
+
+   delete[] byrange;
+
+   delete time;
+   delete vemtrace;
+   delete yvalue;
+   delete tempVect;
+
+   delete start_bin;
+   delete stop_bin;
+
+   delete[] stemp;
+   delete[] itemp;
+   delete[] ftemp;
    return 0;
 }
 // Functions to hold rules for saving observables ------------------------------
@@ -473,6 +759,22 @@ float AdstMva::GetShowerFoot(int eye, int type)
       return -1.0;
 }
 
+float AdstMva::GetNrStations(int type)
+{
+   // No actual error values
+   // Mean value
+   if(type == 0)
+      return nractstations;
+   // Mean - neg value
+   else if(type == 1)
+      return 0.;
+   // Mean + pos value
+   else if(type == 2)
+      return 0.;
+   else
+      return -1.0;
+}
+
 float AdstMva::GetShowerSize(int type)
 {
    // Mean value
@@ -535,8 +837,8 @@ float AdstMva::GetCurvature(int type)
 
 void AdstMva::InitRisetimeVariables()
 {
-   limitTankDistance[0] = 0.;
-   limitTankDistance[1] = 1800.;
+   limitTankDistance[0] = 300.;
+   limitTankDistance[1] = 1400.;
    minSignal = 5.0;
    includeSaturated = false;
    minPoints = 3;

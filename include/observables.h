@@ -68,6 +68,10 @@ public:
    void ApplyCorrectionHECOErrors(Observables *mean, int type);
    void ApplyUncertainty(Observables *errneg, Observables *errpos, int type);
    void SetupZenith(int type, Observables *errneg, Observables *errpos);
+
+   void ConvertToS38(int type, Observables *errneg, Observables *errpos, vector<float> *fitresults);
+   void ConvertToDeltaS38(int type, Observables *errneg, Observables *errpos, float *fitresults);
+   void ConvertToDelta(int type, Observables *errneg, Observables *errpos, vector<float> *fitresults);
 };
 
 #endif

@@ -9,6 +9,7 @@
 #include "workstation.h"
 #include "substr.h"
 #include "root_include.h"
+#include "root_style.h"
 #include "adst_mva.h"
 
 #include <iostream>
@@ -102,6 +103,19 @@ public:
     vector<double> esplitBins;
     bool customBinning;
     double oldBinSettings[3];
+    bool multipleEnergyBins;
+
+    Long64_t tentry;
+    vector<float> stationDistance[3];
+    vector<float> stationRisetime[3];
+    vector<bool> stationHSat;
+    TBranch *bdist;
+    TBranch *bdistneg;
+    TBranch *bdistpos;
+    TBranch *brise;
+    TBranch *briseneg;
+    TBranch *brisepos;
+    TBranch *bsat;
 
     // File open variables
     string *currentMvaDir;
@@ -177,11 +191,12 @@ public:
     // Functions for the MVA analysis
 //    int MvaNoteObservables(TMVA::Factory *factory);
     int MvaNoteObservables(int count);
-    int MvaTreeFile(string *infilename, string *outfilename, int *nrEvents);
+    int MvaTreeFile(string *infilename, string *outfilename, int *nrEvents, int curenbin);
     int MvaSetTrees(int type, TFile *ifile, TTree *outtree);
     int SetDeltas(int s38rise, int type, TFile *ifile, bool isdata);
     void CalculateS38(vector<double> *shwsize, vector<double> *zenith, float *fitpar, float *fitparErr, vector<double> *outVect);
     void WriteoutS38Fits(int tree, int type, float minEn, float maxEn, int nrpar, float *fitpar, float *fitparErr);
+    void PrintS38Fit(TGraphAsymmErrors *fitgraph, TF1 *fitfunc, float *fitpar, float *fitparErr, RootStyle *mystyle);
 //    int IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, vector<int> *seleye, bool split, int splitbin);
     int IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, bool split, int splitbin);
     int PerformMvaAnalysis(string *infilename, string *outfilename, int *curcount);

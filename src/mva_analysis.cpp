@@ -28,10 +28,9 @@ int MyFrame::MvaNoteObservables(int count)
 }
 
 // Write out the MVA trees to contain only one of the eyes (best eye inside selection cuts or average of all eyes)
-int MyFrame::MvaTreeFile(string *infilename, string *outfilename, int *nrEvents)
+int MyFrame::MvaTreeFile(string *infilename, string *outfilename, int *nrEvents, int curenbin)
 {
-   string *stemp;
-   stemp = new string[2];
+   string *stemp = new string[2];
 
    // Open the input file
    TFile *ifile = TFile::Open(infilename->c_str(), "READ");
@@ -46,20 +45,29 @@ int MyFrame::MvaTreeFile(string *infilename, string *outfilename, int *nrEvents)
    }
 
    // Determine the DeltaS38 and Risetime Delta observables and implement their fits depending on the selected data tree
-   ret = SetDeltas(0, (dataSelect->widgetCB)->GetSelection()+1, ifile, true);
-   ret = SetDeltas(1, (dataSelect->widgetCB)->GetSelection()+1, ifile, true);
-   for(int j = 1; j <= nrkeys; j++)
-   {
-      stemp[0] = "TreeS" + ToString(j);
-      stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
-      stemp[1] = RemovePath(&stemp[1]);
+   if(multipleEnergyBins)
+      stemp[0] = "mkdir -p " + string(*currentAnalysisDir) + "/../delta_conversion";
+   else
+      stemp[0] = "mkdir -p " + string(*currentAnalysisDir) + "/delta_conversion";
 
-      if( string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1] )
-         j++;
-      else
+   if( (multipleEnergyBins && (curenbin == 0)) || (!multipleEnergyBins) )
+   {
+      ret = system(stemp[0].c_str());
+      ret = SetDeltas(0, (dataSelect->widgetCB)->GetSelection()+1, ifile, true);
+      ret = SetDeltas(1, (dataSelect->widgetCB)->GetSelection()+1, ifile, true);
+      for(int j = 1; j <= nrkeys; j++)
       {
-         ret = SetDeltas(0, j, ifile, false);
-         ret = SetDeltas(1, j, ifile, false);
+         stemp[0] = "TreeS" + ToString(j);
+         stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
+         stemp[1] = RemovePath(&stemp[1]);
+
+         if( string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1] )
+            j++;
+         else
+         {
+            ret = SetDeltas(0, j, ifile, false);
+            ret = SetDeltas(1, j, ifile, false);
+         }
       }
    }
    
@@ -117,7 +125,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
 
    stemp = new string[3];
    itemp = new int[4];
-   ftemp = new float[9];
+   ftemp = new float[11];
 
    // SD observables for cut
    if(selcuttype == 0)
@@ -216,6 +224,91 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
    Observables *invalues_neg = new Observables(observables);
    Observables *invalues_pos = new Observables(observables);
 
+   // Read S38 and DeltaS38 and Risetime Delta fitting results
+   vector<float> *S38fitresults;
+   float *deltaS38fitresults;
+   ifstream *fitFile;
+
+   S38fitresults = new vector<float>;
+   fitFile = new ifstream;
+   if(multipleEnergyBins)
+      stemp[0] = string(*currentAnalysisDir) + "/../delta_conversion/sectheta_s1000_fits_" + ToString(type) + ".txt";
+   else
+      stemp[0] = string(*currentAnalysisDir) + "/delta_conversion/sectheta_s1000_fits_" + ToString(type) + ".txt";
+   fitFile->open(stemp[0].c_str(), ifstream::in );
+   if(fitFile->is_open())
+   {
+      while(1)
+      {
+         ftemp[10] = 0.;
+         for(int i = 0; i < 10; i++)
+            *fitFile >> ftemp[i];
+         
+         if(fitFile->eof())
+            break;
+
+         if(ftemp[10] == ftemp[0])
+            break;
+         else
+         {
+            for(int i = 0; i < 10; i++)
+               S38fitresults->push_back(ftemp[i]);
+            ftemp[10] = ftemp[0];
+         }
+      }
+   }
+   fitFile->close();
+   delete fitFile;
+
+   deltaS38fitresults = new float[4];
+   fitFile = new ifstream;
+   if(multipleEnergyBins)
+      stemp[0] = string(*currentAnalysisDir) + "/../delta_conversion/s38_data_fit.txt";
+   else
+      stemp[0] = string(*currentAnalysisDir) + "/delta_conversion/s38_data_fit.txt";
+   fitFile->open(stemp[0].c_str(), ifstream::in );
+   if(fitFile->is_open())
+   {
+      *fitFile >> ftemp[0] >> ftemp[1];
+      for(int i = 0; i < 4; i++)
+         *fitFile >> deltaS38fitresults[i];
+   }
+   fitFile->close();
+   delete fitFile;
+
+   cout << "Fit results (conversion S1000 to S38):" << endl;
+   for(int i = 0; i < S38fitresults->size()/10; i++)
+   {
+      cout << i << ":"; 
+      for(int j = 0; j < 10; j++)
+         cout << "\t" << S38fitresults->at(10*i+j);
+      cout << endl;
+   }
+   cout << endl;
+
+   cout << "Fit results (conversion S38 to DeltaS38):" << endl;
+   for(int i = 0; i < 2; i++)
+   {
+      cout << i/2 << ":\t" << deltaS38fitresults[2*i] << "\t" << deltaS38fitresults[2*i+1] << endl;
+   }
+   cout << endl;
+
+   for(int i = 0; i < 3; i++)
+   {
+      stationDistance[i].clear();
+      stationRisetime[i].clear();
+   }
+   stationHSat.clear();
+
+   bdist = 0;
+   bdistneg = 0;
+   bdistpos = 0;
+   brise = 0;
+   briseneg = 0;
+   brisepos = 0;
+   bsat = 0;
+
+   // Set input values from root files for all observables
    for(int i = 0; i < nrobs; i++)
    {
       if(DBGSIG > 1)
@@ -230,6 +323,14 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
       tempTree->SetBranchAddress((invalues_pos->GetName(i) + "_pos").c_str(), &(invalues_pos->obsstruct[i].value));
    }
 
+   tempTree->SetBranchAddress("stationdistance", &stationDistance[0], &bdist);
+   tempTree->SetBranchAddress("stationdistance_neg", &stationDistance[1], &bdistneg);
+   tempTree->SetBranchAddress("stationdistance_pos", &stationDistance[2], &bdistpos);
+   tempTree->SetBranchAddress("stationrisetime", &stationRisetime[0], &brise);
+   tempTree->SetBranchAddress("stationrisetime_neg", &stationRisetime[1], &briseneg);
+   tempTree->SetBranchAddress("stationrisetime_pos", &stationRisetime[2], &brisepos);
+   tempTree->SetBranchAddress("stationhighsat", &stationHSat, &bsat);
+
    itemp[0] = 0;
    itemp[1] = 0;
    itemp[2] = 0;
@@ -237,7 +338,18 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
 
    for(int j = 0; j < tempTree->GetEntries(); j++)
    {
+      // Read all observables
       tempTree->GetEntry(j);
+
+      // Read all vectors for SD stations
+      tentry = tempTree->LoadTree(j);
+      bdist->GetEntry(tentry);
+      bdistneg->GetEntry(tentry);
+      bdistpos->GetEntry(tentry);
+      brise->GetEntry(tentry);
+      briseneg->GetEntry(tentry);
+      brisepos->GetEntry(tentry);
+      bsat->GetEntry(tentry);
 
       // Apply any Energy and Xmax corrections to the data file (only on data)
       ret = Find(observables, "xmax");
@@ -245,6 +357,8 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
       {
          AlertPopup("No xmax observable found", "No xmax observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable xmax.");
          delete tempTree;
+         delete[] deltaS38fitresults;
+         delete S38fitresults;
          delete[] outobs;
          delete[] outobs_neg;
          delete[] outobs_pos;
@@ -284,18 +398,27 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
 	 }
       }
 
+      // Convert S1000 to S38 and then to DeltaS38
+      ret = Find(observables, "deltas38");
+      if(ret != -1)
+      {
+         invalues->ConvertToS38(ret, invalues_neg, invalues_pos, S38fitresults);
+         invalues->ConvertToDeltaS38(ret, invalues_neg, invalues_pos, deltaS38fitresults);
+      }
+
+      // Convert risetimes to Risetime Deltas
+      ret = Find(observables, "deltarisetime");
+      if(ret != -1)
+         invalues->ConvertToDelta(ret, invalues_neg, invalues_pos, S38fitresults);
+
       // Change zenith angle (theta) to sec(theta) value for MVA analysis
       ret = Find(observables, "zenithSD");
       if(ret != -1)
-      {
          invalues->SetupZenith(ret, invalues_neg, invalues_pos);
-      }
 
       ret = Find(observables, "zenithFD");
       if(ret != -1)
-      {
          invalues->SetupZenith(ret, invalues_neg, invalues_pos);
-      }
 
       if(DBGSIG > 1)
          cout << "# MvaSetTrees           #: " << "Event = " << j << endl;
@@ -325,6 +448,9 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
    cout << "# MvaSetTrees           #: " << "Number of events with multiple eyes inside the cuts = " << itemp[1] << endl;
 
    ret = itemp[0];
+
+   delete[] deltaS38fitresults;
+   delete S38fitresults;
 
    delete tempTree;
    delete[] outobs;
@@ -357,6 +483,10 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
    TGraphAsymmErrors *fitgraphMid;
    TF1 *fitfunc; 
    TGraphAsymmErrors *fitgraph;
+   TCanvas *canvtemp;
+   TF1 *tempfunc;
+   RootStyle *mystyle = new RootStyle();
+   mystyle->SetBaseStyle();
 
    stemp[0] = "TreeS" + ToString(type);
    TTree *tempTree = new TTree;
@@ -366,12 +496,18 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
    {
       cout << "# SetDeltas             #: " << "Setting DeltaS38 (from tree " << stemp[0] << ")" << endl;
 
-      stemp[1] = "rm -fr " + string(*currentAnalysisDir) + "/sectheta_s1000_fits_" + ToString(type) + ".txt";
+      if(multipleEnergyBins)
+         stemp[1] = "rm -fr " + string(*currentAnalysisDir) + "/../delta_conversion/sectheta_s1000_fits_" + ToString(type) + ".txt";
+      else
+         stemp[1] = "rm -fr " + string(*currentAnalysisDir) + "/delta_conversion/sectheta_s1000_fits_" + ToString(type) + ".txt";
       ret = system(stemp[1].c_str());
 
       if(isdata)
       {
-         stemp[1] = "rm -fr " + string(*currentAnalysisDir) + "/s38_data_fit.txt";
+         if(multipleEnergyBins)
+            stemp[1] = "rm -fr " + string(*currentAnalysisDir) + "/../delta_conversion/s38_data_fit.txt";
+	 else
+            stemp[1] = "rm -fr " + string(*currentAnalysisDir) + "/delta_conversion/s38_data_fit.txt";
          ret = system(stemp[1].c_str());
       }
 
@@ -381,6 +517,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
       {
          AlertPopup("No FD energy observable found", "No FD energy observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable energyFD.");
 	 delete tempTree;
+	 delete mystyle;
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
@@ -392,6 +529,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
       {
          AlertPopup("No FD zenith angle observable found", "No FD zenith angle observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable zenithFD.");
 	 delete tempTree;
+	 delete mystyle;
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
@@ -403,6 +541,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
       {
          AlertPopup("No S1000 observable found", "No S1000 observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable shwsize.");
 	 delete tempTree;
+	 delete mystyle;
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
@@ -500,6 +639,8 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
       vector<double> *seczenithVect = new vector<double>;
       vector<double> *shwsizeVect = new vector<double>;
       vector<double> *s38Vect = new vector<double>;
+
+      canvtemp = new TCanvas("canvtemp","",1200,800);
 
       if(isdata)
       {
@@ -618,6 +759,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
          fitfunc = new TF1("fitfunc", "TMath::Power(x/[0],1./[1])", 2., 100.);
          fitfunc->SetParameters(0.1,1.);
          fitgraph->Fit("fitfunc", "0");
+	 tempfunc = (TF1*)fitgraph->GetFunction("fitfunc");
 
          for(int i = 0; i < 2; i++)
          {
@@ -630,11 +772,14 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
          cout << "- B = " << fitparam[1] << " ± " << fitparamErr[1] << endl;
          cout << endl;
 
+	 PrintS38Fit(fitgraph, tempfunc, fitparam, fitparamErr, mystyle);
          WriteoutS38Fits(type, 1, 18.5, 20.0, 2, fitparam, fitparamErr);
 
          delete fitfunc;
          delete fitgraph;
       }
+
+      delete canvtemp;
 
       delete[] fitparam;
       delete[] fitparamErr;
@@ -668,6 +813,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
       {
          AlertPopup("No SD energy observable found", "No SD energy observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable energySD.");
 	 delete tempTree;
+	 delete mystyle;
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
@@ -679,26 +825,86 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
       {
          AlertPopup("No SD zenith angle observable found", "No SD zenith angle observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable zenithSD.");
 	 delete tempTree;
+	 delete mystyle;
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
          return -1;
       }
 
-      ret = Find(observables, "risetimerecalc");
-      if(ret == -1)
+      Observables *invalues = new Observables(observables);
+      Observables *invalues_neg = new Observables(observables);
+      Observables *invalues_pos = new Observables(observables);
+
+      bdist = 0;
+      bdistneg = 0;
+      bdistpos = 0;
+      brise = 0;
+      briseneg = 0;
+      brisepos = 0;
+      bsat = 0;
+
+      for(int i = 0; i < 3; i++)
       {
-         AlertPopup("No risetime observable found", "No risetime observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable risetimerecalc.");
-	 delete tempTree;
-         delete[] stemp;
-         delete[] itemp;
-         delete[] ftemp;
-         return -1;
+         stationDistance[i].clear();
+         stationRisetime[i].clear();
       }
+      stationHSat.clear();
+
+      int *selectedBin = new int;
+      *selectedBin = (cutZenithBins->widgetCB)->GetSelection();
+
+      float *fitparam = new float[3];
+      float *fitparamErr = new float[3];
+
+      for(int i = 0; i < nrobs; i++)
+      {
+         if(DBGSIG > 1)
+            cout << "# SetDeltas             #: " << i << ": Setting mean variable: " << invalues->GetName(i) << endl;
+         tempTree->SetBranchAddress((invalues->GetName(i)).c_str(), &(invalues->obsstruct[i].value));
+         if(DBGSIG > 1)
+            cout << "# SetDeltas             #: " << i << ": Setting neg variable: " << invalues_neg->GetName(i) << endl;
+         tempTree->SetBranchAddress((invalues_neg->GetName(i) + "_neg").c_str(), &(invalues_neg->obsstruct[i].value));
+         if(DBGSIG > 1)
+            cout << "# SetDeltas             #: " << i << ": Setting pos variable: " << invalues_pos->GetName(i) << endl;
+         tempTree->SetBranchAddress((invalues_pos->GetName(i) + "_pos").c_str(), &(invalues_pos->obsstruct[i].value));
+      }
+
+      tempTree->SetBranchAddress("stationdistance", &stationDistance[0], &bdist);
+      tempTree->SetBranchAddress("stationdistance_neg", &stationDistance[1], &bdistneg);
+      tempTree->SetBranchAddress("stationdistance_pos", &stationDistance[2], &bdistpos);
+      tempTree->SetBranchAddress("stationrisetime", &stationRisetime[0], &brise);
+      tempTree->SetBranchAddress("stationrisetime_neg", &stationRisetime[1], &briseneg);
+      tempTree->SetBranchAddress("stationrisetime_pos", &stationRisetime[2], &brisepos);
+      tempTree->SetBranchAddress("stationhighsat", &stationHSat, &bsat);
+
+      itemp[0] = 0;
+      for(int j = 0; j < tempTree->GetEntries(); j++)
+      {
+         tempTree->GetEntry(j);
+
+         // Read all vectors for SD stations
+         tentry = tempTree->LoadTree(j);
+         bdist->GetEntry(tentry);
+         bdistneg->GetEntry(tentry);
+         bdistpos->GetEntry(tentry);
+         brise->GetEntry(tentry);
+         briseneg->GetEntry(tentry);
+         brisepos->GetEntry(tentry);
+         bsat->GetEntry(tentry);
+      }
+
+      delete[] fitparam;
+      delete[] fitparamErr;
+
+      delete invalues;
+      delete invalues_neg;
+      delete invalues_pos;
    }
    else
    {
       delete tempTree;
+      delete mystyle;
       delete[] stemp;
       delete[] itemp;
       delete[] ftemp;
@@ -706,19 +912,67 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
    }
 
    delete tempTree;
+   delete mystyle;
    delete[] stemp;
    delete[] itemp;
    delete[] ftemp;
    return 0;
 }
 
+void MyFrame::PrintS38Fit(TGraphAsymmErrors *fitgraph, TF1 *fitfunc, float *fitpar, float *fitparErr, RootStyle *mystyle)
+{
+   string *stemp = new string[2];
+
+   TLatex *ltext = new TLatex();
+
+   TCanvas *c1 = new TCanvas("c1","",1200,900);
+   gStyle->SetEndErrorSize(2);
+   
+   mystyle->SetGraphColor(fitgraph, 0);
+   mystyle->SetAxisTitles(fitgraph, "FD energy (EeV)", "S_{38} (VEM)");
+   c1->SetLogx(kTRUE);
+   c1->SetLogy(kTRUE);
+   fitgraph->SetMarkerSize(0.8);
+   fitgraph->GetXaxis()->SetMoreLogLabels(kTRUE);
+   fitgraph->GetYaxis()->SetNoExponent(kTRUE);
+   fitgraph->Draw("AP");
+   mystyle->SetFuncColor(fitfunc, 2);
+   fitfunc->Draw("L;SAME");
+
+   ltext->SetTextAlign(11);
+   stemp[0] = "A = (" + ToString(fitpar[0]*10.,2) + " #pm " + ToString(fitparErr[0]*10.,2) + ") #times 10^{17} eV";
+   ltext->DrawLatex(3., 310., stemp[0].c_str());
+   stemp[0] = "B = " + ToString(fitpar[1],3) + " #pm " + ToString(fitparErr[1],3);
+   ltext->DrawLatex(3., 0.88*310., stemp[0].c_str());
+
+   if(multipleEnergyBins)
+      stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/../delta_conversion/s38_vs_energyFD_data.pdf";
+   else
+      stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/delta_conversion/s38_vs_energyFD_data.pdf";
+   system(stemp[0].c_str());
+   if(multipleEnergyBins)
+      stemp[1] = string(*currentAnalysisDir) + "/../delta_conversion/s38_vs_energyFD_data.pdf";
+   else
+      stemp[1] = string(*currentAnalysisDir) + "/delta_conversion/s38_vs_energyFD_data.pdf";
+   c1->SaveAs(stemp[1].c_str());
+
+   delete ltext;
+   delete[] stemp;
+   delete c1;
+}
+
 void MyFrame::WriteoutS38Fits(int tree, int type, float minEn, float maxEn, int nrpar, float *fitpar, float *fitparErr)
 {
    ofstream *fitFile = new ofstream;
+   string *stemp = new string[2];
 
    if(type == 0)
    {
-      fitFile->open(((*currentAnalysisDir) + "/sectheta_s1000_fits_" + ToString(tree) + ".txt").c_str(), ofstream::out | ofstream::app );
+      if(multipleEnergyBins)
+         stemp[0] = string(*currentAnalysisDir) + "/../delta_conversion/sectheta_s1000_fits_" + ToString(tree) + ".txt";
+      else
+         stemp[0] = string(*currentAnalysisDir) + "/delta_conversion/sectheta_s1000_fits_" + ToString(tree) + ".txt";
+      fitFile->open(stemp[0].c_str(), ofstream::out | ofstream::app );
 
       *fitFile << minEn << "\t" << maxEn;
       for(int i = 0; i < nrpar; i++)
@@ -729,7 +983,11 @@ void MyFrame::WriteoutS38Fits(int tree, int type, float minEn, float maxEn, int 
    }
    else if(type == 1)
    {
-      fitFile->open(((*currentAnalysisDir) + "/s38_data_fit.txt").c_str(), ofstream::out | ofstream::app );
+      if(multipleEnergyBins)
+         stemp[0] = string(*currentAnalysisDir) + "/../delta_conversion/s38_data_fit.txt";
+      else
+         stemp[0] = string(*currentAnalysisDir) + "/delta_conversion/s38_data_fit.txt";
+      fitFile->open(stemp[0].c_str(), ofstream::out | ofstream::app );
 
       *fitFile << minEn << "\t" << maxEn;
       for(int i = 0; i < nrpar; i++)
@@ -739,8 +997,8 @@ void MyFrame::WriteoutS38Fits(int tree, int type, float minEn, float maxEn, int 
       fitFile->close();
    }
 
+   delete[] stemp;
    delete fitFile;
-
 }
 
 void MyFrame::CalculateS38(vector<double> *shwsize, vector<double> *zenith, float *fitpar, float *fitparErr, vector<double> *outVect)

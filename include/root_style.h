@@ -29,6 +29,7 @@ public:
    void SetAxisTitles(TGraphAsymmErrors *plot, string xtitle, string ytitle);
 
    void SetHistColor(TH1 *plot, int sigbackdata);
+   void SetFuncColor(TF1 *plot, int sigbackdata);
    void SetGraphColor(TGraph *plot, int sigbackdata);
    void SetGraphColor(TGraphErrors *plot, int sigbackdata);
    void SetGraphColor(TGraphAsymmErrors *plot, int sigbackdata);

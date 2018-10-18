@@ -185,6 +185,31 @@ void RootStyle::SetHistColor(TH1 *plot, int sigbackdata)
    }
 }
 
+// Setting colors for functions
+void RootStyle::SetFuncColor(TF1 *plot, int sigbackdata)
+{
+   if(sigbackdata == 0)
+   {
+      plot->SetLineColor(c_BackgroundLine);
+      plot->SetLineWidth(2);
+   }
+   else if(sigbackdata == 1)
+   {
+      plot->SetLineColor(c_SignalLine);
+      plot->SetLineWidth(2);
+   }
+   else if(sigbackdata == 2)
+   {
+      plot->SetLineColor(c_DataLine);
+      plot->SetLineWidth(2);
+   }
+   else if(sigbackdata == 3)
+   {
+      plot->SetLineColor(c_ResidLine);
+      plot->SetLineWidth(2);
+   }
+}
+
 void RootStyle::SetHistColorSimple(TH1 *plot, int sigbackdata)
 {
    if(sigbackdata == 0)

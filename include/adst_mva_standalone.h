@@ -30,7 +30,6 @@ public:
    GenShower *genshw;
 
    // Variables for SD stations and FD eyes
-   int nrstations;
    vector<SdRecStation> actstations;
    int nreyes;
    vector<FDEvent> acteyes;

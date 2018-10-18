@@ -32,14 +32,13 @@ public:
    GenShower *genshw;
 
    // Variables for SD stations and FD eyes
-   int nrstations;
    vector<SdRecStation> actstations;
    int nreyes;
    vector<FDEvent> acteyes;
    bool isheco;
 //   int besteye;
    bool goodrec;
-   double risemean, risemin, risemax;
+   double risemean, risemin, risemax, riseerr;
    double shfootmean, shfootmin, shfootmax, shfootlimit;
    double aopmean, aopmin, aopmax;
    /* Rewrite code gives information, if any of the observables have not been correctly rewritten (missing SD or FD data):
@@ -48,6 +47,12 @@ public:
      - The following bits determine if calculation for each observable is correct
    */
    int rewritecode;
+
+   // In addition to observables, station specific vectors are also given
+   int nractstations;
+   vector<float> stationDistance[3];
+   vector<float> stationRisetime[3];
+   vector<bool> stationHSat;
 
    // Settings and variables for risetime calculations
    TFormula *fRTWeights;
@@ -79,6 +84,7 @@ public:
    int SetSimObservables(Observables **cursig);
    int SetSdObservables(Observables **cursig);
    int SetFdObservables(Observables **cursig);
+   int SetStationValues();
 //   int GetBestEye();
    float GetXmax(int eye, int type);
    float GetX0(int eye, int type);
@@ -91,6 +97,7 @@ public:
    void CalculateShowerFoot(int eye);
    float GetShowerFoot(int eye, int type);
 
+   float GetNrStations(int type);
    float GetShowerSize(int type);
    float GetSdEnergy(int type);
    float GetBeta(int type);

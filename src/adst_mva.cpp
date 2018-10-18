@@ -11,8 +11,7 @@ AdstMva::AdstMva()
    sdrecshw = new SdRecShower();
    genshw = new GenShower();
 
-   // Initialise number of stations, eyes and best eye
-   nrstations = 0;
+   // Initialise number of eyes
    nreyes = 0;
 
    // Risetime calculation settings
@@ -39,6 +38,13 @@ void AdstMva::PrepareOtherTrees(unsigned int nrfiles, int innr, vector<string> o
 
    string *stemp = new string[2];
 
+   for(int i = 0; i < 3; i++)
+   {
+      stationDistance[i].clear();
+      stationRisetime[i].clear();
+   }
+   stationHSat.clear();
+
    TTree *other_sig_tree;
 #if OFFVER == 0
    stemp[0] = "TreeNewS" + ToString(innr+1);
@@ -62,6 +68,13 @@ void AdstMva::PrepareOtherTrees(unsigned int nrfiles, int innr, vector<string> o
       stemp[1] = othersig->GetName(i) + "_pos/F";
       other_sig_tree->Branch(stemp[0].c_str(), &(othersig_neg->obsstruct[i].value), stemp[1].c_str());
    }
+   other_sig_tree->Branch("stationdistance", &stationDistance[0]);
+   other_sig_tree->Branch("stationrisetime", &stationRisetime[0]);
+   other_sig_tree->Branch("stationhighsat", &stationHSat);
+   other_sig_tree->Branch("stationdistance_neg", &stationDistance[1]);
+   other_sig_tree->Branch("stationrisetime_neg", &stationRisetime[1]);
+   other_sig_tree->Branch("stationdistance_pos", &stationDistance[2]);
+   other_sig_tree->Branch("stationrisetime_pos", &stationRisetime[2]);
 
    // Write an empty tree
    other_sig_tree->Write();
@@ -129,6 +142,31 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
          // Set branch addresses for signal + sum observables
          sig_tree->Branch(stemp[2].c_str(), &(sig[j]->obsstruct[i].value), stemp[3].c_str());
          all_tree->Branch(stemp[2].c_str(), &(all[j]->obsstruct[i].value), stemp[3].c_str());
+      }
+
+      // Add station distance and station risetime vectors
+      if(j == 0)
+      {
+         sig_tree->Branch("stationdistance", &stationDistance[j]);
+         all_tree->Branch("stationdistance", &stationDistance[j]);
+         sig_tree->Branch("stationrisetime", &stationRisetime[j]);
+         all_tree->Branch("stationrisetime", &stationRisetime[j]);
+         sig_tree->Branch("stationhighsat", &stationHSat);
+         all_tree->Branch("stationhighsat", &stationHSat);
+      }
+      else if(j == 1)
+      {
+         sig_tree->Branch("stationdistance_neg", &stationDistance[j]);
+         all_tree->Branch("stationdistance_neg", &stationDistance[j]);
+         sig_tree->Branch("stationrisetime_neg", &stationRisetime[j]);
+         all_tree->Branch("stationrisetime_neg", &stationRisetime[j]);
+      }
+      else if(j == 2)
+      {
+         sig_tree->Branch("stationdistance_pos", &stationDistance[j]);
+         all_tree->Branch("stationdistance_pos", &stationDistance[j]);
+         sig_tree->Branch("stationrisetime_pos", &stationRisetime[j]);
+         all_tree->Branch("stationrisetime_pos", &stationRisetime[j]);
       }
    }
 
@@ -309,6 +347,10 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
          goodrec = false;
       }
 
+      InitRisetimeVariables();
+      itemp[1] = SetStationValues();
+      if(itemp[1] == -1)
+         goodrec = false;
       itemp[1] = SetSdObservables(sig);
       itemp[1] = SetSdObservables(all);
       if(DBGSIG > 1)
