@@ -37,7 +37,7 @@ public:
    vector<FDEvent> acteyes;
    bool isheco;
 //   int besteye;
-   bool goodrec;
+   bool goodrec, goodrecsim, goodrecsd, goodrecfd;
    double risemean, risemin, risemax, riseerr;
    double shfootmean, shfootmin, shfootmax, shfootlimit;
    double aopmean, aopmin, aopmax;
@@ -82,9 +82,13 @@ public:
 
    // Functions for rewriting and calculating observables
    int SetSimObservables(Observables **cursig);
+   void ZeroSimObservables(Observables **cursig);
    int SetSdObservables(Observables **cursig);
+   void ZeroSdObservables(Observables **cursig);
    int SetFdObservables(Observables **cursig);
+   void ZeroFdObservables(Observables **cursig);
    int SetStationValues();
+   float TotalSignalFromPMT(SdRecStation *station, bool silent);
 //   int GetBestEye();
    float GetXmax(int eye, int type);
    float GetX0(int eye, int type);

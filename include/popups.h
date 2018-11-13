@@ -30,4 +30,24 @@ public:
    wxButton *okButton, *cancelButton;
 };	
 
+class FSDialog : public wxDialog
+{
+private:
+   std::string *svalue;
+   int *nrs;
+public:
+   FSDialog(const wxString &title, const wxSize &size, std::string text, std::string *label, int nrval, std::string *values, const int *textID);
+   virtual ~FSDialog();
+
+   std::string GetFSValue(int type);
+   void UpdateFSValue(wxCommandEvent &event);
+   bool CheckFSValues();
+
+   wxPanel *panel;
+   wxBoxSizer *vbox, *hbox, *hbox2;
+   wxStaticText *widgetText, *widgetLabel;
+   wxTextCtrl *widgetTE[40];
+   wxButton *okButton;
+};
+
 #endif

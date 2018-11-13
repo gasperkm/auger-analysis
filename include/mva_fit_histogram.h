@@ -72,7 +72,7 @@ private:
    vector<string> treeNames;
    // Type of constraint (with all parameters or all-1)
    int constraint;
-   bool xmaxAnalysis;
+   int obsAnalysis;
    bool removeZero;
 
    // Composition and lnA values
@@ -133,7 +133,7 @@ public:
    double GetPvalue();
    int GetNdf();
    double GetStep();
-   bool GetAnalysisType();
+   int GetAnalysisType();
 
    int GetElemType(int type);
 

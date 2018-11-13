@@ -1,7 +1,7 @@
 #include "combine.h"
 #include "primary_type.h"
 
-void CombineRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, vector<int> &nrevts, vector<string> &filenames )
+void CombineRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, vector<int> &nrevts, vector<string> &filenames, vector<string> &titles )
 {
    cout << "Combining root files." << endl;
    for(int i = 0; i < filenames.size(); i++) cout << "  " << filenames[i] << endl;
@@ -103,7 +103,8 @@ void CombineRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys
       cout << "Events in output signal tree = " << outSig[i]->GetEntries() << endl;
       strOldS = "TreeS" + ToString(i+1);
       outSig[i]->SetName(strOldS.c_str());
-      treeTitle[i] = outSig[i]->GetTitle();
+      treeTitle[i] = titles[i]/*outSig[i]->GetTitle()*/;
+      outSig[i]->SetTitle(treeTitle[i].c_str());
       outSig[i]->Write();
    }
    printf("Saving all events tree\n");
@@ -138,13 +139,7 @@ void MergeRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, 
       partevts->push_back(0);
    int maxevents = 0;
    int partid = -1;
-//   int *itemp = new int[5];
-//   string *stemp = new string[2];
-/*   itemp[0] = 0;
-   itemp[1] = 0;
-   itemp[2] = 0;
-   itemp[3] = 0;
-   itemp[4] = 0;*/
+
    // Set titles for final keys
    for(int i = 0; i < titles.size(); i++)
    {
@@ -158,50 +153,16 @@ void MergeRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, 
             partevts->at(partid) += nrevts[i];
 	 }
 
-/*         if(titles[i] == "Proton")
-            itemp[0] += nrevts[i]; 
-         else if(titles[i] == "Helium")
-            itemp[1] += nrevts[i]; 
-         else if(titles[i] == "Oxygen")
-            itemp[2] += nrevts[i]; 
-         else if(titles[i] == "Iron")
-            itemp[3] += nrevts[i]; 
-	 else
-            itemp[4] += nrevts[i];*/
-
 	 maxevents += nrevts[i];
       }
    }
-
-   /* TODO */
-/*   cout << prim->Nr() << endl
-        << prim->GetName(6) << endl
-        << prim->GetShortName(6) << endl
-        << prim->GetA(6) << endl
-        << prim->GetShortName(&stemp[0]) << endl
-        << prim->GetName(&stemp[1]) << endl
-        << prim->GetA(&stemp[0]) << endl
-        << prim->GetA(&stemp[1]) << endl;*/
 
    cout << "Events per particle type:" << endl;
    for(int i = 0; i < prim->Nr(); i++)
    {
       cout << "- " << prim->GetName(i) << " = " << partevts->at(i) << " (" << (double)partevts->at(i)/(double)maxevents << ")" << endl;
    }
-/*   cout << "- Proton = " << itemp[0] << " (" << (double)itemp[0]/(double)maxevents << ")" << endl;
-   cout << "- Helium = " << itemp[1] << " (" << (double)itemp[1]/(double)maxevents << ")" << endl;
-   cout << "- Oxygen = " << itemp[2] << " (" << (double)itemp[2]/(double)maxevents << ")" << endl;
-   cout << "- Iron   = " << itemp[3] << " (" << (double)itemp[3]/(double)maxevents << ")" << endl;
-   cout << "- Other  = " << itemp[4] << " (" << (double)itemp[4]/(double)maxevents << ")" << endl;*/
    cout << "- Total  = " << maxevents << endl;
-
-//   delete prim;
-
-/*   for(int i = 0; i < 5; i++)
-      partevts.push_back(itemp[i]);
-
-   delete[] itemp;
-   delete[] stemp;*/
 
    int nrfiles = sourcelist->GetSize();
    string strOldS, strNewS;
@@ -302,32 +263,12 @@ void MergeRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, 
          if((double)partevts->at(i)/(double)maxevents == 1)
 	 {
             treeTitleOld = prim->GetName(i);
-/*            if(i == 0)
-               treeTitleOld = "Proton";
-            else if(i == 1)
-               treeTitleOld = "Helium";
-            else if(i == 2)
-               treeTitleOld = "Oxygen";
-            else if(i == 3)
-               treeTitleOld = "Iron";
-            else if(i == 4)
-               treeTitleOld = "Other";*/
 
 	    break;
 	 }
          else if((double)partevts->at(i)/(double)maxevents > 0)
 	 {
             treeTitleOld += "[" + prim->GetName(i) + " " + ToString(100.*(double)partevts->at(i)/(double)maxevents, 2) + "%]";
-/*            if(i == 0)
-               treeTitleOld += "[Proton " + ToString((double)partevts->at(i)/(double)maxevents, 2) + "%] ";
-            else if(i == 1)
-               treeTitleOld += "[Helium " + ToString((double)partevts->at(i)/(double)maxevents, 2) + "%] ";
-            else if(i == 2)
-               treeTitleOld += "[Oxygen " + ToString((double)partevts->at(i)/(double)maxevents, 2) + "%] ";
-            else if(i == 3)
-               treeTitleOld += "[Iron " + ToString((double)partevts->at(i)/(double)maxevents, 2) + "%] ";
-            else if(i == 4)
-               treeTitleOld += "[Other " + ToString((double)partevts->at(i)/(double)maxevents, 2) + "%] ";*/
 	 }
       }
 
@@ -355,32 +296,12 @@ void MergeRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, 
          if((double)partevts->at(i)/(double)maxevents == 1)
 	 {
             treeTitleNew = prim->GetName(i);
-/*            if(i == 0)
-               treeTitleNew = "Proton";
-            else if(i == 1)
-               treeTitleNew = "Helium";
-            else if(i == 2)
-               treeTitleNew = "Oxygen";
-            else if(i == 3)
-               treeTitleNew = "Iron";
-            else if(i == 4)
-               treeTitleNew = "Other";*/
 
 	    break;
 	 }
          else if((double)partevts->at(i)/(double)maxevents > 0)
 	 {
             treeTitleNew += "[" + prim->GetName(i) + " " + ToString(100.*(double)partevts->at(i)/(double)maxevents, 2) + "%]";
-/*            if(i == 0)
-               treeTitleNew += "[Proton " + ToString(100.*(double)partevts->at(i)/(double)maxevents, 2) + "%]";
-            else if(i == 1)
-               treeTitleNew += "[Helium " + ToString(100.*(double)partevts->at(i)/(double)maxevents, 2) + "%]";
-            else if(i == 2)
-               treeTitleNew += "[Oxygen " + ToString(100.*(double)partevts->at(i)/(double)maxevents, 2) + "%]";
-            else if(i == 3)
-               treeTitleNew += "[Iron " + ToString(100.*(double)partevts->at(i)/(double)maxevents, 2) + "%]";
-            else if(i == 4)
-               treeTitleNew += "[Other " + ToString(100.*(double)partevts->at(i)/(double)maxevents, 2) + "%]";*/
 	 }
       }
 
@@ -450,11 +371,8 @@ cout << "Number of events in tree " << strNewS << " = " << treeNewS->GetEntries(
          nrevts.push_back(treeOldS->GetEntries());
          nrevts.push_back(treeNewS->GetEntries());
 
-//         if( !((stemp[3].compare("Signal tree from old file.") == 0) || (stemp[3].compare("Signal tree from new file.") == 0) || (stemp[3].compare("Background tree with all events, including signal events.") == 0)) )
-//	 {
-	    titles.push_back(treeOldS->GetTitle());
-	    titles.push_back(treeNewS->GetTitle());
-//	 }
+	 titles.push_back(treeOldS->GetTitle());
+	 titles.push_back(treeNewS->GetTitle());
       }
 
       nextsource = (TFile*)sourcelist->After(nextsource);
@@ -524,7 +442,7 @@ void hmerge(int nrfiles, string *files, string *outname)
    delete FileList;
 }
 
-void hadd(int nrfiles, string *files, string *outname)
+void hadd(int nrfiles, string *files, string *outname, string *titlename, bool settitles)
 {
    cout << "Number of files: " << nrfiles << endl;
    cout << "Saving into file: " << *outname << endl;
@@ -560,6 +478,16 @@ void hadd(int nrfiles, string *files, string *outname)
    }
 
    CheckKeys(Target, FileList, nrkeys, nrevts, titles);
+
+   if(settitles)
+   {
+      cout << "Setting user defined titles." << endl;
+      titles.clear();
+
+      for(int i = 0; i < nrfiles; i++)
+         titles.push_back(titlename[i]);
+   }
+
    for(int i = 0; i < nrkeys.size(); i++)
       printf("Keys in file %d = %d\n", i, nrkeys[i]);
    for(int i = 0; i < nrevts.size(); i++)
@@ -568,7 +496,7 @@ void hadd(int nrfiles, string *files, string *outname)
       cout << "Title of key " << i << " = " << titles[i] << endl;
 
    if(nrfiles > 1)
-      CombineRootfile(Target, FileList, nrkeys, nrevts, filenames);
+      CombineRootfile(Target, FileList, nrkeys, nrevts, filenames, titles);
 
    Target->Close();
 

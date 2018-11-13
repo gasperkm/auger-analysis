@@ -105,10 +105,12 @@ public:
     double oldBinSettings[3];
     bool multipleEnergyBins;
 
+    bool setdeltas[2];
+
     Long64_t tentry;
-    vector<float> stationDistance[3];
-    vector<float> stationRisetime[3];
-    vector<bool> stationHSat;
+    vector<float> *stationDistance[3];
+    vector<float> *stationRisetime[3];
+    vector<bool> *stationHSat;
     TBranch *bdist;
     TBranch *bdistneg;
     TBranch *bdistpos;
@@ -196,6 +198,7 @@ public:
     int SetDeltas(int s38rise, int type, TFile *ifile, bool isdata);
     void CalculateS38(vector<double> *shwsize, vector<double> *zenith, float *fitpar, float *fitparErr, vector<double> *outVect);
     void WriteoutS38Fits(int tree, int type, float minEn, float maxEn, int nrpar, float *fitpar, float *fitparErr);
+    void WriteoutDeltaFits(int tree, float minEn, float maxEn, float minZen, float maxZen, int nrpar, float *fitpar, float *fitparErr);
     void PrintS38Fit(TGraphAsymmErrors *fitgraph, TF1 *fitfunc, float *fitpar, float *fitparErr, RootStyle *mystyle);
 //    int IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, vector<int> *seleye, bool split, int splitbin);
     int IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, bool split, int splitbin);
@@ -248,6 +251,7 @@ const int ID_DEFOPTIONS 	= 315;
 // Additional IDs for any custom dialogs
 const int ID_MVACUTDIALOG	= 401;
 const int ID_RANDSEEDDIALOG	= 402;
+const int ID_TITLEDIALOG	= 410;
 
 // Additional IDs for custom options regarding listboxes
 const int ID_DELETELIST		= 1001;

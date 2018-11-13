@@ -50,24 +50,44 @@ int MyFrame::MvaTreeFile(string *infilename, string *outfilename, int *nrEvents,
    else
       stemp[0] = "mkdir -p " + string(*currentAnalysisDir) + "/delta_conversion";
 
+   setdeltas[0] = true;
+   setdeltas[1] = true;
+
    if( (multipleEnergyBins && (curenbin == 0)) || (!multipleEnergyBins) )
    {
       ret = system(stemp[0].c_str());
       ret = SetDeltas(0, (dataSelect->widgetCB)->GetSelection()+1, ifile, true);
+      if(ret == -1)
+         setdeltas[0] = false;
       ret = SetDeltas(1, (dataSelect->widgetCB)->GetSelection()+1, ifile, true);
-      for(int j = 1; j <= nrkeys; j++)
-      {
-         stemp[0] = "TreeS" + ToString(j);
-         stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
-         stemp[1] = RemovePath(&stemp[1]);
+      if(ret == -1)
+         setdeltas[1] = false;
 
-         if( string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1] )
-            j++;
-         else
+      if(setdeltas[0])
+      {
+         for(int j = 1; j <= nrkeys; j++)
          {
-            ret = SetDeltas(0, j, ifile, false);
-            ret = SetDeltas(1, j, ifile, false);
+            stemp[0] = "TreeS" + ToString(j);
+            stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
+            stemp[1] = RemovePath(&stemp[1]);
+
+            if( string((dataSelect->widgetCB)->GetStringSelection()) != stemp[1] )
+	    {
+               ret = SetDeltas(0, j, ifile, false);
+               if(ret == -1)
+                  setdeltas[1] = false;
+	    }
          }
+      }
+
+      if(!setdeltas[0] && !setdeltas[1])
+      {
+         if(multipleEnergyBins)
+            stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/../delta_conversion";
+         else
+            stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/delta_conversion";
+
+         ret = system(stemp[0].c_str());
       }
    }
    
@@ -122,10 +142,12 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
    string *stemp;
    int *itemp;
    float *ftemp;
+   bool *btemp;
 
    stemp = new string[3];
    itemp = new int[4];
    ftemp = new float[11];
+   btemp = new bool;
 
    // SD observables for cut
    if(selcuttype == 0)
@@ -137,6 +159,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
+         delete btemp;
          return -1;
       }
 
@@ -147,6 +170,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
+         delete btemp;
          return -1;
       }
    }
@@ -160,6 +184,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
+         delete btemp;
          return -1;
       }
 
@@ -170,6 +195,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
+         delete btemp;
          return -1;
       }
    }
@@ -181,6 +207,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
       delete[] stemp;
       delete[] itemp;
       delete[] ftemp;
+      delete btemp;
       return -1;
    }
 
@@ -224,81 +251,133 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
    Observables *invalues_neg = new Observables(observables);
    Observables *invalues_pos = new Observables(observables);
 
-   // Read S38 and DeltaS38 and Risetime Delta fitting results
+   // Read S38, DeltaS38 and Risetime Delta fitting results
    vector<float> *S38fitresults;
    float *deltaS38fitresults;
+   vector<float> *deltafitresults;
    ifstream *fitFile;
 
-   S38fitresults = new vector<float>;
-   fitFile = new ifstream;
-   if(multipleEnergyBins)
-      stemp[0] = string(*currentAnalysisDir) + "/../delta_conversion/sectheta_s1000_fits_" + ToString(type) + ".txt";
-   else
-      stemp[0] = string(*currentAnalysisDir) + "/delta_conversion/sectheta_s1000_fits_" + ToString(type) + ".txt";
-   fitFile->open(stemp[0].c_str(), ifstream::in );
-   if(fitFile->is_open())
+   if(setdeltas[0])
    {
-      while(1)
+      S38fitresults = new vector<float>;
+      fitFile = new ifstream;
+      if(multipleEnergyBins)
+         stemp[0] = string(*currentAnalysisDir) + "/../delta_conversion/sectheta_s1000_fits_" + ToString(type) + ".txt";
+      else
+         stemp[0] = string(*currentAnalysisDir) + "/delta_conversion/sectheta_s1000_fits_" + ToString(type) + ".txt";
+      fitFile->open(stemp[0].c_str(), ifstream::in );
+      if(fitFile->is_open())
       {
-         ftemp[10] = 0.;
-         for(int i = 0; i < 10; i++)
-            *fitFile >> ftemp[i];
-         
-         if(fitFile->eof())
-            break;
-
-         if(ftemp[10] == ftemp[0])
-            break;
-         else
+         while(1)
          {
+            ftemp[10] = 0.;
             for(int i = 0; i < 10; i++)
-               S38fitresults->push_back(ftemp[i]);
-            ftemp[10] = ftemp[0];
+               *fitFile >> ftemp[i];
+            
+            if(fitFile->eof())
+               break;
+
+            if(ftemp[10] == ftemp[0])
+               break;
+            else
+            {
+               for(int i = 0; i < 10; i++)
+                  S38fitresults->push_back(ftemp[i]);
+               ftemp[10] = ftemp[0];
+            }
          }
       }
-   }
-   fitFile->close();
-   delete fitFile;
+      fitFile->close();
+      delete fitFile;
 
-   deltaS38fitresults = new float[4];
-   fitFile = new ifstream;
-   if(multipleEnergyBins)
-      stemp[0] = string(*currentAnalysisDir) + "/../delta_conversion/s38_data_fit.txt";
-   else
-      stemp[0] = string(*currentAnalysisDir) + "/delta_conversion/s38_data_fit.txt";
-   fitFile->open(stemp[0].c_str(), ifstream::in );
-   if(fitFile->is_open())
-   {
-      *fitFile >> ftemp[0] >> ftemp[1];
-      for(int i = 0; i < 4; i++)
-         *fitFile >> deltaS38fitresults[i];
-   }
-   fitFile->close();
-   delete fitFile;
+      deltaS38fitresults = new float[4];
+      fitFile = new ifstream;
+      if(multipleEnergyBins)
+         stemp[0] = string(*currentAnalysisDir) + "/../delta_conversion/s38_data_fit.txt";
+      else
+         stemp[0] = string(*currentAnalysisDir) + "/delta_conversion/s38_data_fit.txt";
+      fitFile->open(stemp[0].c_str(), ifstream::in );
+      if(fitFile->is_open())
+      {
+         *fitFile >> ftemp[0] >> ftemp[1];
+         for(int i = 0; i < 4; i++)
+            *fitFile >> deltaS38fitresults[i];
+      }
+      fitFile->close();
+      delete fitFile;
 
-   cout << "Fit results (conversion S1000 to S38):" << endl;
-   for(int i = 0; i < S38fitresults->size()/10; i++)
-   {
-      cout << i << ":"; 
-      for(int j = 0; j < 10; j++)
-         cout << "\t" << S38fitresults->at(10*i+j);
+/*      cout << "Fit results (conversion S1000 to S38):" << endl;
+      for(int i = 0; i < S38fitresults->size()/10; i++)
+      {
+         cout << i << ":"; 
+         for(int j = 0; j < 10; j++)
+            cout << "\t" << S38fitresults->at(10*i+j);
+         cout << endl;
+      }
       cout << endl;
-   }
-   cout << endl;
 
-   cout << "Fit results (conversion S38 to DeltaS38):" << endl;
-   for(int i = 0; i < 2; i++)
-   {
-      cout << i/2 << ":\t" << deltaS38fitresults[2*i] << "\t" << deltaS38fitresults[2*i+1] << endl;
+      cout << "Fit results (conversion S38 to DeltaS38):" << endl;
+      for(int i = 0; i < 2; i++)
+      {
+         cout << i/2 << ":\t" << deltaS38fitresults[2*i] << "\t" << deltaS38fitresults[2*i+1] << endl;
+      }
+      cout << endl;*/
    }
-   cout << endl;
+
+   if(setdeltas[1])
+   {
+      deltafitresults = new vector<float>;
+      fitFile = new ifstream;
+      if(multipleEnergyBins)
+         stemp[0] = string(*currentAnalysisDir) + "/../delta_conversion/distance_risetime_fits.txt";
+      else
+         stemp[0] = string(*currentAnalysisDir) + "/delta_conversion/distance_risetime_fits.txt";
+      fitFile->open(stemp[0].c_str(), ifstream::in );
+      if(fitFile->is_open())
+      {
+         while(1)
+         {
+            ftemp[10] = 0.;
+            for(int i = 0; i < 10; i++)
+               *fitFile >> ftemp[i];
+            
+            if(fitFile->eof())
+               break;
+
+            if(ftemp[10] == ftemp[0])
+               break;
+            else
+            {
+               for(int i = 0; i < 10; i++)
+                  deltafitresults->push_back(ftemp[i]);
+               ftemp[10] = ftemp[0];
+            }
+         }
+      }
+      fitFile->close();
+      delete fitFile;
+
+/*      cout << "Fit results (conversion risetime to Delta):" << endl;
+      for(int i = 0; i < deltafitresults->size()/10; i++)
+      {
+         cout << i << ":"; 
+         for(int j = 0; j < 10; j++)
+            cout << "\t" << deltafitresults->at(10*i+j);
+         cout << endl;
+      }
+      cout << endl;*/
+   }
 
    for(int i = 0; i < 3; i++)
    {
-      stationDistance[i].clear();
-      stationRisetime[i].clear();
+      stationDistance[i] = new vector<float>;
+      stationRisetime[i] = new vector<float>;
+
+      stationDistance[i]->clear();
+      stationRisetime[i]->clear();
    }
-   stationHSat.clear();
+   stationHSat = new vector<bool>;
+   stationHSat->clear();
 
    bdist = 0;
    bdistneg = 0;
@@ -341,107 +420,157 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
       // Read all observables
       tempTree->GetEntry(j);
 
-      // Read all vectors for SD stations
-      tentry = tempTree->LoadTree(j);
-      bdist->GetEntry(tentry);
-      bdistneg->GetEntry(tentry);
-      bdistpos->GetEntry(tentry);
-      brise->GetEntry(tentry);
-      briseneg->GetEntry(tentry);
-      brisepos->GetEntry(tentry);
-      bsat->GetEntry(tentry);
-
-      // Apply any Energy and Xmax corrections to the data file (only on data)
-      ret = Find(observables, "xmax");
-      if(ret == -1)
+      *btemp = true;
+      
+      if(j == 0)
+         cout << "Selected observables:" << endl;
+      for(int i = 0; i < nrobs; i++)
       {
-         AlertPopup("No xmax observable found", "No xmax observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable xmax.");
-         delete tempTree;
-         delete[] deltaS38fitresults;
-         delete S38fitresults;
-         delete[] outobs;
-         delete[] outobs_neg;
-         delete[] outobs_pos;
-         delete invalues;
-         delete invalues_neg;
-         delete invalues_pos;
-         delete[] stemp;
-         delete[] itemp;
-         delete[] ftemp;
-         return -1;
-      }
-      else
-      {
-         // Apply Xmax corrections to Auger FD standard data
-         if((specialMva->widgetChBox[3])->IsChecked())
-            invalues->ApplyCorrectionFD();
-
-         // Apply Xmax and energy corrections to Auger HECO data
-         if((specialMva->widgetChBox[4])->IsChecked())
+         if(obssel[i])
          {
-            invalues->ApplyCorrectionHECO();
-            invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
-            invalues_pos->ApplyCorrectionHECOErrors(invalues, 1);
+            if( (invalues->GetName(i) == "nrstations") && (invalues->GetValue(i) == 0) )
+               *btemp = false;
+	    else if(invalues->GetValue(i) == -1)
+               *btemp = false;
+
+            if(j == 0)
+               cout << "  " << invalues->GetName(i) << endl;
+         }
+      }
+
+      if(j == 0)
+         cout << endl;
+
+      if(*btemp)
+      {
+         // Read all vectors for SD stations
+         tentry = tempTree->LoadTree(j);
+         bdist->GetEntry(tentry);
+         bdistneg->GetEntry(tentry);
+         bdistpos->GetEntry(tentry);
+         brise->GetEntry(tentry);
+         briseneg->GetEntry(tentry);
+         brisepos->GetEntry(tentry);
+         bsat->GetEntry(tentry);
+
+         // Apply any Energy and Xmax corrections to the data file (only on data)
+         ret = Find(observables, "xmax");
+         if(ret == -1)
+         {
+            AlertPopup("No xmax observable found", "No xmax observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable xmax.");
+            for(int i = 0; i < 3; i++)
+            {
+               delete stationDistance[i];
+               delete stationRisetime[i];
+            }
+            delete stationHSat;
+            delete tempTree;
+            delete[] deltaS38fitresults;
+            delete S38fitresults;
+            delete deltafitresults;
+            delete[] outobs;
+            delete[] outobs_neg;
+            delete[] outobs_pos;
+            delete invalues;
+            delete invalues_neg;
+            delete invalues_pos;
+            delete[] stemp;
+            delete[] itemp;
+            delete[] ftemp;
+            delete btemp;
+            return -1;
+         }
+         else
+         {
+            // Apply Xmax corrections to Auger FD standard data
+            if((specialMva->widgetChBox[3])->IsChecked())
+               invalues->ApplyCorrectionFD();
+
+            // Apply Xmax and energy corrections to Auger HECO data
+            if((specialMva->widgetChBox[4])->IsChecked())
+            {
+               invalues->ApplyCorrectionHECO();
+               invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
+               invalues_pos->ApplyCorrectionHECOErrors(invalues, 1);
+            }
+
+            // Apply systematic estimation by adding statistical uncertainties to mean value
+            stemp[0] = "TreeS" + ToString(type);
+            stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
+            stemp[1] = RemovePath(&stemp[1]);
+            if( string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1] )	// set to == if changing data and to != if changing simulations
+            {
+               if((specialMva->widgetChBox[5])->IsChecked())
+                  invalues->ApplyUncertainty(invalues_neg, invalues_pos, 0);
+
+               if((specialMva->widgetChBox[6])->IsChecked())
+                  invalues->ApplyUncertainty(invalues_neg, invalues_pos, 1);
+            }
+
+            // Only apply this to non-data
+            if( stemp[1] != "Data" )
+            {
+	       // Apply atmospheric and alignment resolution smearing on MC simulations
+	       if((specialMva->widgetChBox[8])->IsChecked())
+                  invalues->ApplySmearing();
+	    }
          }
 
-	 // Apply systematic estimation by adding statistical uncertainties to mean value
-         stemp[0] = "TreeS" + ToString(type);
-         stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
-         stemp[1] = RemovePath(&stemp[1]);
-         if( string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1] )	// set to == if changing data and to != if changing simulations
+         // Convert S1000 to S38 and then to DeltaS38
+         ret = Find(observables, "deltas38");
+         if(ret != -1)
+         {
+            if(setdeltas[0])
+	    {
+               invalues->ConvertToS38(ret, invalues_neg, invalues_pos, S38fitresults);
+               invalues->ConvertToDeltaS38(ret, invalues_neg, invalues_pos, deltaS38fitresults);
+	    }
+         }
+
+         // Convert risetimes to Risetime Deltas
+         ret = Find(observables, "deltarisetime");
+         if(ret != -1)
 	 {
-	    if((specialMva->widgetChBox[5])->IsChecked())
-               invalues->ApplyUncertainty(invalues_neg, invalues_pos, 0);
-
-	    if((specialMva->widgetChBox[6])->IsChecked())
-               invalues->ApplyUncertainty(invalues_neg, invalues_pos, 1);
+            if(setdeltas[0])
+               invalues->ConvertToDelta(ret, invalues_neg, invalues_pos, stationDistance, stationRisetime, stationHSat, deltafitresults);
 	 }
-      }
 
-      // Convert S1000 to S38 and then to DeltaS38
-      ret = Find(observables, "deltas38");
-      if(ret != -1)
+         // Change zenith angle (theta) to sec(theta) value for MVA analysis
+         ret = Find(observables, "zenithSD");
+         if(ret != -1)
+            invalues->SetupZenith(ret, invalues_neg, invalues_pos);
+
+         ret = Find(observables, "zenithFD");
+         if(ret != -1)
+            invalues->SetupZenith(ret, invalues_neg, invalues_pos);
+
+         if(DBGSIG > 1)
+            cout << "# MvaSetTrees           #: " << "Event = " << j << endl;
+
+         ret = IsInsideCuts(invalues, invalues_neg, invalues_pos, false, 0);
+
+//         bool *sdobservable = new bool;
+
+         // Only write out events that are inside the selected cuts
+         if(ret == 0)
+         {
+            itemp[0]++;
+
+            for(int i = 0; i < nrobs; i++)
+            {
+               outobs[i] = invalues->GetValue(i);
+               outobs_neg[i] = invalues_neg->GetValue(i);
+               outobs_pos[i] = invalues_pos->GetValue(i);
+            }
+            outtree->Fill();
+         }
+
+//         delete sdobservable;
+      }
+/*      else
       {
-         invalues->ConvertToS38(ret, invalues_neg, invalues_pos, S38fitresults);
-         invalues->ConvertToDeltaS38(ret, invalues_neg, invalues_pos, deltaS38fitresults);
-      }
-
-      // Convert risetimes to Risetime Deltas
-      ret = Find(observables, "deltarisetime");
-      if(ret != -1)
-         invalues->ConvertToDelta(ret, invalues_neg, invalues_pos, S38fitresults);
-
-      // Change zenith angle (theta) to sec(theta) value for MVA analysis
-      ret = Find(observables, "zenithSD");
-      if(ret != -1)
-         invalues->SetupZenith(ret, invalues_neg, invalues_pos);
-
-      ret = Find(observables, "zenithFD");
-      if(ret != -1)
-         invalues->SetupZenith(ret, invalues_neg, invalues_pos);
-
-      if(DBGSIG > 1)
-         cout << "# MvaSetTrees           #: " << "Event = " << j << endl;
-
-      ret = IsInsideCuts(invalues, invalues_neg, invalues_pos, false, 0);
-
-      bool *sdobservable = new bool;
-
-      // Only write out events that are inside the selected cuts
-      if(ret == 0)
-      {
-         itemp[0]++;
-
-         for(int i = 0; i < nrobs; i++)
-	 {
-            outobs[i] = invalues->GetValue(i);
-            outobs_neg[i] = invalues_neg->GetValue(i);
-            outobs_pos[i] = invalues_pos->GetValue(i);
-	 }
-         outtree->Fill();
-      }
-
-      delete sdobservable;
+         cout << "Event rejected due to one of the selected observables having an invalid value." << endl;
+      }*/
    }
 
    cout << "# MvaSetTrees           #: " << "Number of events inside the cuts = " << itemp[0] << endl;
@@ -449,8 +578,21 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
 
    ret = itemp[0];
 
-   delete[] deltaS38fitresults;
-   delete S38fitresults;
+   for(int i = 0; i < 3; i++)
+   {
+      delete stationDistance[i];
+      delete stationRisetime[i];
+   }
+   delete stationHSat;
+
+   if(setdeltas[0])
+   {
+      delete[] deltaS38fitresults;
+      delete S38fitresults;
+   }
+
+   if(setdeltas[1])
+      delete deltafitresults;
 
    delete tempTree;
    delete[] outobs;
@@ -462,6 +604,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
    delete[] stemp;
    delete[] itemp;
    delete[] ftemp;
+   delete btemp;
 
    return ret;
 }
@@ -469,7 +612,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
 // Set DeltaS38 and Risetime Delta observables from inputs
 int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
 {
-   cout << "# SetDeltas             #: " << "Running DeltaS38 and Delta implementation." << endl;
+//   cout << "# SetDeltas             #: " << "Running DeltaS38 and Delta implementation." << endl;
 
    string *stemp;
    int *itemp;
@@ -478,6 +621,8 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
    stemp = new string[3];
    itemp = new int[4];
    ftemp = new float[9];
+
+   double *binLimit;
 
    TF1 *fitfuncMid; 
    TGraphAsymmErrors *fitgraphMid;
@@ -492,9 +637,15 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
    TTree *tempTree = new TTree;
    tempTree = (TTree*)ifile->Get(stemp[0].c_str());
 
+   int FDcorrect = 0;
+   if((specialMva->widgetChBox[3])->IsChecked())
+      FDcorrect = 1;
+   if((specialMva->widgetChBox[4])->IsChecked())
+      FDcorrect = 2;
+
    if(s38rise == 0)
    {
-      cout << "# SetDeltas             #: " << "Setting DeltaS38 (from tree " << stemp[0] << ")" << endl;
+//      cout << "# SetDeltas             #: " << "Setting DeltaS38 (from tree " << stemp[0] << ")" << endl;
 
       if(multipleEnergyBins)
          stemp[1] = "rm -fr " + string(*currentAnalysisDir) + "/../delta_conversion/sectheta_s1000_fits_" + ToString(type) + ".txt";
@@ -553,12 +704,18 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
       vector<double> *zenith = new vector<double>;
       vector<double> *shwsize = new vector<double>;
 
+      binLimit = new double[4];
+      binLimit[0] = 18.5;	// minimal energy limit
+      binLimit[1] = 19.5;	// bin mid energy shift for data
+      binLimit[2] = 20.0;	// maximal energy limit
+      binLimit[3] = 0.1;	// energy bin step
+
       Observables *invalues = new Observables(observables);
       Observables *invalues_neg = new Observables(observables);
       Observables *invalues_pos = new Observables(observables);
 
-      int *selectedBin = new int;
-      *selectedBin = (cutZenithBins->widgetCB)->GetSelection();
+/*      int *selectedBin = new int;
+      *selectedBin = (cutZenithBins->widgetCB)->GetSelection();*/
 
       float *fitparam = new float[4];
       float *fitparamErr = new float[4];
@@ -581,54 +738,98 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
       {
          tempTree->GetEntry(j);
 
-	 if( (TMath::Log10(invalues->GetValue("energyFD")) > 18.5) && (TMath::Log10(invalues->GetValue("energyFD")) <= 20.0) )
+	 if((invalues->GetValue("energyFD") != -1) && (invalues->GetValue("zenithFD") != -1) && (invalues->GetValue("shwsize") != -1))
 	 {
-            if( (invalues->GetValue("zenithFD") > InvSecTheta(zcutBins[*selectedBin],false)) && (invalues->GetValue("zenithFD") <= InvSecTheta(zcutBins[*selectedBin+1],false)) )
-            {
-	       if( (invalues->GetValue("energyFD") != -1) && (invalues->GetValue("zenithFD") != -1) && (invalues->GetValue("shwsize") != -1) )
-	       {
-	          tempvector->push_back(invalues->GetValue("energyFD"));
+	    // Apply the FD standard correction
+	    if(FDcorrect == 1)
+               invalues->ApplyCorrectionFD();
+	    // Apply the HeCO correction
+	    else if(FDcorrect == 2)
+	    {
+               invalues->ApplyCorrectionHECO();
+               invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
+               invalues_pos->ApplyCorrectionHECOErrors(invalues, 1);
+	    }
 
-	          energy->push_back(invalues->GetValue("energyFD"));
-	          energy->push_back(invalues_neg->GetValue("energyFD"));
-	          energy->push_back(invalues_pos->GetValue("energyFD"));
+	    if( (TMath::Log10(invalues->GetValue("energyFD")) > binLimit[0]) && (TMath::Log10(invalues->GetValue("energyFD")) <= binLimit[2]) )
+	    {
+//               if( (invalues->GetValue("zenithFD") > InvSecTheta(zcutBins[*selectedBin],false)) && (invalues->GetValue("zenithFD") <= InvSecTheta(zcutBins[*selectedBin+1],false)) )
+               if( (invalues->GetValue("zenithFD") > InvSecTheta(zcutBins[0],false)) && (invalues->GetValue("zenithFD") <= InvSecTheta(zcutBins[zcutBins.size()-1],false)) )
+               {
+	          if( (invalues->GetValue("energyFD") != -1) && (invalues->GetValue("zenithFD") != -1) && (invalues->GetValue("shwsize") != -1) )
+	          {
+	             tempvector->push_back(invalues->GetValue("energyFD"));
 
-	          zenith->push_back(invalues->GetValue("zenithFD"));
-	          zenith->push_back(invalues_neg->GetValue("zenithFD"));
-	          zenith->push_back(invalues_pos->GetValue("zenithFD"));
+	             energy->push_back(invalues->GetValue("energyFD"));
+	             energy->push_back(invalues_neg->GetValue("energyFD"));
+	             energy->push_back(invalues_pos->GetValue("energyFD"));
 
-	          shwsize->push_back(invalues->GetValue("shwsize"));
-	          shwsize->push_back(invalues_neg->GetValue("shwsize"));
-	          shwsize->push_back(invalues_pos->GetValue("shwsize"));
+	             zenith->push_back(invalues->GetValue("zenithFD"));
+	             zenith->push_back(invalues_neg->GetValue("zenithFD"));
+	             zenith->push_back(invalues_pos->GetValue("zenithFD"));
 
-                  cout << itemp[0] << " (" << j << "): energyFD = " << invalues->GetValue("energyFD") << ", " << invalues_neg->GetValue("energyFD") << ", " << invalues_pos->GetValue("energyFD") << ", zenithFD = " << invalues->GetValue("zenithFD") << ", " << invalues_neg->GetValue("zenithFD") << ", " << invalues_pos->GetValue("zenithFD") << ", shwsize = " << invalues->GetValue("shwsize") << ", " << invalues_neg->GetValue("shwsize") << ", " << invalues_pos->GetValue("shwsize") << endl;
-	          itemp[0]++;
+	             shwsize->push_back(invalues->GetValue("shwsize"));
+	             shwsize->push_back(invalues_neg->GetValue("shwsize"));
+	             shwsize->push_back(invalues_pos->GetValue("shwsize"));
+
+//                     cout << itemp[0] << " (" << j << "): energyFD = " << invalues->GetValue("energyFD") << ", " << invalues_neg->GetValue("energyFD") << ", " << invalues_pos->GetValue("energyFD") << ", zenithFD = " << invalues->GetValue("zenithFD") << ", " << invalues_neg->GetValue("zenithFD") << ", " << invalues_pos->GetValue("zenithFD") << ", shwsize = " << invalues->GetValue("shwsize") << ", " << invalues_neg->GetValue("shwsize") << ", " << invalues_pos->GetValue("shwsize") << endl;
+	             itemp[0]++;
+	          }
 	       }
 	    }
 	 }
       }
 
+      // If no SD observables were rewriten, don't create fits
+      if((energy->size() == 0) || (zenith->size() == 0) || (shwsize->size() == 0))
+      {
+         cout << "# SetDeltas             #: " << "Error! Cannot complete setting s38 delta. No events in rewrite vectors." << endl;
+
+         delete[] binLimit;
+
+         delete[] fitparam;
+         delete[] fitparamErr;
+
+         delete invalues;
+         delete invalues_neg;
+         delete invalues_pos;
+
+         delete tempvector;
+         delete energy;
+         delete zenith;
+         delete shwsize;
+
+         delete tempTree;
+         delete mystyle;
+         delete[] stemp;
+         delete[] itemp;
+         delete[] ftemp;
+
+         return -1;
+      }
+
       // Determine energy binning for calculating the S38 fit
       vector<double> *energybins = new vector<double>;
+
       itemp[0] = 0;
       if(isdata)
       {
-         for(int i = 0; i < (19.5-18.5)/0.1; i++)
+         for(int i = 0; i < (binLimit[1]-binLimit[0])/binLimit[3]; i++)
          {
-            energybins->push_back(18.5 + 0.1*i);
-            energybins->push_back(18.5 + 0.1*(i+1));
+            energybins->push_back(binLimit[0] + binLimit[3]*i);
+            energybins->push_back(binLimit[0] + binLimit[3]*(i+1));
             itemp[0]++;
          }
-         energybins->push_back(19.5);
-         energybins->push_back(20.0);
+         energybins->push_back(binLimit[1]);
+         energybins->push_back(binLimit[2]);
          itemp[0]++;
       }
       else
       {
-         for(int i = 0; i < (20.0-18.5)/0.1; i++)
+         for(int i = 0; i < (binLimit[2]-binLimit[0])/binLimit[3]; i++)
          {
-            energybins->push_back(18.5 + 0.1*i);
-            energybins->push_back(18.5 + 0.1*(i+1));
+            energybins->push_back(binLimit[0] + binLimit[3]*i);
+            energybins->push_back(binLimit[0] + binLimit[3]*(i+1));
             itemp[0]++;
          }
       }
@@ -653,7 +854,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
 	 // Select the energy bin to use
 	 ftemp[0] = energybins->at(2*iEn);
 	 ftemp[1] = energybins->at(2*iEn+1);
-         cout << "Chosen energy bin = " << ftemp[0] << ", " << ftemp[1] << " (nr events = " << SelectionPass(tempvector, TMath::Power(10,ftemp[0]), TMath::Power(10,ftemp[1])) << ")" << endl;
+//         cout << "Chosen energy bin = " << ftemp[0] << ", " << ftemp[1] << " (nr events = " << SelectionPass(tempvector, TMath::Power(10,ftemp[0]), TMath::Power(10,ftemp[1])) << ")" << endl;
 
 	 // Clear vectors that will hold values for the selected bin
 	 energyVect->clear();
@@ -704,41 +905,56 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
 	 }
 
 	 ftemp[2] = ftemp[2]/(zenithVect->size()/3.);
-	 cout << "Mean value of S1000 = " << ftemp[2] << endl;
+//	 cout << "Mean value of S1000 = " << ftemp[2] << endl;
 	 fitgraphMid->Draw("AP");
 
          fitfuncMid = new TF1("fitfuncMid", "[0]+[1]*(TMath::Power(1./x,2)-TMath::Power(cos(0.663225115),2))+[2]*TMath::Power((TMath::Power(1./x,2)-TMath::Power(cos(0.663225115),2)),2)+[3]*TMath::Power((TMath::Power(1./x,2)-TMath::Power(cos(0.663225115),2)),3)", 1., 2.);
 	 fitfuncMid->SetParameters(ftemp[2],ftemp[2]*1.,-ftemp[2]*1.5,-ftemp[2]*1.3);
-	 fitgraphMid->Fit("fitfuncMid");
+	 fitgraphMid->Fit("fitfuncMid","Q");
 
-	 for(int i = 0; i < 4; i++)
-	 {
-            if(i == 0)
+	 // Use the published value for fCIC or the fitted value
+         if(isdata && ((specialMva->widgetChBox[7])->IsChecked()))
+         {
+            fitparam[0] = 1.;
+            fitparamErr[0] = 0.;
+            fitparam[1] = 0.980;
+            fitparamErr[1] = 0.004;
+            fitparam[2] = -1.68;
+            fitparamErr[2] = 0.01;
+            fitparam[3] = -1.30;
+            fitparamErr[3] = 0.45;
+	 }
+	 else
+         {
+	    for(int i = 0; i < 4; i++)
 	    {
-               fitparam[i] = fitfuncMid->GetParameter(i);
-               fitparamErr[i] = fitfuncMid->GetParError(i);
-	    }
-	    else
-	    {
-               fitparam[i] = (fitfuncMid->GetParameter(i))/fitparam[0];
-               fitparamErr[i] = fitfuncMid->GetParError(i);
-	       fitparamErr[i] = TMath::Sqrt(TMath::Power((fitfuncMid->GetParError(i))/fitparam[0],2) + TMath::Power(-((fitfuncMid->GetParameter(i))*fitparamErr[0])/TMath::Power(fitparam[0],2),2));
+               if(i == 0)
+	       {
+                  fitparam[i] = fitfuncMid->GetParameter(i);
+                  fitparamErr[i] = fitfuncMid->GetParError(i);
+	       }
+	       else
+	       {
+                  fitparam[i] = (fitfuncMid->GetParameter(i))/fitparam[0];
+                  fitparamErr[i] = fitfuncMid->GetParError(i);
+	          fitparamErr[i] = TMath::Sqrt(TMath::Power((fitfuncMid->GetParError(i))/fitparam[0],2) + TMath::Power(-((fitfuncMid->GetParameter(i))*fitparamErr[0])/TMath::Power(fitparam[0],2),2));
+	       }
 	    }
 	 }
 
-	 cout << endl << "Fitting parameters of fCIC are (chi2/ndf = " << fitfuncMid->GetChisquare() << "/" << fitfuncMid->GetNDF() << " = " << (fitfuncMid->GetChisquare())/(fitfuncMid->GetNDF()) << "):" << endl;
+/*	 cout << endl << "Fitting parameters of fCIC are (chi2/ndf = " << fitfuncMid->GetChisquare() << "/" << fitfuncMid->GetNDF() << " = " << (fitfuncMid->GetChisquare())/(fitfuncMid->GetNDF()) << "):" << endl;
 	 cout << "- S1000 at 38 deg = " << fitfuncMid->Eval(SecTheta(38.,true)) << endl;
 	 cout << "- S = " << fitparam[0] << " ± " << fitparamErr[0] << endl;
 	 cout << "- a = " << fitparam[1] << " ± " << fitparamErr[1] << endl;
 	 cout << "- b = " << fitparam[2] << " ± " << fitparamErr[2] << endl;
 	 cout << "- c = " << fitparam[3] << " ± " << fitparamErr[3] << endl;
-	 cout << endl;
+	 cout << endl;*/
 
 	 WriteoutS38Fits(type, 0, ftemp[0], ftemp[1], 4, fitparam, fitparamErr);
 
 	 if(isdata)
 	 {
-	    cout << "Calculating S38:" << endl;
+//	    cout << "Calculating S38:" << endl;
 	    CalculateS38(shwsizeVect, zenithVect, fitparam, fitparamErr, s38Vect);
 
 	    for(int i = 0; i < zenithVect->size()/3; i++)
@@ -759,26 +975,44 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
          fitfunc = new TF1("fitfunc", "TMath::Power(x/[0],1./[1])", 2., 100.);
          fitfunc->SetParameters(0.1,1.);
          fitgraph->Fit("fitfunc", "0");
-	 tempfunc = (TF1*)fitgraph->GetFunction("fitfunc");
 
-         for(int i = 0; i < 2; i++)
+	 // Use the published value for S38 fit or the fitted value
+         if((specialMva->widgetChBox[7])->IsChecked())
          {
-            fitparam[i] = fitfunc->GetParameter(i);
-            fitparamErr[i] = fitfunc->GetParError(i);
+            fitparam[0] = 0.190;
+            fitparamErr[0] = 0.005;
+            fitparam[1] = 1.025;
+            fitparamErr[1] = 0.007;
+            for(int i = 0; i < 2; i++)
+            {
+               fitfunc->SetParameter(i, fitparam[i]);
+               fitfunc->SetParError(i, fitparamErr[i]);
+            }
          }
+	 else
+	 {
+            for(int i = 0; i < 2; i++)
+            {
+               fitparam[i] = fitfunc->GetParameter(i);
+               fitparamErr[i] = fitfunc->GetParError(i);
+            }
+	 }
+
+	 tempfunc = (TF1*)fitgraph->GetFunction("fitfunc");
          
-         cout << endl << "Fitting parameters for linear dependence between FD energy and S38:" << endl;
+/*         cout << endl << "Fitting parameters for linear dependence between FD energy and S38:" << endl;
          cout << "- A = " << fitparam[0] << " ± " << fitparamErr[0] << endl;
          cout << "- B = " << fitparam[1] << " ± " << fitparamErr[1] << endl;
-         cout << endl;
+         cout << endl;*/
 
 	 PrintS38Fit(fitgraph, tempfunc, fitparam, fitparamErr, mystyle);
-         WriteoutS38Fits(type, 1, 18.5, 20.0, 2, fitparam, fitparamErr);
+         WriteoutS38Fits(type, 1, binLimit[0], binLimit[2], 2, fitparam, fitparamErr);
 
          delete fitfunc;
          delete fitgraph;
       }
 
+      delete[] binLimit;
       delete canvtemp;
 
       delete[] fitparam;
@@ -791,7 +1025,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
       delete s38Vect;
 
       delete goodrec;
-      delete selectedBin;
+//      delete selectedBin;
       delete energybins;
 
       delete invalues;
@@ -805,7 +1039,16 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
    }
    else if(s38rise == 1)
    {
-      cout << "# SetDeltas             #: " << "Setting Risetime Delta (from tree " << stemp[0] << ")" << endl;
+//      cout << "# SetDeltas             #: " << "Setting Risetime Delta (from tree " << stemp[0] << ")" << endl;
+
+      if(isdata)
+      {
+         if(multipleEnergyBins)
+            stemp[1] = "rm -fr " + string(*currentAnalysisDir) + "/../delta_conversion/distance_risetime_fits.txt";
+         else
+            stemp[1] = "rm -fr " + string(*currentAnalysisDir) + "/delta_conversion/distance_risetime_fits.txt";
+         ret = system(stemp[1].c_str());
+      }
 
       // Check if all needed observables are present
       ret = Find(observables, "energySD");
@@ -832,6 +1075,18 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
          return -1;
       }
 
+      ret = Find(observables, "nrstations");
+      if(ret == -1)
+      {
+         AlertPopup("No number of SD stations observable found", "No number of SD stations observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable nrstations.");
+	 delete tempTree;
+	 delete mystyle;
+         delete[] stemp;
+         delete[] itemp;
+         delete[] ftemp;
+         return -1;
+      }
+
       Observables *invalues = new Observables(observables);
       Observables *invalues_neg = new Observables(observables);
       Observables *invalues_pos = new Observables(observables);
@@ -846,13 +1101,14 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
 
       for(int i = 0; i < 3; i++)
       {
-         stationDistance[i].clear();
-         stationRisetime[i].clear();
-      }
-      stationHSat.clear();
+         stationDistance[i] = new vector<float>;
+         stationRisetime[i] = new vector<float>;
 
-      int *selectedBin = new int;
-      *selectedBin = (cutZenithBins->widgetCB)->GetSelection();
+         stationDistance[i]->clear();
+         stationRisetime[i]->clear();
+      }
+      stationHSat = new vector<bool>;
+      stationHSat->clear();
 
       float *fitparam = new float[3];
       float *fitparamErr = new float[3];
@@ -878,6 +1134,20 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
       tempTree->SetBranchAddress("stationrisetime_pos", &stationRisetime[2], &brisepos);
       tempTree->SetBranchAddress("stationhighsat", &stationHSat, &bsat);
 
+      vector<double> *tempvector = new vector<double>;
+      vector<double> *energy = new vector<double>;
+      vector<double> *zenith = new vector<double>;
+      vector<double> *risetime = new vector<double>;
+      vector<double> *distance = new vector<double>;
+      vector<bool> *HGsat = new vector<bool>;
+
+      binLimit = new double[5];
+      binLimit[0] = 18.5;	// minimal energy limit
+      binLimit[1] = 20.0;	// maximal energy limit
+      binLimit[2] = 18.9;	// low limit of reference energy bin
+      binLimit[3] = 19.1;	// high limit of reference energy bin
+      binLimit[4] = 0.10;	// zenith angle bin step
+
       itemp[0] = 0;
       for(int j = 0; j < tempTree->GetEntries(); j++)
       {
@@ -892,7 +1162,214 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
          briseneg->GetEntry(tentry);
          brisepos->GetEntry(tentry);
          bsat->GetEntry(tentry);
+
+	 if((invalues->GetValue("energyFD") != -1) && (invalues->GetValue("zenithFD") != -1) && (invalues->GetValue("nrstations") != 0))
+	 {
+	    // Apply the FD standard correction
+	    if(FDcorrect == 1)
+               invalues->ApplyCorrectionFD();
+	    // Apply the HeCO correction
+	    else if(FDcorrect == 2)
+	    {
+               invalues->ApplyCorrectionHECO();
+               invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
+               invalues_pos->ApplyCorrectionHECOErrors(invalues, 1);
+	    }
+
+//	    cout << "Number of stations = " << invalues->GetValue("nrstations") << endl;
+
+	    if( (TMath::Log10(invalues->GetValue("energyFD")) > binLimit[0]) && (TMath::Log10(invalues->GetValue("energyFD")) <= binLimit[1]) )
+	    {
+               if( (invalues->GetValue("zenithFD") > InvSecTheta(zcutBins[0],false)) && (invalues->GetValue("zenithFD") <= InvSecTheta(zcutBins[zcutBins.size()-1],false)) )
+               {
+	          if( (invalues->GetValue("energyFD") != -1) && (invalues->GetValue("zenithFD") != -1) && (invalues->GetValue("nrstations") != -1) )
+	          {
+	             for(int i = 0; i < invalues->GetValue("nrstations"); i++)
+	             {
+	                energy->push_back(invalues->GetValue("energyFD"));
+	                energy->push_back(invalues_neg->GetValue("energyFD"));
+	                energy->push_back(invalues_pos->GetValue("energyFD"));
+
+	                if( (TMath::Log10(invalues->GetValue("energyFD")) > binLimit[2]) && (TMath::Log10(invalues->GetValue("energyFD")) <= binLimit[3]) )
+	                   tempvector->push_back(SecTheta(invalues->GetValue("zenithFD"),false));
+
+	                zenith->push_back(invalues->GetValue("zenithFD"));
+	                zenith->push_back(invalues_neg->GetValue("zenithFD"));
+	                zenith->push_back(invalues_pos->GetValue("zenithFD"));
+
+	                risetime->push_back(stationRisetime[0]->at(i));
+	                risetime->push_back(stationRisetime[1]->at(i));
+	                risetime->push_back(stationRisetime[2]->at(i));
+
+	                distance->push_back(stationDistance[0]->at(i));
+	                distance->push_back(stationDistance[1]->at(i));
+	                distance->push_back(stationDistance[2]->at(i));
+
+	                HGsat->push_back(stationHSat->at(i));
+
+//                        cout << itemp[0] << " (" << j << "): energyFD = " << invalues->GetValue("energyFD") << ", " << invalues_neg->GetValue("energyFD") << ", " << invalues_pos->GetValue("energyFD") << ", zenithFD = " << invalues->GetValue("zenithFD") << ", " << invalues_neg->GetValue("zenithFD") << ", " << invalues_pos->GetValue("zenithFD") << ", distance = " << stationDistance[0]->at(i) << ", " << stationDistance[1]->at(i) << ", " << stationDistance[2]->at(i) << ", risetime = " << stationRisetime[0]->at(i) << ", " << stationRisetime[1]->at(i) << ", " << stationRisetime[2]->at(i) << ", HGsat = " << stationHSat->at(i) << endl;
+	                itemp[0]++;
+	             }
+	          }
+	       }
+	    }
+	 }
       }
+
+      // If no SD observables were rewriten, don't create fits
+      if((energy->size() == 0) || (zenith->size() == 0) || (risetime->size() == 0) || (distance->size() == 0) || (HGsat->size() == 0))
+      {
+         cout << "# SetDeltas             #: " << "Error! Cannot complete setting risetime delta. No events in rewrite vectors." << endl;
+
+         for(int i = 0; i < 3; i++)
+         {
+            delete stationDistance[i];
+            delete stationRisetime[i];
+         }
+         delete stationHSat;
+
+         delete[] fitparam;
+         delete[] fitparamErr;
+
+         delete invalues;
+         delete invalues_neg;
+         delete invalues_pos;
+
+         delete tempvector;
+         delete energy;
+         delete zenith;
+         delete risetime;
+         delete distance;
+         delete HGsat;
+
+         delete tempTree;
+         delete mystyle;
+         delete[] stemp;
+         delete[] itemp;
+         delete[] ftemp;
+
+         return -1;
+      }
+
+//      cout << "Number of risetimes in the selection = " << itemp[0] << endl;
+
+      // Determine zenith angle binning for calculating the Risetime fit
+      vector<double> *zenithbins = new vector<double>;
+      itemp[0] = 0;
+      for(int i = 0; i < (zcutBins[zcutBins.size()-1]-zcutBins[0])/binLimit[4]; i++)
+      {
+         zenithbins->push_back(zcutBins[0] + binLimit[4]*i);
+         zenithbins->push_back(zcutBins[0] + binLimit[4]*(i+1));
+         itemp[0]++;
+      }
+
+      bool *goodrec = new bool;
+
+      if(isdata)
+      {
+         canvtemp = new TCanvas("canvtemp","",1200,800);
+
+         for(int iZen = 0; iZen < itemp[0]; iZen++)
+         {
+            // Select the zenith angle bin to use (energy bin is at reference 18.9-19.0
+            ftemp[0] = zenithbins->at(2*iZen);
+            ftemp[1] = zenithbins->at(2*iZen+1);
+//            cout << "Chosen zenith angle bin = " << ftemp[0] << ", " << ftemp[1] << " (nr events = " << SelectionPass(tempvector, ftemp[0], ftemp[1]) << ")" << endl;
+
+            fitgraphMid = new TGraphAsymmErrors();	// for fit with low-gain
+            fitgraph = new TGraphAsymmErrors();		// fot fit with high-gain
+
+            itemp[1] = 0;
+            itemp[2] = 0;
+            for(int i = 0; i < HGsat->size(); i++)
+            {
+               *goodrec = true;
+
+               if(TMath::Log10(energy->at(3*i)) <= binLimit[2])
+                  *goodrec = false;
+               if(TMath::Log10(energy->at(3*i)) > binLimit[3])
+                  *goodrec = false;
+
+               if(SecTheta(zenith->at(3*i),false) <= ftemp[0])
+                  *goodrec = false;
+               if(SecTheta(zenith->at(3*i),false) > ftemp[1])
+                  *goodrec = false;
+
+               if(*goodrec)
+               {
+                  // High-gain saturated (risetime calculated from low-gain trace)
+                  if(HGsat->at(i))
+                  {
+                     fitgraphMid->SetPoint(itemp[1], distance->at(3*i), risetime->at(3*i));
+                     fitgraphMid->SetPointError(itemp[1], distance->at(3*i+1), distance->at(3*i+2), risetime->at(3*i+1), risetime->at(3*i+2));
+                     itemp[1]++;
+                  }
+                  // Normal signal trace
+                  else
+                  {
+                     fitgraph->SetPoint(itemp[2], distance->at(3*i), risetime->at(3*i));
+                     fitgraph->SetPointError(itemp[2], distance->at(3*i+1), distance->at(3*i+2), risetime->at(3*i+1), risetime->at(3*i+2));
+                     itemp[2]++;
+                  }
+
+//                  cout << itemp[1]+itemp[2] << ": E = " << energy->at(3*i) << ", theta = " << SecTheta(zenith->at(3*i),false) << ", HGsat = " << HGsat->at(i) << ", dist = " << distance->at(3*i) << ", rise = " << risetime->at(3*i) << endl;
+               }
+            }
+
+            fitgraphMid->Draw("AP");
+            fitgraph->Draw("P;SAME");
+
+	    fitfuncMid = new TF1("fitfuncLow", "40+TMath::Sqrt(TMath::Power([0],2)+[1]*TMath::Power(x,2))-[0]", 0., 2000.);
+            fitfuncMid->SetParameters(100.,0.1);
+            fitfuncMid->SetParLimits(0,0.,1000.);
+            fitfuncMid->SetParLimits(1,0.,1.);
+            fitgraphMid->Fit("fitfuncLow","Q");
+
+            for(int i = 0; i < 2; i++)
+            {
+               fitparam[i] = fitfuncMid->GetParameter(i);
+               fitparamErr[i] = fitfuncMid->GetParError(i);
+            }
+
+            fitfunc = new TF1("fitfuncHigh", "40+[2]*(TMath::Sqrt(TMath::Power([0],2)+[1]*TMath::Power(x,2))-[0])", 0., 2000.);
+            fitfunc->FixParameter(0, fitfuncMid->GetParameter(0));
+            fitfunc->FixParameter(1, fitfuncMid->GetParameter(1));
+            fitfunc->SetParameter(2, 1.1);
+            fitgraph->Fit("fitfuncHigh","Q");
+
+            fitparam[2] = fitfunc->GetParameter(2);
+            fitparamErr[2] = fitfunc->GetParError(2);
+
+/*            cout << endl << "Fitting parameters for dependence between distance and risetime:" << endl;
+            cout << "- A = " << fitparam[0] << " ± " << fitparamErr[0] << endl;
+            cout << "- B = " << fitparam[1] << " ± " << fitparamErr[1] << endl;
+            cout << "- N = " << fitparam[2] << " ± " << fitparamErr[2] << endl;
+            cout << endl;*/
+
+	    WriteoutDeltaFits(type, binLimit[2], binLimit[3], ftemp[0], ftemp[1], 3, fitparam, fitparamErr);
+
+	    delete fitfuncMid;
+	    delete fitfunc;
+
+            delete fitgraphMid;
+            delete fitgraph;
+         }
+
+         delete canvtemp;
+      }
+
+      delete[] binLimit;
+
+      delete goodrec;
+
+      delete zenithbins;
+
+      for(int i = 0; i < 3; i++)
+      {
+         delete stationDistance[i];
+         delete stationRisetime[i];
+      }
+      delete stationHSat;
 
       delete[] fitparam;
       delete[] fitparamErr;
@@ -900,6 +1377,13 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
       delete invalues;
       delete invalues_neg;
       delete invalues_pos;
+
+      delete tempvector;
+      delete energy;
+      delete zenith;
+      delete risetime;
+      delete distance;
+      delete HGsat;
    }
    else
    {
@@ -939,11 +1423,15 @@ void MyFrame::PrintS38Fit(TGraphAsymmErrors *fitgraph, TF1 *fitfunc, float *fitp
    mystyle->SetFuncColor(fitfunc, 2);
    fitfunc->Draw("L;SAME");
 
+   c1->Update();
+
+   cout << "Uxmin and Uymax = " << TMath::Power(10,c1->GetUxmin()) << ", " << TMath::Power(10,c1->GetUymax()) << endl;
+
    ltext->SetTextAlign(11);
    stemp[0] = "A = (" + ToString(fitpar[0]*10.,2) + " #pm " + ToString(fitparErr[0]*10.,2) + ") #times 10^{17} eV";
-   ltext->DrawLatex(3., 310., stemp[0].c_str());
+   ltext->DrawLatex(TMath::Power(10, (c1->GetUxmin()+0.1)), TMath::Power(10, (c1->GetUymax()-0.2)), stemp[0].c_str());
    stemp[0] = "B = " + ToString(fitpar[1],3) + " #pm " + ToString(fitparErr[1],3);
-   ltext->DrawLatex(3., 0.88*310., stemp[0].c_str());
+   ltext->DrawLatex(TMath::Power(10, (c1->GetUxmin()+0.1)), TMath::Power(10, (c1->GetUymax()-0.26)), stemp[0].c_str());
 
    if(multipleEnergyBins)
       stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/../delta_conversion/s38_vs_energyFD_data.pdf";
@@ -1001,6 +1489,29 @@ void MyFrame::WriteoutS38Fits(int tree, int type, float minEn, float maxEn, int 
    delete fitFile;
 }
 
+void MyFrame::WriteoutDeltaFits(int tree, float minEn, float maxEn, float minZen, float maxZen, int nrpar, float *fitpar, float *fitparErr)
+{
+   ofstream *fitFile = new ofstream;
+   string *stemp = new string[2];
+
+   if(multipleEnergyBins)
+      stemp[0] = string(*currentAnalysisDir) + "/../delta_conversion/distance_risetime_fits.txt";
+   else
+      stemp[0] = string(*currentAnalysisDir) + "/delta_conversion/distance_risetime_fits.txt";
+   fitFile->open(stemp[0].c_str(), ofstream::out | ofstream::app );
+
+   *fitFile << minEn << "\t" << maxEn << "\t";
+   *fitFile << minZen << "\t" << maxZen;
+   for(int i = 0; i < nrpar; i++)
+      *fitFile << "\t" << fitpar[i] << "\t" << fitparErr[i];
+   *fitFile << endl;
+
+   fitFile->close();
+
+   delete[] stemp;
+   delete fitFile;
+}
+
 void MyFrame::CalculateS38(vector<double> *shwsize, vector<double> *zenith, float *fitpar, float *fitparErr, vector<double> *outVect)
 {
    double *dtemp = new double[4];
@@ -1013,73 +1524,73 @@ void MyFrame::CalculateS38(vector<double> *shwsize, vector<double> *zenith, floa
       seczenith[1] = (TMath::Sin(zenith->at(3*i))*zenith->at(3*i+1))/TMath::Power(TMath::Cos(zenith->at(3*i)),2);
       seczenith[2] = (TMath::Sin(zenith->at(3*i))*zenith->at(3*i+2))/TMath::Power(TMath::Cos(zenith->at(3*i)),2);
 
-      cout << i << ": sec(theta) = " << seczenith[0] << ", " << seczenith[1] << ", " << seczenith[2] << ", S1000 = " << shwsize->at(3*i) << ", " << shwsize->at(3*i+1) << ", " << shwsize->at(3*i+2);
+//      cout << i << ": sec(theta) = " << seczenith[0] << ", " << seczenith[1] << ", " << seczenith[2] << ", S1000 = " << shwsize->at(3*i) << ", " << shwsize->at(3*i+1) << ", " << shwsize->at(3*i+2);
       // x = (1/sec(theta))^2 - (cos(thetaref))^2
       dtemp[0] = TMath::Power(1./seczenith[0],2) - TMath::Power(TMath::Cos(DegToRad(38.)),2);
-      cout << ", x = " << dtemp[0];
+//      cout << ", x = " << dtemp[0];
       // fCIC = 1 + a*x + b*x^2 + c*x^3
       dtemp[1] = 1.+fitpar[1]*dtemp[0]+fitpar[2]*TMath::Power(dtemp[0],2)+fitpar[3]*TMath::Power(dtemp[0],3);
-      cout << ", fCIC = " << dtemp[1];
+//      cout << ", fCIC = " << dtemp[1];
       // S38 = S1000/fCIC
       dtemp[2] = shwsize->at(3*i)/dtemp[1];
-      cout << ", S38 = " << dtemp[2] << endl;
+//      cout << ", S38 = " << dtemp[2] << endl;
    
       outVect->push_back(dtemp[2]);
    
       // (dS1000/fCIC)^2
       dtemp[2] = shwsize->at(3*i+1)/dtemp[1];
       dtemp[3] = TMath::Power(dtemp[2],2);
-      cout << "  S1000 err = " << dtemp[2];
+//      cout << "  S1000 err = " << dtemp[2];
       // (-S1000*da*x/fCIC^2)^2
       dtemp[2] = -(shwsize->at(3*i)*fitparErr[1]*dtemp[0])/TMath::Power(dtemp[1],2);
       dtemp[3] += TMath::Power(dtemp[2],2);
-      cout << ", a err = " << dtemp[2];
+//      cout << ", a err = " << dtemp[2];
       // (-S1000*db*x^2/fCIC^2)^2
       dtemp[2] = -(shwsize->at(3*i)*fitparErr[2]*TMath::Power(dtemp[0],2))/TMath::Power(dtemp[1],2);
       dtemp[3] += TMath::Power(dtemp[2],2);
-      cout << ", b err = " << dtemp[2];
+//      cout << ", b err = " << dtemp[2];
       // (-S1000*dc*x^3/fCIC^2)^2
       dtemp[2] = -(shwsize->at(3*i)*fitparErr[3]*TMath::Power(dtemp[0],3))/TMath::Power(dtemp[1],2);
       dtemp[3] += TMath::Power(dtemp[2],2);
-      cout << ", c err = " << dtemp[2];
+//      cout << ", c err = " << dtemp[2];
       // (-S1000*dx*(a+2b*x+3c*x^2)/fCIC^2)^2
       // dx = 2*cos(theta)*sin(theta)*dtheta
       dtemp[2] = 2*seczenith[1]/TMath::Power(seczenith[0],3);
-      cout << ", dx = " << dtemp[2];
+//      cout << ", dx = " << dtemp[2];
       dtemp[2] = -(shwsize->at(3*i)*dtemp[2]*(fitpar[1]+2*fitpar[2]*dtemp[0]+3*fitpar[3]*TMath::Power(dtemp[0],2)))/TMath::Power(dtemp[1],2);
       dtemp[3] += TMath::Power(dtemp[2],2);
-      cout << ", x err = " << dtemp[2];
+//      cout << ", x err = " << dtemp[2];
    
       dtemp[3] = TMath::Sqrt(dtemp[3]);
-      cout << ", dS38 neg = " << dtemp[3] << endl;
+//      cout << ", dS38 neg = " << dtemp[3] << endl;
       outVect->push_back(dtemp[3]);
    
       // (dS1000/fCIC)^2
       dtemp[2] = shwsize->at(3*i+2)/dtemp[1];
       dtemp[3] = TMath::Power(dtemp[2],2);
-      cout << "  S1000 err = " << dtemp[2];
+//      cout << "  S1000 err = " << dtemp[2];
       // (-S1000*da*x/fCIC^2)^2
       dtemp[2] = -(shwsize->at(3*i)*fitparErr[1]*dtemp[0])/TMath::Power(dtemp[1],2);
       dtemp[3] += TMath::Power(dtemp[2],2);
-      cout << ", a err = " << dtemp[2];
+//      cout << ", a err = " << dtemp[2];
       // (-S1000*db*x^2/fCIC^2)^2
       dtemp[2] = -(shwsize->at(3*i)*fitparErr[2]*TMath::Power(dtemp[0],2))/TMath::Power(dtemp[1],2);
       dtemp[3] += TMath::Power(dtemp[2],2);
-      cout << ", b err = " << dtemp[2];
+//      cout << ", b err = " << dtemp[2];
       // (-S1000*dc*x^3/fCIC^2)^2
       dtemp[2] = -(shwsize->at(3*i)*fitparErr[3]*TMath::Power(dtemp[0],3))/TMath::Power(dtemp[1],2);
       dtemp[3] += TMath::Power(dtemp[2],2);
-      cout << ", c err = " << dtemp[2];
+//      cout << ", c err = " << dtemp[2];
       // (-S1000*dx*(a+2b*x+3c*x^2)/fCIC^2)^2
       // dx = 2*cos(theta)*sin(theta)*dtheta
       dtemp[2] = 2*seczenith[2]/TMath::Power(seczenith[0],3);
-      cout << ", dx = " << dtemp[2];
+//      cout << ", dx = " << dtemp[2];
       dtemp[2] = -(shwsize->at(3*i)*dtemp[2]*(fitpar[1]+2*fitpar[2]*dtemp[0]+3*fitpar[3]*TMath::Power(dtemp[0],2)))/TMath::Power(dtemp[1],2);
       dtemp[3] += TMath::Power(dtemp[2],2);
-      cout << ", x err = " << dtemp[2];
+//      cout << ", x err = " << dtemp[2];
    
       dtemp[3] = TMath::Sqrt(dtemp[3]);
-      cout << ", dS38 pos = " << dtemp[3] << endl;
+//      cout << ", dS38 pos = " << dtemp[3] << endl;
       outVect->push_back(dtemp[3]);
    }
 
@@ -1706,8 +2217,8 @@ int MyFrame::GetTrainingShift(string *mvafilename)
    ifstream *fstats = new ifstream;
    fstats->open(stemp[0].c_str(), ifstream::in);
 
-   if(!statsMin.empty()) statsMin.erase(statsMin.begin(), statsMin.end());
-   if(!statsMax.empty()) statsMax.erase(statsMax.begin(), statsMax.end());
+   statsMin.clear();
+   statsMax.clear();
 
    if(fstats->is_open())
    {

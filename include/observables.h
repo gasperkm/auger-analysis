@@ -2,8 +2,10 @@
 #define _OBSERVABLES_H_
 
 #include "workstation.h"
+#include "root_include.h"
 #include <vector>
 #include <string>
+#include <ctime>
 
 using namespace std;
 
@@ -13,6 +15,8 @@ private:
    float *minimum;
    float *maximum;
    string *desc;
+   time_t *timer;
+   TRandom *rand;
 public:
    Observables(vector<string> obs);
    virtual ~Observables();
@@ -67,11 +71,12 @@ public:
    void ApplyCorrectionHECO();
    void ApplyCorrectionHECOErrors(Observables *mean, int type);
    void ApplyUncertainty(Observables *errneg, Observables *errpos, int type);
+   void ApplySmearing();
    void SetupZenith(int type, Observables *errneg, Observables *errpos);
 
    void ConvertToS38(int type, Observables *errneg, Observables *errpos, vector<float> *fitresults);
    void ConvertToDeltaS38(int type, Observables *errneg, Observables *errpos, float *fitresults);
-   void ConvertToDelta(int type, Observables *errneg, Observables *errpos, vector<float> *fitresults);
+   void ConvertToDelta(int type, Observables *errneg, Observables *errpos, vector<float> **SDdist, vector<float> **SDrise, vector<bool> *SDsat, vector<float> *fitresults);
 };
 
 #endif

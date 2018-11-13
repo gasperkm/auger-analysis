@@ -232,6 +232,9 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
 
       // goodrec variable determines if FD and SD reconstructions have failed
       goodrec = true;
+      goodrecsim = true;
+      goodrecsd = true;
+      goodrecfd = true;
       rewritecode = 0;
 
       fFile->ReadEvent(j);
@@ -273,14 +276,14 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
          // If event has no FD eyes, disregard the event
          if(DBGSIG > 0)
             cout << "# RewriteObservables    #: " << "   Error! No reconstructed eyes for this event." << endl;
-         if(goodrec)
+         if(goodrecfd)
 	    (recfail->at(0))++;
-         goodrec = false;
+         goodrecfd = false;
       }
       else
       {
          // Save all active FD eyes
-	 if(!acteyes.empty()) acteyes.erase(acteyes.begin(), acteyes.end());
+	 acteyes.clear();
          acteyes = fRecEvent->GetFDEvents();
 	 nreyes = acteyes.size();
          if(DBGSIG > 0)
@@ -293,21 +296,21 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
             {
                if(DBGSIG > 0)
                   cout << "# RewriteObservables    #: " << "   Error! Eye " << acteyes[i].GetEyeId() << " not a hybrid event." << endl;
-               goodrec = false;
+               goodrecfd = false;
             }
             else
             {
                if(DBGSIG > 0)
                   cout << "# RewriteObservables    #: " << "   Event is a hybrid event." << endl;
-               goodrec = true;
+               goodrecfd = true;
                break;
             }
          }
 
-         if(!goodrec)
+         if(!goodrecfd)
 	    (recfail->at(1))++;
 
-         if(goodrec)
+         if(goodrecfd)
 	 {
             itemp[1] = SetFdObservables(sig);
             itemp[1] = SetFdObservables(all);
@@ -325,8 +328,8 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
       {
          if(DBGSIG > 0)
             cout << "# RewriteObservables    #: " << "Error! No triggered stations in SD reconstruction." << endl;
-         if(goodrec) (recfail->at(3))++;
-         goodrec = false;
+         if(goodrecsd) (recfail->at(3))++;
+         goodrecsd = false;
       }
 
       // Check if there are any SD stations in the event
@@ -334,8 +337,8 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
       {
          if(DBGSIG > 0)
             cout << "# RewriteObservables    #: " << "Error! No stations in SD reconstruction." << endl;
-         if(goodrec) (recfail->at(4))++;
-         goodrec = false;
+         if(goodrecsd) (recfail->at(4))++;
+         goodrecsd = false;
       }
 
       // Check if SD stations have a VEM trace
@@ -343,73 +346,54 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
       {
          if(DBGSIG > 0)
             cout << "# RewriteObservables    #: " << "Error! No VEM traces in SD tanks." << endl;
-         if(goodrec) (recfail->at(5))++;
-         goodrec = false;
+         if(goodrecsd) (recfail->at(5))++;
+         goodrecsd = false;
       }
 
       InitRisetimeVariables();
       itemp[1] = SetStationValues();
       if(itemp[1] == -1)
-         goodrec = false;
+         goodrecsd = false;
       itemp[1] = SetSdObservables(sig);
       itemp[1] = SetSdObservables(all);
       if(DBGSIG > 1)
          cout << "# RewriteObservables    #: " << "rewritecode (SD) = " << rewritecode << endl;
 
-/*      // Prepare FD eye events ----------------------------------------------
-      if(DBGSIG > 0)
-         cout << "# RewriteObservables    #: " << "   Number of eyes = " << fRecEvent->GetNEyes() << endl;
-      if(fRecEvent->GetNEyes() == 0)
-      {
-         // If event has no FD eyes, disregard the event
-         if(DBGSIG > 0)
-            cout << "# RewriteObservables    #: " << "   Error! No reconstructed eyes for this event." << endl;
-         if(goodrec)
-	    (recfail->at(0))++;
-         goodrec = false;
-      }
-      else
-      {
-         // Save all active FD eyes
-	 if(!acteyes.empty()) acteyes.erase(acteyes.begin(), acteyes.end());
-         acteyes = fRecEvent->GetFDEvents();
-	 nreyes = acteyes.size();
-         if(DBGSIG > 0)
-	    cout << "# RewriteObservables    #: " << "   Number of active eyes = " << nreyes << endl;
-
-         // Check if the saved event is considered to be hybrid (SD+FD) or not
-         for(int i = 0; i < nreyes; i++)
-         {
-            if(!acteyes[i].IsHybridEvent())
-            {
-               if(DBGSIG > 0)
-                  cout << "# RewriteObservables    #: " << "   Error! Eye " << acteyes[i].GetEyeId() << " not a hybrid event." << endl;
-               goodrec = false;
-            }
-            else
-            {
-               if(DBGSIG > 0)
-                  cout << "# RewriteObservables    #: " << "   Event is a hybrid event." << endl;
-               goodrec = true;
-               break;
-            }
-         }
-
-         if(!goodrec)
-	    (recfail->at(1))++;
-
-         if(goodrec)
-	 {
-            itemp[1] = SetFdObservables(sig);
-            itemp[1] = SetFdObservables(all);
-	 }
-
-         if(DBGSIG > 1)
-            cout << "# RewriteObservables    #: " << "rewritecode (FD) = " << rewritecode << endl;
-      }*/
+      goodrec = (goodrecsim && goodrecsd && goodrecfd);
 
       if(goodrec)
       {
+         sig_tree->Fill();
+	 all_tree->Fill();
+      }
+      else
+      {
+         cout << "# RewriteObservables    #: " << "rewrite with problems = " << rewritecode << endl;
+	 if(!goodrecsim)
+	 {
+            ZeroSimObservables(sig);
+            ZeroSimObservables(all);
+	 }
+
+	 if(!goodrecfd)
+	 {
+            ZeroFdObservables(sig);
+            ZeroFdObservables(all);
+	 }
+
+	 if(!goodrecsd)
+	 {
+            ZeroSdObservables(sig);
+            ZeroSdObservables(all);
+
+	    for(int i = 0; i < 3; i++)
+	    {
+               stationDistance[i].clear();
+               stationRisetime[i].clear();
+	    }
+	    stationHSat.clear();
+	 }
+
          sig_tree->Fill();
 	 all_tree->Fill();
       }

@@ -152,7 +152,7 @@ void MyFrame::RunEnergyBinSelect()
       // Check the energy range (in logarithmic scale)
       *erange = (elimits[1] - elimits[0])/((double)cutEnergyBins->GetNumber(cutEnergyBins->widgetNE[0]));
 
-      if(!ecutBins.empty()) ecutBins.erase(ecutBins.begin(), ecutBins.end());
+      ecutBins.clear();
       (cutEnergyBins->widgetCB)->Clear();
 
       // Save energy cut bins (in linear scale)
@@ -408,7 +408,7 @@ void MyFrame::CustomEnergyBins(wxCommandEvent& event)
          (splitCutEnergy->widgetNE[2])->Disable();
          (splitCutEnergy->widgetChBox)->SetValue(1);
 	 customBinning = true;
-         if(!ecutBins.empty()) ecutBins.erase(ecutBins.begin(), ecutBins.end());
+         ecutBins.clear();
 
          ifstream *ifs = new ifstream;
 	 dtemp = new double[4];
@@ -503,7 +503,7 @@ void MyFrame::RunZenithBinSelect()
    // Check the zenith angle range (in sin square scale)
    *arange = (asinlimits[1] - asinlimits[0])/((double)cutZenithBins->GetNumber(cutZenithBins->widgetNE[0]));
 
-   if(!zcutBins.empty()) zcutBins.erase(zcutBins.begin(), zcutBins.end());
+   zcutBins.clear();
    (cutZenithBins->widgetCB)->Clear();
 
    // Save zenith cut bins (in sin square scale)
@@ -1624,8 +1624,7 @@ void MyFrame::MvaApplication(string *infilename, bool application, int mean)
    else
       ofile = TFile::Open(infilename->c_str(), "READ");
 
-   if(!(cutResults.empty()))
-      cutResults.erase(cutResults.begin(), cutResults.end());
+   cutResults.clear();
 
    TList *tempkeyslist = (TList*) ofile->GetListOfKeys();
    mvaprintout = mvaprintout + ToString(ofile->GetNkeys()) + "\n";
@@ -1740,7 +1739,7 @@ void MyFrame::SetDefaultMva(wxCommandEvent& event)
    (cutZenith->widgetNE[1])->SetValue(60.);
    (cutZenithBins->widgetNE[0])->SetValue(1);
    RunZenithBinSelect();
-   (cutRisetime->widgetChBox)->SetValue(true);
+   (cutRisetime->widgetChBox)->SetValue(false);
    (cutRisetime->widgetNE[0])->SetValue(0.3);
 
    (specialMva->widgetChBox[0])->SetValue(false);
@@ -1832,7 +1831,7 @@ void MyFrame::RunEnergyBinSplitSelect()
       // Check the energy range (in logarithmic scale)
       *erange = (elimits[1] - elimits[0])/((double)splitCutEnergy->GetNumber(splitCutEnergy->widgetNE[2]));
 
-      if(!esplitBins.empty()) esplitBins.erase(esplitBins.begin(), esplitBins.end());
+      esplitBins.clear();
 
       // Save energy cut bins (in linear scale)
       for(int i = 0; i < (int)splitCutEnergy->GetNumber(splitCutEnergy->widgetNE[2]); i++)
@@ -1907,6 +1906,25 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
 
 //      cout << "#   Applying split filtering to the all tree: " << stemp[2] << "; " << stemp[3] << endl;
 
+      for(int i = 0; i < 3; i++)
+      {
+         stationDistance[i] = new vector<float>;
+         stationRisetime[i] = new vector<float>;
+    
+         stationDistance[i]->clear();
+         stationRisetime[i]->clear();
+      }
+      stationHSat = new vector<bool>;
+      stationHSat->clear();
+    
+      bdist = 0;
+      bdistneg = 0;
+      bdistpos = 0;
+      brise = 0;
+      briseneg = 0;
+      brisepos = 0;
+      bsat = 0;
+
       // Prepare test tree for reading
       tempTree = (TTree*)input->Get(stemp[2].c_str());
       tempTree->SetBranchAddress("rewritecode", &rewritecode);
@@ -1917,13 +1935,32 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
          tempTree->SetBranchAddress((obser->GetName(j) + "_pos").c_str(), &(obser_pos->obsstruct[j].value));
       }
 
+      tempTree->SetBranchAddress("stationdistance", &stationDistance[0], &bdist);
+      tempTree->SetBranchAddress("stationdistance_neg", &stationDistance[1], &bdistneg);
+      tempTree->SetBranchAddress("stationdistance_pos", &stationDistance[2], &bdistpos);
+      tempTree->SetBranchAddress("stationrisetime", &stationRisetime[0], &brise);
+      tempTree->SetBranchAddress("stationrisetime_neg", &stationRisetime[1], &briseneg);
+      tempTree->SetBranchAddress("stationrisetime_pos", &stationRisetime[2], &brisepos);
+      tempTree->SetBranchAddress("stationhighsat", &stationHSat, &bsat);
+
       // Preparing shuffled list for sampling
       vector<int> *shuflist = new vector<int>;
 
       // Loop over all events 
       for(int j = 0; j < itemp[0]; j++)
       {
+         // Read all observables
          tempTree->GetEntry(j);
+
+         // Read all vectors for SD stations
+         tentry = tempTree->LoadTree(j);
+         bdist->GetEntry(tentry);
+         bdistneg->GetEntry(tentry);
+         bdistpos->GetEntry(tentry);
+         brise->GetEntry(tentry);
+         briseneg->GetEntry(tentry);
+         brisepos->GetEntry(tentry);
+         bsat->GetEntry(tentry);
 
          ret = IsInsideCuts(obser, obser_neg, obser_pos, true, ebin);
 
@@ -1942,6 +1979,12 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
       {
          AlertPopup("Input and output equal", "The filtering of input file removed no events (" + ToString(itemp[0]) + "/" + ToString(shuflist->size()) + "). Stopping filtering, since input and output files will be equal. Please adjust the settings accordingly and restart.");
 
+         for(int i = 0; i < 3; i++)
+         {
+            delete stationDistance[i];
+            delete stationRisetime[i];
+         }
+         delete stationHSat;
          delete[] ftemp;
          delete[] itemp;
          delete[] stemp;
@@ -1982,6 +2025,12 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
       {
          AlertPopup("No events in split file", "One of the split files will have no events (" + ToString(itemp[1]) + "/" + ToString(itemp[2]) + "). Total number of filtered events is " + ToString(itemp[3]) + ". Please adjust the split setting accordingly and restart.");
 
+         for(int i = 0; i < 3; i++)
+         {
+            delete stationDistance[i];
+            delete stationRisetime[i];
+         }
+         delete stationHSat;
          delete[] ftemp;
          delete[] itemp;
          delete[] stemp;
@@ -2026,6 +2075,12 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
             }
             else
             {
+               for(int i = 0; i < 3; i++)
+               {
+                  delete stationDistance[i];
+                  delete stationRisetime[i];
+               }
+               delete stationHSat;
                delete[] ftemp;
                delete[] itemp;
                delete[] stemp;
@@ -2138,6 +2193,21 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
                cout << "# StartFileSplit        #:   Currently selected tree: " << stemp[2] << "; " << stemp[3] << endl;
 
                // Prepare tree for reading
+               for(int i = 0; i < 3; i++)
+               {
+                  stationDistance[i]->clear();
+                  stationRisetime[i]->clear();
+               }
+               stationHSat->clear();
+    
+               bdist = 0;
+               bdistneg = 0;
+               bdistpos = 0;
+               brise = 0;
+               briseneg = 0;
+               brisepos = 0;
+               bsat = 0;
+
                readTree = (TTree*)input->Get(stemp[2].c_str());
                readTree->SetBranchAddress("rewritecode", &rewritecode);
                for(int j = 0; j < nrobs; j++)
@@ -2146,6 +2216,14 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
                   readTree->SetBranchAddress((obser->GetName(j) + "_neg").c_str(), &(obser_neg->obsstruct[j].value));
                   readTree->SetBranchAddress((obser->GetName(j) + "_pos").c_str(), &(obser_pos->obsstruct[j].value));
                }
+
+               readTree->SetBranchAddress("stationdistance", &stationDistance[0], &bdist);
+               readTree->SetBranchAddress("stationdistance_neg", &stationDistance[1], &bdistneg);
+               readTree->SetBranchAddress("stationdistance_pos", &stationDistance[2], &bdistpos);
+               readTree->SetBranchAddress("stationrisetime", &stationRisetime[0], &brise);
+               readTree->SetBranchAddress("stationrisetime_neg", &stationRisetime[1], &briseneg);
+               readTree->SetBranchAddress("stationrisetime_pos", &stationRisetime[2], &brisepos);
+               readTree->SetBranchAddress("stationhighsat", &stationHSat, &bsat);
 
                // Prepare tree for writing
                if( (stemp[3].compare("Signal tree from old file.") == 0) || (stemp[3].compare("Signal tree from new file.") == 0) || (stemp[3].compare("Background tree with all events, including signal events.") == 0) )
@@ -2167,10 +2245,18 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
                writeTree->Branch("rewritecode", &rewritecode, "rewritecode/I");
                for(int j = 0; j < nrobs; j++)
                {
-                  writeTree->Branch((obser->GetName(j)).c_str(), &(obser->obsstruct[j].value), (obser->GetName(j) + "/D").c_str());
-                  writeTree->Branch((obser->GetName(j) + "_neg").c_str(), &(obser_neg->obsstruct[j].value), (obser->GetName(j) + "_neg/D").c_str());
-                  writeTree->Branch((obser->GetName(j) + "_pos").c_str(), &(obser_pos->obsstruct[j].value), (obser->GetName(j) + "_pos/D").c_str());
+                  writeTree->Branch((obser->GetName(j)).c_str(), &(obser->obsstruct[j].value), (obser->GetName(j) + "/F").c_str());
+                  writeTree->Branch((obser->GetName(j) + "_neg").c_str(), &(obser_neg->obsstruct[j].value), (obser->GetName(j) + "_neg/F").c_str());
+                  writeTree->Branch((obser->GetName(j) + "_pos").c_str(), &(obser_pos->obsstruct[j].value), (obser->GetName(j) + "_pos/F").c_str());
                }
+
+               writeTree->Branch("stationdistance", &stationDistance[0]);
+               writeTree->Branch("stationdistance_neg", &stationDistance[1]);
+               writeTree->Branch("stationdistance_pos", &stationDistance[2]);
+               writeTree->Branch("stationrisetime", &stationRisetime[0]);
+               writeTree->Branch("stationrisetime_neg", &stationRisetime[1]);
+               writeTree->Branch("stationrisetime_pos", &stationRisetime[2]);
+               writeTree->Branch("stationhighsat", &stationHSat);
 
                // Check if the values in this tree are valid
                if( (stemp[3].compare("Signal tree from old file.") == 0) || (stemp[3].compare("Signal tree from new file.") == 0) )
@@ -2184,7 +2270,18 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
                   // Loop over all events 
                   for(int j = 0; j < itemp[0]; j++)
                   {
+                     // Read all observables
                      readTree->GetEntry(j);
+
+                     // Read all vectors for SD stations
+                     tentry = readTree->LoadTree(j);
+                     bdist->GetEntry(tentry);
+                     bdistneg->GetEntry(tentry);
+                     bdistpos->GetEntry(tentry);
+                     brise->GetEntry(tentry);
+                     briseneg->GetEntry(tentry);
+                     brisepos->GetEntry(tentry);
+                     bsat->GetEntry(tentry);
 
                      // Select the correct tree to write to
                      if( (find(split1list->begin(), split1list->end(), j) != split1list->end()) && (i == 0) )
@@ -2195,15 +2292,15 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
                      // Update the progress bar
                      itemp[4]++;
                      if(!(*singlefile))
-           	  {
+           	     {
                         if(itemp[4]%((int)(2*(input->GetNkeys())*itemp[0]*0.05)) == 0)
                            progress->Update(itemp[4]);
-           	  }
-           	  else
-           	  {
+           	     }
+           	     else
+           	     {
                         if(itemp[4]%((int)((input->GetNkeys())*itemp[0]*0.05)) == 0)
                            progress->Update(itemp[4]);
-           	  }
+           	     }
                   }
                }
 
@@ -2226,6 +2323,13 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
          delete split1list;
          delete split2list;
       }
+
+      for(int i = 0; i < 3; i++)
+      {
+         delete stationDistance[i];
+         delete stationRisetime[i];
+      }
+      delete stationHSat;
 
       delete[] ftemp;
       delete[] itemp;
@@ -2250,15 +2354,62 @@ int MyFrame::StartCombine(string *outfile)
 
    if(selections.GetCount() > 1)
    {
+      string *stemp = new string;
+
       string *flist = new string[selections.GetCount()];
       for(int i = 0; i < selections.GetCount(); i++)
          flist[i] = (mvaList[1]->widgetLB)->GetString(selections[i]);
 
+      // Open a dialog to select the titles
+      string *slabels = new string[selections.GetCount()];
+      for(int i = 0; i < selections.GetCount(); i++)
+         slabels[i] = "Set title for TreeS" + ToString(i+1) + ": ";
+
+      string *svals = new string[selections.GetCount()];
+      TFile *ifile;
+      TTree *temptree;
+      TList *tempkeyslist;
+      for(int i = 0; i < selections.GetCount(); i++)
+      {
+         ifile = TFile::Open(flist[i].c_str(), "READ");
+	 tempkeyslist = (TList*)ifile->GetListOfKeys();
+
+	 for(int j = 0; j < ifile->GetNkeys(); j++)
+	 {
+            if(strcmp((tempkeyslist->At(j))->GetName(), "TreeA") != 0)
+	    {
+               if( (strcmp((tempkeyslist->At(j))->GetTitle(), "Signal tree from old file.") != 0) && (strcmp((tempkeyslist->At(j))->GetTitle(), "Signal tree from new file.") != 0) )
+                  svals[i] = (tempkeyslist->At(j))->GetTitle();
+	    }
+	 }
+
+	 ifile->Close();
+      }
+
+      *stemp = "Selecting titles for combining rewritten ADST files into an MVA input file.\nImportant! All titles must be different.\n";
+      FSDialog *titleselectDialog = new FSDialog(wxT("Title selection"), wxSize(600,150+30*(selections.GetCount())), *stemp, slabels, selections.GetCount(), svals, &ID_TITLEDIALOG);
+      if(titleselectDialog->ShowModal() == wxID_OK)
+      {
+         for(int i = 0; i < selections.GetCount(); i++)
+            svals[i] = titleselectDialog->GetFSValue(i);
+
+	 ret = 1;
+      }
+      else
+         ret = 0;
+      
+      titleselectDialog->Destroy();
+      delete titleselectDialog;
+
       // Combine the files with the hadd function
-      hadd(selections.GetCount(), flist, outfile);
+      hadd(selections.GetCount(), flist, outfile, svals, (bool)ret);
       InfoPopup("Finished combining files", "The selected files have been combined and can be used as input files to the MVA analysis.");
 
+      delete[] slabels;
+      delete[] svals;
+
       delete[] flist;
+      delete stemp;
       return 0;
    }
    else

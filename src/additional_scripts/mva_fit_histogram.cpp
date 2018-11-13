@@ -17,7 +17,7 @@ MvaFitHist::MvaFitHist(vector<string> *primVals)
    itemp = new int[4];
    dtemp = new double[3];
 
-   xmaxAnalysis = false;
+   obsAnalysis = 0;
 
    nrbins = -1;
    cout << endl;
@@ -31,24 +31,33 @@ MvaFitHist::MvaFitHist(vector<string> *primVals)
    PrintMethods();
    cerr << "Select the used MVA type: ";
    cin >> stemp[0];
+   cout << "Used MVA type = " << stemp[0] << endl;
 
    cerr << "Select constraint type (0 = function, 1 = one of the fractions): ";
    cin >> constraint;
+   cout << "Used constraint type = " << constraint << endl;
 
-   cerr << "Select if fit is to be performed on MVA distribution (0) or Xmax distribution (1): ";
-   cin >> itemp[0];
-   xmaxAnalysis = (bool)itemp[0];
+   cerr << "Select if fit is to be performed on MVA distribution (0), Xmax distribution (1) or risetime Delta distribution (2): ";
+   cin >> obsAnalysis;
+   cout << "Used distribution type = " << obsAnalysis << endl;
 
    cerr << "Remove zero bins from analysis (1 = yes, 0 = no): ";
    cin >> itemp[0];
    removeZero = (bool)itemp[0];
+   cout << "Used removal of zero bins = " << removeZero << endl;
 
    // Use xmax instead of MVA:
-   if(xmaxAnalysis)
+   if(obsAnalysis == 1)
    {
       xlim[0] = 560.;
       xlim[1] = 1040.;
       cout << "Xmax limits (" << stemp[0] << "): " << xlim[0] << ", " << xlim[1] << endl;
+   }
+   else if(obsAnalysis == 2)
+   {
+      xlim[0] = -200.;
+      xlim[1] = 400.;
+      cout << "Delta limits (" << stemp[0] << "): " << xlim[0] << ", " << xlim[1] << endl;
    }
    else
    {
@@ -59,6 +68,7 @@ MvaFitHist::MvaFitHist(vector<string> *primVals)
 
    cerr << "Transform [0,1] range of parameters to [-inf,inf] (0 = don't transform, 1 = transform) or leave parameters unlimited (2)? ";
    cin >> rangeTransform;
+   cout << "Used range transformation type = " << rangeTransform << endl;
 
    treeSelect = -1;
 
@@ -416,8 +426,11 @@ void MvaFitHist::PrepareHistograms(int run, string *fname, int *proc, double *st
       cout << "with title = " << tempTree->GetTitle() << endl;
 
       // Use xmax instead of MVA
-      if(xmaxAnalysis)
+      if(obsAnalysis == 1)
          tempTree->SetBranchAddress("xmax", &mva);
+      // Use deltarisetime instead of MVA
+      else if(obsAnalysis == 2)
+         tempTree->SetBranchAddress("deltarisetime", &mva);
       // Extract the MVA variable
       else
          tempTree->SetBranchAddress("MVA", &mva);
@@ -2096,15 +2109,19 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
       yrange[1] = data->GetMaximum();
 
       mystyle->SetHistColor((TH1*)sim, 0);
-      if(xmaxAnalysis)
+      if(obsAnalysis == 1)
          mystyle->SetAxisTitles((TH1*)sim, "X_{max} (g/cm^{2})", "Number of events");
+      else if(obsAnalysis == 2)
+         mystyle->SetAxisTitles((TH1*)sim, "t_{1/2} - t_{1/2}^{bench} (ns)", "Number of events");
       else
          mystyle->SetAxisTitles((TH1*)sim, "MVA variable", "Number of events");
       sim->Draw();
       
       mystyle->SetHistColor((TH1*)data, 2);
-      if(xmaxAnalysis)
+      if(obsAnalysis == 1)
          mystyle->SetAxisTitles((TH1*)data, "X_{max} (g/cm^{2})", "Number of events");
+      else if(obsAnalysis == 2)
+         mystyle->SetAxisTitles((TH1*)data, "t_{1/2} - t_{1/2}^{bench} (ns)", "Number of events");
       else
          mystyle->SetAxisTitles((TH1*)data, "MVA variable", "Number of events");
       sim->SetMaximum(1.1*TMath::MaxElement(2, yrange));
@@ -2216,7 +2233,9 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
       tempd[i] = residAll->at(i);
 
    // Use xmax instead of MVA:
-   if(xmaxAnalysis)
+   if(obsAnalysis == 1)
+      chiText.SetTextAlign(31);
+   else if(obsAnalysis == 2)
       chiText.SetTextAlign(31);
    else
       chiText.SetTextAlign(21);
@@ -2309,7 +2328,9 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
    {
       stemp[0] = "#chi^{2}/NDF = " + ToString((*chi2value), 4) + "/" + ToString((*ndfvalue)) + " = " + ToString((*chi2value)/(double)(*ndfvalue), 4) + ", status = " + ToString(status) + ", p-value = " + ToString((*pvalue), 4);
       // Use xmax instead of MVA:
-      if(xmaxAnalysis)
+      if(obsAnalysis == 1)
+         chiText.DrawLatex(xlim[1]*0.98, TMath::MaxElement(2, yrange), stemp[0].c_str());
+      else if(obsAnalysis == 2)
          chiText.DrawLatex(xlim[1]*0.98, TMath::MaxElement(2, yrange), stemp[0].c_str());
       else
          chiText.DrawLatex((xlim[0]+xlim[1])/2., TMath::MaxElement(2, yrange), stemp[0].c_str());
@@ -2321,22 +2342,34 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
       {
          stemp[0] = "r_{" + ToString(i+1) + "} = " + ToString(sigFrac[i], 4) + " +" + ToString(sigFracErr[2*i], 4) + "/-" + ToString(sigFracErr[2*i+1], 4) + " (" + treeNames[i] + ")";
          // Use xmax instead of MVA:
-	 if(xmaxAnalysis)
+	 if(obsAnalysis == 1)
             chiText.DrawLatex(xlim[1]*0.98, (1.-0.06*((double)i+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
+         // Use deltarisetime instead of MVA:
+	 else if(obsAnalysis == 2)
+            chiText.DrawLatex(xlim[1]*0.98, (1.-0.06*((double)i+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
+	 // Use MVA
 	 else
             chiText.DrawLatex((xlim[0]+xlim[1])/2., (1.-0.06*((double)i+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
       }
 
       stemp[0] = "Residuals: mean = " + ToString(TMath::Mean(residAll->size(), tempd), 4) + ", RMS = " + ToString(TMath::RMS(residAll->size(), tempd), 4);
       // Use xmax instead of MVA:
-      if(xmaxAnalysis)
+      if(obsAnalysis == 1)
          chiText.DrawLatex(xlim[1]*0.98, (1.-0.06*((double)nrparam+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
+      // Use deltarisetime instead of MVA:
+      else if(obsAnalysis == 2)
+         chiText.DrawLatex(xlim[1]*0.98, (1.-0.06*((double)nrparam+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
+      // Use MVA
       else
          chiText.DrawLatex((xlim[0]+xlim[1])/2., (1.-0.06*((double)nrparam+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
       stemp[0] = "MVA cut = " + ToString(mvacut, 4);
       // Use xmax instead of MVA:
-      if(xmaxAnalysis)
+      if(obsAnalysis == 1)
          chiText.DrawLatex(xlim[1]*0.98, (1.-0.06*((double)nrparam+2.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
+      // Use deltarisetime instead of MVA:
+      else if(obsAnalysis == 2)
+         chiText.DrawLatex(xlim[1]*0.98, (1.-0.06*((double)nrparam+2.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
+      // Use MVA
       else
          chiText.DrawLatex((xlim[0]+xlim[1])/2., (1.-0.06*((double)nrparam+2.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
    }
@@ -2395,8 +2428,10 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
    }
    else if(fitproc == 5)
    {
-      if(xmaxAnalysis)
+      if(obsAnalysis == 1)
          stemp[0] = RemoveFilename(&filename) + "/fithist/" + stemp[1] + "_composition_residuals_fracfitter-xmax.pdf";
+      else if(obsAnalysis == 2)
+         stemp[0] = RemoveFilename(&filename) + "/fithist/" + stemp[1] + "_composition_residuals_fracfitter-deltarise.pdf";
       else
          stemp[0] = RemoveFilename(&filename) + "/fithist/" + stemp[1] + "_composition_residuals_fracfitter.pdf";
       c1->SaveAs(stemp[0].c_str());
@@ -2438,9 +2473,9 @@ double MvaFitHist::GetStep()
    return *midStep;
 }
 
-bool MvaFitHist::GetAnalysisType()
+int MvaFitHist::GetAnalysisType()
 {
-   return xmaxAnalysis;
+   return obsAnalysis;
 }
 
 // Read published lnA FD results to add them to the plot (type: 0 = EPOS, 1 = QGSJETII, 2 = SIBYLL)
@@ -2791,6 +2826,7 @@ int main(int argc, char **argv)
       vector<string> *types = new vector<string>;
       cerr << "Select the elemental composition (enter element names separated by commas): ";
       cin >> stemp[0];
+      cout << "Used elemental composition: " << stemp[0] << endl;
 //      stemp[0] = "Proton,Helium,Oxygen,Iron";
       ExtractElements(stemp[0], types);
 /*      types->push_back("Proton");
@@ -2911,6 +2947,7 @@ int main(int argc, char **argv)
       int dset = -1;
       cerr << "Which dataset did you use (EPOS = 0, QGSJET = 1, SIBYLL = 2, NONE = -1)? ";
       cin >> dset;
+      cout << "Used dataset type: " << dset << endl;
 
       bool addPublishedFD, addPublishedSD, addPublishedFrac;
 
@@ -3099,19 +3136,26 @@ int main(int argc, char **argv)
       stemp[2] = "mkdir -p " + RemoveFilename(&stemp[1]) + "/plots";
       system(stemp[2].c_str());
 
-      if(fithist->GetAnalysisType())
+      if(fithist->GetAnalysisType() == 1)
       {
          stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA_xmax.pdf";
          c1->SaveAs(stemp[2].c_str());
-         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA_xmax.C";
+/*         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA_xmax.C";
+         c1->SaveAs(stemp[2].c_str());*/
+      }
+      else if(fithist->GetAnalysisType() == 2)
+      {
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA_deltarise.pdf";
          c1->SaveAs(stemp[2].c_str());
+/*         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA_deltarise.C";
+         c1->SaveAs(stemp[2].c_str());*/
       }
       else
       {
          stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA.pdf";
          c1->SaveAs(stemp[2].c_str());
-         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA.C";
-         c1->SaveAs(stemp[2].c_str());
+/*         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA.C";
+         c1->SaveAs(stemp[2].c_str());*/
       }
 
       // Plot lnA graph, where we add Xmax analysis from histogram fitting approach
@@ -3178,19 +3222,26 @@ int main(int argc, char **argv)
       stemp[2] = "mkdir -p " + RemoveFilename(&stemp[1]) + "/plots";
       system(stemp[2].c_str());
 
-      if(fithist->GetAnalysisType())
+      if(fithist->GetAnalysisType() == 1)
       {
          stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA-frac_xmax.pdf";
          c1->SaveAs(stemp[2].c_str());
-         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA-frac_xmax.C";
+/*         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA-frac_xmax.C";
+         c1->SaveAs(stemp[2].c_str());*/
+      }
+      else if(fithist->GetAnalysisType() == 2)
+      {
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA-frac_deltarise.pdf";
          c1->SaveAs(stemp[2].c_str());
+/*         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA-frac_deltarise.C";
+         c1->SaveAs(stemp[2].c_str());*/
       }
       else
       {
          stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA-frac.pdf";
          c1->SaveAs(stemp[2].c_str());
-         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA-frac.C";
-         c1->SaveAs(stemp[2].c_str());
+/*         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA-frac.C";
+         c1->SaveAs(stemp[2].c_str());*/
       }
      
       if(addPublishedFD)
@@ -3396,8 +3447,10 @@ int main(int argc, char **argv)
       legend->Draw("same");
 
       stemp[1] = RemoveFilename(&inname);
-      if(fithist->GetAnalysisType())
+      if(fithist->GetAnalysisType() == 1)
          stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_xmax.pdf";
+      else if(fithist->GetAnalysisType() == 2)
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_deltarise.pdf";
       else
          stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot.pdf";
       c1->SaveAs(stemp[2].c_str());
@@ -3426,8 +3479,10 @@ int main(int argc, char **argv)
             grComp[j]->Draw("ALP");
 	 }
          stemp[1] = RemoveFilename(&inname);
-         if(fithist->GetAnalysisType())
+         if(fithist->GetAnalysisType() == 1)
             stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_xmax_" + ptype->GetName(fithist->GetElemType(j)) + ".pdf";
+         else if(fithist->GetAnalysisType() == 2)
+            stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_deltarise_" + ptype->GetName(fithist->GetElemType(j)) + ".pdf";
 	 else
             stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_" + ptype->GetName(fithist->GetElemType(j)) + ".pdf";
          c1->SaveAs(stemp[2].c_str());
@@ -3496,8 +3551,10 @@ int main(int argc, char **argv)
       }
 
       stemp[1] = RemoveFilename(&inname);
-      if(fithist->GetAnalysisType())
+      if(fithist->GetAnalysisType() == 1)
          stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_xmax_combine.pdf";
+      else if(fithist->GetAnalysisType() == 2)
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_deltarise_combine.pdf";
       else
          stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_combine.pdf";
       c2->SaveAs(stemp[2].c_str());
@@ -3606,8 +3663,10 @@ int main(int argc, char **argv)
       legend->Draw("same");
 
       stemp[1] = RemoveFilename(&inname);
-      if(fithist->GetAnalysisType())
+      if(fithist->GetAnalysisType() == 1)
          stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_xmax_light-heavy.pdf";
+      else if(fithist->GetAnalysisType() == 2)
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_deltarise_light-heavy.pdf";
       else
          stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_light-heavy.pdf";
       c1->SaveAs(stemp[2].c_str());

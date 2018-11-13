@@ -31,16 +31,11 @@ ResultRead::~ResultRead()
 
 void ResultRead::ZeroVectors()
 {
-   if(!treeType.empty())
-      treeType.erase(treeType.begin(), treeType.end());
-   if(!allEvents.empty())
-      allEvents.erase(allEvents.begin(), allEvents.end());
-   if(!siglikeEvents.empty())
-      siglikeEvents.erase(siglikeEvents.begin(), siglikeEvents.end());
-   if(!bgdlikeEvents.empty())
-      bgdlikeEvents.erase(bgdlikeEvents.begin(), bgdlikeEvents.end());
-   if(!treeName.empty())
-      treeName.erase(treeName.begin(), treeName.end());
+   treeType.clear();
+   allEvents.clear();
+   siglikeEvents.clear();
+   bgdlikeEvents.clear();
+   treeName.clear();
 }
 
 int ResultRead::ReadFile(string inname)

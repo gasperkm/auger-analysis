@@ -23,18 +23,12 @@ void MyFrame::InitObservables()
 
    if(ifs->is_open())
    {
-      if(!observables.empty())
-         observables.erase(observables.begin(), observables.end());
-      if(!obssel.empty())
-         obssel.erase(obssel.begin(), obssel.end());
-      if(!obsorigsel.empty())
-         obsorigsel.erase(obsorigsel.begin(), obsorigsel.end());
-      if(!tempmin->empty())
-         tempmin->erase(tempmin->begin(), tempmin->end());
-      if(!tempmax->empty())
-         tempmax->erase(tempmax->begin(), tempmax->end());
-      if(!tempdesc->empty())
-         tempdesc->erase(tempdesc->begin(), tempdesc->end());
+      observables.clear();
+      obssel.clear();
+      obsorigsel.clear();
+      tempmin->clear();
+      tempmax->clear();
+      tempdesc->clear();
 
       while(1)
       {
@@ -105,12 +99,9 @@ void MyFrame::InitMethods()
 
    if(ifs->is_open())
    {
-      if(!methods.empty())
-         methods.erase(methods.begin(), methods.end());
-      if(!methodsOpt.empty())
-         methodsOpt.erase(methodsOpt.begin(), methodsOpt.end());
-      if(!methodsDesc.empty())
-         methodsDesc.erase(methodsDesc.begin(), methodsDesc.end());
+      methods.clear();
+      methodsOpt.clear();
+      methodsDesc.clear();
 
       methods.push_back("All");
       methodsDesc.push_back("Test all methods");

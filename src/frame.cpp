@@ -76,7 +76,7 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    Connect(ID_OPENFILE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SelectMvaFile));
 
    // Label and listbox for displaying opened root files
-   if(!vitemp->empty()) vitemp->erase(vitemp->begin(), vitemp->end());
+   vitemp->clear();
    vitemp->push_back(ID_DELETELIST + 4*nrlists);
    vitemp->push_back(ID_UPLIST + 4*nrlists);
    vitemp->push_back(ID_DOWNLIST + 4*nrlists);
@@ -97,7 +97,7 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    Connect(ID_REWRITE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SelectRewrite));
 
    // Label and listbox for displaying rewriten root files
-   if(!vitemp->empty()) vitemp->erase(vitemp->begin(), vitemp->end());
+   vitemp->clear();
    vitemp->push_back(ID_DELETELIST + 4*nrlists);
    vitemp->push_back(ID_UPLIST + 4*nrlists);
    vitemp->push_back(ID_DOWNLIST + 4*nrlists);
@@ -113,8 +113,8 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    nrlists++;
 
    // Label + NEntry + three buttons
-   if(!vitemp->empty()) vitemp->erase(vitemp->begin(), vitemp->end());
-   if(!vstemp->empty()) vstemp->erase(vstemp->begin(), vstemp->end());
+   vitemp->clear();
+   vstemp->clear();
    vstemp->push_back("Combine (to MVA input)");
    vitemp->push_back(ID_COMBINE);
    vstemp->push_back("Merge (to rewritten ADST)");
@@ -126,7 +126,7 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    Connect(ID_MERGE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SelectMerge));
 
    // Label and listbox for MVA input root files
-   if(!vitemp->empty()) vitemp->erase(vitemp->begin(), vitemp->end());
+   vitemp->clear();
    vitemp->push_back(ID_DELETELIST + 4*nrlists);
    vitemp->push_back(ID_UPLIST + 4*nrlists);
    vitemp->push_back(ID_DOWNLIST + 4*nrlists);
@@ -155,7 +155,7 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    vbox->Add(temptext, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10);
 
    // Label and combo box for selecting the type of observables for cuts SD or FD (splitting)
-   if(!vstemp->empty()) vstemp->erase(vstemp->begin(), vstemp->end());
+   vstemp->clear();
    vstemp->push_back("SD observables (energySD and zenithSD)");
    vstemp->push_back("FD observables (energyFD and zenithFD)");
    splitCutObservables = new LabelDrop(leftmvapanel, wxT("Select cut observables type:"), vstemp, vstemp->at(1), -1, rwidth);
@@ -163,8 +163,8 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    (splitCutObservables->widgetCB)->SetSelection(1);
 
    // Check + label + NEntry for choosing energy cut (splitting)
-   if(!vitemp->empty()) vitemp->erase(vitemp->begin(), vitemp->end());
-   if(!vdtemp->empty()) vdtemp->erase(vdtemp->begin(), vdtemp->end());
+   vitemp->clear();
+   vdtemp->clear();
    vdtemp->push_back(17.);
    vitemp->push_back(-1);
    vdtemp->push_back(21.);
@@ -178,8 +178,8 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    vbox->Add(splitCutEnergy->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
 
    // Check + label + NEntry for choosing zenith angle cut (splitting)
-   if(!vitemp->empty()) vitemp->erase(vitemp->begin(), vitemp->end());
-   if(!vdtemp->empty()) vdtemp->erase(vdtemp->begin(), vdtemp->end());
+   vitemp->clear();
+   vdtemp->clear();
    vdtemp->push_back(0.);
    vitemp->push_back(-1);
    vdtemp->push_back(60.);
@@ -194,14 +194,14 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    splitCutRisetime->SetNEntryFormat(splitCutRisetime->widgetNE[0], 3, 0.001, 2, 0., 10.);
    vbox->Add(splitCutRisetime->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
 
-   // Label and combo box for selecting the eye selection method
-   if(!vstemp->empty()) vstemp->erase(vstemp->begin(), vstemp->end());
+/*   // Label and combo box for selecting the eye selection method
+     vstemp->clear();
    vstemp->push_back("Combine stereo FD events");
    vstemp->push_back("Any FD eye inside cut");
    vstemp->push_back("Average of active eyes");
    splitEyeSelection = new LabelDrop(leftmvapanel, wxT("Eye selection method, if more than one FD eye:"), vstemp, vstemp->at(0), -1, rwidth);
    vbox->Add(splitEyeSelection->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
-   (splitEyeSelection->widgetCB)->SetSelection(0);
+   (splitEyeSelection->widgetCB)->SetSelection(0);*/
 
    // Label + NEntry + button for splitting rewritten ADST files
    startSplitting = new LabelNEntryButton(leftmvapanel, wxT("Split by a fraction (decimal) or number of events (integer):"), 0.5, -1, "Split", ID_SPLIT, lwidth);
@@ -253,21 +253,21 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    Connect(ID_CHANGEOBSSELECT, wxEVT_LISTBOX, wxCommandEventHandler(MyFrame::UpdateObservableSelection));
 
    // Label and combo box for selecting signal tree
-   if(!vstemp->empty()) vstemp->erase(vstemp->begin(), vstemp->end());
+   vstemp->clear();
    vstemp->push_back("Select signal...");
    signalSelect = new LabelDrop(rightmvapanel, wxT("Select 'signal' tree:"), vstemp, vstemp->at(0), -1, rwidth);
    vbox->Add(signalSelect->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
    (signalSelect->widgetCB)->SetSelection(0);
 
    // Label and combo box for selecting background tree
-   if(!vstemp->empty()) vstemp->erase(vstemp->begin(), vstemp->end());
+   vstemp->clear();
    vstemp->push_back("Select background...");
    backgroundSelect = new LabelDrop(rightmvapanel, wxT("Select 'background' tree:"), vstemp, vstemp->at(0), -1, rwidth);
    vbox->Add(backgroundSelect->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
    (backgroundSelect->widgetCB)->SetSelection(0);
 
    // Label and combo box for selecting MVA method type
-   if(!vstemp->empty()) vstemp->erase(vstemp->begin(), vstemp->end());
+   vstemp->clear();
    for(int i = 0; i < nrmethods; i++)
       vstemp->push_back(GetMethodName(methods[i]));
    methodsSelect = new LabelDrop(rightmvapanel, wxT("Choose MVA analysis method:"), vstemp, GetMethodName("MLPBNN"), -1, rwidth);
@@ -285,7 +285,7 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    vbox->Add(temptext, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10);
 
    // Label and combo box for selecting the type of observables for cuts SD or FD
-   if(!vstemp->empty()) vstemp->erase(vstemp->begin(), vstemp->end());
+   vstemp->clear();
    vstemp->push_back("SD observables (energySD and zenithSD)");
    vstemp->push_back("FD observables (energyFD and zenithFD)");
    cutObservables = new LabelDrop(rightmvapanel, wxT("Select cut observables type:"), vstemp, vstemp->at(1), -1, rwidth);
@@ -293,8 +293,8 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    (cutObservables->widgetCB)->SetSelection(1);
 
    // Check + label + NEntry for choosing energy cut
-   if(!vitemp->empty()) vitemp->erase(vitemp->begin(), vitemp->end());
-   if(!vdtemp->empty()) vdtemp->erase(vdtemp->begin(), vdtemp->end());
+   vitemp->clear();
+   vdtemp->clear();
    vdtemp->push_back(17.);
    vitemp->push_back(ID_ENERGYLIMITMIN);
    vdtemp->push_back(21.);
@@ -315,8 +315,8 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    Connect(ID_CHECKENERGYBINS, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::CheckEnergyBin));
 
    // Label + TEntry + button for choosing custom energy binning (from a file)
-   if(!vstemp->empty()) vstemp->erase(vstemp->begin(), vstemp->end());
-   if(!vitemp->empty()) vitemp->erase(vitemp->begin(), vitemp->end());
+   vstemp->clear();
+   vitemp->clear();
    vstemp->push_back("Select file...");
    vitemp->push_back(ID_ENERGYBINCUSTOM);
    vstemp->push_back("Disable");
@@ -330,8 +330,8 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    customBinning = false;
 
    // Check + label + NEntry for choosing zenith angle cut
-   if(!vitemp->empty()) vitemp->erase(vitemp->begin(), vitemp->end());
-   if(!vdtemp->empty()) vdtemp->erase(vdtemp->begin(), vdtemp->end());
+   vitemp->clear();
+   vdtemp->clear();
    vdtemp->push_back(0.);
    vitemp->push_back(ID_ZENITHLIMITMIN);
    vdtemp->push_back(60.);
@@ -352,12 +352,12 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    Connect(ID_CHECKZENITHBINS, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::CheckZenithBin));
 
    // Check + label + NEntry for choosing maximum risetime error cut
-   cutRisetime = new CheckNEntry(rightmvapanel, true, wxT("Maximum relative risetime limit:"), -1, 0.3, -1, rwidth);
+   cutRisetime = new CheckNEntry(rightmvapanel, false, wxT("Maximum relative risetime limit:"), -1, 0.3, -1, rwidth);
    cutRisetime->SetNEntryFormat(cutRisetime->widgetNE[0], 3, 0.001, 2, 0., 10.);
    vbox->Add(cutRisetime->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
 
    // Label and combo box for selecting data tree
-   if(!vstemp->empty()) vstemp->erase(vstemp->begin(), vstemp->end());
+   vstemp->clear();
    vstemp->push_back("Select data...");
    dataSelect = new LabelDrop(rightmvapanel, wxT("Select 'data' tree:"), vstemp, vstemp->at(0), -1, rwidth);
    vbox->Add(dataSelect->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
@@ -366,9 +366,9 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    vbox->Add(-1, 10);
 
    // Checkboxes for additional MVA settings
-   if(!vitemp->empty()) vitemp->erase(vitemp->begin(), vitemp->end());
-   if(!vitemp2->empty()) vitemp2->erase(vitemp2->begin(), vitemp2->end());
-   if(!vstemp->empty()) vstemp->erase(vstemp->begin(), vstemp->end());
+   vitemp->clear();
+   vitemp2->clear();
+   vstemp->clear();
    vstemp->push_back("Automatically run analysis over all energy bins");
    vitemp->push_back(0);
    vitemp2->push_back(-1);
@@ -390,12 +390,18 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    vstemp->push_back("Apply positive uncertainty to mean values (systematics estimation)");
    vitemp->push_back(0);
    vitemp2->push_back(-1);
+   vstemp->push_back("Use published S38 fit (arXiv:1502.01323, page 65)");
+   vitemp->push_back(0);
+   vitemp2->push_back(-1);
+   vstemp->push_back("Apply atmospheric and alignment resolution smearing on Monte Carlo simulations");
+   vitemp->push_back(0);
+   vitemp2->push_back(-1);
    specialMva = new CheckList(rightmvapanel, vitemp, vstemp, vitemp2, rwidth, "vertical");
    vbox->Add(specialMva->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
 
    // Multiple buttons to start MVA analysis
-   if(!vitemp->empty()) vitemp->erase(vitemp->begin(), vitemp->end());
-   if(!vstemp->empty()) vstemp->erase(vstemp->begin(), vstemp->end());
+   vitemp->clear();
+   vstemp->clear();
    vstemp->push_back("Start MVA analysis");
    vitemp->push_back(ID_STARTMVA);
    vstemp->push_back("Create temp event file");

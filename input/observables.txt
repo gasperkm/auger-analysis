@@ -6,13 +6,14 @@ shfoot		0	300.	1050.	Shower foot (g/cm^{2})
 energySD	0	1.e+18	1.e+20	SD reconstructed energy (eV)
 energyFD	0	1.e+18	1.e+20	FD reconstructed energy (eV)
 nrmu		0	0.	8.e+8	Number of muons at ground level
-shwsize		1	0.	110.	SD signal at 1000m from axis (VEM)
-deltas38	0	0.	110.	Delta of SD signal at 1000m from axis and 38 deg (VEM)
+nrstations	0	0.	20.	Number of active SD stations
+shwsize		1	0.	85.	SD signal at 1000m from axis (VEM)
+deltas38	1	-40.	40.	Delta of SD signal at 1000m from axis and 38 deg (VEM)
 ldfbeta		0	-2.6	-1.5	LDF beta parameter
 curvature	0	0.	0.0004	Curvature of shower plane (m^{-1})
 risetime	0	50.	600.	SD station risetime (ns)
 risetimerecalc	1	50.	600.	SD station risetime (ns)
-deltarisetime	0	0.	110.	Delta of SD station risetime (ns)
+deltarisetime	1	-200.	200.	Delta of SD station risetime (ns)
 aop		0	2.5	4.5	Area-over-Peak (VEM)
 zenithSD	0	1.	2.	SD zenith angle (sec#theta)
 azimuthSD	0	0.	360.	SD azimuth angle (degree)

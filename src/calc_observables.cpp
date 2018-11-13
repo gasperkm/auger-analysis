@@ -22,6 +22,18 @@ int AdstMva::SetSimObservables(Observables **cursig)
    return 0;
 }
 
+void AdstMva::ZeroSimObservables(Observables **cursig)
+{
+   cout << "# ZeroSimObservables     #: " << "Entering function AdstMva::ZeroSimObservables()" << endl;
+   SetBinary(0, 1, &rewritecode);
+
+   // Go over a loop of mean, neg and pos values
+   for(int j = 0; j < 3; j++)
+   {
+      cursig[j]->SetValue("nrmu", -1.);
+   }
+}
+
 int AdstMva::SetSdObservables(Observables **cursig)
 {
    cout << "# SetSdObservables      #: " << "Entering function AdstMva::SetSdObservables()" << endl;
@@ -49,6 +61,31 @@ int AdstMva::SetSdObservables(Observables **cursig)
       cursig[j]->SetValue("aop", GetAoP(j));
    }
    return 0;
+}
+
+void AdstMva::ZeroSdObservables(Observables **cursig)
+{
+   cout << "# ZeroSdObservables      #: " << "Entering function AdstMva::ZeroSdObservables()" << endl;
+   SetBinary(1, 1, &rewritecode);
+
+   // Go over a loop of mean, neg and pos values
+   for(int j = 0; j < 3; j++)
+   {
+      cursig[j]->SetValue("nrstations", 0.);
+      cursig[j]->SetValue("shwsize", -1.);
+      cursig[j]->SetValue("deltas38", -1.);
+      cursig[j]->SetValue("energySD", -1.);
+      cursig[j]->SetValue("ldfbeta", -1.);
+      cursig[j]->SetValue("curvature", -1.);
+      cursig[j]->SetValue("risetime", -1.);
+      cursig[j]->SetValue("risetimerecalc", -1.);
+      cursig[j]->SetValue("deltarisetime", -1.);
+      cursig[j]->SetValue("zenithSD", -1.);
+      cursig[j]->SetValue("azimuthSD", -1.);
+      cursig[j]->SetValue("latitudeSD", -1.);
+      cursig[j]->SetValue("longitudeSD", -1.);
+      cursig[j]->SetValue("aop", -1.);
+   }
 }
 
 int AdstMva::SetFdObservables(Observables **cursig)
@@ -228,13 +265,63 @@ int AdstMva::SetFdObservables(Observables **cursig)
    return 0;
 }
 
+void AdstMva::ZeroFdObservables(Observables **cursig)
+{
+   cout << "# ZeroFdObservables      #: " << "Entering function AdstMva::ZeroFdObservables()" << endl;
+   SetBinary(1, 1, &rewritecode);
+
+   // Go over a loop of mean, neg and pos values
+   for(int j = 0; j < 3; j++)
+   {
+      cursig[j]->SetValue("xmax", -1.);
+      cursig[j]->SetValue("x0", -1.);
+      cursig[j]->SetValue("lambda", -1.);
+      cursig[j]->SetValue("energyFD", -1.);
+      cursig[j]->SetValue("zenithFD", -1.);
+      cursig[j]->SetValue("azimuthFD", -1.);
+      cursig[j]->SetValue("latitudeFD", -1.);
+      cursig[j]->SetValue("longitudeFD", -1.);
+      cursig[j]->SetValue("shfoot", -1.);
+   }
+}
+
+float AdstMva::TotalSignalFromPMT(SdRecStation *station, bool silent)
+{
+   int *itemp = new int;
+   float retVal;
+   vector<float> *vemtrace = new vector<float>;
+
+   *itemp = 0;
+   retVal = 0;
+
+   for(int iPMT = 1; iPMT <= 3; iPMT++)
+   {
+      *vemtrace = station->GetVEMTrace(iPMT);
+      if(vemtrace->size() > 0)
+      {
+         retVal += station->GetPMTTraces((ETraceType)0, iPMT).GetVEMSignal();
+	 (*itemp)++;
+      }
+   }
+
+   retVal = retVal/(*itemp);
+   if(!silent)
+      cout << "Total signal vs. calculated signal from " << *itemp << " PMTs: " << station->GetTotalSignal() << " vs. " << retVal << endl;
+
+   delete vemtrace;
+   delete itemp;
+
+   return retVal;
+}
+
 int AdstMva::SetStationValues()
 {
-   cout << "# SetStationValues      #: " << "# Entering function AdstMva::SetFdObservables()" << endl;
+   cout << "# SetStationValues      #: " << "# Entering function AdstMva::SetStationValues()" << endl;
 
    string *stemp = new string[3];
-   int *itemp = new int[4];
-   float *ftemp = new float[3];
+   int *itemp = new int[3];
+   float *ftemp = new float[4];
+   bool *btemp = new bool;
 
    int *start_bin = new int;
    int *stop_bin = new int;
@@ -275,7 +362,7 @@ int AdstMva::SetStationValues()
 
    ftemp[0] = 0;
    itemp[0] = 0;
-   itemp[3] = 0;
+   itemp[2] = 0;
 
    if(TMath::Log10((fRecEvent->GetSDEvent().GetSdRecShower()).GetEnergy()) > 19.6)
       limitTankDistance[1] = 2000.;
@@ -288,7 +375,7 @@ int AdstMva::SetStationValues()
       if(actstations[i].IsCandidate())
       {
 /*-----------------------------------*/
-         cout << "New station (" << actstations[i].GetId() << ")" << endl;	// DEBUG
+         cout << ">>> New station (" << actstations[i].GetId() << ")" << endl;	// DEBUG
          *start_bin = actstations[i].GetSignalStartSlot() - 4;
          *stop_bin = actstations[i].GetSignalEndSlot();
    
@@ -399,6 +486,11 @@ int AdstMva::SetStationValues()
    
          ftemp[1] = ftemp[1]/itemp[1];
 
+	 // Some ADST files don't calculate the VEM for an event
+         ftemp[3] = actstations[i].GetTotalSignal();
+	 if(ftemp[3] == 0)
+            ftemp[3] = TotalSignalFromPMT(&actstations[i], false);
+
          // Asymmetry correction
          *eventThetaRec = fRecEvent->GetSDEvent().GetSdRecShower().GetZenith();
          *secZenith = 1./cos(*eventThetaRec);
@@ -408,36 +500,54 @@ int AdstMva::SetStationValues()
          *zeta = actstations[i].GetAzimuthSP();
    
          risemean = ftemp[1] - (*g)*cos(*zeta);
-         riseerr = fRTWeights->Eval(actstations[i].GetSPDistance(), (*secZenith), actstations[i].GetTotalSignal());
+         riseerr = fRTWeights->Eval(actstations[i].GetSPDistance(), (*secZenith), ftemp[3]);
+
+	 *btemp = true;
+
+	 // Check if station signal is below the minimum VEM signal
+         if( (ftemp[3] < minSignal) )
+	 {
+            *btemp = false;
+            cout << "Rejected: Station signal " << ftemp[3] << " is below the minimum accepted (" << minSignal << " VEM)." << endl;
+	 }
+
+	 // Check if station is low gain saturated (making it impossible to use)
+         if( (actstations[i].IsLowGainSaturated()) || (includeSaturated) )
+	 {
+            *btemp = false;
+            cout << "Rejected: Station signal is low gain saturated." << endl;
+	 }
+
+	 // Check if station is outside the distance limits: (300m,1400m) for low energy and (300m,2000m) for high energy
+         if( (actstations[i].GetSPDistance() < limitTankDistance[0]) || (actstations[i].GetSPDistance() > limitTankDistance[1]) )
+	 {
+            *btemp = false;
+            cout << "Rejected: Station distance " << actstations[i].GetSPDistance() << " is outside the limits (" << limitTankDistance[0] << "m, " << limitTankDistance[1] << "m)." << endl;
+	 }
+
+	 // Check if asymmetry corrected station risetime is negative
+         if(risemean < 0.)
+	 {
+            *btemp = false;
+            cout << "Rejected: Asymmetry corrected station risetime is negative (" << risemean << ")." << endl;
+	 }
    
-         if( (actstations[i].GetTotalSignal() > minSignal) )
+         if(*btemp)
          {
-            if( (!actstations[i].IsLowGainSaturated()) && (!includeSaturated) )
-            {
-               if( (actstations[i].GetSPDistance() >= limitTankDistance[0]) && (actstations[i].GetSPDistance() <= limitTankDistance[1]) )
-               {
-                  tempVect->push_back((double)actstations[i].IsHighGainSaturated());
-                  tempVect->push_back(actstations[i].GetSPDistance());
-                  tempVect->push_back(actstations[i].GetSPDistanceError());
-                  tempVect->push_back(risemean);
-                  tempVect->push_back(riseerr);
+            tempVect->push_back((double)actstations[i].IsHighGainSaturated());
+            tempVect->push_back(actstations[i].GetSPDistance());
+            tempVect->push_back(actstations[i].GetSPDistanceError());
+            tempVect->push_back(risemean);
+            tempVect->push_back(riseerr);
    
-                  itemp[3]++;
-               }
-/*               else
-                  cout << "Rejected: Station distance " << stationVector[i].GetSPDistance() << " is outside the limits (" << limitTankDistance[0] << "m, " << limitTankDistance[1] << "m)." << endl;*/
-            }
-/*            else
-               cout << "Rejected: Station signal is low gain saturated." << endl;*/
+            itemp[2]++;
          }
-/*         else
-            cout << "Rejected: Station signal " << stationVector[i].GetTotalSignal() << " is below the minimum accepted (" << minSignal << " VEM)." << endl;*/
       }
    }
 
-   if(itemp[3] < minPoints)
+   if(itemp[2] < minPoints)
    {
-      cout << "Rejected: Only " << itemp[3] << " valid tanks." << endl;
+      cout << "Rejected: Only " << itemp[2] << " valid tanks." << endl;
       cout << "Event reconstruction has failed." << endl;
 
       delete eventThetaRec;
@@ -464,11 +574,12 @@ int AdstMva::SetStationValues()
       delete[] stemp;
       delete[] itemp;
       delete[] ftemp;
+      delete btemp;
       return -1;
    }
    else
    {
-      for(int i = 0; i < itemp[3]; i++)
+      for(int i = 0; i < itemp[2]; i++)
       {
          // Save if station is high gain saturated
          stationHSat.push_back((bool)tempVect->at(5*i));
@@ -510,6 +621,7 @@ int AdstMva::SetStationValues()
    delete[] stemp;
    delete[] itemp;
    delete[] ftemp;
+   delete btemp;
    return 0;
 }
 // Functions to hold rules for saving observables ------------------------------
@@ -662,9 +774,9 @@ void AdstMva::CalculateShowerFoot(int eye)
    vector<double> yfoot;
    vector<double> yerrfoot;
 
-   if(!xfoot.empty()) xfoot.erase(xfoot.begin(),xfoot.end());
-   if(!yfoot.empty()) yfoot.erase(yfoot.begin(),yfoot.end());
-   if(!yerrfoot.empty()) yerrfoot.erase(yerrfoot.begin(),yerrfoot.end());
+   xfoot.clear();
+   yfoot.clear();
+   yerrfoot.clear();
 
    for(int i = 0; i < slantDepth->size(); i++)
    {
@@ -888,13 +1000,15 @@ void AdstMva::CalculateRisetime()
    int *nrpoints;
    double *dtemp;
    int *itemp;
+   bool *btemp;
 
    x = new double;
    y = new double;
    maxval = new double;
    nrpoints = new int;
-   dtemp = new double[3];
+   dtemp = new double[4];
    itemp = new int[2];
+   btemp = new bool;
 
    int *start_bin, *stop_bin;
 
@@ -924,6 +1038,11 @@ void AdstMva::CalculateRisetime()
 
    dtemp[0] = 0;
    itemp[0] = 0;
+
+   if(TMath::Log10((fRecEvent->GetSDEvent().GetSdRecShower()).GetEnergy()) > 19.6)
+      limitTankDistance[1] = 2000.;
+   else
+      limitTankDistance[1] = 1400.;
 
    // Check all stations
    for(int i = 0; i < stationVector.size(); i++)
@@ -1043,7 +1162,10 @@ void AdstMva::CalculateRisetime()
 
          dtemp[1] = dtemp[1]/itemp[1];
 
-//cout << "Tank " << stationVector[i].GetId() << ", " << stationVector[i].GetSPDistance() << " m: Calculated average risetime (for " << itemp[1] << " PMTs in the tank) = " << dtemp[1] << ", Total signal = " << stationVector[i].GetTotalSignal() << endl;
+	 // Some ADST files don't calculate the VEM for an event
+         dtemp[3] = stationVector[i].GetTotalSignal();
+	 if(dtemp[3] == 0)
+            dtemp[3] = TotalSignalFromPMT(&stationVector[i], true);
 
          // Asymmetry correction
          double eventThetaRec = fRecEvent->GetSDEvent().GetSdRecShower().GetZenith();
@@ -1054,36 +1176,48 @@ void AdstMva::CalculateRisetime()
          const double zeta = stationVector[i].GetAzimuthSP();
 
          risemean = dtemp[1] - g*cos(zeta);
-	 risemin = fRTWeights->Eval(stationVector[i].GetSPDistance(), secZenith, stationVector[i].GetTotalSignal());
+	 risemin = fRTWeights->Eval(stationVector[i].GetSPDistance(), secZenith, dtemp[3]);
 //cout << "Asymmetry corrected risetime = " << risemean << " (+- " << risemin << "), from actual data = " << stationVector[i].GetAssymCorrRiseTime(eventThetaRec) << " (+- " << stationVector[i].GetAssymCorrRiseTimeError(eventThetaRec) << ")" << endl;
 
-         if( (stationVector[i].GetTotalSignal() > minSignal) )
+	 *btemp = true;
+
+	 // Check if station signal is below the minimum VEM signal
+         if( (dtemp[3] < minSignal) )
 	 {
-            if( (!stationVector[i].IsLowGainSaturated()) && (!includeSaturated) )
-	    {
-               if( (stationVector[i].GetSPDistance() >= limitTankDistance[0]) && (stationVector[i].GetSPDistance() <= limitTankDistance[1]) )
-	       {
-                  riseVect->push_back(risemean);
-//                  riseVect->push_back(stationVector[i].GetAssymCorrRiseTime(eventThetaRec));
-                  distVect->push_back(stationVector[i].GetSPDistance()/1000.);
-                  riseVectErr->push_back(risemin);
-//                  riseVectErr->push_back(stationVector[i].GetAssymCorrRiseTimeError(eventThetaRec));
-                  distVectErr->push_back(stationVector[i].GetSPDistanceError()/1000.);
-	       }
-/*	       else
-	       {
-                  cout << "Rejected: Station distance " << stationVector[i].GetSPDistance() << " is outside the limits (" << limitTankDistance[0] << ", " << limitTankDistance[1] << ")." << endl;
-	       }*/
-	    }
-/*	    else
-	    {
-               cout << "Rejected: Station signal is low gain saturated." << endl;
-	    }*/
+            *btemp = false;
+//            cout << "Rejected: Station signal " << dtemp[3] << " is below the minimum accepted (" << minSignal << " VEM)." << endl;
 	 }
-/*	 else
+
+	 // Check if station is low gain saturated (making it impossible to use)
+         if( (stationVector[i].IsLowGainSaturated()) || (includeSaturated) )
 	 {
-            cout << "Rejected: Station signal " << stationVector[i].GetTotalSignal() << " is below the minimum accepted (" << minSignal << ")." << endl;
-	 }*/
+            *btemp = false;
+//            cout << "Rejected: Station signal is low gain saturated." << endl;
+	 }
+
+	 // Check if station is outside the distance limits: (300m,1400m) for low energy and (300m,2000m) for high energy
+         if( (stationVector[i].GetSPDistance() < limitTankDistance[0]) || (stationVector[i].GetSPDistance() > limitTankDistance[1]) )
+	 {
+            *btemp = false;
+//            cout << "Rejected: Station distance " << stationVector[i].GetSPDistance() << " is outside the limits (" << limitTankDistance[0] << "m, " << limitTankDistance[1] << "m)." << endl;
+	 }
+
+	 // Check if asymmetry corrected station risetime is negative
+         if(risemean < 0.)
+	 {
+            *btemp = false;
+//            cout << "Rejected: Asymmetry corrected station risetime is negative (" << risemean << ")." << endl;
+	 }
+
+         if(*btemp)
+	 {
+            riseVect->push_back(risemean);
+//            riseVect->push_back(stationVector[i].GetAssymCorrRiseTime(eventThetaRec));
+            distVect->push_back(stationVector[i].GetSPDistance()/1000.);
+            riseVectErr->push_back(risemin);
+//            riseVectErr->push_back(stationVector[i].GetAssymCorrRiseTimeError(eventThetaRec));
+            distVectErr->push_back(stationVector[i].GetSPDistanceError()/1000.);
+	 }
       }
    }
 
@@ -1107,12 +1241,12 @@ void AdstMva::CalculateRisetime()
       }
       else
       {
+         if(DBGSIG > 0)
+            cout << "Rejected: Risetime fit unsuccessful." << endl;
 	 risemean = -1;
 	 risemin = -1;
 	 risemax = -1;
       }
-
-//cout << /*"Reconstructed risetime = " << inRisetime <<*/ "Calculated average risetime (for " << itemp[0] << " PMTs in all tanks, " << riseVect->size() << " fitting points) = " << risemean << " (+- " << risemin << ")" << endl;
    }
    else
    {
@@ -1129,6 +1263,7 @@ void AdstMva::CalculateRisetime()
    delete maxval;
    delete[] dtemp;
    delete[] itemp;
+   delete btemp;
 
    delete start_bin;
    delete stop_bin;

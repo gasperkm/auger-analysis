@@ -187,7 +187,7 @@
        # Find OFFVER SOMETHING and set it depending on the selected ADST version
        grep -q "#define OFFVER SOMETHING" $startdir/setup/workstation.h.mid
        if [ $? == 0 ]; then
-	 if [ "$1" == "v2r9p1" ]; then
+	 if [ "$1" == "v2r9p1" ] || [ "$1" == "v2r9p5" ]; then
            sed "s/OFFVER SOMETHING/OFFVER 0/g" $startdir/setup/workstation.h.mid > $startdir/include/workstation.h
          else
            sed "s/OFFVER SOMETHING/OFFVER 1/g" $startdir/setup/workstation.h.mid > $startdir/include/workstation.h
