@@ -854,7 +854,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
 	 // Select the energy bin to use
 	 ftemp[0] = energybins->at(2*iEn);
 	 ftemp[1] = energybins->at(2*iEn+1);
-//         cout << "Chosen energy bin = " << ftemp[0] << ", " << ftemp[1] << " (nr events = " << SelectionPass(tempvector, TMath::Power(10,ftemp[0]), TMath::Power(10,ftemp[1])) << ")" << endl;
+         cout << "Chosen energy bin = " << ftemp[0] << ", " << ftemp[1] << " (nr events = " << SelectionPass(tempvector, TMath::Power(10,ftemp[0]), TMath::Power(10,ftemp[1])) << ")" << endl;
 
 	 // Clear vectors that will hold values for the selected bin
 	 energyVect->clear();
@@ -950,6 +950,8 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
 	 cout << "- c = " << fitparam[3] << " ± " << fitparamErr[3] << endl;
 	 cout << endl;*/
 
+	 cout << "  Chi2/NDF of the fit = " << fitfuncMid->GetChisquare() << "/" << fitfuncMid->GetNDF() << " = " << (fitfuncMid->GetChisquare())/(fitfuncMid->GetNDF()) << endl;
+
 	 WriteoutS38Fits(type, 0, ftemp[0], ftemp[1], 4, fitparam, fitparamErr);
 
 	 if(isdata)
@@ -1004,6 +1006,8 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
          cout << "- A = " << fitparam[0] << " ± " << fitparamErr[0] << endl;
          cout << "- B = " << fitparam[1] << " ± " << fitparamErr[1] << endl;
          cout << endl;*/
+
+	 cout << "  Chi2/NDF of the fit = " << fitfunc->GetChisquare() << "/" << fitfunc->GetNDF() << " = " << (fitfunc->GetChisquare())/(fitfunc->GetNDF()) << endl;
 
 	 PrintS38Fit(fitgraph, tempfunc, fitparam, fitparamErr, mystyle);
          WriteoutS38Fits(type, 1, binLimit[0], binLimit[2], 2, fitparam, fitparamErr);
@@ -1274,7 +1278,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
             // Select the zenith angle bin to use (energy bin is at reference 18.9-19.0
             ftemp[0] = zenithbins->at(2*iZen);
             ftemp[1] = zenithbins->at(2*iZen+1);
-//            cout << "Chosen zenith angle bin = " << ftemp[0] << ", " << ftemp[1] << " (nr events = " << SelectionPass(tempvector, ftemp[0], ftemp[1]) << ")" << endl;
+            cout << "Chosen zenith angle bin = " << ftemp[0] << ", " << ftemp[1] << " (nr events = " << SelectionPass(tempvector, ftemp[0], ftemp[1]) << ")" << endl;
 
             fitgraphMid = new TGraphAsymmErrors();	// for fit with low-gain
             fitgraph = new TGraphAsymmErrors();		// fot fit with high-gain
@@ -1316,6 +1320,9 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
                }
             }
 
+            cout << "  Number of high-gain saturated risetimes = " << itemp[1] << endl;
+            cout << "  Number of normal risetimes = " << itemp[2] << endl;
+
             fitgraphMid->Draw("AP");
             fitgraph->Draw("P;SAME");
 
@@ -1331,6 +1338,8 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
                fitparamErr[i] = fitfuncMid->GetParError(i);
             }
 
+	    cout << "  Normal: Chi2/NDF of the fit = " << fitfuncMid->GetChisquare() << "/" << fitfuncMid->GetNDF() << " = " << (fitfuncMid->GetChisquare())/(fitfuncMid->GetNDF()) << endl;
+
             fitfunc = new TF1("fitfuncHigh", "40+[2]*(TMath::Sqrt(TMath::Power([0],2)+[1]*TMath::Power(x,2))-[0])", 0., 2000.);
             fitfunc->FixParameter(0, fitfuncMid->GetParameter(0));
             fitfunc->FixParameter(1, fitfuncMid->GetParameter(1));
@@ -1339,6 +1348,8 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
 
             fitparam[2] = fitfunc->GetParameter(2);
             fitparamErr[2] = fitfunc->GetParError(2);
+
+	    cout << "  HG-sat: Chi2/NDF of the fit = " << fitfunc->GetChisquare() << "/" << fitfunc->GetNDF() << " = " << (fitfunc->GetChisquare())/(fitfunc->GetNDF()) << endl;
 
 /*            cout << endl << "Fitting parameters for dependence between distance and risetime:" << endl;
             cout << "- A = " << fitparam[0] << " ± " << fitparamErr[0] << endl;

@@ -60,6 +60,18 @@ int AdstMva::SetSdObservables(Observables **cursig)
       CalculateAoP();
       cursig[j]->SetValue("aop", GetAoP(j));
    }
+   cout << "Writing out SD observable: nrstations = " << cursig[0]->GetValue("nrstations") << ", err = " << cursig[1]->GetValue("nrstations") << ", " << cursig[2]->GetValue("nrstations") << endl;
+   cout << "Writing out SD observable: shwsize = " << cursig[0]->GetValue("shwsize") << ", err = " << cursig[1]->GetValue("shwsize") << ", " << cursig[2]->GetValue("shwsize") << endl;
+   cout << "Writing out SD observable: energySD = " << cursig[0]->GetValue("energySD") << ", err = " << cursig[1]->GetValue("energySD") << ", " << cursig[2]->GetValue("energySD") << endl;
+   cout << "Writing out SD observable: ldfbeta = " << cursig[0]->GetValue("ldfbeta") << ", err = " << cursig[1]->GetValue("ldfbeta") << ", " << cursig[2]->GetValue("ldfbeta") << endl;
+   cout << "Writing out SD observable: curvature = " << cursig[0]->GetValue("curvature") << ", err = " << cursig[1]->GetValue("curvature") << ", " << cursig[2]->GetValue("curvature") << endl;
+   cout << "Writing out SD observable: risetime = " << cursig[0]->GetValue("risetime") << ", err = " << cursig[1]->GetValue("risetime") << ", " << cursig[2]->GetValue("risetime") << endl;
+   cout << "Writing out SD observable: risetimerecalc = " << cursig[0]->GetValue("risetimerecalc") << ", err = " << cursig[1]->GetValue("risetimerecalc") << ", " << cursig[2]->GetValue("risetimerecalc") << endl;
+   cout << "Writing out SD observable: zenithSD = " << cursig[0]->GetValue("zenithSD") << ", err = " << cursig[1]->GetValue("zenithSD") << ", " << cursig[2]->GetValue("zenithSD") << endl;
+   cout << "Writing out SD observable: azimuthSD = " << cursig[0]->GetValue("azimuthSD") << ", err = " << cursig[1]->GetValue("azimuthSD") << ", " << cursig[2]->GetValue("azimuthSD") << endl;
+   cout << "Writing out SD observable: latitudeSD = " << cursig[0]->GetValue("latitudeSD") << ", err = " << cursig[1]->GetValue("latitudeSD") << ", " << cursig[2]->GetValue("latitudeSD") << endl;
+   cout << "Writing out SD observable: longitudeSD = " << cursig[0]->GetValue("longitudeSD") << ", err = " << cursig[1]->GetValue("longitudeSD") << ", " << cursig[2]->GetValue("longitudeSD") << endl;
+   cout << "Writing out SD observable: aop = " << cursig[0]->GetValue("aop") << ", err = " << cursig[1]->GetValue("aop") << ", " << cursig[2]->GetValue("aop") << endl;
    return 0;
 }
 
@@ -501,6 +513,8 @@ int AdstMva::SetStationValues()
    
          risemean = ftemp[1] - (*g)*cos(*zeta);
          riseerr = fRTWeights->Eval(actstations[i].GetSPDistance(), (*secZenith), ftemp[3]);
+//	 if(riseerr < 0)
+//	    cout << "negative risetime, " << i << ": Risetime = " << risemean << ", riseerr = " << riseerr << ", energy = " << TMath::Log10((fRecEvent->GetSDEvent().GetSdRecShower()).GetEnergy()) << ", sec zenith = " << *secZenith << ", PMT signal = " << ftemp[3] << ", distance = " << actstations[i].GetSPDistance() << endl;
 
 	 *btemp = true;
 
@@ -530,6 +544,13 @@ int AdstMva::SetStationValues()
 	 {
             *btemp = false;
             cout << "Rejected: Asymmetry corrected station risetime is negative (" << risemean << ")." << endl;
+	 }
+
+	 // CHeck if risetime error has a positive value (at very high sec(theta) values, the uncertainties are negative)
+	 if(riseerr < 0.)
+	 {
+            *btemp = false;
+	    cout << "Rejected: Risetime uncertainty is negative (" << riseerr << ") due to high zenith angle [sec(theta) = " << *secZenith << "]." << endl;
 	 }
    
          if(*btemp)

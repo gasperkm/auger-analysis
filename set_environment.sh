@@ -68,6 +68,10 @@
      do
        echo "- Main program (with ADST version $verFin): make auger-analysis-gui-$verFin"
      done
+     for verFin in ${adstver[@]}
+     do
+       echo "- Batch rewrite program (with ADST version $verFin): make bin/batch-rewrite-$verFin"
+     done
      echo "- Support programs (plotting,...): make support"
      echo "- Substructure library: make library"
    }
