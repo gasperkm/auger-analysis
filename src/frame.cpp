@@ -194,6 +194,16 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    splitCutRisetime->SetNEntryFormat(splitCutRisetime->widgetNE[0], 3, 0.001, 2, 0., 10.);
    vbox->Add(splitCutRisetime->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
 
+   // Check + label for choosing if we want to enforce that the event also has a valid SD reconstruction
+   vitemp->clear();
+   vitemp2->clear();
+   vstemp->clear();
+   vstemp->push_back("Enforce that split events (in first file) have a valid SD reconstruction");
+   vitemp->push_back(0);
+   vitemp2->push_back(-1);
+   splitEnforceSD = new CheckList(leftmvapanel, vitemp, vstemp, vitemp2, rwidth, "vertical");
+   vbox->Add(splitEnforceSD->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+
 /*   // Label and combo box for selecting the eye selection method
      vstemp->clear();
    vstemp->push_back("Combine stereo FD events");

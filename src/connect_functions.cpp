@@ -1876,7 +1876,7 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
       *singlefile = false;
 
       ftemp = new float[2];
-      itemp = new int[5];
+      itemp = new int[6];
       stemp = new string[5];
       
       // Get the value for splitting (either fraction of events or number of events)
@@ -1945,6 +1945,7 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
 
       // Preparing shuffled list for sampling
       vector<int> *shuflist = new vector<int>;
+      vector<bool> *shuflistSDrec = new vector<bool>;
 
       // Loop over all events 
       for(int j = 0; j < itemp[0]; j++)
@@ -1966,7 +1967,18 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
 
          // If event is inside selected cuts, enter it into the list for shuffling
          if(ret != -1)
+	 {
+            // If event has a valid SD reconstruction, save it for later selection
+            if((splitEnforceSD->widgetChBox[0])->IsChecked())
+            {
+               if(obser->GetValue("energySD") != -1.)
+                  shuflistSDrec->push_back(true);
+	       else
+                  shuflistSDrec->push_back(false);
+	    }
+
             shuflist->push_back(j);
+	 }
          else
          {
             if(DBGSIG > 1)
@@ -1993,6 +2005,7 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
          delete obser_pos;
          delete randSeed;
          delete shuflist;
+         delete shuflistSDrec;
          delete singlefile;
          input->Close();
 
@@ -2039,6 +2052,7 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
          delete obser_pos;
          delete randSeed;
          delete shuflist;
+         delete shuflistSDrec;
          delete singlefile;
          input->Close();
 
@@ -2089,6 +2103,7 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
                delete obser_pos;
                delete randSeed;
                delete shuflist;
+               delete shuflistSDrec;
                delete singlefile;
                randomseedDialog->Destroy();
                delete randomseedDialog;
@@ -2153,20 +2168,44 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
 
          // Shuffle the event list (saving to two vectors with event numbers)
          shuffle(shuflist->begin(), shuflist->end(), default_random_engine(*randSeed));
+         shuffle(shuflistSDrec->begin(), shuflistSDrec->end(), default_random_engine(*randSeed));
 
          vector<int> *split1list = new vector<int>;
          vector<int> *split2list = new vector<int>;
+
+	 itemp[5] = 0;
 
          for(int i = 0; i < itemp[3]; i++)
          {
             if(DBGSIG > 1)
                cout << i << "\tList event:\t" << shuflist->at(i) << "\t";
 
-            if(i < itemp[1])
+            if(i < itemp[1]+itemp[5])
             {
-               split1list->push_back(shuflist->at(i));
-               if(DBGSIG > 1)
-                  cout << " (1st list)" << endl;
+               if((splitEnforceSD->widgetChBox[0])->IsChecked())
+               {
+                  if(shuflistSDrec->at(i))
+                  {
+                     split1list->push_back(shuflist->at(i));
+                     if(DBGSIG > 1)
+                        cout << " (1st list)" << endl;
+//		     cout << i << ": Event has SD reconstruction - add to split1list (itemp[1] = " << itemp[1] << ", itemp[5] = " << itemp[5] << ")." << endl;
+		  }
+		  else
+                  {
+                     split2list->push_back(shuflist->at(i));
+                     if(DBGSIG > 1)
+                        cout << " (2nd list)" << endl;
+//		     cout << i << ": Event has no SD reconstruction - add to split2list (itemp[1] = " << itemp[1] << ", itemp[5] = " << itemp[5] << ")." << endl;
+		     itemp[5]++;
+                  }
+	       }
+	       else
+	       {
+                  split1list->push_back(shuflist->at(i));
+                  if(DBGSIG > 1)
+                     cout << " (1st list)" << endl;
+	       }
             }
             else
             {
@@ -2339,6 +2378,7 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
       delete obser_pos;
       delete randSeed;
       delete shuflist;
+      delete shuflistSDrec;
       delete singlefile;
       input->Close();
    }

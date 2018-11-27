@@ -2484,19 +2484,32 @@ int ReadLnaResultsFD(vector<float> *val, int type)
    ifstream infile;
    char ctemp[1024];
    float *ftemp;
+   int *itemp;
    int nrp = 0;
 
    string stemp;
    if(type == 0)
-      stemp = string(rootdir) + "/input/lnA_moments_epos.txt";
+      stemp = string(rootdir) + "/input/lnA_moments_icrc2017_epos.txt";
    else if(type == 1)
-      stemp = string(rootdir) + "/input/lnA_moments_qgs.txt";
+      stemp = string(rootdir) + "/input/lnA_moments_icrc2017_qgs.txt";
    else if(type == 2)
-      stemp = string(rootdir) + "/input/lnA_moments_sib.txt";
+      stemp = string(rootdir) + "/input/lnA_moments_icrc2017_sib.txt";
+   else if(type == 3)
+      stemp = string(rootdir) + "/input/lnA_moments_prd2014_epos.txt";
+   else if(type == 4)
+      stemp = string(rootdir) + "/input/lnA_moments_prd2014_qgs.txt";
+   else if(type == 5)
+      stemp = string(rootdir) + "/input/lnA_moments_prd2014_sib.txt";
    else
       return -1;
 
-   ftemp = new float[10];
+   itemp = new int;
+   if(type < 3)
+      *itemp = 10;
+   else
+      *itemp = 8;
+
+   ftemp = new float[*itemp];
 
    infile.open(stemp.c_str(), ifstream::in);
 
@@ -2506,7 +2519,7 @@ int ReadLnaResultsFD(vector<float> *val, int type)
       
       while(1)
       {
-	 for(int i = 0; i < 10; i++)
+	 for(int i = 0; i < *itemp; i++)
             infile >> ftemp[i];
 
 	 if(ftemp[0] > 18.40)
@@ -2514,6 +2527,8 @@ int ReadLnaResultsFD(vector<float> *val, int type)
             val->push_back(ftemp[0]);
             val->push_back(ftemp[1]);
             val->push_back(ftemp[2]);
+
+	    cout << ftemp[0] << ", " << ftemp[1] << ", " << ftemp[2] << endl;
 
 	    nrp++;
 	 }
@@ -2526,6 +2541,7 @@ int ReadLnaResultsFD(vector<float> *val, int type)
    infile.close();
 
    delete[] ftemp;
+   delete itemp;
 
    return nrp;
 }
@@ -2537,6 +2553,9 @@ int ReadLnaResultsSD(vector<float> *val, int type, int array)
    char ctemp[1024];
    float *ftemp;
    int nrp = 0;
+
+   if((type >= 3) && (type < 6))
+      type = type - 3;
 
    string stemp;
    if(type == 0)
@@ -2609,6 +2628,9 @@ int ReadFracResultsFD(vector<float> *val, MvaFitHist *fithist, PrimPart *ptype, 
    ftemp = new float[10];
    lna = new float[3];
    itemp = new int[3];
+
+   if((type >= 3) && (type < 6))
+      type = type - 3;
 
 //   cout << "---------------------------------------------------" << endl;
 //   cout << "Opening file: " << stemp << endl;
@@ -2949,7 +2971,12 @@ int main(int argc, char **argv)
       cin >> dset;
       cout << "Used dataset type: " << dset << endl;
 
-      bool addPublishedFD, addPublishedSD, addPublishedFrac;
+      bool addPublishedFD, addPublishedSD, addPublishedFrac, pubPRD;
+
+      if((dset >= 3) && (dset < 6))
+         pubPRD = true;
+      else
+	 pubPRD = false;
 
       float *xbinPubFD[3], *xbinPubSD[3], *xbinPubFDFrac[3];
       float *ybinPubLnaFD[3], *ybinPubLnaSD[3], *ybinPubLnaFDFrac[3];
@@ -2961,6 +2988,7 @@ int main(int argc, char **argv)
          vector<float> returnVal;
 	 cout << "Reading FD published Xmax results" << endl;
          itemp[2] = ReadLnaResultsFD(&returnVal, dset);
+
 	 if(itemp[2] != -1)
 	 {
             cout << "Number of FD points = " << itemp[2] << endl;
@@ -2990,7 +3018,7 @@ int main(int argc, char **argv)
             grPubLnaFD->GetXaxis()->SetLimits(18.5, 20.0);
             grPubLnaFD->GetYaxis()->SetRangeUser(-0.7, 5.);
 
-	    if(dset != 2)
+	    if((dset != 2) && (dset != 5))
 	    {
                addPublishedSD = true;
                returnVal.clear();
@@ -3092,8 +3120,10 @@ int main(int argc, char **argv)
          legend->AddEntry(grLna, "Mock data (Histogram fit)", "lp");
       else
          legend->AddEntry(grLna, "Data (Histogram fit)", "lp");
-      if(addPublishedFD)
+      if(addPublishedFD && !pubPRD)
          legend->AddEntry(grPubLnaFD, "Data (Xmax analysis ICRC2017)", "lp");
+      if(addPublishedFD && pubPRD)
+         legend->AddEntry(grPubLnaFD, "Data (Xmax analysis PRD2014)", "lp");
       if(addPublishedSD)
          legend->AddEntry(grPubLnaSD, "Data (Delta analysis ICRC2017)", "lp");
       legend->SetBorderSize(1);

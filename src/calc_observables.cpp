@@ -44,7 +44,7 @@ int AdstMva::SetSdObservables(Observables **cursig)
    {
       cursig[j]->SetValue("nrstations", GetNrStations(j));
       cursig[j]->SetValue("shwsize", GetShowerSize(j));
-      cursig[j]->SetValue("deltas38", 0.);
+      cursig[j]->SetValue("deltas38", -1.);
       cursig[j]->SetValue("energySD", GetSdEnergy(j));
       cursig[j]->SetValue("ldfbeta", GetBeta(j));
       cursig[j]->SetValue("curvature", GetCurvature(j));
@@ -52,7 +52,7 @@ int AdstMva::SetSdObservables(Observables **cursig)
       InitRisetimeVariables();
       CalculateRisetime();
       cursig[j]->SetValue("risetimerecalc", GetRisetime(j, true));
-      cursig[j]->SetValue("deltarisetime", 0.);
+      cursig[j]->SetValue("deltarisetime", -1.);
       cursig[j]->SetValue("zenithSD", GetSdZenith(j));
       cursig[j]->SetValue("azimuthSD", GetSdAzimuth(j));
       cursig[j]->SetValue("latitudeSD", GetSdLatitude(j));

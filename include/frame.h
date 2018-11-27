@@ -138,6 +138,7 @@ public:
     CheckNEntry *splitCutEnergy;
     CheckNEntry *splitCutZenith;
     CheckNEntry *splitCutRisetime;
+    CheckList *splitEnforceSD;
     LabelDrop *splitEyeSelection;
 
     LabelTEntry *selectedMva;

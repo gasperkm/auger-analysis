@@ -446,73 +446,83 @@ void Observables::ConvertToS38(int type, Observables *errneg, Observables *errpo
 
 //   cout << "sec(theta) = " << seczenith[0] << ", " << seczenith[1] << ", " << seczenith[2];
 
-   // x = (1/sec(theta))^2 - (cos(thetaref))^2
-   ftemp[0] = TMath::Power(1./seczenith[0],2) - TMath::Power(TMath::Cos(DegToRad(38.)),2);
-//   cout << ", x = " << ftemp[0];
-   // fCIC = 1 + a*x + b*x^2 + c*x^3
-   ftemp[1] = 1.+fitpar[1]*ftemp[0]+fitpar[2]*TMath::Power(ftemp[0],2)+fitpar[3]*TMath::Power(ftemp[0],3);
-//   cout << ", fCIC = " << ftemp[1];
-   // S38 = S1000/fCIC
-   ftemp[2] = s1000temp[0]/ftemp[1];
-//   cout << ", S38 = " << ftemp[2] << endl;
-   
-   SetValue(type, ftemp[2]);
-   
-   // (dS1000/fCIC)^2
-   ftemp[2] = s1000temp[1]/ftemp[1];
-   ftemp[3] = TMath::Power(ftemp[2],2);
-//   cout << "  S1000 err = " << ftemp[2];
-   // (-S1000*da*x/fCIC^2)^2
-   ftemp[2] = -(s1000temp[0]*fitparErr[1]*ftemp[0])/TMath::Power(ftemp[1],2);
-   ftemp[3] += TMath::Power(ftemp[2],2);
-//   cout << ", a err = " << ftemp[2];
-   // (-S1000*db*x^2/fCIC^2)^2
-   ftemp[2] = -(s1000temp[0]*fitparErr[2]*TMath::Power(ftemp[0],2))/TMath::Power(ftemp[1],2);
-   ftemp[3] += TMath::Power(ftemp[2],2);
-//   cout << ", b err = " << ftemp[2];
-   // (-S1000*dc*x^3/fCIC^2)^2
-   ftemp[2] = -(s1000temp[0]*fitparErr[3]*TMath::Power(ftemp[0],3))/TMath::Power(ftemp[1],2);
-   ftemp[3] += TMath::Power(ftemp[2],2);
-//   cout << ", c err = " << ftemp[2];
-   // (-S1000*dx*(a+2b*x+3c*x^2)/fCIC^2)^2
-   // dx = 2*cos(theta)*sin(theta)*dtheta
-   ftemp[2] = 2*seczenith[1]/TMath::Power(seczenith[0],3);
-//   cout << ", dx = " << ftemp[2];
-   ftemp[2] = -(s1000temp[0]*ftemp[2]*(fitpar[1]+2*fitpar[2]*ftemp[0]+3*fitpar[3]*TMath::Power(ftemp[0],2)))/TMath::Power(ftemp[1],2);
-   ftemp[3] += TMath::Power(ftemp[2],2);
-//   cout << ", x err = " << ftemp[2];
-   
-   ftemp[3] = TMath::Sqrt(ftemp[3]);
-//   cout << ", dS38 neg = " << ftemp[3] << endl;
-   errneg->SetValue(type, ftemp[3]);
-   
-   // (dS1000/fCIC)^2
-   ftemp[2] = s1000temp[2]/ftemp[1];
-   ftemp[3] = TMath::Power(ftemp[2],2);
-//   cout << "  S1000 err = " << ftemp[2];
-   // (-S1000*da*x/fCIC^2)^2
-   ftemp[2] = -(s1000temp[0]*fitparErr[1]*ftemp[0])/TMath::Power(ftemp[1],2);
-   ftemp[3] += TMath::Power(ftemp[2],2);
-//   cout << ", a err = " << ftemp[2];
-   // (-S1000*db*x^2/fCIC^2)^2
-   ftemp[2] = -(s1000temp[0]*fitparErr[2]*TMath::Power(ftemp[0],2))/TMath::Power(ftemp[1],2);
-   ftemp[3] += TMath::Power(ftemp[2],2);
-//   cout << ", b err = " << ftemp[2];
-   // (-S1000*dc*x^3/fCIC^2)^2
-   ftemp[2] = -(s1000temp[0]*fitparErr[3]*TMath::Power(ftemp[0],3))/TMath::Power(ftemp[1],2);
-   ftemp[3] += TMath::Power(ftemp[2],2);
-//   cout << ", c err = " << ftemp[2];
-   // (-S1000*dx*(a+2b*x+3c*x^2)/fCIC^2)^2
-   // dx = 2*cos(theta)*sin(theta)*dtheta
-   ftemp[2] = 2*seczenith[2]/TMath::Power(seczenith[0],3);
-//   cout << ", dx = " << ftemp[2];
-   ftemp[2] = -(s1000temp[0]*ftemp[2]*(fitpar[1]+2*fitpar[2]*ftemp[0]+3*fitpar[3]*TMath::Power(ftemp[0],2)))/TMath::Power(ftemp[1],2);
-   ftemp[3] += TMath::Power(ftemp[2],2);
-//   cout << ", x err = " << ftemp[2];
-   
-   ftemp[3] = TMath::Sqrt(ftemp[3]);
-//   cout << ", dS38 pos = " << ftemp[3] << endl;
-   errpos->SetValue(type, ftemp[3]);
+   if(s1000temp[0] == -1.)
+   {
+      SetValue(type, -1.);
+      errneg->SetValue(type, -1.);
+      errpos->SetValue(type, -1.);
+      cout << "S1000 value is negative for this event, setting S38 values to -1." << endl;
+   }
+   else
+   {
+      // x = (1/sec(theta))^2 - (cos(thetaref))^2
+      ftemp[0] = TMath::Power(1./seczenith[0],2) - TMath::Power(TMath::Cos(DegToRad(38.)),2);
+//      cout << ", x = " << ftemp[0];
+      // fCIC = 1 + a*x + b*x^2 + c*x^3
+      ftemp[1] = 1.+fitpar[1]*ftemp[0]+fitpar[2]*TMath::Power(ftemp[0],2)+fitpar[3]*TMath::Power(ftemp[0],3);
+//      cout << ", fCIC = " << ftemp[1];
+      // S38 = S1000/fCIC
+      ftemp[2] = s1000temp[0]/ftemp[1];
+//      cout << ", S38 = " << ftemp[2] << endl;
+      
+      SetValue(type, ftemp[2]);
+      
+      // (dS1000/fCIC)^2
+      ftemp[2] = s1000temp[1]/ftemp[1];
+      ftemp[3] = TMath::Power(ftemp[2],2);
+//      cout << "  S1000 err = " << ftemp[2];
+      // (-S1000*da*x/fCIC^2)^2
+      ftemp[2] = -(s1000temp[0]*fitparErr[1]*ftemp[0])/TMath::Power(ftemp[1],2);
+      ftemp[3] += TMath::Power(ftemp[2],2);
+//      cout << ", a err = " << ftemp[2];
+      // (-S1000*db*x^2/fCIC^2)^2
+      ftemp[2] = -(s1000temp[0]*fitparErr[2]*TMath::Power(ftemp[0],2))/TMath::Power(ftemp[1],2);
+      ftemp[3] += TMath::Power(ftemp[2],2);
+//      cout << ", b err = " << ftemp[2];
+      // (-S1000*dc*x^3/fCIC^2)^2
+      ftemp[2] = -(s1000temp[0]*fitparErr[3]*TMath::Power(ftemp[0],3))/TMath::Power(ftemp[1],2);
+      ftemp[3] += TMath::Power(ftemp[2],2);
+//      cout << ", c err = " << ftemp[2];
+      // (-S1000*dx*(a+2b*x+3c*x^2)/fCIC^2)^2
+      // dx = 2*cos(theta)*sin(theta)*dtheta
+      ftemp[2] = 2*seczenith[1]/TMath::Power(seczenith[0],3);
+//      cout << ", dx = " << ftemp[2];
+      ftemp[2] = -(s1000temp[0]*ftemp[2]*(fitpar[1]+2*fitpar[2]*ftemp[0]+3*fitpar[3]*TMath::Power(ftemp[0],2)))/TMath::Power(ftemp[1],2);
+      ftemp[3] += TMath::Power(ftemp[2],2);
+//      cout << ", x err = " << ftemp[2];
+      
+      ftemp[3] = TMath::Sqrt(ftemp[3]);
+//      cout << ", dS38 neg = " << ftemp[3] << endl;
+      errneg->SetValue(type, ftemp[3]);
+      
+      // (dS1000/fCIC)^2
+      ftemp[2] = s1000temp[2]/ftemp[1];
+      ftemp[3] = TMath::Power(ftemp[2],2);
+//      cout << "  S1000 err = " << ftemp[2];
+      // (-S1000*da*x/fCIC^2)^2
+      ftemp[2] = -(s1000temp[0]*fitparErr[1]*ftemp[0])/TMath::Power(ftemp[1],2);
+      ftemp[3] += TMath::Power(ftemp[2],2);
+//      cout << ", a err = " << ftemp[2];
+      // (-S1000*db*x^2/fCIC^2)^2
+      ftemp[2] = -(s1000temp[0]*fitparErr[2]*TMath::Power(ftemp[0],2))/TMath::Power(ftemp[1],2);
+      ftemp[3] += TMath::Power(ftemp[2],2);
+//      cout << ", b err = " << ftemp[2];
+      // (-S1000*dc*x^3/fCIC^2)^2
+      ftemp[2] = -(s1000temp[0]*fitparErr[3]*TMath::Power(ftemp[0],3))/TMath::Power(ftemp[1],2);
+      ftemp[3] += TMath::Power(ftemp[2],2);
+//      cout << ", c err = " << ftemp[2];
+      // (-S1000*dx*(a+2b*x+3c*x^2)/fCIC^2)^2
+      // dx = 2*cos(theta)*sin(theta)*dtheta
+      ftemp[2] = 2*seczenith[2]/TMath::Power(seczenith[0],3);
+//      cout << ", dx = " << ftemp[2];
+      ftemp[2] = -(s1000temp[0]*ftemp[2]*(fitpar[1]+2*fitpar[2]*ftemp[0]+3*fitpar[3]*TMath::Power(ftemp[0],2)))/TMath::Power(ftemp[1],2);
+      ftemp[3] += TMath::Power(ftemp[2],2);
+//      cout << ", x err = " << ftemp[2];
+      
+      ftemp[3] = TMath::Sqrt(ftemp[3]);
+//      cout << ", dS38 pos = " << ftemp[3] << endl;
+      errpos->SetValue(type, ftemp[3]);
+   }
 
    delete itemp;
    delete[] fitpar;
@@ -551,51 +561,61 @@ void Observables::ConvertToDeltaS38(int type, Observables *errneg, Observables *
 //   cout << "  (E/A)^(1/B) = " << ftemp[0]; 
 
    // DeltaS38
-   ftemp[1] = s38temp[0] - ftemp[0];
-   SetValue(type, ftemp[1]);
-//   cout << ", DeltaS38 = " << ftemp[1]; 
+   if(s38temp[0] == -1.)
+   {
+      SetValue(type, -1.);
+      errneg->SetValue(type, -1.);
+      errpos->SetValue(type, -1.);
+      cout << "S38 value is negative for this event, setting DeltaS38 values to -1." << endl;
+   }
+   else
+   {
+      ftemp[1] = s38temp[0] - ftemp[0];
+      SetValue(type, ftemp[1]);
+//      cout << ", DeltaS38 = " << ftemp[1]; 
 
-   // (dS38)^2
-   ftemp[2] = s38temp[1];
-   ftemp[3] = TMath::Power(ftemp[2],2);
-//   cout << ", S38 err = " << ftemp[2];
-   // (-((E/A)^(1/B))*dE/(B*E))^2
-   ftemp[2] = ftemp[0]*entemp[1]/(fitresults[2]*entemp[0]);
-   ftemp[3] += TMath::Power(ftemp[2],2);
-//   cout << ", E err = " << ftemp[2];
-   // (((E/A)^(1/B))*dA/(A*B))^2
-   ftemp[2] = ftemp[0]*fitresults[1]/(fitresults[0]*fitresults[2]);
-   ftemp[3] += TMath::Power(ftemp[2],2);
-//   cout << ", A err = " << ftemp[2];
-   // (((E/A)^(1/B))*ln(E/A)*dB/B^2)^2
-   ftemp[2] = ftemp[0]*TMath::Log(entemp[0]/fitresults[0])*fitresults[3]/TMath::Power(fitresults[2],2);
-   ftemp[3] += TMath::Power(ftemp[2],2);
-//   cout << ", B err = " << ftemp[2];
-   
-   ftemp[3] = TMath::Sqrt(ftemp[3]);
-//   cout << ", dDeltaS38 neg = " << ftemp[3] << endl;
-   errneg->SetValue(type, ftemp[3]);
+      // (dS38)^2
+      ftemp[2] = s38temp[1];
+      ftemp[3] = TMath::Power(ftemp[2],2);
+//      cout << ", S38 err = " << ftemp[2];
+      // (-((E/A)^(1/B))*dE/(B*E))^2
+      ftemp[2] = ftemp[0]*entemp[1]/(fitresults[2]*entemp[0]);
+      ftemp[3] += TMath::Power(ftemp[2],2);
+//      cout << ", E err = " << ftemp[2];
+      // (((E/A)^(1/B))*dA/(A*B))^2
+      ftemp[2] = ftemp[0]*fitresults[1]/(fitresults[0]*fitresults[2]);
+      ftemp[3] += TMath::Power(ftemp[2],2);
+//      cout << ", A err = " << ftemp[2];
+      // (((E/A)^(1/B))*ln(E/A)*dB/B^2)^2
+      ftemp[2] = ftemp[0]*TMath::Log(entemp[0]/fitresults[0])*fitresults[3]/TMath::Power(fitresults[2],2);
+      ftemp[3] += TMath::Power(ftemp[2],2);
+//      cout << ", B err = " << ftemp[2];
+      
+      ftemp[3] = TMath::Sqrt(ftemp[3]);
+//      cout << ", dDeltaS38 neg = " << ftemp[3] << endl;
+      errneg->SetValue(type, ftemp[3]);
 
-   // (dS38)^2
-   ftemp[2] = s38temp[2];
-   ftemp[3] = TMath::Power(ftemp[2],2);
-//   cout << ", S38 err = " << ftemp[2];
-   // (-((E/A)^(1/B))*dE/(B*E))^2
-   ftemp[2] = ftemp[0]*entemp[2]/(fitresults[2]*entemp[0]);
-   ftemp[3] += TMath::Power(ftemp[2],2);
-//   cout << ", E err = " << ftemp[2];
-   // (((E/A)^(1/B))*dA/(A*B))^2
-   ftemp[2] = ftemp[0]*fitresults[1]/(fitresults[0]*fitresults[2]);
-   ftemp[3] += TMath::Power(ftemp[2],2);
-//   cout << ", A err = " << ftemp[2];
-   // (((E/A)^(1/B))*ln(E/A)*dB/B^2)^2
-   ftemp[2] = ftemp[0]*TMath::Log(entemp[0]/fitresults[0])*fitresults[3]/TMath::Power(fitresults[2],2);
-   ftemp[3] += TMath::Power(ftemp[2],2);
-//   cout << ", B err = " << ftemp[2];
-   
-   ftemp[3] = TMath::Sqrt(ftemp[3]);
-//   cout << ", dDeltaS38 pos = " << ftemp[3] << endl;
-   errpos->SetValue(type, ftemp[3]);
+      // (dS38)^2
+      ftemp[2] = s38temp[2];
+      ftemp[3] = TMath::Power(ftemp[2],2);
+//      cout << ", S38 err = " << ftemp[2];
+      // (-((E/A)^(1/B))*dE/(B*E))^2
+      ftemp[2] = ftemp[0]*entemp[2]/(fitresults[2]*entemp[0]);
+      ftemp[3] += TMath::Power(ftemp[2],2);
+//      cout << ", E err = " << ftemp[2];
+      // (((E/A)^(1/B))*dA/(A*B))^2
+      ftemp[2] = ftemp[0]*fitresults[1]/(fitresults[0]*fitresults[2]);
+      ftemp[3] += TMath::Power(ftemp[2],2);
+//      cout << ", A err = " << ftemp[2];
+      // (((E/A)^(1/B))*ln(E/A)*dB/B^2)^2
+      ftemp[2] = ftemp[0]*TMath::Log(entemp[0]/fitresults[0])*fitresults[3]/TMath::Power(fitresults[2],2);
+      ftemp[3] += TMath::Power(ftemp[2],2);
+//      cout << ", B err = " << ftemp[2];
+      
+      ftemp[3] = TMath::Sqrt(ftemp[3]);
+//      cout << ", dDeltaS38 pos = " << ftemp[3] << endl;
+      errpos->SetValue(type, ftemp[3]);
+   }
 
    delete[] s38temp;
    delete[] entemp;
@@ -640,89 +660,100 @@ void Observables::ConvertToDelta(int type, Observables *errneg, Observables *err
       deltaVal[2] = 0;
 
       itemp[1] = GetValue("nrstations");
-      for(int i = 0; i < itemp[1]; i++)
+
+      if(itemp[1] == 0)
       {
-//         cout << "  Converting to delta for station " << i+1 << "/" << itemp[1] << endl;
-//         cout << "    distance = " << SDdist[0]->at(i) << ", " << SDdist[1]->at(i) << ", " << SDdist[2]->at(i) << endl;
-//         cout << "    risetime = " << SDrise[0]->at(i) << ", " << SDrise[1]->at(i) << ", " << SDrise[2]->at(i) << endl;
-//         cout << "    saturation = " << SDsat->at(i) << endl;
-
-         // Calculate the benchmarking functions (high-gain saturated and non-saturated) for event energy
-         //   tbench = 40 + sqrt(A^2 + B*r^2) - A
-         if(SDsat->at(i))
-         {
-            tbench[0] = 40. + TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)) - fitresults->at(10*itemp[0]+4);
-//            cout << "  tbench[0] = " << tbench[0];
-            // (dA)^2 = (dA*(A/sqrt(A^2 + B*r^2) - 1))^2
-            ftemp[0] = fitresults->at(10*itemp[0]+5)*(fitresults->at(10*itemp[0]+4)/TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)) - 1);
-            ftemp[1] = TMath::Power(ftemp[0],2);
-            ftemp[3] = TMath::Power(ftemp[0],2);
-//            cout << ", dA = " << ftemp[0];
-            // (dB)^2 = (dB*r^2/(2*sqrt(A^2 + B*r^2)))^2
-            ftemp[0] = fitresults->at(10*itemp[0]+7)*TMath::Power(SDdist[0]->at(i),2)/(2*TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)));
-            ftemp[1] += TMath::Power(ftemp[0],2);
-            ftemp[3] += TMath::Power(ftemp[0],2);
-//            cout << ", dB = " << ftemp[0];
-            // (dr)^2 = (dr*B*r/(sqrt(A^2 + B*r^2)))^2
-            ftemp[0] = SDdist[1]->at(i)*fitresults->at(10*itemp[0]+6)*SDdist[0]->at(i)/(TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)));
-            ftemp[1] += TMath::Power(ftemp[0],2);
-            ftemp[2] = SDdist[2]->at(i)*fitresults->at(10*itemp[0]+6)*SDdist[0]->at(i)/(TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)));
-            ftemp[3] += TMath::Power(ftemp[2],2);
-//            cout << ", dr = (" << ftemp[0] << ", " << ftemp[2] << ")";
-         }
-         //   tbench = 40 + N*(sqrt(A^2 + B*r^2) - A)
-         else
-         {
-            tbench[0] = 40. + fitresults->at(10*itemp[0]+8)*(TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)) - fitresults->at(10*itemp[0]+4));
-//            cout << "  tbench[0] = " << tbench[0];
-            // (dA)^2 = (N*dA*(A/sqrt(A^2 + B*r^2) - 1))^2
-            ftemp[0] = fitresults->at(10*itemp[0]+8)*fitresults->at(10*itemp[0]+5)*(fitresults->at(10*itemp[0]+4)/TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)) - 1);
-            ftemp[1] = TMath::Power(ftemp[0],2);
-            ftemp[3] = TMath::Power(ftemp[0],2);
-//            cout << ", dA = " << ftemp[0];
-            // (dB)^2 = (N*dB*r^2/(2*sqrt(A^2 + B*r^2)))^2
-            ftemp[0] = fitresults->at(10*itemp[0]+8)*fitresults->at(10*itemp[0]+7)*TMath::Power(SDdist[0]->at(i),2)/(2*TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)));
-            ftemp[1] += TMath::Power(ftemp[0],2);
-            ftemp[3] += TMath::Power(ftemp[0],2);
-//            cout << ", dB = " << ftemp[0];
-            // (dN)^2 = (dN*(sqrt(A^2 + B*r^2) - A))^2
-            ftemp[0] = fitresults->at(10*itemp[0]+9)*(TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)) - fitresults->at(10*itemp[0]+4));
-            ftemp[1] += TMath::Power(ftemp[0],2);
-            ftemp[3] += TMath::Power(ftemp[0],2);
-//            cout << ", dN = " << ftemp[0];
-            // (dr)^2 = (dr*B*N*r/(sqrt(A^2 + B*r^2)))^2
-            ftemp[0] = SDdist[1]->at(i)*fitresults->at(10*itemp[0]+8)*fitresults->at(10*itemp[0]+6)*SDdist[0]->at(i)/(TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)));
-            ftemp[1] += TMath::Power(ftemp[0],2);
-            ftemp[2] = SDdist[2]->at(i)*fitresults->at(10*itemp[0]+8)*fitresults->at(10*itemp[0]+6)*SDdist[0]->at(i)/(TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)));
-            ftemp[3] += TMath::Power(ftemp[2],2);
-//            cout << ", dr = (" << ftemp[0] << ", " << ftemp[2] << ")";
-         }
-
-         tbench[1] = TMath::Sqrt(ftemp[1]);
-         tbench[2] = TMath::Sqrt(ftemp[3]);
-//         cout << ", tbench[1-2] = (" << tbench[1] << ", " << tbench[2]  << ")" << endl;
-
-	 ftemp[0] = SDrise[0]->at(i) - tbench[0];
-//	 cout << "deltaVal_i = " << ftemp[0];
-	 deltaVal[0] += ftemp[0];
-
-	 ftemp[0] = TMath::Sqrt(TMath::Power(SDrise[1]->at(i),2) + TMath::Power(tbench[1],2));
-//	 cout << ", " << ftemp[0];
-	 deltaVal[1] += TMath::Power(ftemp[0],2);
-
-	 ftemp[0] = TMath::Sqrt(TMath::Power(SDrise[2]->at(i),2) + TMath::Power(tbench[2],2));
-//	 cout << ", " << ftemp[0] << endl;
-	 deltaVal[2] += TMath::Power(ftemp[0],2);
+         SetValue(type, -1.);
+         errneg->SetValue(type, -1.);
+         errpos->SetValue(type, -1.);
+	 cout << "No stations in this event, setting risetime values to -1." << endl;
       }
+      else
+      {
+         for(int i = 0; i < itemp[1]; i++)
+         {
+//            cout << "  Converting to delta for station " << i+1 << "/" << itemp[1] << endl;
+//            cout << "    distance = " << SDdist[0]->at(i) << ", " << SDdist[1]->at(i) << ", " << SDdist[2]->at(i) << endl;
+//            cout << "    risetime = " << SDrise[0]->at(i) << ", " << SDrise[1]->at(i) << ", " << SDrise[2]->at(i) << endl;
+//            cout << "    saturation = " << SDsat->at(i) << endl;
 
-      deltaVal[0] = deltaVal[0]/itemp[1];
-      deltaVal[1] = TMath::Sqrt(deltaVal[1])/itemp[1];
-      deltaVal[2] = TMath::Sqrt(deltaVal[2])/itemp[1];
+            // Calculate the benchmarking functions (high-gain saturated and non-saturated) for event energy
+            //   tbench = 40 + sqrt(A^2 + B*r^2) - A
+            if(SDsat->at(i))
+            {
+               tbench[0] = 40. + TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)) - fitresults->at(10*itemp[0]+4);
+//               cout << "  tbench[0] = " << tbench[0];
+               // (dA)^2 = (dA*(A/sqrt(A^2 + B*r^2) - 1))^2
+               ftemp[0] = fitresults->at(10*itemp[0]+5)*(fitresults->at(10*itemp[0]+4)/TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)) - 1);
+               ftemp[1] = TMath::Power(ftemp[0],2);
+               ftemp[3] = TMath::Power(ftemp[0],2);
+//               cout << ", dA = " << ftemp[0];
+               // (dB)^2 = (dB*r^2/(2*sqrt(A^2 + B*r^2)))^2
+               ftemp[0] = fitresults->at(10*itemp[0]+7)*TMath::Power(SDdist[0]->at(i),2)/(2*TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)));
+               ftemp[1] += TMath::Power(ftemp[0],2);
+               ftemp[3] += TMath::Power(ftemp[0],2);
+//               cout << ", dB = " << ftemp[0];
+               // (dr)^2 = (dr*B*r/(sqrt(A^2 + B*r^2)))^2
+               ftemp[0] = SDdist[1]->at(i)*fitresults->at(10*itemp[0]+6)*SDdist[0]->at(i)/(TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)));
+               ftemp[1] += TMath::Power(ftemp[0],2);
+               ftemp[2] = SDdist[2]->at(i)*fitresults->at(10*itemp[0]+6)*SDdist[0]->at(i)/(TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)));
+               ftemp[3] += TMath::Power(ftemp[2],2);
+//               cout << ", dr = (" << ftemp[0] << ", " << ftemp[2] << ")";
+            }
+            //   tbench = 40 + N*(sqrt(A^2 + B*r^2) - A)
+            else
+            {
+               tbench[0] = 40. + fitresults->at(10*itemp[0]+8)*(TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)) - fitresults->at(10*itemp[0]+4));
+//               cout << "  tbench[0] = " << tbench[0];
+               // (dA)^2 = (N*dA*(A/sqrt(A^2 + B*r^2) - 1))^2
+               ftemp[0] = fitresults->at(10*itemp[0]+8)*fitresults->at(10*itemp[0]+5)*(fitresults->at(10*itemp[0]+4)/TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)) - 1);
+               ftemp[1] = TMath::Power(ftemp[0],2);
+               ftemp[3] = TMath::Power(ftemp[0],2);
+//               cout << ", dA = " << ftemp[0];
+               // (dB)^2 = (N*dB*r^2/(2*sqrt(A^2 + B*r^2)))^2
+               ftemp[0] = fitresults->at(10*itemp[0]+8)*fitresults->at(10*itemp[0]+7)*TMath::Power(SDdist[0]->at(i),2)/(2*TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)));
+               ftemp[1] += TMath::Power(ftemp[0],2);
+               ftemp[3] += TMath::Power(ftemp[0],2);
+//               cout << ", dB = " << ftemp[0];
+               // (dN)^2 = (dN*(sqrt(A^2 + B*r^2) - A))^2
+               ftemp[0] = fitresults->at(10*itemp[0]+9)*(TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)) - fitresults->at(10*itemp[0]+4));
+               ftemp[1] += TMath::Power(ftemp[0],2);
+               ftemp[3] += TMath::Power(ftemp[0],2);
+//               cout << ", dN = " << ftemp[0];
+               // (dr)^2 = (dr*B*N*r/(sqrt(A^2 + B*r^2)))^2
+               ftemp[0] = SDdist[1]->at(i)*fitresults->at(10*itemp[0]+8)*fitresults->at(10*itemp[0]+6)*SDdist[0]->at(i)/(TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)));
+               ftemp[1] += TMath::Power(ftemp[0],2);
+               ftemp[2] = SDdist[2]->at(i)*fitresults->at(10*itemp[0]+8)*fitresults->at(10*itemp[0]+6)*SDdist[0]->at(i)/(TMath::Sqrt(TMath::Power(fitresults->at(10*itemp[0]+4),2) + fitresults->at(10*itemp[0]+6)*TMath::Power(SDdist[0]->at(i),2)));
+               ftemp[3] += TMath::Power(ftemp[2],2);
+//               cout << ", dr = (" << ftemp[0] << ", " << ftemp[2] << ")";
+            }
 
-      SetValue(type, deltaVal[0]);
-      errneg->SetValue(type, deltaVal[1]);
-      errpos->SetValue(type, deltaVal[2]);
-//      cout << "Final Delta = " << deltaVal[0] << ", " << deltaVal[1] << ", " << deltaVal[2] << endl;
+            tbench[1] = TMath::Sqrt(ftemp[1]);
+            tbench[2] = TMath::Sqrt(ftemp[3]);
+//            cout << ", tbench[1-2] = (" << tbench[1] << ", " << tbench[2]  << ")" << endl;
+
+            ftemp[0] = SDrise[0]->at(i) - tbench[0];
+//          cout << "deltaVal_i = " << ftemp[0];
+            deltaVal[0] += ftemp[0];
+
+            ftemp[0] = TMath::Sqrt(TMath::Power(SDrise[1]->at(i),2) + TMath::Power(tbench[1],2));
+//          cout << ", " << ftemp[0];
+            deltaVal[1] += TMath::Power(ftemp[0],2);
+
+            ftemp[0] = TMath::Sqrt(TMath::Power(SDrise[2]->at(i),2) + TMath::Power(tbench[2],2));
+//          cout << ", " << ftemp[0] << endl;
+            deltaVal[2] += TMath::Power(ftemp[0],2);
+         }
+
+         deltaVal[0] = deltaVal[0]/itemp[1];
+         deltaVal[1] = TMath::Sqrt(deltaVal[1])/itemp[1];
+         deltaVal[2] = TMath::Sqrt(deltaVal[2])/itemp[1];
+
+         SetValue(type, deltaVal[0]);
+         errneg->SetValue(type, deltaVal[1]);
+         errpos->SetValue(type, deltaVal[2]);
+//         cout << "Final Delta = " << deltaVal[0] << ", " << deltaVal[1] << ", " << deltaVal[2] << endl;
+      }
    }
    else
    {

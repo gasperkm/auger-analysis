@@ -67,19 +67,32 @@ int ReadLnaResults(vector<float> *val, int type)
    ifstream infile;
    char ctemp[1024];
    float *ftemp;
+   int *itemp;
    int nrp = 0;
 
    string stemp;
    if(type == 0)
-      stemp = string(rootdir) + "/input/lnA_moments_epos.txt";
+      stemp = string(rootdir) + "/input/lnA_moments_icrc2017_epos.txt";
    else if(type == 1)
-      stemp = string(rootdir) + "/input/lnA_moments_qgs.txt";
+      stemp = string(rootdir) + "/input/lnA_moments_icrc2017_qgs.txt";
    else if(type == 2)
-      stemp = string(rootdir) + "/input/lnA_moments_sib.txt";
+      stemp = string(rootdir) + "/input/lnA_moments_icrc2017_sib.txt";
+   else if(type == 3)
+      stemp = string(rootdir) + "/input/lnA_moments_prd2014_epos.txt";
+   else if(type == 4)
+      stemp = string(rootdir) + "/input/lnA_moments_prd2014_qgs.txt";
+   else if(type == 5)
+      stemp = string(rootdir) + "/input/lnA_moments_prd2014_sib.txt";
    else
       return -1;
 
-   ftemp = new float[10];
+   itemp = new int;
+   if(type < 3)
+      *itemp = 10;
+   else
+      *itemp = 8;
+
+   ftemp = new float[*itemp];
 
    infile.open(stemp.c_str(), ifstream::in);
 
@@ -89,7 +102,7 @@ int ReadLnaResults(vector<float> *val, int type)
       
       while(1)
       {
-	 for(int i = 0; i < 10; i++)
+	 for(int i = 0; i < *itemp; i++)
             infile >> ftemp[i];
 
 	 if(ftemp[0] > 18.40)
@@ -109,6 +122,7 @@ int ReadLnaResults(vector<float> *val, int type)
    infile.close();
 
    delete[] ftemp;
+   delete itemp;
 
    return nrp;
 }
@@ -938,9 +952,14 @@ int main(int argc, char **argv)
 	 cout << "Which dataset did you use (EPOS = 0, QGSJET = 1, SIBYLL = 2, NONE = -1)? ";
 	 cin >> dset;
 
-         bool addPublishedFD;
+         bool addPublishedFD, pubPRD;
 	 float *xbinPub[3];
 	 float *ybinPubLna[3];
+
+         if((dset >= 3) && (dset < 6))
+            pubPRD = true;
+         else
+            pubPRD = false;
 
 	 if(dset != -1)
 	 {
