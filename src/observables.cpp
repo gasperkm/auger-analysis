@@ -299,8 +299,8 @@ void Observables::ApplySmearing()
    if( (ftemp[0] != -1) && (ftemp[1] != -1) )
    {
       *logE = TMath::Log10(ftemp[0]);
-      cout << "------" << endl;
-      cout << "Energy = " << *logE << ", xmax = " << ftemp[1] << endl;
+//      cout << "------" << endl;
+//      cout << "Energy = " << *logE << ", xmax = " << ftemp[1] << endl;
 
       // Sigma value for resolution
       erAna::reso::ESigma *sys = new erAna::reso::ESigma;
@@ -326,17 +326,17 @@ void Observables::ApplySmearing()
       // Smearing from statistical VAOD
       ftemp[2] = XmaxVariance(*logE, erAna::reso::eStatVAOD, erAna::reso::eStatVAOD, *selType, *sys);
       ftemp[3] += ftemp[2];
-      cout << "Additional Variance = " << ftemp[3] << endl;
+//      cout << "Additional Variance = " << ftemp[3] << endl;
 
       // Bias correction
       ftemp[2] = 3.4 - 0.93*(*logE - 18.);
-      cout << "Bias correction = " << ftemp[2] << endl;
+//      cout << "Bias correction = " << ftemp[2] << endl;
 
       // Smeared value of Xmax
       ftemp[0] = rand->Gaus(0, TMath::Sqrt(ftemp[3]));
-      cout << "Random gaussian = " << ftemp[0] << endl;
+//      cout << "Random gaussian = " << ftemp[0] << endl;
       ftemp[1] += ftemp[0] + ftemp[2];
-      cout << "Smeared Xmax = " << ftemp[1] << endl;
+//      cout << "Smeared Xmax = " << ftemp[1] << endl;
       SetValue("xmax", ftemp[1]);
 
       delete selType;
@@ -451,7 +451,7 @@ void Observables::ConvertToS38(int type, Observables *errneg, Observables *errpo
       SetValue(type, -1.);
       errneg->SetValue(type, -1.);
       errpos->SetValue(type, -1.);
-      cout << "S1000 value is negative for this event, setting S38 values to -1." << endl;
+//      cout << "S1000 value is negative for this event, setting S38 values to -1." << endl;
    }
    else
    {
@@ -566,7 +566,7 @@ void Observables::ConvertToDeltaS38(int type, Observables *errneg, Observables *
       SetValue(type, -1.);
       errneg->SetValue(type, -1.);
       errpos->SetValue(type, -1.);
-      cout << "S38 value is negative for this event, setting DeltaS38 values to -1." << endl;
+//      cout << "S38 value is negative for this event, setting DeltaS38 values to -1." << endl;
    }
    else
    {
@@ -666,7 +666,7 @@ void Observables::ConvertToDelta(int type, Observables *errneg, Observables *err
          SetValue(type, -1.);
          errneg->SetValue(type, -1.);
          errpos->SetValue(type, -1.);
-	 cout << "No stations in this event, setting risetime values to -1." << endl;
+//	 cout << "No stations in this event, setting risetime values to -1." << endl;
       }
       else
       {
@@ -757,6 +757,9 @@ void Observables::ConvertToDelta(int type, Observables *errneg, Observables *err
    }
    else
    {
+      SetValue(type, -1.);
+      errneg->SetValue(type, -1.);
+      errpos->SetValue(type, -1.);
 //      cout << "Event is not valid for reconstruction (risetime Delta)" << endl;
       delete[] deltaVal;
       delete[] tbench;

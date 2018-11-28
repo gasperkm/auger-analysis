@@ -53,7 +53,7 @@ void MyFrame::EnableMvaFile(wxCommandEvent& event)
 	    (dataSelect->widgetCB)->Append(stemp[1]);
             (*cnt)++;
 
-	    if(stemp[1] != "Data")
+	    if(FindStringPart(stemp[1], "Data") == 0/*stemp[1] != "Data"*/)
  	       backgroundType->push_back(stemp[1]);
 	 }
       }
@@ -1309,6 +1309,19 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
    else
       multipleEnergyBins = false;
 
+   // Printout the special settings for this run
+   cout << "specialMva settings:" << endl
+        << "- Automatically run over energy bins = " << (int)(specialMva->widgetChBox[0])->IsChecked() << endl
+	<< "- Manually select MVA cut = " << (int)(specialMva->widgetChBox[1])->IsChecked() << endl
+	<< "- Determine MVA cut error = " << (int)(specialMva->widgetChBox[2])->IsChecked() << endl
+	<< "- Apply FD standard correction = " << (int)(specialMva->widgetChBox[3])->IsChecked() << endl
+	<< "- Apply HECO correction = " << (int)(specialMva->widgetChBox[4])->IsChecked() << endl
+	<< "- Apply negative uncertainty = " << (int)(specialMva->widgetChBox[5])->IsChecked() << endl
+	<< "- Apply positive uncertainty = " << (int)(specialMva->widgetChBox[6])->IsChecked() << endl
+	<< "- Use published S38 values = " << (int)(specialMva->widgetChBox[7])->IsChecked() << endl
+	<< "- Apply smearing to MC trees = " << (int)(specialMva->widgetChBox[8])->IsChecked() << endl
+	<< "- Treat selected data as MC = " << (int)(specialMva->widgetChBox[9])->IsChecked() << endl;
+
    // Run over all energy bins automatically
    for(int imva = 0; imva < (cutEnergyBins->widgetNE[0])->GetValue(); imva++)
    {
@@ -1971,10 +1984,21 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
             // If event has a valid SD reconstruction, save it for later selection
             if((splitEnforceSD->widgetChBox[0])->IsChecked())
             {
-               if(obser->GetValue("energySD") != -1.)
-                  shuflistSDrec->push_back(true);
+               ret = Find(observables, "risetimerecalc");
+               if(ret != -1)
+	       {
+                  if((obser->GetValue("energySD") != -1.) && (obser->GetValue("risetimerecalc") != -1.))
+                     shuflistSDrec->push_back(true);
+	          else
+                     shuflistSDrec->push_back(false);
+	       }
 	       else
-                  shuflistSDrec->push_back(false);
+	       {
+                  if(obser->GetValue("energySD") != -1.)
+                     shuflistSDrec->push_back(true);
+	          else
+                     shuflistSDrec->push_back(false);
+	       }
 	    }
 
             shuflist->push_back(j);

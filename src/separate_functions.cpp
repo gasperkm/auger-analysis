@@ -358,3 +358,11 @@ int SelectionPass(vector<double> *invec, double lowVal, double highVal)
 
    return retval;
 }
+
+int FindStringPart(string instr, string tofind)
+{
+   if( instr.find(tofind) != string::npos )
+      return 1;
+   else
+      return 0;
+}

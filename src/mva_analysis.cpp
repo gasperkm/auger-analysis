@@ -147,7 +147,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
    stemp = new string[3];
    itemp = new int[4];
    ftemp = new float[11];
-   btemp = new bool;
+   btemp = new bool[2];
 
    // SD observables for cut
    if(selcuttype == 0)
@@ -159,7 +159,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
-         delete btemp;
+         delete[] btemp;
          return -1;
       }
 
@@ -170,7 +170,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
-         delete btemp;
+         delete[] btemp;
          return -1;
       }
    }
@@ -184,7 +184,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
-         delete btemp;
+         delete[] btemp;
          return -1;
       }
 
@@ -195,7 +195,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
-         delete btemp;
+         delete[] btemp;
          return -1;
       }
    }
@@ -207,7 +207,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
       delete[] stemp;
       delete[] itemp;
       delete[] ftemp;
-      delete btemp;
+      delete[] btemp;
       return -1;
    }
 
@@ -415,12 +415,14 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
    itemp[2] = 0;
    itemp[3] = 0;
 
+   cout << "# MvaSetTrees           #: Number of total events in tree = " << tempTree->GetEntries() << endl;
+
    for(int j = 0; j < tempTree->GetEntries(); j++)
    {
       // Read all observables
       tempTree->GetEntry(j);
 
-      *btemp = true;
+      btemp[0] = true;
       
       if(j == 0)
          cout << "Selected observables:" << endl;
@@ -428,10 +430,12 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
       {
          if(obssel[i])
          {
+            // Situation, when we have no active SD stations (if nrstations is selected as observable)
             if( (invalues->GetName(i) == "nrstations") && (invalues->GetValue(i) == 0) )
-               *btemp = false;
+               btemp[0] = false;
+	    // Situation, when the selected observable has an invalid value
 	    else if(invalues->GetValue(i) == -1)
-               *btemp = false;
+               btemp[0] = false;
 
             if(j == 0)
                cout << "  " << invalues->GetName(i) << endl;
@@ -441,7 +445,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
       if(j == 0)
          cout << endl;
 
-      if(*btemp)
+      if(btemp[0])
       {
          // Read all vectors for SD stations
          tentry = tempTree->LoadTree(j);
@@ -477,28 +481,64 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
             delete[] stemp;
             delete[] itemp;
             delete[] ftemp;
-            delete btemp;
+            delete[] btemp;
             return -1;
          }
          else
          {
-            // Apply Xmax corrections to Auger FD standard data
-            if((specialMva->widgetChBox[3])->IsChecked())
-               invalues->ApplyCorrectionFD();
-
-            // Apply Xmax and energy corrections to Auger HECO data
-            if((specialMva->widgetChBox[4])->IsChecked())
-            {
-               invalues->ApplyCorrectionHECO();
-               invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
-               invalues_pos->ApplyCorrectionHECOErrors(invalues, 1);
-            }
-
-            // Apply systematic estimation by adding statistical uncertainties to mean value
             stemp[0] = "TreeS" + ToString(type);
             stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
             stemp[1] = RemovePath(&stemp[1]);
-            if( string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1] )	// set to == if changing data and to != if changing simulations
+
+	    // Check if current tree is data or Monte Carlo
+	    if((string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) || FindStringPart(stemp[1], "Data") )
+	    {
+	       // If treating selected data tree as Monte Carlo
+	       if( (string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) && ((specialMva->widgetChBox[9])->IsChecked()) )
+	       {
+                  if(j == 0)
+                     cout << "Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
+                  btemp[1] = false;
+	       }
+	       // If not treating selected data tree as Monte Carlo
+	       else
+	       {
+                  if(j == 0)
+                     cout << "Tree " << stemp[1] << " will be considered as a data tree." << endl;
+	          btemp[1] = true;
+	       }
+	    }
+	    else
+	    {
+               if(j == 0)
+                  cout << "Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
+	       btemp[1] = false;
+	    }
+
+	    // Only apply to data
+	    if(btemp[1])
+	    {
+               // Apply Xmax corrections to Auger FD standard data
+               if((specialMva->widgetChBox[3])->IsChecked())
+	       {
+	          if(j == 0)
+                     cout << "Applying FD standard correction to " << stemp[1] << endl;
+                  invalues->ApplyCorrectionFD();
+	       }
+
+               // Apply Xmax and energy corrections to Auger HECO data
+               if((specialMva->widgetChBox[4])->IsChecked())
+               {
+	          if(j == 0)
+                     cout << "Applying HECO correction to " << stemp[1] << endl;
+                  invalues->ApplyCorrectionHECO();
+                  invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
+                  invalues_pos->ApplyCorrectionHECOErrors(invalues, 1);
+               }
+	    }
+
+            // Apply systematic estimation by adding statistical uncertainties to mean value
+            if(btemp[1])	// set to == if changing data and to != if changing simulations
             {
                if((specialMva->widgetChBox[5])->IsChecked())
                   invalues->ApplyUncertainty(invalues_neg, invalues_pos, 0);
@@ -508,11 +548,15 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
             }
 
             // Only apply this to non-data
-            if( stemp[1] != "Data" )
+            if(!btemp[1])
             {
 	       // Apply atmospheric and alignment resolution smearing on MC simulations
 	       if((specialMva->widgetChBox[8])->IsChecked())
+	       {
+		  if(j == 0)
+                     cout << "Applying MC smearing to " << stemp[1] << endl;
                   invalues->ApplySmearing();
+	       }
 	    }
          }
 
@@ -604,7 +648,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
    delete[] stemp;
    delete[] itemp;
    delete[] ftemp;
-   delete btemp;
+   delete[] btemp;
 
    return ret;
 }
@@ -740,11 +784,14 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
 
 	 if((invalues->GetValue("energyFD") != -1) && (invalues->GetValue("zenithFD") != -1) && (invalues->GetValue("shwsize") != -1))
 	 {
-	    // Apply the FD standard correction
-	    if(FDcorrect == 1)
+            stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
+            stemp[1] = RemovePath(&stemp[1]);
+
+	    // Apply the FD standard correction - doesn't really affect energy, just Xmax
+	    if( (FDcorrect == 1) && (string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) )
                invalues->ApplyCorrectionFD();
-	    // Apply the HeCO correction
-	    else if(FDcorrect == 2)
+	    // Apply the HeCO correction - affects both energy and Xmax
+	    else if( (FDcorrect == 2) && (string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) )
 	    {
                invalues->ApplyCorrectionHECO();
                invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
@@ -1169,11 +1216,14 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
 
 	 if((invalues->GetValue("energyFD") != -1) && (invalues->GetValue("zenithFD") != -1) && (invalues->GetValue("nrstations") != 0))
 	 {
-	    // Apply the FD standard correction
-	    if(FDcorrect == 1)
+            stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
+            stemp[1] = RemovePath(&stemp[1]);
+
+	    // Apply the FD standard correction - doesn't really affect energy, just Xmax
+	    if( (FDcorrect == 1) && (string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) )
                invalues->ApplyCorrectionFD();
-	    // Apply the HeCO correction
-	    else if(FDcorrect == 2)
+	    // Apply the HeCO correction - affects both energy and Xmax
+	    else if( (FDcorrect == 2) && (string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) )
 	    {
                invalues->ApplyCorrectionHECO();
                invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);

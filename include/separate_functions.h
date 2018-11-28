@@ -51,4 +51,7 @@ int FindMinElement(vector<double> *invec);
 // Search vector for the number of elements passing a selection
 int SelectionPass(vector<double> *invec, double lowVal, double highVal);
 
+// Searching for a part of a string
+int FindStringPart(string instr, string tofind);
+
 #endif
