@@ -14,6 +14,9 @@
 #ifndef ROOT_TApplication
 #include "TApplication.h"
 #endif
+#ifndef ROOT_TVirtualX
+#include "TVirtualX.h"
+#endif
 #ifndef ROOT_TROOT
 #include "TROOT.h"
 #endif

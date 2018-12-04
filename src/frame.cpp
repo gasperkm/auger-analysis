@@ -2,6 +2,7 @@
 #include "separate_functions.h"
 #include "observables.h"
 #include "popups.h"
+#include "primary_type.h"
 
 // wxCollapsiblePane
 
@@ -219,6 +220,11 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    vbox->Add(startSplitting->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
    Connect(ID_SPLIT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::PrepareFileSplit));
 
+   // Label + button for splitting rewritten ADST files according to a text file with split settings (numbers)
+   startSplittingFile = new LabelButton(leftmvapanel, wxT("Split by file (decimals are fractions, integers are number of events):"), wxT("Split (File)"), ID_SPLITFILE, lwidth);
+   vbox->Add(startSplittingFile->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   Connect(ID_SPLITFILE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::PrepareFileSplitCustom));
+
    // Label for additional splitting instructions
    vbox->Add(-1, 5);
    temptext = new wxStaticText(leftmvapanel, -1, wxT("For splitting, use the following in the above number field:"));
@@ -280,9 +286,9 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    vstemp->clear();
    for(int i = 0; i < nrmethods; i++)
       vstemp->push_back(GetMethodName(methods[i]));
-   methodsSelect = new LabelDrop(rightmvapanel, wxT("Choose MVA analysis method:"), vstemp, GetMethodName("MLPBNN"), -1, rwidth);
+   methodsSelect = new LabelDrop(rightmvapanel, wxT("Choose MVA analysis method:"), vstemp, GetMethodName("BDTG"), -1, rwidth);
    vbox->Add(methodsSelect->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
-   (methodsSelect->widgetCB)->SetSelection((methodsSelect->widgetCB)->FindString(GetMethodName("MLPBNN")));
+   (methodsSelect->widgetCB)->SetSelection((methodsSelect->widgetCB)->FindString(GetMethodName("BDTG")));
 
    // Label + NEntry for choosing the MVA cut
    cutMva = new LabelNEntry(rightmvapanel, wxT("Choose MVA cut value:"), 0., -1, rwidth);
@@ -450,15 +456,280 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
 
 // MVA analysis -----------------------------------------------------
 
-// ADST cuts --------------------------------------------------------
+// Plotting page ----------------------------------------------------
+
+   lwidth = 5*WW/6;
 
    // Set the scrollable window inside the frame
    sw = new wxScrolledWindow(tabs);
 
-   // Add ADST cuts subframe to a tab
-   tabs->AddPage(sw, wxT("ADST cuts"));
+   // Horizontally align panels inside the scrolled window
+   hboxhead = new wxBoxSizer(wxHORIZONTAL);
 
-// ADST cuts --------------------------------------------------------
+   // Set the plotting panel inside the scrollable window (plotting) ------------------------------------
+   wxPanel *plotpanel = new wxPanel(sw, -1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxBORDER_RAISED);
+
+   // Vertically align elements inside the panel
+   vbox = new wxBoxSizer(wxVERTICAL);
+
+   // Make a title
+   MakeTitle(plotpanel, vbox, wxT("General plotting settings"));
+
+   // Label and button for opening files for plotting
+   selectPlotFile = new LabelButton(plotpanel, wxT("File selection:"), wxT("..."), ID_OPENPLOTFILE, lwidth);
+   vbox->Add(selectPlotFile->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   Connect(ID_OPENPLOTFILE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SelectPlotFile));
+
+   // Label and button for opening files for plotting
+   selectPlotDir = new LabelButton(plotpanel, wxT("Directory selection:"), wxT("..."), ID_OPENPLOTDIR, lwidth);
+   vbox->Add(selectPlotDir->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   Connect(ID_OPENPLOTDIR, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SelectPlotDir));
+
+   // Label and listbox for displaying opened plot files
+   vitemp->clear();
+   vitemp->push_back(ID_DELETELIST + 4*nrlists);
+   vitemp->push_back(ID_UPLIST + 4*nrlists);
+   vitemp->push_back(ID_DOWNLIST + 4*nrlists);
+   vitemp->push_back(ID_CLEARLIST + 4*nrlists);
+
+   openFileList = new LabelListEdit(plotpanel, wxT("Files for plotting:"), lwidth, 70, 1, -1, vitemp);
+   vbox->Add(openFileList->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   Connect(vitemp->at(0), wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::EditList));
+   Connect(vitemp->at(1), wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::EditList));
+   Connect(vitemp->at(2), wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::EditList));
+   Connect(vitemp->at(3), wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::EditList));
+   allLBE[nrlists] = openFileList;
+   nrlists++;
+
+   // Label + NEntry for choosing the number of bins
+   plotNrBins = new LabelNEntry(plotpanel, wxT("Choose number of bins (for histogram plots):"), 50., -1, lwidth);
+   plotNrBins->SetNEntryFormat(plotNrBins->widgetNE[0], 0, 1, -1, 5., -1.);
+   vbox->Add(plotNrBins->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+
+   // Check + Label + NEntry for choosing x-axis range
+   vitemp->clear();
+   vdtemp->clear();
+   vdtemp->push_back(-100.);
+   vitemp->push_back(-1);
+   vdtemp->push_back(100.);
+   vitemp->push_back(-1);
+   plotXaxisRange = new CheckNEntry(plotpanel, false, wxT("X-axis range:"), -1, vdtemp, vitemp, lwidth);
+   plotXaxisRange->SetNEntryFormat(plotXaxisRange->widgetNE[0], 2, 0.01, 0, -1., -1.);
+   plotXaxisRange->SetNEntryFormat(plotXaxisRange->widgetNE[1], 2, 0.01, 0, -1., -1.);
+   (plotXaxisRange->widgetNE[0])->SetValue(-100.);
+   vbox->Add(plotXaxisRange->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+
+   // Check + Label + NEntry for choosing y-axis range
+   vitemp->clear();
+   vdtemp->clear();
+   vdtemp->push_back(-100.);
+   vitemp->push_back(-1);
+   vdtemp->push_back(100.);
+   vitemp->push_back(-1);
+   plotYaxisRange = new CheckNEntry(plotpanel, false, wxT("Y-axis range:"), -1, vdtemp, vitemp, lwidth);
+   plotYaxisRange->SetNEntryFormat(plotYaxisRange->widgetNE[0], 2, 0.01, 0, -1., -1.);
+   plotYaxisRange->SetNEntryFormat(plotYaxisRange->widgetNE[1], 2, 0.01, 0, -1., -1.);
+   (plotYaxisRange->widgetNE[0])->SetValue(-100.);
+   vbox->Add(plotYaxisRange->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+
+   vbox->Add(-1, 10);
+
+   // Make a title
+   MakeTitle(plotpanel, vbox, wxT("MVA histogram fit for lnA and composition plots"));
+
+   // Label and combo box for selecting MVA method type to plot
+   vstemp->clear();
+   for(int i = 0; i < nrmethods; i++)
+      vstemp->push_back(GetMethodName(methods[i]));
+   methodsPlotSelect = new LabelDrop(plotpanel, wxT("Chosen MVA analysis method:"), vstemp, GetMethodName("BDTG"), -1, lwidth);
+   vbox->Add(methodsPlotSelect->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (methodsPlotSelect->widgetCB)->SetSelection((methodsPlotSelect->widgetCB)->FindString(GetMethodName("BDTG")));
+
+//   wxBoxSizer *hboxMid = new wxBoxSizer(wxHORIZONTAL);
+
+   // Label and listbox for for selecting composition
+   plottingList[0] = new LabelList(plotpanel, wxT("Composition to use during plotting (Ctrl or Shift + Click to select multiple):"), 90, 1, -1);
+   vbox->Add(plottingList[0]->subsizer, 0, wxLEFT | wxRIGHT | wxTOP, 5);
+
+   PrimPart *ptype = new PrimPart();
+
+   vstemp->clear();
+   for(int i = 0; i < ptype->Nr(); i++)
+   {
+      if(ptype->GetName(i) != "Other")
+      {
+         if(ptype->GetName(i) == "Proton")
+            vstemp->push_back(ptype->GetName(i));
+         if(ptype->GetName(i) == "Helium")
+            vstemp->push_back(ptype->GetName(i));
+         if(ptype->GetName(i) == "Oxygen")
+            vstemp->push_back(ptype->GetName(i));
+         if(ptype->GetName(i) == "Iron")
+            vstemp->push_back(ptype->GetName(i));
+         
+         (plottingList[0]->widgetLB)->Append(ptype->GetName(i));
+      }
+   }
+
+   for(int i = 0; i < vstemp->size(); i++)
+      (plottingList[0]->widgetLB)->SetSelection(ptype->GetZ(&(vstemp->at(i))));
+   (plottingList[0]->widgetLB)->SetFirstItem(0);
+
+   delete ptype;
+
+//   vbox->Add(hboxMid, 0, wxLEFT | wxRIGHT | wxTOP, 5);
+
+   // Label and combo box for selecting the hadronic interaction model
+   vstemp->clear();
+   vstemp->push_back("EPOS_LHC");
+   vstemp->push_back("QGSJET-II.04");
+   vstemp->push_back("Sibyll-2.3");
+   vstemp->push_back("None");
+   hiSelect = new LabelDrop(plotpanel, wxT("Select hadronic interaction model:"), vstemp, vstemp->at(0), -1, lwidth);
+   vbox->Add(hiSelect->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (hiSelect->widgetCB)->SetSelection(0);
+
+   // Label and combo box for selecting the hadronic interaction model
+   vstemp->clear();
+   vstemp->push_back("v2r9p5");
+   vstemp->push_back("v3r3p4");
+   prodSelect = new LabelDrop(plotpanel, wxT("Select simulation production:"), vstemp, vstemp->at(1), -1, lwidth);
+   vbox->Add(prodSelect->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (prodSelect->widgetCB)->SetSelection(1);
+
+   // Label and combo box for selecting the data tree file
+   vstemp->clear();
+   vstemp->push_back("Select data...");
+   dataPlotSelect = new LabelDrop(plotpanel, wxT("Select 'data' tree for histogram fit:"), vstemp, vstemp->at(0), -1, lwidth);
+   vbox->Add(dataPlotSelect->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (dataPlotSelect->widgetCB)->SetSelection(0);
+
+   // Checkboxes for additional plotting settings
+   vitemp->clear();
+   vitemp2->clear();
+   vstemp->clear();
+   vstemp->push_back("Use one of the fractions as constraint");
+   vitemp->push_back(0);
+   vitemp2->push_back(-1);
+   vstemp->push_back("Fit Xmax instead of MVA");
+   vitemp->push_back(0);
+   vitemp2->push_back(-1);
+   vstemp->push_back("Remove zero bins");
+   vitemp->push_back(0);
+   vitemp2->push_back(-1);
+   vstemp->push_back("Use FractionFitter");
+   vitemp->push_back(1);
+   vitemp2->push_back(-1);
+   specialPlot = new CheckList(plotpanel, vitemp, vstemp, vitemp2, lwidth, "vertical");
+   vbox->Add(specialPlot->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+
+   // Multiple buttons for plotting
+   vitemp->clear();
+   vstemp->clear();
+/*   vstemp->push_back("Create histograms");
+   vitemp->push_back(ID_PLOTHIST);
+   vstemp->push_back("Create scatter plots");
+   vitemp->push_back(ID_PLOTSCAT);*/
+   vstemp->push_back("Start MVA histogram fit");
+   vitemp->push_back(ID_PLOTMVAFIT);
+   vstemp->push_back("Default options");
+   vitemp->push_back(ID_PLOTDEFOPTIONS);
+   startPlot = new LabelButton(plotpanel, "", vstemp, vitemp, lwidth);
+   vbox->Add(startPlot->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+/*   Connect(ID_PLOTHIST, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::StartHistogramPlot));
+   Connect(ID_PLOTSCAT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::StartScatterPlot));*/
+   Connect(ID_PLOTMVAFIT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::StartMvaHistFit));
+   Connect(ID_PLOTMVADEFOPTIONS, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SetDefaultMvaPlot));
+
+   vbox->Add(-1, 10);
+
+   // Make a title
+   MakeTitle(plotpanel, vbox, wxT("Distribution and scatter plot settings"));
+
+   // Label and listbox for observables to plot
+   plottingList[1] = new LabelList(plotpanel, wxT("Observables to plot (Ctrl or Shift + Click to select multiple):"), 90, 1, -1);
+   vbox->Add(plottingList[1]->subsizer, 0, wxLEFT | wxRIGHT | wxTOP, 5);
+   for(int i = 0; i < nrobs; i++)
+   {
+      (plottingList[1]->widgetLB)->Append(observables[i]);
+      if(obsorigsel[i])
+         (plottingList[1]->widgetLB)->SetSelection(i);
+   }
+   (plottingList[1]->widgetLB)->Append("MVA");
+   (plottingList[1]->widgetLB)->SetFirstItem(0);
+
+   // Label and combo box for selecting the first tree file
+   vstemp->clear();
+   vstemp->push_back("Select first tree...");
+   firstHistTree = new LabelDrop(plotpanel, wxT("Select first tree for plotting:"), vstemp, vstemp->at(0), -1, lwidth);
+   vbox->Add(firstHistTree->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (firstHistTree->widgetCB)->SetSelection(0);
+
+   // Label and combo box for selecting the second tree file
+   vstemp->clear();
+   vstemp->push_back("Select second tree...");
+   secondHistTree = new LabelDrop(plotpanel, wxT("Select second tree for plotting:"), vstemp, vstemp->at(0), -1, lwidth);
+   vbox->Add(secondHistTree->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (secondHistTree->widgetCB)->SetSelection(0);
+
+   // Label and combo box for selecting the third tree file
+   vstemp->clear();
+   vstemp->push_back("Select third tree...");
+   thirdHistTree = new LabelDrop(plotpanel, wxT("Select third tree for plotting:"), vstemp, vstemp->at(0), -1, lwidth);
+   vbox->Add(thirdHistTree->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (thirdHistTree->widgetCB)->SetSelection(0);
+
+   // Checkboxes for additional plotting settings
+   vitemp->clear();
+   vitemp2->clear();
+   vstemp->clear();
+   vstemp->push_back("Merge multiple trees to one plot (select in dropdown menus)");
+   vitemp->push_back(1);
+   vitemp2->push_back(-1);
+   vstemp->push_back("Perform a comparison of different observables (select in listbox)");
+   vitemp->push_back(0);
+   vitemp2->push_back(-1);
+/*   vstemp->push_back("Fit Xmax instead of MVA");
+   vitemp->push_back(0);
+   vitemp2->push_back(-1);
+   vstemp->push_back("Remove zero bins");
+   vitemp->push_back(0);
+   vitemp2->push_back(-1);
+   vstemp->push_back("Use FractionFitter");
+   vitemp->push_back(1);
+   vitemp2->push_back(-1);*/
+   specialHistPlot = new CheckList(plotpanel, vitemp, vstemp, vitemp2, lwidth, "vertical");
+   vbox->Add(specialHistPlot->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+
+   // Multiple buttons for plotting
+   vitemp->clear();
+   vstemp->clear();
+   vstemp->push_back("Create histograms");
+   vitemp->push_back(ID_PLOTHIST);
+   vstemp->push_back("Create scatter plots");
+   vitemp->push_back(ID_PLOTSCAT);
+/*   vstemp->push_back("Start MVA histogram fit");
+   vitemp->push_back(ID_PLOTMVAFIT);*/
+   vstemp->push_back("Default options");
+   vitemp->push_back(ID_PLOTHISTDEFOPTIONS);
+   startHistPlot = new LabelButton(plotpanel, "", vstemp, vitemp, lwidth);
+   vbox->Add(startHistPlot->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   Connect(ID_PLOTHIST, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::StartHistogramPlot));
+   Connect(ID_PLOTSCAT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::StartScatterPlot));
+   Connect(ID_PLOTHISTDEFOPTIONS, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SetDefaultHistPlot));
+
+   plotpanel->SetSizer(vbox);
+   hboxhead->Add(plotpanel, 1, wxEXPAND);
+   sw->SetSizer(hboxhead);
+
+   // Set scroll bars
+   sw->SetScrollbars(10, 10, 500/10, 350/10);
+   sw->Scroll(0,0);
+
+   // Add ADST cuts subframe to a tab
+   tabs->AddPage(sw, wxT("Plotting"));
+
+// Plotting page ----------------------------------------------------
 
 //   CreateStatusBar();
    Centre();

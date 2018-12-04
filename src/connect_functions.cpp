@@ -36,14 +36,12 @@ void MyFrame::EnableMvaFile(wxCommandEvent& event)
       (dataSelect->widgetCB)->Clear();
 
       // Append all trees from root files
-      nrkeys = (ifile->GetNkeys()-1);
+      nrkeys = GetRootKeys(ifile);
       if(DBGSIG > 1)
          cout << "# EnableMvaFile         #: " << "Starting number of keys " << nrkeys << endl;
       keyslist = (TList*) ifile->GetListOfKeys();
       for(int i = 1; i <= nrkeys; i++)
       {
-         if(DBGSIG > 1)
-            cout << "# EnableMvaFile         #: " << "i = " << i << ", Searching for TreeA = " << strcmp((keyslist->At(i-1))->GetName(), "TreeA") << " (" << (keyslist->At(i-1))->GetName() << ")" << endl;
          if(strcmp((keyslist->At(i-1))->GetName(), "TreeA") != 0)
 	 {
             *signalName = "TreeS" + ToString(i);
@@ -479,6 +477,7 @@ void MyFrame::CustomEnergyBinsDisable(wxCommandEvent& event)
    (splitCutEnergy->widgetNE[0])->Enable();
    (splitCutEnergy->widgetNE[1])->Enable();
    (splitCutEnergy->widgetNE[2])->Enable();
+   (splitCutEnergy->widgetNE[2])->SetValue(1);
    (splitCutEnergy->widgetChBox)->SetValue(0);
    customBinning = false;
    RunEnergyBinSelect();
@@ -2179,9 +2178,19 @@ int MyFrame::StartFileSplit(string infile, int cursel, int nrsel)
          else
          {
 	    if(*nrsplits > 1)
-               stemp[0] = RemoveExtension(&infile) + "_" + ToString(TMath::Log10(esplitBins[2*ebin]), 2) + "-" + ToString(TMath::Log10(esplitBins[2*ebin+1]), 2) + "_filtered.root";
+	    {
+               if(bCustomSplit)
+                  stemp[0] = RemoveExtension(&infile) + "_" + ToString(TMath::Log10(esplitBins[2*ebin]), 2) + "-" + ToString(TMath::Log10(esplitBins[2*ebin+1]), 2) + "_split-2.root";
+               else
+                  stemp[0] = RemoveExtension(&infile) + "_" + ToString(TMath::Log10(esplitBins[2*ebin]), 2) + "-" + ToString(TMath::Log10(esplitBins[2*ebin+1]), 2) + "_filtered.root";
+	    }
 	    else
-               stemp[0] = RemoveExtension(&infile) + "_filtered.root";
+	    {
+               if(bCustomSplit)
+                  stemp[0] = RemoveExtension(&infile) + "_split-2.root";
+               else
+                  stemp[0] = RemoveExtension(&infile) + "_filtered.root";
+	    }
 
             stemp[2] = "Currently filtering file\n   " + RemovePath(&infile) + "        \t" + ToString(itemp[0]) + " events\ninto file:\n   " + RemovePath(&stemp[0]) + "\t" + ToString(itemp[1]) + " events\n\nPlease wait for it to finish.";
             ShowProgress(wxT("Filtering rewritten ADST file"), stemp[2].c_str(), (input->GetNkeys())*itemp[0]);

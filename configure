@@ -128,7 +128,7 @@
        done
        cat $startdir/setup/Makefile2.in >> $startdir/Makefile
        echo "all:${tempstring}" >> $startdir/Makefile
-       echo "support: \$(BIN)/tmvagui \$(BIN)/create_mva_plots \$(BIN)/data_fraction_plots \$(BIN)/individual_cut \$(BIN)/mva_fit_histogram \$(BIN)/histograming \$(BIN)/mass_composition_fit" >> $startdir/Makefile
+       echo "support: \$(BIN)/tmvagui \$(BIN)/create_mva_plots \$(BIN)/data_fraction_plots \$(BIN)/individual_cut \$(BIN)/mva_fit_histogram \$(BIN)/histograming \$(BIN)/mass_composition_fit \$(BIN)/plotting_script" >> $startdir/Makefile
        echo "library: \$(LDIR)/libsubstr.so" >> $startdir/Makefile
        for verPrep in ${adstver[@]}
        do

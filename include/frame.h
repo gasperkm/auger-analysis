@@ -99,6 +99,7 @@ public:
     int mixednum;
 
     wxArrayInt selections;
+    wxArrayInt plotSelections;
 
     vector<double> esplitBins;
     bool customBinning;
@@ -106,6 +107,8 @@ public:
     bool multipleEnergyBins;
 
     bool setdeltas[2];
+
+    bool bCustomSplit;
 
     Long64_t tentry;
     vector<float> *stationDistance[3];
@@ -125,6 +128,7 @@ public:
     string *currentAnalysisDir;
     string *currentCutsDir;
     string *currentCutsInputDir;
+    string *currentPlotDir;
 
     // Control substructures
     LabelButton *selectMvaFile;
@@ -134,6 +138,7 @@ public:
     LabelButton *startCombining;
 
     LabelNEntryButton *startSplitting;
+    LabelButton *startSplittingFile;
     LabelDrop *splitCutObservables;
     CheckNEntry *splitCutEnergy;
     CheckNEntry *splitCutZenith;
@@ -159,11 +164,32 @@ public:
     CheckList *specialMva;
     LabelButton *startMva;
 
+    // Structures for plotting
+    LabelButton *selectPlotFile;
+    LabelButton *selectPlotDir;
+    LabelListEdit *openFileList;
+    LabelDrop *methodsPlotSelect;
+    LabelList *plottingList[2];
+    LabelNEntry *plotNrBins;
+    CheckNEntry *plotXaxisRange;
+    CheckNEntry *plotYaxisRange;
+    LabelDrop *hiSelect;
+    LabelDrop *prodSelect;
+    LabelDrop *dataPlotSelect;
+    CheckList *specialPlot;
+    LabelButton *startPlot;
+    LabelDrop *firstHistTree;
+    LabelDrop *secondHistTree;
+    LabelDrop *thirdHistTree;
+    CheckList *specialHistPlot;
+    LabelButton *startHistPlot;
+
     // File operation functions
     void SelectMvaFile(wxCommandEvent& event);
     int CheckFormat(string *infile);
     void SelectRewrite(wxCommandEvent& event);
     void PrepareFileSplit(wxCommandEvent& event);
+    void PrepareFileSplitCustom(wxCommandEvent& event);
     void SelectCombine(wxCommandEvent& event);
     void SelectMerge(wxCommandEvent& event);
 
@@ -216,6 +242,19 @@ public:
     void CreateOutput(TTree *app, TMVA::Reader *reader, string mvamethod, float *obsvars, string signalName, int curtree, bool application, int mean);
     void GetErrors(TTree *app, float *obsvars, vector<string> *obs, int curtree);
     void GetMvaError(int selection, double *outvalue, string *inname);
+
+    // Functions for plotting
+    void SelectPlotFile(wxCommandEvent& event);
+    void SelectPlotDir(wxCommandEvent& event);
+    bool CheckPlotTreeSelect(string *plotFile, wxChoice *combo);
+    void SetPlotTreeSelect(string *plotFile, wxChoice *combo);
+    void StartHistogramPlot(wxCommandEvent& event);
+    void StartScatterPlot(wxCommandEvent& event);
+    void StartHistogramScatterPlot(int type);
+    void StartMvaHistFit(wxCommandEvent& event);
+    void SetDefaultPlot(wxCommandEvent& event);
+    void SetDefaultMvaPlot(wxCommandEvent& event);
+    void SetDefaultHistPlot(wxCommandEvent& event);
 };
 
 // Menu IDs
@@ -227,9 +266,10 @@ const int ID_OPENHELP 		= 103;
 const int ID_OPENFILE 		= 201;
 const int ID_REWRITE 		= 202;
 const int ID_SPLIT 		= 203;
-const int ID_COMBINE 		= 204;
-const int ID_MERGE 		= 205;
-const int ID_SELECTMVAFILE 	= 206;
+const int ID_SPLITFILE 		= 204;
+const int ID_COMBINE 		= 205;
+const int ID_MERGE 		= 206;
+const int ID_SELECTMVAFILE 	= 207;
 
 // MVA analysis right panel IDs
 const int ID_CHANGEOBSSELECT 	= 300;
@@ -249,10 +289,20 @@ const int ID_MVACUT 		= 313;
 const int ID_CHECKBINS 		= 314;
 const int ID_DEFOPTIONS 	= 315;
 
+// Plotting panel IDs
+const int ID_OPENPLOTFILE	= 401;
+const int ID_OPENPLOTDIR	= 402;
+const int ID_PLOTHIST		= 403;
+const int ID_PLOTSCAT		= 404;
+const int ID_PLOTMVAFIT		= 405;
+const int ID_PLOTDEFOPTIONS	= 406;
+const int ID_PLOTMVADEFOPTIONS	= 407;
+const int ID_PLOTHISTDEFOPTIONS	= 408;
+
 // Additional IDs for any custom dialogs
-const int ID_MVACUTDIALOG	= 401;
-const int ID_RANDSEEDDIALOG	= 402;
-const int ID_TITLEDIALOG	= 410;
+const int ID_MVACUTDIALOG	= 901;
+const int ID_RANDSEEDDIALOG	= 902;
+const int ID_TITLEDIALOG	= 910;
 
 // Additional IDs for custom options regarding listboxes
 const int ID_DELETELIST		= 1001;

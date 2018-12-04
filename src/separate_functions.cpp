@@ -195,6 +195,17 @@ void ReplaceAllCharacters(string *inname, string toreplace, string replace)
    delete start_pos;
 }
 
+// Remove all leading spaces before the string
+void RemoveLeadingSpaces(string *inname)
+{
+   size_t *pos = new size_t;
+   *pos = inname->find_first_not_of(" \t");
+
+   inname->erase(0, *pos);
+
+   delete pos;
+}
+
 // Set the bin at set place for a binary number and return this number
 void SetBinary(int place, int val, int *number)
 {
@@ -365,4 +376,90 @@ int FindStringPart(string instr, string tofind)
       return 1;
    else
       return 0;
+}
+
+void SplitDelimitedList(string inlist, vector<int> *outvec)
+{
+   stringstream ss(inlist);
+   int *itemp = new int;
+   while (ss >> *itemp)
+   {
+      outvec->push_back(*itemp);
+      if (ss.peek() == ',')
+         ss.ignore();
+   }
+
+   for (int i = 0; i < outvec->size(); i++)
+      cout << outvec->at(i) << endl;
+
+   delete itemp;
+}
+
+void SplitDelimitedList(string inlist, vector<double> *outvec)
+{
+   stringstream ss(inlist);
+   double *dtemp = new double;
+   while (ss >> *dtemp)
+   {
+      outvec->push_back(*dtemp);
+      if (ss.peek() == ',')
+         ss.ignore();
+   }
+
+   for (int i = 0; i < outvec->size(); i++)
+      cout << outvec->at(i) << endl;
+
+   delete dtemp;
+}
+
+void SplitDelimitedList(string inlist, vector<string> *outvec)
+{
+   size_t *pos = new size_t;
+   string *stemp = new string;
+   string *delimit = new string;
+   *delimit = ",";
+   while((*pos = inlist.find(*delimit)) != std::string::npos)
+   {
+      *stemp = inlist.substr(0, *pos);
+      outvec->push_back(*stemp);
+      inlist.erase(0, *pos + delimit->length());
+   }
+   outvec->push_back(inlist);
+
+   for (int i = 0; i < outvec->size(); i++)
+      cout << outvec->at(i) << endl;
+
+   delete delimit;
+   delete stemp;
+   delete pos;
+}
+
+// Get the correct number of keys, even if file was updated
+int GetRootKeys(TFile *ifile)
+{
+   int ret;
+   string *stemp = new string;
+//   TList *keys;
+
+//   ret = ifile->GetNkeys();
+//   cout << "Number of keys reported by ROOT = " << ret << endl;
+//   keys = (TList*) ifile->GetListOfKeys();
+
+   ret = 0;
+   for(int i = 1; i <= ifile->GetNkeys(); i++)
+   {
+      *stemp = "TreeS" + ToString(i);
+      if(ifile->GetListOfKeys()->Contains(stemp->c_str()))
+         ret++;
+   }
+
+   if(ifile->GetListOfKeys()->Contains("TreeA"))
+      ret++;
+
+//   cout << "Number of actual keys = " << ret << endl;
+   cout << "# GetRootKeys           #: " << "Number of keys in file = " << ret << endl;
+
+   delete stemp;
+
+   return ret;
 }

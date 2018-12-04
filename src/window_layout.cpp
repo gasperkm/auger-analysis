@@ -136,8 +136,8 @@ void MyFrame::SaveLayout(wxCommandEvent& event)
 void MyFrame::MakeTitle(wxPanel *parent, wxBoxSizer *box, wxString title)
 {
    wxStaticText *lab = new wxStaticText(parent, -1, title, wxDefaultPosition, wxSize(-1,-1), wxALIGN_CENTRE_HORIZONTAL);
-   lab->SetForegroundColour(wxColour(252,252,252));
-   lab->SetBackgroundColour(wxColour(46,90,134));
+   lab->SetBackgroundColour(wxColour(212, 199, 142, 1));
+   lab->SetBackgroundColour(wxColour(0, 0, 148, 1));
    lab->SetFont(wxFont(12, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD, false));
    box->Add(lab, 0, wxEXPAND, 0);
 }

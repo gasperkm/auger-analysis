@@ -96,6 +96,8 @@ void MyFrame::PrepareFileSplit(wxCommandEvent& event)
 {
    (mvaList[1]->widgetLB)->GetSelections(selections);
 
+   bCustomSplit = false;
+
    if(!selections.IsEmpty())
    {
       if(selections.GetCount() == 1)
@@ -116,7 +118,109 @@ void MyFrame::PrepareFileSplit(wxCommandEvent& event)
       }
    }
    else
-      AlertPopup("No selected files", "No files from the second listbox were selected. Please select only one file to split.");
+      AlertPopup("No selected files", "No files from the second listbox were selected. Please select at least one file to split.");
+}
+
+// Select a file to split depending on the fraction of events we need -> and write it back to rewritten ADST format
+void MyFrame::PrepareFileSplitCustom(wxCommandEvent& event)
+{
+   string *tempstring;
+   double *dtemp;
+   int *itemp;
+   string *stemp;
+   ifstream *ifs;
+
+   (mvaList[1]->widgetLB)->GetSelections(selections);
+
+   bCustomSplit = true;
+
+   if(!selections.IsEmpty())
+   {
+      wxFileDialog *customSplitDlg = new wxFileDialog(this, wxT("Open custom split file"), string(rootdir) + string("/input"), "", wxT("Txt files (*.txt)|*.txt"), wxFD_OPEN);
+      if(customSplitDlg->ShowModal() == wxID_OK)
+      {
+         tempstring = new string;
+         *tempstring = customSplitDlg->GetPath();
+
+         if(!tempstring->empty())
+         {
+            dtemp = new double;
+            itemp = new int;
+	    stemp = new string;
+
+            ifs = new ifstream;
+            ifs->open(tempstring->c_str(), ifstream::in);
+	    *itemp = 0;
+	    while(getline(*ifs, *stemp))
+               (*itemp)++;
+            ifs->close();
+	    delete ifs;
+
+	    if(*itemp < selections.GetCount())
+	    {
+               AlertPopup("Not enough split instructions", "The number of split instruction lines (" + ToString(*itemp) + ") in the custom split file is smaller than the number of selected files (" + ToString(selections.GetCount()) + "). Please add more split instructions to the custom split file.");
+               delete dtemp;
+               delete itemp;
+               delete stemp;
+               delete tempstring;
+               delete customSplitDlg;
+
+	       return;
+	    }
+	    else if(*itemp > selections.GetCount())
+	    {
+               InfoPopup("Too many split instructions", "The number of split instruction lines (" + ToString(*itemp) + ") in the custom split file is larger than the number of selected files (" + ToString(selections.GetCount()) + "). Only the first " + ToString(selections.GetCount()) + " instructions will be used.");
+	    }
+
+            ifs = new ifstream;
+
+            ifs->open(tempstring->c_str(), ifstream::in);
+
+            if(ifs->is_open())
+            {
+               
+
+               if(selections.GetCount() == 1)
+               {
+                  *ifs >> *dtemp;
+		  (startSplitting->widgetNE[0])->SetValue(*dtemp);
+                  ret = StartFileSplit(string((mvaList[1]->widgetLB)->GetString(selections[0])), 0, selections.GetCount());
+                  if(ret == 0)
+                     InfoPopup("Finished spliting files", "The selected files have been split according to the set fraction.");
+               }
+               else
+               {
+                  ret = 0;
+                  for(int i = 0; i < selections.GetCount(); i++)
+                  {
+                     *ifs >> *dtemp;
+                     if(*dtemp == 0.)
+                        *dtemp = -1.;
+		     (startSplitting->widgetNE[0])->SetValue(*dtemp);
+                     ret += StartFileSplit(string((mvaList[1]->widgetLB)->GetString(selections[i])), i, selections.GetCount());
+                  }
+
+                  if(ret == 0)
+                     InfoPopup("Finished spliting files", "The selected files have been split according to the set fraction.");
+//                  AlertPopup("Multiple files selected", "Multiple files from the second listbox were selected. Please select only one file to split.");
+               }
+            }
+
+            ifs->close();
+
+            delete dtemp;
+            delete itemp;
+            delete stemp;
+            delete ifs;
+         }
+
+         delete tempstring;
+      }
+
+      delete customSplitDlg;
+   }
+   else
+      AlertPopup("No selected files", "No files from the second listbox were selected. Please select at least one file to split.");
 }
 
 // Select a file to use for rewritten file

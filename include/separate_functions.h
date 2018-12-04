@@ -34,6 +34,7 @@ string RemoveBeforeLast(string *inname, string search);
 string RemoveBeforeFirst(string *inname, string search);
 void ReplacePart(string *inname, string toreplace, string replace);
 void ReplaceAllCharacters(string *inname, string toreplace, string replace);
+void RemoveLeadingSpaces(string *inname);
 
 // Conversion binary <> decimal
 void SetBinary(int place, int val, int *number);
@@ -53,5 +54,13 @@ int SelectionPass(vector<double> *invec, double lowVal, double highVal);
 
 // Searching for a part of a string
 int FindStringPart(string instr, string tofind);
+
+// Split comma delimited list
+void SplitDelimitedList(string inlist, vector<int> *outvec);
+void SplitDelimitedList(string inlist, vector<double> *outvec);
+void SplitDelimitedList(string inlist, vector<string> *outvec);
+
+// Get the correct number of keys, even if file was updated
+int GetRootKeys(TFile *ifile);
 
 #endif

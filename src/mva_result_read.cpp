@@ -67,6 +67,7 @@ int ResultRead::ReadFile(string inname)
 	    ifile->getline(ctemp, 1024, '\n');
 //	    cout << "Line = " << ctemp << endl;
 	    stemp[0] = string(ctemp);
+	    RemoveLeadingSpaces(&stemp[0]);
 
 /*            if(itemp[0] > 0)
             {*/

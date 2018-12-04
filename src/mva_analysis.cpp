@@ -1976,7 +1976,7 @@ int MyFrame::PerformMvaAnalysis(string *infilename, string *outfilename, int *cu
    nrTreeEvents[0] = -1;
    nrTreeEvents[1] = -1;
    TList *tempkeyslist = (TList*) ifile->GetListOfKeys();
-   for(int j = 1; j <= ifile->GetNkeys(); j++)
+   for(int j = 1; j <= GetRootKeys(ifile); j++)
    {
       stemp[0] = string((tempkeyslist->At(j-1))->GetName());
       stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
@@ -2839,7 +2839,7 @@ void MyFrame::GetMvaError(int selection, double *outvalue, string *inname)
       TTree *dataTree = new TTree;
 
       TList *tempkeyslist = (TList*)ifile->GetListOfKeys();
-      for(int j = 1; j <= ifile->GetNkeys(); j++)
+      for(int j = 1; j <= GetRootKeys(ifile); j++)
       {
          stemp[0] = string((tempkeyslist->At(j-1))->GetName());
          stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());

@@ -1,5 +1,5 @@
-#ifndef _MVA_FIT_HISTOGRAM_H_
-#define _MVA_FIT_HISTOGRAM_H_
+#ifndef _HISTOGRAMING_H_
+#define _HISTOGRAMING_H_
 
 #include "workstation.h"
 #include "root_include.h"
@@ -12,17 +12,40 @@
 
 #define MAXINFILES 40
 
-class MvaFitHist
+class ScatHist
 {
 private:
 
    int ret;
+   int type; // type defines if this will be a histogram (0) or a scatter plot (1)
 
    string *stemp;
    int *itemp;
    double *dtemp;
 
-   string *filename;
+   int *nrbins;
+   vector<string> *filename;
+   vector<string> *obser;
+   vector<string> *trees;
+   double *xlim;
+   double *ylim;
+   double *yrange;
+   bool *otherSettings;
+
+   TH1F *firstHist[MAXINFILES];
+   TH1F *secondHist[MAXINFILES];
+   TH1F *thirdHist[MAXINFILES];
+   TLatex *uoflowtext;
+
+   int *uflowcount, *oflowcount, *totcount[4]; // counting number of underflow and overflow events
+
+   RootStyle *mystyle;
+
+   TFile *ifile;
+
+   TTree *getTree[3];
+
+/*   string *filename;
    int *nrelem;
    int *nrbins;
    int *nrkeys;
@@ -84,13 +107,23 @@ private:
    double *yerrhi;
    double *yerrlo;
    int *compnrp;
-   vector<double> *composition;
+   vector<double> *composition;*/
 
 public:
-   MvaFitHist();
-   virtual ~MvaFitHist();
+   ScatHist(int *inType);
+   virtual ~ScatHist();
 
-   void SetPrimaries(vector<int> *primVals);
+   void SetFilenames(vector<string> *inFiles);
+   void SetObservables(vector<string> *inObs);
+   void SetTrees(vector<string> *inTrees);
+   void SetNrBins(int *inNrBins);
+   void SetXaxisLimits(bool use, double *inLimits);
+   void SetYaxisLimits(bool use, double *inLimits);
+   void SetOtherSettings(bool *inConst);
+
+   int StartPlotting();
+
+/*   void SetPrimaries(vector<int> *primVals);
    void SetMethod(string *inMethod);
    void SetHImodel(int *inModel);
    void SetSimProduction(int *inProd);
@@ -126,7 +159,7 @@ public:
 
    int ReadLnaResultsFD(vector<float> *val);
    int ReadLnaResultsSD(vector<float> *val, int array);
-   int ReadFracResultsFD(vector<float> *val, bool uselna);
+   int ReadFracResultsFD(vector<float> *val, bool uselna);*/
 };
 
 #endif

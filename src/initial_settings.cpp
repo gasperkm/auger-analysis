@@ -153,6 +153,8 @@ void MyFrame::InitVariables()
    *currentCutsDir = string(rootdir) + "/results";
    currentCutsInputDir = new string;
    *currentCutsInputDir = string(rootdir) + "/results";
+   currentPlotDir = new string;
+   *currentPlotDir = string(rootdir) + "/results";
 
    freshAnalysis = false;
 
