@@ -127,7 +127,7 @@ void MyFrame::InitMethods()
          }
       }
 
-      nrmethods = methods.size();
+      nrmethods = methods.size()-1;
    }
 
    ifs->close();

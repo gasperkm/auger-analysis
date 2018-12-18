@@ -4,12 +4,15 @@
 void CombineRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, vector<int> &nrevts, vector<string> &filenames, vector<string> &titles )
 {
    cout << "Combining root files." << endl;
-   for(int i = 0; i < filenames.size(); i++) cout << "  " << filenames[i] << endl;
+   for(int i = 0; i < filenames.size(); i++)
+      cout << "  " << filenames[i] << endl;
 
    int sigKeys = 0;
 
+/*   for(int i = 0; i < nrkeys.size(); i++)
+      sigKeys += (nrkeys[i]-1)/2;*/
    for(int i = 0; i < nrkeys.size(); i++)
-      sigKeys += (nrkeys[i]-1)/2;
+      sigKeys += nrkeys[i];
 
    cout << "Number of signal keys in all files = " << sigKeys << endl;
 
@@ -44,9 +47,11 @@ void CombineRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys
 
    while(nextsource)
    {
-      cout << "Number of keys in file " << nextsource->GetName() << ": " << nrkeys[fileCount] << "(" << (nrkeys[fileCount]-1)/2 << ")" << endl;
+//      cout << "Number of keys in file " << nextsource->GetName() << ": " << nrkeys[fileCount] << "(" << (nrkeys[fileCount]-1)/2 << ")" << endl;
+      cout << "Number of keys in file " << nextsource->GetName() << ": " << GetRootKeys(nextsource, "TreeNewS") << endl;
       
-      for(int j = 1; j <= (nrkeys[fileCount]-1)/2; j++)
+//      for(int j = 1; j <= (nrkeys[fileCount]-1)/2; j++)
+      for(int j = 1; j <= nrkeys[fileCount]; j++)
       {
          strOldS = "TreeOldS" + ToString(j);
          strNewS = "TreeNewS" + ToString(j);
@@ -103,16 +108,17 @@ void CombineRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys
       cout << "Events in output signal tree = " << outSig[i]->GetEntries() << endl;
       strOldS = "TreeS" + ToString(i+1);
       outSig[i]->SetName(strOldS.c_str());
-      treeTitle[i] = titles[i]/*outSig[i]->GetTitle()*/;
+      treeTitle[i] = titles[i];
       outSig[i]->SetTitle(treeTitle[i].c_str());
       outSig[i]->Write();
    }
    printf("Saving all events tree\n");
    outAll = TTree::MergeTrees(listAll);
    cout << "Events in output total tree = " << outAll->GetEntries() << endl;
+
    outAll->Write();
 
-   // save modifications to target file
+   // save modifications to the target file
    target->SaveSelf(kTRUE);
    TH1::AddDirectory(status);
 
@@ -130,8 +136,10 @@ void MergeRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, 
 
    int sigKeys = 0;
 
+/*   for(int i = 0; i < nrkeys.size(); i++)
+      sigKeys += (nrkeys[i]-1)/2;*/
    for(int i = 0; i < nrkeys.size(); i++)
-      sigKeys += (nrkeys[i]-1)/2;
+      sigKeys += nrkeys[i];
    cout << "Number of signal keys in all files = " << sigKeys << endl;
 
    vector<int> *partevts = new vector<int>;
@@ -195,7 +203,8 @@ void MergeRootfile( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, 
 
    while(nextsource)
    {
-      for(int j = 1; j <= (nrkeys[fileCount]-1)/2; j++)
+//      for(int j = 1; j <= (nrkeys[fileCount]-1)/2; j++)
+      for(int j = 1; j <= nrkeys[fileCount]; j++)
       {
          strOldS = "TreeOldS" + ToString(j);
          strNewS = "TreeNewS" + ToString(j);
@@ -350,15 +359,20 @@ void CheckKeys( TDirectory *target, TList *sourcelist, vector<int> &nrkeys, vect
 
    while(nextsource)
    {
-      cout << fileCount << ": Number of keys = " << nextsource->GetNkeys() << endl;
-      nrkeys.push_back(nextsource->GetNkeys());
+      cout << fileCount << ": Number of keys = " << nextsource->GetNkeys() << ", " << GetRootKeys(nextsource, "TreeNewS") << endl;
+//      nrkeys.push_back(nextsource->GetNkeys());
+      nrkeys.push_back(GetRootKeys(nextsource, "TreeNewS"));
 
-      treeAll = (TTree*)nextsource->Get("TreeA");
-cout << "Number of events in tree TreeA = " << treeAll->GetEntries() << endl;
-      nrevts.push_back(treeAll->GetEntries());
-      titles.push_back(treeAll->GetTitle());
+      if(GetRootKeys(nextsource, "TreeA") > 0)
+      {
+         treeAll = (TTree*)nextsource->Get("TreeA");
+         cout << "Number of events in tree TreeA = " << treeAll->GetEntries() << endl;
+         nrevts.push_back(treeAll->GetEntries());
+         titles.push_back(treeAll->GetTitle());
+      }
 
-      for(int j = 1; j <= (nrkeys[fileCount]-1)/2; j++)
+//      for(int j = 1; j <= (nrkeys[fileCount]-1)/2; j++)
+      for(int j = 1; j <= nrkeys[fileCount]; j++)
       {
          strOldS = "TreeOldS" + ToString(j);
          strNewS = "TreeNewS" + ToString(j);

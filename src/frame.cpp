@@ -23,11 +23,13 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
 
    wxStaticText *temptext;
    vector<string> *vstemp;
+   vector<string> *vstemp2;
    vector<int> *vitemp;
    vector<int> *vitemp2;
    vector<double> *vdtemp;
 
    vstemp = new vector<string>;
+   vstemp2 = new vector<string>;
    vitemp = new vector<int>;
    vitemp2 = new vector<int>;
    vdtemp = new vector<double>;
@@ -269,6 +271,25 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    Connect(ID_CHANGEOBSSELECT, wxEVT_LISTBOX, wxCommandEventHandler(MyFrame::UpdateObservableSelection));
 
    // Label and combo box for selecting signal tree
+   vitemp->clear();
+   vstemp->clear();
+   vstemp2->clear();
+   for(int i = 0; i < nrobs; i++)
+      vstemp->push_back(observables[i]);
+   vstemp2->push_back("Apply negative");
+   vitemp->push_back(ID_NUNCERTSELECT);
+   vstemp2->push_back("Apply positive");
+   vitemp->push_back(ID_PUNCERTSELECT);
+   vstemp2->push_back("Disable");
+   vitemp->push_back(ID_DISABLEUNCERT);
+   uncertSelect = new LabelDropButton(rightmvapanel, wxT("Uncertainty shift:"), vstemp, vstemp->at(0), -1, vstemp2, vitemp, rwidth);
+   vbox->Add(uncertSelect->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (uncertSelect->widgetCB)->SetSelection(0);
+   Connect(ID_NUNCERTSELECT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SetNegativeUncertainty));
+   Connect(ID_PUNCERTSELECT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SetPositiveUncertainty));
+   Connect(ID_DISABLEUNCERT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::DisableUncertainty));
+
+   // Label and combo box for selecting signal tree
    vstemp->clear();
    vstemp->push_back("Select signal...");
    signalSelect = new LabelDrop(rightmvapanel, wxT("Select 'signal' tree:"), vstemp, vstemp->at(0), -1, rwidth);
@@ -284,11 +305,11 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
 
    // Label and combo box for selecting MVA method type
    vstemp->clear();
-   for(int i = 0; i < nrmethods; i++)
+   for(int i = 0; i <= nrmethods; i++)
       vstemp->push_back(GetMethodName(methods[i]));
-   methodsSelect = new LabelDrop(rightmvapanel, wxT("Choose MVA analysis method:"), vstemp, GetMethodName("BDTG"), -1, rwidth);
+   methodsSelect = new LabelDrop(rightmvapanel, wxT("Choose MVA analysis method:"), vstemp, GetMethodName("Fisher"), -1, rwidth);
    vbox->Add(methodsSelect->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
-   (methodsSelect->widgetCB)->SetSelection((methodsSelect->widgetCB)->FindString(GetMethodName("BDTG")));
+   (methodsSelect->widgetCB)->SetSelection((methodsSelect->widgetCB)->FindString(GetMethodName("Fisher")));
 
    // Label + NEntry for choosing the MVA cut
    cutMva = new LabelNEntry(rightmvapanel, wxT("Choose MVA cut value:"), 0., -1, rwidth);
@@ -386,7 +407,7 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    vitemp2->clear();
    vstemp->clear();
    vstemp->push_back("Automatically run analysis over all energy bins");
-   vitemp->push_back(0);
+   vitemp->push_back(1);
    vitemp2->push_back(-1);
    vstemp->push_back("Manually select an MVA cut after method training");
    vitemp->push_back(1);
@@ -410,13 +431,15 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    vitemp->push_back(0);
    vitemp2->push_back(-1);
    vstemp->push_back("Apply atmospheric and alignment resolution smearing on Monte Carlo simulations");
-   vitemp->push_back(0);
+   vitemp->push_back(1);
    vitemp2->push_back(-1);
    vstemp->push_back("Treat selected data tree as Monte Carlo simulations (for AugerMix)");
    vitemp->push_back(0);
    vitemp2->push_back(-1);
    specialMva = new CheckList(rightmvapanel, vitemp, vstemp, vitemp2, rwidth, "vertical");
    vbox->Add(specialMva->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (specialMva->widgetChBox[5])->Disable();
+   (specialMva->widgetChBox[6])->Disable();
 
    // Multiple buttons to start MVA analysis
    vitemp->clear();
@@ -532,18 +555,19 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    (plotYaxisRange->widgetNE[0])->SetValue(-100.);
    vbox->Add(plotYaxisRange->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
 
+   // Label and combo box for selecting MVA method type to plot
+   vstemp->clear();
+   // All is set as the first method, so we skip it (but doesn't count in the nrmethods variable)
+   for(int i = 0; i < nrmethods; i++)
+      vstemp->push_back(GetMethodName(methods[i+1]));
+   methodsPlotSelect = new LabelDrop(plotpanel, wxT("Chosen MVA analysis method:"), vstemp, GetMethodName("Fisher"), -1, lwidth);
+   vbox->Add(methodsPlotSelect->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (methodsPlotSelect->widgetCB)->SetSelection((methodsPlotSelect->widgetCB)->FindString(GetMethodName("Fisher")));
+
    vbox->Add(-1, 10);
 
    // Make a title
    MakeTitle(plotpanel, vbox, wxT("MVA histogram fit for lnA and composition plots"));
-
-   // Label and combo box for selecting MVA method type to plot
-   vstemp->clear();
-   for(int i = 0; i < nrmethods; i++)
-      vstemp->push_back(GetMethodName(methods[i]));
-   methodsPlotSelect = new LabelDrop(plotpanel, wxT("Chosen MVA analysis method:"), vstemp, GetMethodName("BDTG"), -1, lwidth);
-   vbox->Add(methodsPlotSelect->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
-   (methodsPlotSelect->widgetCB)->SetSelection((methodsPlotSelect->widgetCB)->FindString(GetMethodName("BDTG")));
 
 //   wxBoxSizer *hboxMid = new wxBoxSizer(wxHORIZONTAL);
 
@@ -660,33 +684,39 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
 
    // Label and combo box for selecting the first tree file
    vstemp->clear();
-   vstemp->push_back("Select first tree...");
-   firstHistTree = new LabelDrop(plotpanel, wxT("Select first tree for plotting:"), vstemp, vstemp->at(0), -1, lwidth);
-   vbox->Add(firstHistTree->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
-   (firstHistTree->widgetCB)->SetSelection(0);
+   vstemp->push_back("Disabled");
+   dropHistTree[0] = new LabelDrop(plotpanel, wxT("Select first tree for plotting (signal colors):"), vstemp, vstemp->at(0), -1, lwidth);
+   vbox->Add(dropHistTree[0]->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (dropHistTree[0]->widgetCB)->SetSelection(0);
 
    // Label and combo box for selecting the second tree file
    vstemp->clear();
-   vstemp->push_back("Select second tree...");
-   secondHistTree = new LabelDrop(plotpanel, wxT("Select second tree for plotting:"), vstemp, vstemp->at(0), -1, lwidth);
-   vbox->Add(secondHistTree->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
-   (secondHistTree->widgetCB)->SetSelection(0);
+   vstemp->push_back("Disabled");
+   dropHistTree[1] = new LabelDrop(plotpanel, wxT("Select second tree for plotting (background colors):"), vstemp, vstemp->at(0), -1, lwidth);
+   vbox->Add(dropHistTree[1]->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (dropHistTree[1]->widgetCB)->SetSelection(0);
 
    // Label and combo box for selecting the third tree file
    vstemp->clear();
-   vstemp->push_back("Select third tree...");
-   thirdHistTree = new LabelDrop(plotpanel, wxT("Select third tree for plotting:"), vstemp, vstemp->at(0), -1, lwidth);
-   vbox->Add(thirdHistTree->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
-   (thirdHistTree->widgetCB)->SetSelection(0);
+   vstemp->push_back("Disabled");
+   dropHistTree[2] = new LabelDrop(plotpanel, wxT("Select third tree for plotting (data colors):"), vstemp, vstemp->at(0), -1, lwidth);
+   vbox->Add(dropHistTree[2]->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+   (dropHistTree[2]->widgetCB)->SetSelection(0);
 
    // Checkboxes for additional plotting settings
    vitemp->clear();
    vitemp2->clear();
    vstemp->clear();
-   vstemp->push_back("Merge multiple trees to one plot (select in dropdown menus)");
+/*   vstemp->push_back("Merge multiple trees to one plot (select in dropdown menus)");
    vitemp->push_back(1);
-   vitemp2->push_back(-1);
+   vitemp2->push_back(-1);*/
    vstemp->push_back("Perform a comparison of different observables (select in listbox)");
+   vitemp->push_back(0);
+   vitemp2->push_back(-1);
+   vstemp->push_back("Use negative uncertainties instead of mean values");
+   vitemp->push_back(0);
+   vitemp2->push_back(-1);
+   vstemp->push_back("Use positive uncertainties instead of mean values");
    vitemp->push_back(0);
    vitemp2->push_back(-1);
 /*   vstemp->push_back("Fit Xmax instead of MVA");
@@ -736,6 +766,7 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
 
    cout << "# MyFrame               #: " << " Deleting temporary variables" << endl;
    delete vstemp;
+   delete vstemp2;
    delete vitemp;
    delete vitemp2;
    delete vdtemp;

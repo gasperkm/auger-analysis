@@ -58,12 +58,16 @@ double GetMethodMin(TString name)
    else if(name.Contains("KNN"))
       return 0.;
    else if(name.Contains("LD"))
+      return -0.1;
+   else if(name.Contains("BoostedFisher"))
       return -1.;
    else if(name.Contains("Fisher"))
-      return -1.6;
+      return -3.;
    else if(name.Contains("FDA_GA"))
       return 0.;
    else if(name.Contains("MLPBNN"))
+      return -0.1;
+   else if(name.Contains("MLPBFGS"))
       return -0.1;
    else if(name.Contains("SVM"))
       return 0.;
@@ -91,12 +95,16 @@ double GetMethodMax(TString name)
    else if(name.Contains("KNN"))
       return 1.;
    else if(name.Contains("LD"))
+      return 4.;
+   else if(name.Contains("BoostedFisher"))
       return 1.;
    else if(name.Contains("Fisher"))
-      return 1.6;
+      return 4.;
    else if(name.Contains("FDA_GA"))
       return 1.;
    else if(name.Contains("MLPBNN"))
+      return 1.1;
+   else if(name.Contains("MLPBFGS"))
       return 1.1;
    else if(name.Contains("SVM"))
       return 1.;
@@ -107,4 +115,40 @@ double GetMethodMax(TString name)
       return 1.6;
    else
       return 1.;
+}
+
+bool GetMethodDist(TString name)
+{
+   if(name.Contains("CutsD"))
+      return 0;
+   else if(name.Contains("Cuts"))
+      return 0;
+   else if(name.Contains("LikelihoodPCA"))
+      return 0;
+   else if(name.Contains("Likelihood"))
+      return 0;
+   else if(name.Contains("PDERS"))
+      return 0;
+   else if(name.Contains("KNN"))
+      return 0;
+   else if(name.Contains("LD"))
+      return 1;
+   else if(name.Contains("BoostedFisher"))
+      return 0;
+   else if(name.Contains("Fisher"))
+      return 1;
+   else if(name.Contains("FDA_GA"))
+      return 0;
+   else if(name.Contains("MLPBNN"))
+      return 0;
+   else if(name.Contains("MLPBFGS"))
+      return 0;
+   else if(name.Contains("SVM"))
+      return 0;
+   else if(name.Contains("BDT"))
+      return 0;
+   else if(name.Contains("RuleFit"))
+      return 0;
+   else
+      return 0;
 }

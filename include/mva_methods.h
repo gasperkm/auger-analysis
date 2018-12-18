@@ -10,5 +10,6 @@ using namespace std;
 void PrintMethods();
 double GetMethodMin(TString name);
 double GetMethodMax(TString name);
+bool GetMethodDist(TString name);
 
 #endif

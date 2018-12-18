@@ -148,6 +148,7 @@ public:
 
     LabelTEntry *selectedMva;
     LabelList *selectObservables;
+    LabelDropButton *uncertSelect;
     LabelDrop *signalSelect;
     LabelDrop *backgroundSelect;
     LabelDrop *methodsSelect;
@@ -178,9 +179,9 @@ public:
     LabelDrop *dataPlotSelect;
     CheckList *specialPlot;
     LabelButton *startPlot;
-    LabelDrop *firstHistTree;
-    LabelDrop *secondHistTree;
-    LabelDrop *thirdHistTree;
+    LabelDrop *dropHistTree[3];
+/*    LabelDrop *secondHistTree;
+    LabelDrop *thirdHistTree;*/
     CheckList *specialHistPlot;
     LabelButton *startHistPlot;
 
@@ -206,6 +207,9 @@ public:
     void CheckZenithBin(wxCommandEvent& event);
     void CheckBothBins(wxCommandEvent& event);
     void UpdateObservableSelection(wxCommandEvent& event);
+    void SetNegativeUncertainty(wxCommandEvent& event);
+    void SetPositiveUncertainty(wxCommandEvent& event);
+    void DisableUncertainty(wxCommandEvent& event);
     void StartMvaAnalysis(wxCommandEvent& event);
     void CreateTempEventFile(wxCommandEvent& event);
     string SelectMva();
@@ -226,7 +230,9 @@ public:
     void CalculateS38(vector<double> *shwsize, vector<double> *zenith, float *fitpar, float *fitparErr, vector<double> *outVect);
     void WriteoutS38Fits(int tree, int type, float minEn, float maxEn, int nrpar, float *fitpar, float *fitparErr);
     void WriteoutDeltaFits(int tree, float minEn, float maxEn, float minZen, float maxZen, int nrpar, float *fitpar, float *fitparErr);
+    void PrintS1000Fit(int *ebinS1000, TGraphAsymmErrors *fitgraph, TF1 *fitfunc, float *fitpar, float *fitparErr, RootStyle *mystyle);
     void PrintS38Fit(TGraphAsymmErrors *fitgraph, TF1 *fitfunc, float *fitpar, float *fitparErr, RootStyle *mystyle);
+    void PrintRisetimeFit(int *zbinRise, TGraphAsymmErrors *fitgraphHG, TGraphAsymmErrors *fitgraph, TF1 *fitfuncHG, TF1 *fitfunc, float *fitpar, float *fitparErr, RootStyle *mystyle);
 //    int IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, vector<int> *seleye, bool split, int splitbin);
     int IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, bool split, int splitbin);
     int PerformMvaAnalysis(string *infilename, string *outfilename, int *curcount);
@@ -247,7 +253,7 @@ public:
     void SelectPlotFile(wxCommandEvent& event);
     void SelectPlotDir(wxCommandEvent& event);
     bool CheckPlotTreeSelect(string *plotFile, wxChoice *combo);
-    void SetPlotTreeSelect(string *plotFile, wxChoice *combo);
+    void SetPlotTreeSelect(string *plotFile, wxChoice *combo, bool wdisable);
     void StartHistogramPlot(wxCommandEvent& event);
     void StartScatterPlot(wxCommandEvent& event);
     void StartHistogramScatterPlot(int type);
@@ -288,6 +294,9 @@ const int ID_TEMPFILE 		= 312;
 const int ID_MVACUT 		= 313;
 const int ID_CHECKBINS 		= 314;
 const int ID_DEFOPTIONS 	= 315;
+const int ID_NUNCERTSELECT 	= 316;
+const int ID_PUNCERTSELECT 	= 317;
+const int ID_DISABLEUNCERT 	= 318;
 
 // Plotting panel IDs
 const int ID_OPENPLOTFILE	= 401;
@@ -303,6 +312,7 @@ const int ID_PLOTHISTDEFOPTIONS	= 408;
 const int ID_MVACUTDIALOG	= 901;
 const int ID_RANDSEEDDIALOG	= 902;
 const int ID_TITLEDIALOG	= 910;
+const int ID_LEGENDDIALOG	= 920;
 
 // Additional IDs for custom options regarding listboxes
 const int ID_DELETELIST		= 1001;

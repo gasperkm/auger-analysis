@@ -117,6 +117,12 @@
 #ifndef ROOT_TLegend
 #include "TLegend.h"
 #endif
+#ifndef ROOT_TPad
+#include "TPad.h"
+#endif
+#ifndef ROOT_TMarker
+#include "TMarker.h"
+#endif
 
 // ROOT MYSQL includes
 #ifndef ROOT_TSQLServer

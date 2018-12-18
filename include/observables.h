@@ -70,7 +70,7 @@ public:
    void ApplyCorrectionFD();
    void ApplyCorrectionHECO();
    void ApplyCorrectionHECOErrors(Observables *mean, int type);
-   void ApplyUncertainty(Observables *errneg, Observables *errpos, int type);
+   void ApplyUncertainty(Observables *errneg, Observables *errpos, string uncerObs, int type);
    void ApplySmearing();
    void SetupZenith(int type, Observables *errneg, Observables *errpos);
 

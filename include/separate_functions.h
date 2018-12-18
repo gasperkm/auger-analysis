@@ -61,6 +61,6 @@ void SplitDelimitedList(string inlist, vector<double> *outvec);
 void SplitDelimitedList(string inlist, vector<string> *outvec);
 
 // Get the correct number of keys, even if file was updated
-int GetRootKeys(TFile *ifile);
+int GetRootKeys(TFile *ifile, string keytemp);
 
 #endif

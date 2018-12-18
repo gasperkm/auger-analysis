@@ -90,10 +90,12 @@ MvaFitHist::~MvaFitHist()
    delete includePart;
    delete nrelem;
    delete method;
+   delete hasmiddist;
    delete[] mvalim;
    delete himodel;
    delete simProd;
    delete dataNum;
+   delete dataName;
    delete nrbins;
    delete[] otherSettings;
    delete nrparam;
@@ -121,9 +123,12 @@ void MvaFitHist::SetPrimaries(vector<int> *primVals)
 void MvaFitHist::SetMethod(string *inMethod)
 {
    method = new string;
+   *method = *inMethod;
    mvalim = new double[2];
    mvalim[0] = GetMethodMin(*inMethod);
    mvalim[1] = GetMethodMax(*inMethod);
+   hasmiddist = new bool;
+   *hasmiddist = GetMethodDist(*inMethod);
 }
 
 void MvaFitHist::SetHImodel(int *inModel)
@@ -138,10 +143,12 @@ void MvaFitHist::SetSimProduction(int *inProd)
    *simProd = *inProd;
 }
 
-void MvaFitHist::SetData(int *inTree)
+void MvaFitHist::SetData(int *inTree, string *inTreeName)
 {
    dataNum = new int;
    *dataNum = *inTree;
+   dataName = new string;
+   *dataName = *inTreeName;
 }
 
 void MvaFitHist::SetNrBins(int *inNrBins)
@@ -192,8 +199,8 @@ void MvaFitHist::SetOtherSettings(bool *inConst)
    // Running a MVA distribution fit
    else
    {
-      xlim[0] = GetMethodMin(stemp[0]);
-      xlim[1] = GetMethodMax(stemp[0]);
+      xlim[0] = mvalim[0];
+      xlim[1] = mvalim[1];
       cout << "MVA limits: " << xlim[0] << ", " << xlim[1] << endl;
    }
 
@@ -324,7 +331,7 @@ void MvaFitHist::PrepareHistograms(int run)
    ifile = new TFile(filename->c_str(), "READ");
 
    // Check how many TTrees we have in the file
-   *nrkeys = GetRootKeys(ifile);
+   *nrkeys = GetRootKeys(ifile, "TreeS");
 
    // Prepare variable histograms to hold values from each tree
 // step#003
@@ -1202,8 +1209,8 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
    for(int i = 0; i < residAll->size(); i++)
       tempd[i] = residAll->at(i);
 
-   // Use xmax instead of MVA:
-   if(otherSettings[1])
+   // Use xmax instead of MVA
+   if(otherSettings[1] || *hasmiddist)
       chiText.SetTextAlign(31);
    else
       chiText.SetTextAlign(21);
@@ -1249,9 +1256,10 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
    }
    else
    {
-      stemp[0] = "#chi^{2}/NDF = " + ToString((*chi2value), 4) + "/" + ToString((*ndfvalue)) + " = " + ToString((*chi2value)/(double)(*ndfvalue), 4) + ", status = " + ToString(status) + ", p-value = " + ToString((*pvalue), 4);
+//      stemp[0] = "#chi^{2}/NDF = " + ToString((*chi2value), 4) + "/" + ToString((*ndfvalue)) + " = " + ToString((*chi2value)/(double)(*ndfvalue), 4) + ", status = " + ToString(status) + ", p-value = " + ToString((*pvalue), 4);
+      stemp[0] = "#chi^{2}/NDF = " + ToString((*chi2value), 4) + "/" + ToString((*ndfvalue)) + " = " + ToString((*chi2value)/(double)(*ndfvalue), 4) + ", p-value = " + ToString((*pvalue), 4);
       // Use xmax instead of MVA:
-      if(otherSettings[1])
+      if(otherSettings[1] || *hasmiddist)
          chiText.DrawLatex(xlim[1]*0.98, TMath::MaxElement(2, yrange), stemp[0].c_str());
       else
          chiText.DrawLatex((xlim[0]+xlim[1])/2., TMath::MaxElement(2, yrange), stemp[0].c_str());
@@ -1263,27 +1271,27 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
       {
          stemp[0] = "r_{" + ToString(i+1) + "} = " + ToString(sigFrac[i], 4) + " +" + ToString(sigFracErr[2*i], 4) + "/-" + ToString(sigFracErr[2*i+1], 4) + " (" + treeNames->at(i) + ")";
          // Use xmax instead of MVA:
-	 if(otherSettings[1])
+	 if(otherSettings[1] || *hasmiddist)
             chiText.DrawLatex(xlim[1]*0.98, (1.-0.06*((double)i+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
 	 // Use MVA
 	 else
             chiText.DrawLatex((xlim[0]+xlim[1])/2., (1.-0.06*((double)i+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
       }
 
-      stemp[0] = "Residuals: mean = " + ToString(TMath::Mean(residAll->size(), tempd), 4) + ", RMS = " + ToString(TMath::RMS(residAll->size(), tempd), 4);
+/*      stemp[0] = "Residuals: mean = " + ToString(TMath::Mean(residAll->size(), tempd), 4) + ", RMS = " + ToString(TMath::RMS(residAll->size(), tempd), 4);
       // Use xmax instead of MVA:
-      if(otherSettings[1])
+      if(otherSettings[1] || *hasmiddist)
          chiText.DrawLatex(xlim[1]*0.98, (1.-0.06*((double)(*nrparam)+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
       // Use MVA
       else
          chiText.DrawLatex((xlim[0]+xlim[1])/2., (1.-0.06*((double)(*nrparam)+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
       stemp[0] = "MVA cut = " + ToString(*mvacut, 4);
       // Use xmax instead of MVA:
-      if(otherSettings[1])
+      if(otherSettings[1] || *hasmiddist)
          chiText.DrawLatex(xlim[1]*0.98, (1.-0.06*((double)(*nrparam)+2.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
       // Use MVA
       else
-         chiText.DrawLatex((xlim[0]+xlim[1])/2., (1.-0.06*((double)(*nrparam)+2.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
+         chiText.DrawLatex((xlim[0]+xlim[1])/2., (1.-0.06*((double)(*nrparam)+2.))*TMath::MaxElement(2, yrange), stemp[0].c_str());*/
    }
 
    delete residAll;
@@ -1298,11 +1306,11 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
    resid->GetYaxis()->SetRangeUser(-1.1*TMath::MaxElement(2, yresidrange), 1.1*TMath::MaxElement(2, yresidrange));
    resid->Draw();
 
-   TLine *line = new TLine(*mvacut, -1.1*TMath::MaxElement(2, yresidrange), *mvacut, 1.1*TMath::MaxElement(2, yresidrange));
+/*   TLine *line = new TLine(*mvacut, -1.1*TMath::MaxElement(2, yresidrange), *mvacut, 1.1*TMath::MaxElement(2, yresidrange));
    line->SetLineWidth(2);
    line->SetLineStyle(1);
    line->SetLineColor(kOrange+2);
-   line->Draw("SAME");
+   line->Draw("SAME");*/
 
    c1->Update();
 
@@ -1317,15 +1325,15 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
 
    if(!otherSettings[3])
    {
-      stemp[0] = RemoveFilename(filename) + "/fithist/" + stemp[1] + "_composition_residuals_minuit2.pdf";
+      stemp[0] = RemoveFilename(filename) + "/fithist/" + stemp[1] + "_composition_residuals_TreeS" + ToString((*dataNum)+1) + "_minuit2.pdf";
       c1->SaveAs(stemp[0].c_str());
    }
    else
    {
       if(otherSettings[1])
-         stemp[0] = RemoveFilename(filename) + "/fithist/" + stemp[1] + "_composition_residuals_fracfitter-xmax.pdf";
+         stemp[0] = RemoveFilename(filename) + "/fithist/" + stemp[1] + "_composition_residuals_TreeS" + ToString((*dataNum)+1) + "_fracfitter-xmax.pdf";
       else
-         stemp[0] = RemoveFilename(filename) + "/fithist/" + stemp[1] + "_composition_residuals_fracfitter.pdf";
+         stemp[0] = RemoveFilename(filename) + "/fithist/" + stemp[1] + "_composition_residuals_TreeS" + ToString((*dataNum)+1) + "_fracfitter.pdf";
       c1->SaveAs(stemp[0].c_str());
    }
 
@@ -1416,8 +1424,21 @@ void MvaFitHist::PrintoutFinalResults(int *nrp, vector<double> *lnas, vector<dou
 // Plot Lna and composition plots
 void MvaFitHist::PlotLnaComposition()
 {
+   // Prepare file structure
+   stemp[1] = RemoveFilename(filename);
+   stemp[2] = "mkdir -p " + RemoveFilename(&stemp[1]) + "/plots";
+   system(stemp[2].c_str());
+
+   // Prepare file to write Lna and Composition graphs into
+   if(otherSettings[1])
+      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/lna_composition_results_TreeS" + ToString((*dataNum)+1) + "_xmax.root";
+   else
+      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/lna_composition_results_TreeS" + ToString((*dataNum)+1) + ".root";
+   TFile *compfile = TFile::Open(stemp[2].c_str(), "RECREATE");
+
    mystyle->SetBaseStyle();
    TCanvas *c1 = new TCanvas("c1","",1200,900);
+   mystyle->SetSinglePlot(0, 0, c1);
 
    // Prepare lnA plot, with appended published values
    TGraphAsymmErrors *grLna;
@@ -1561,9 +1582,17 @@ void MvaFitHist::PlotLnaComposition()
 
       delete returnVal;
    }
+   else
+   {
+      *addPublishedSD = false;
+      *addPublishedFD = false;
+      *addPublishedFrac = false;
+   }
 
    // Plot lnA graph, where we add Xmax and Delta analysis (both from ICRC 2017)
    mystyle->SetAxisTitles(grLna, "FD energy [log(E/eV)]", "<lnA> of data events");
+   grLna->GetYaxis()->SetTitleOffset(mystyle->GetSingleYoffset(c1));
+   grLna->GetXaxis()->SetTitleOffset(mystyle->GetSingleXoffset(c1));
    grLna->Draw("APL");
    if(*addPublishedFD)
       grPubLnaFD->Draw("PL;SAME");
@@ -1571,14 +1600,23 @@ void MvaFitHist::PlotLnaComposition()
       grPubLnaSD->Draw("PL;SAME");
 
    if(*addPublishedFD && *addPublishedSD)
-      legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(3)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+      legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(3)), gPad->GetLeftMargin()+.50, 1-gPad->GetTopMargin());
    else if(*addPublishedFD || *addPublishedSD)
-      legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(2)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+      legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(2)), gPad->GetLeftMargin()+.50, 1-gPad->GetTopMargin());
    else
-      legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(1)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+      legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(1)), gPad->GetLeftMargin()+.50, 1-gPad->GetTopMargin());
    legend->SetFillStyle(1001);
    legend->SetFillColor(c_Legend);
-   if(*himodel == 3)
+   stemp[2] = *dataName;
+   ReplacePart(&stemp[2], " (testset 25%)", ", cross-validation set");
+   legend->AddEntry(grLna, stemp[2].c_str(), "lp");
+   if(*addPublishedFD && !(*pubPRD))
+      legend->AddEntry(grPubLnaFD, "X_{max} analysis [PoS(ICRC 2017)]", "lp");
+   if(*addPublishedFD && *pubPRD)
+      legend->AddEntry(grPubLnaFD, "X_{max} analysis [PRD 90 (2014) 122006]", "lp");
+   if(*addPublishedSD)
+      legend->AddEntry(grPubLnaSD, "Delta analysis [PRD 96 (2017) 122003]", "lp");
+/*   if(*himodel == 3)
       legend->AddEntry(grLna, "Mock data (Histogram fit)", "lp");
    else
       legend->AddEntry(grLna, "Data (Histogram fit)", "lp");
@@ -1587,7 +1625,7 @@ void MvaFitHist::PlotLnaComposition()
    if(*addPublishedFD && *pubPRD)
       legend->AddEntry(grPubLnaFD, "Data (Xmax analysis PRD2014)", "lp");
    if(*addPublishedSD)
-      legend->AddEntry(grPubLnaSD, "Data (Delta analysis ICRC2017)", "lp");
+      legend->AddEntry(grPubLnaSD, "Data (Delta analysis ICRC2017)", "lp");*/
    legend->SetBorderSize(1);
    legend->SetMargin(0.3);
    legend->Draw("same");
@@ -1625,22 +1663,43 @@ void MvaFitHist::PlotLnaComposition()
    l->DrawLine(gPad->GetUxmin(), TMath::Log(dtemp[0]), gPad->GetUxmax(), TMath::Log(dtemp[0]));
 
    stemp[1] = RemoveFilename(filename);
-   stemp[2] = "mkdir -p " + RemoveFilename(&stemp[1]) + "/plots";
-   system(stemp[2].c_str());
 
    if(otherSettings[1])
    {
-      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA_xmax.pdf";
+      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA_TreeS" + ToString((*dataNum)+1) + "_xmax.pdf";
       c1->SaveAs(stemp[2].c_str());
    }
    else
    {
-      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA.pdf";
+      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA_TreeS" + ToString((*dataNum)+1) + ".pdf";
       c1->SaveAs(stemp[2].c_str());
    }
 
+   compfile->cd();
+   stemp[2] = "fitLna_TreeS" + ToString((*dataNum)+1);
+   grLna->SetName(stemp[2].c_str());
+   grLna->Write();
+   if(*addPublishedFD)
+   {
+      stemp[2] = "xmax_anal";
+      grPubLnaFD->SetName(stemp[2].c_str());
+      grPubLnaFD->Write();
+   }
+   if(*addPublishedSD)
+   {
+      stemp[2] = "delta_anal";
+      grPubLnaSD->SetName(stemp[2].c_str());
+      grPubLnaSD->Write();
+   }
+   stemp[2] = "canvas_histfit_lnA_TreeS" + ToString((*dataNum)+1);
+   c1->SetName(stemp[2].c_str());
+   c1->Write();
+   c1->cd();
+
    // Plot lnA graph, where we add Xmax analysis from histogram fitting approach (longitudinal distribution fit)
    mystyle->SetAxisTitles(grLna, "FD energy [log(E/eV)]", "<lnA> of data events");
+   grLna->GetYaxis()->SetTitleOffset(mystyle->GetSingleYoffset(c1));
+   grLna->GetXaxis()->SetTitleOffset(mystyle->GetSingleXoffset(c1));
    grLna->Draw("APL");
    if(*addPublishedFrac)
       grPubLnaFDFrac->Draw("PL;SAME");
@@ -1648,21 +1707,28 @@ void MvaFitHist::PlotLnaComposition()
       grPubLnaSD->Draw("PL;SAME");
 
    if(*addPublishedFrac && *addPublishedSD)
-      legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(3)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+      legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(3)), gPad->GetLeftMargin()+.50, 1-gPad->GetTopMargin());
    else if(*addPublishedFrac || *addPublishedSD)
-      legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(2)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+      legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(2)), gPad->GetLeftMargin()+.50, 1-gPad->GetTopMargin());
    else
-      legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(1)), gPad->GetLeftMargin()+.32, 1-gPad->GetTopMargin());
+      legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(1)), gPad->GetLeftMargin()+.50, 1-gPad->GetTopMargin());
    legend->SetFillStyle(1001);
    legend->SetFillColor(c_Legend);
-   if(*himodel == 3)
+   stemp[2] = *dataName;
+   ReplacePart(&stemp[2], " (testset 25%)", ", cross-validation set");
+   legend->AddEntry(grLna, stemp[2].c_str(), "lp");
+   if(*addPublishedFrac)
+      legend->AddEntry(grPubLnaFDFrac, "X_{max} analysis, fractions [PoS(ICRC 2017)]", "lp");
+   if(*addPublishedSD)
+      legend->AddEntry(grPubLnaSD, "Delta analysis [PRD 96 (2017) 122003]", "lp");
+/*   if(*himodel == 3)
       legend->AddEntry(grLna, "Mock data (Histogram fit)", "lp");
    else
       legend->AddEntry(grLna, "Data (Histogram fit)", "lp");
    if(*addPublishedFrac)
       legend->AddEntry(grPubLnaFDFrac, "Data (Longitudinal fit analysis ICRC2017)", "lp");
    if(*addPublishedSD)
-      legend->AddEntry(grPubLnaSD, "Data (Delta analysis ICRC2017)", "lp");
+      legend->AddEntry(grPubLnaSD, "Data (Delta analysis ICRC2017)", "lp");*/
    legend->SetBorderSize(1);
    legend->SetMargin(0.3);
    legend->Draw("same");
@@ -1705,14 +1771,26 @@ void MvaFitHist::PlotLnaComposition()
 
    if(otherSettings[1])
    {
-      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA-frac_xmax.pdf";
+      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA_TreeS" + ToString((*dataNum)+1) + "-frac_xmax.pdf";
       c1->SaveAs(stemp[2].c_str());
    }
    else
    {
-      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA-frac.pdf";
+      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/histogram_fit_lnA_TreeS" + ToString((*dataNum)+1) + "-frac.pdf";
       c1->SaveAs(stemp[2].c_str());
    }
+
+   compfile->cd();
+   if(*addPublishedFrac)
+   {
+      stemp[2] = "xmax_anal-frac";
+      grPubLnaFDFrac->SetName(stemp[2].c_str());
+      grPubLnaFDFrac->Write();
+   }
+   stemp[2] = "canvas_histfit_lnA-frac_TreeS" + ToString((*dataNum)+1);
+   c1->SetName(stemp[2].c_str());
+   c1->Write();
+   c1->cd();
      
    if(*addPublishedFD)
    {
@@ -1723,7 +1801,7 @@ void MvaFitHist::PlotLnaComposition()
       }
    }
    
-   if(addPublishedFrac)
+   if(*addPublishedFrac)
    {
       for(int i = 0; i < 3; i++)
       {
@@ -1732,7 +1810,7 @@ void MvaFitHist::PlotLnaComposition()
       }
    }
    
-   if(addPublishedSD)
+   if(*addPublishedSD)
    {
       for(int i = 0; i < 3; i++)
       {
@@ -1761,8 +1839,10 @@ void MvaFitHist::PlotLnaComposition()
 
    // Plot composition plots (all together)
    c1 = new TCanvas("c1","",1200,400.*(*nrelem));
+   mystyle->SetMultiPlot(0, 0, *nrelem, c1);
 
    TGraphAsymmErrors *grComp[40], *grCompPub[40];
+cout << "26" << endl;
 
    // Get published composition results
    if(*himodel != 3)
@@ -1872,26 +1952,84 @@ void MvaFitHist::PlotLnaComposition()
       }*/
    }
 
-   // Plot all four on separate pads
-   c1->Divide(1,*nrelem);
+   // Plot all of them on the same canvas, without any published values (useful for pure samples)
+   TCanvas *c2 = new TCanvas("c2","",1200,900);
+   c2->cd();
+   mystyle->SetSinglePlot(0, -1, c2);
 
    for(int j = 0; j < (*nrelem); j++)
    {
-      c1->cd(j+1);
+      mystyle->SetAxisTitles(grComp[j], "", "Elemental fractions");
+      grComp[j]->GetXaxis()->SetRange(18.5, 20.0);
+      grComp[j]->GetXaxis()->SetRangeUser(18.5, 20.0);
+      grComp[j]->GetXaxis()->SetLimits(18.5, 20.0);
+//      grComp[j]->GetYaxis()->SetTitleOffset(1.9 + ((*nrelem)-2)*0.45);
+      grComp[j]->GetYaxis()->SetTitleOffset(mystyle->GetSingleYoffset(c2));
+      grComp[j]->GetXaxis()->SetTitle("FD energy [log(E/eV)]");
+      grComp[j]->GetXaxis()->SetTitleOffset(mystyle->GetSingleXoffset(c2));
+
+      if(j == 0)
+         grComp[j]->Draw("ALP");
+      else
+         grComp[j]->Draw("LP;SAME");
+      grComp[j]->GetYaxis()->SetRangeUser(0.,1.);
+
+//      cout << "OUT: Pad " << j << " bottom margin = " << pads[j]->GetBottomMargin() << endl;
+   }
+
+   c2->Update();
+
+   stemp[1] = RemoveFilename(filename);
+
+   if(otherSettings[1])
+      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_TreeS" + ToString((*dataNum)+1) + "_xmax_single.pdf";
+   else
+      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_TreeS" + ToString((*dataNum)+1) + "_single.pdf";
+   c2->SaveAs(stemp[2].c_str());
+
+   compfile->cd();
+   stemp[2] = "canvas_massComp-single_TreeS" + ToString((*dataNum)+1);
+   c2->SetName(stemp[2].c_str());
+   c2->Write();
+   c2->cd();
+
+   delete c2;
+
+   // Plot all four on separate pads
+   c1->cd();
+   mystyle->SetPaddedPlot(*nrelem, c1, pads);
+//   c1->Divide(1,*nrelem);
+
+   for(int j = 0; j < (*nrelem); j++)
+   {
+      pads[j]->cd();
+//      c1->cd(j+1);
       if(*addPublishedFrac)
       {
          mystyle->SetAxisTitles(grCompPub[j], "", "Elemental fractions");
          grCompPub[j]->GetXaxis()->SetRange(18.5, 20.0);
          grCompPub[j]->GetXaxis()->SetRangeUser(18.5, 20.0);
          grCompPub[j]->GetXaxis()->SetLimits(18.5, 20.0);
-         grCompPub[j]->GetYaxis()->SetTitleOffset(1.9 + ((*nrelem)-2)*0.45);
+//         grCompPub[j]->GetYaxis()->SetTitleOffset(1.9 + ((*nrelem)-2)*0.45);
+         grCompPub[j]->GetYaxis()->SetTitleOffset(mystyle->GetPaddedYoffset(*nrelem, c1));
+	 if(j == (*nrelem)-1)
+	 {
+            grCompPub[j]->GetXaxis()->SetTitle("FD energy [log(E/eV)]");
+            grCompPub[j]->GetXaxis()->SetTitleOffset(mystyle->GetPaddedXoffset(*nrelem, c1));
+	 }
          grCompPub[j]->Draw("ALP");
          grCompPub[j]->GetYaxis()->SetRangeUser(0.,1.);
          mystyle->SetAxisTitles(grComp[j], "", "Elemental fractions");
          grComp[j]->GetXaxis()->SetRange(18.5, 20.0);
          grComp[j]->GetXaxis()->SetRangeUser(18.5, 20.0);
          grComp[j]->GetXaxis()->SetLimits(18.5, 20.0);
-         grComp[j]->GetYaxis()->SetTitleOffset(1.9 + ((*nrelem)-2)*0.45);
+//         grComp[j]->GetYaxis()->SetTitleOffset(1.9 + ((*nrelem)-2)*0.45);
+         grComp[j]->GetYaxis()->SetTitleOffset(mystyle->GetPaddedYoffset(*nrelem, c1));
+	 if(j == (*nrelem)-1)
+	 {
+            grComp[j]->GetXaxis()->SetTitle("FD energy [log(E/eV)]");
+            grComp[j]->GetXaxis()->SetTitleOffset(mystyle->GetPaddedXoffset(*nrelem, c1));
+	 }
          grComp[j]->Draw("LP;SAME");
          grComp[j]->GetYaxis()->SetRangeUser(0.,1.);
       }
@@ -1901,10 +2039,18 @@ void MvaFitHist::PlotLnaComposition()
          grComp[j]->GetXaxis()->SetRange(18.5, 20.0);
          grComp[j]->GetXaxis()->SetRangeUser(18.5, 20.0);
          grComp[j]->GetXaxis()->SetLimits(18.5, 20.0);
-         grComp[j]->GetYaxis()->SetTitleOffset(1.9 + ((*nrelem)-2)*0.45);
+//         grComp[j]->GetYaxis()->SetTitleOffset(1.9 + ((*nrelem)-2)*0.45);
+         grComp[j]->GetYaxis()->SetTitleOffset(mystyle->GetPaddedYoffset(*nrelem, c1));
+	 if(j == (*nrelem)-1)
+	 {
+            grComp[j]->GetXaxis()->SetTitle("FD energy [log(E/eV)]");
+            grComp[j]->GetXaxis()->SetTitleOffset(mystyle->GetPaddedXoffset(*nrelem, c1));
+	 }
          grComp[j]->Draw("ALP");
          grComp[j]->GetYaxis()->SetRangeUser(0.,1.);
       }
+
+//      cout << "OUT: Pad " << j << " bottom margin = " << pads[j]->GetBottomMargin() << endl;
    }
 
    c1->Update();
@@ -1915,7 +2061,8 @@ void MvaFitHist::PlotLnaComposition()
    for(int j = 0; j < (*nrelem); j++)
    {
       stemp[1] = ptype->GetName(includePart->at(j));
-      c1->cd(j+1);
+      pads[j]->cd();
+//      c1->cd(j+1);
       if(*addPublishedFrac)
       {
          if(stemp[1] == "Oxygen")
@@ -1933,10 +2080,37 @@ void MvaFitHist::PlotLnaComposition()
    stemp[1] = RemoveFilename(filename);
 
    if(otherSettings[1])
-      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_xmax_combine.pdf";
+      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_TreeS" + ToString((*dataNum)+1) + "_xmax_combine.pdf";
    else
-      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_combine.pdf";
+      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_TreeS" + ToString((*dataNum)+1) + "_combine.pdf";
    c1->SaveAs(stemp[2].c_str());
+
+   compfile->cd();
+   for(int j = 0; j < (*nrelem); j++)
+   {
+      if(*addPublishedFrac)
+      {
+         stemp[2] = "composition_" + ptype->GetName(includePart->at(j)) + "_TreeS" + ToString((*dataNum)+1);
+         grComp[j]->SetName(stemp[2].c_str());
+         grComp[j]->Write();
+         stemp[2] = "composition-frac_" + ptype->GetName(includePart->at(j));
+         grCompPub[j]->SetName(stemp[2].c_str());
+         grCompPub[j]->Write();
+      }
+      else
+      {
+         stemp[2] = "composition_" + ptype->GetName(includePart->at(j)) + "_TreeS" + ToString((*dataNum)+1);
+         grComp[j]->SetName(stemp[2].c_str());
+         grComp[j]->Write();
+      }
+   }
+   stemp[2] = "canvas_massComp-combine_TreeS" + ToString((*dataNum)+1);
+   c1->SetName(stemp[2].c_str());
+   c1->Write();
+   c1->cd();
+
+   compfile->Write();
+   compfile->Close();
 
    if(*addPublishedFrac)
    {
@@ -1956,6 +2130,8 @@ void MvaFitHist::PlotLnaComposition()
       delete[] ybinComp[j];
       delete[] ybinCompErrlo[j];
       delete[] ybinCompErrhi[j];
+
+      delete pads[j];
    }
 
    delete c1;

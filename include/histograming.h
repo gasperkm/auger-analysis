@@ -5,6 +5,8 @@
 #include "root_include.h"
 #include "root_style.h"
 #include "primary_type.h"
+#include "observables.h"
+#include "popups.h"
 
 #include "Math/Minimizer.h"
 #include "Math/Factory.h"
@@ -24,26 +26,49 @@ private:
    double *dtemp;
 
    int *nrbins;
+   int *nrobs;
+   int *nrtrees;
+   int *nrfiles;
    vector<string> *filename;
+   string *method;
    vector<string> *obser;
-   vector<string> *trees;
+   vector<int> *trees;
+   vector<int> *treeColor;
    double *xlim;
    double *ylim;
    double *yrange;
    bool *otherSettings;
 
-   TH1F *firstHist[MAXINFILES];
-   TH1F *secondHist[MAXINFILES];
-   TH1F *thirdHist[MAXINFILES];
+   TH1F *treeHist[3*MAXINFILES];
+   TGraphAsymmErrors *treeAGraph[3*MAXINFILES];
+   TLegend *legend;
    TLatex *uoflowtext;
+   const int legendFill = 1001;
+   const int c_MvaCut = TColor::GetColor("#ffff66");
 
    int *uflowcount, *oflowcount, *totcount[4]; // counting number of underflow and overflow events
+   double *max;
+   double *min;
 
    RootStyle *mystyle;
 
-   TFile *ifile;
+   TFile *ifile[3];
 
    TTree *getTree[3];
+
+   float *obsvars;
+   float *obsvars_neg;
+   float *obsvars_pos;
+
+   float *obsvars2;
+   float *obsvars2_neg;
+   float *obsvars2_pos;
+
+   bool *isgood;
+
+   double *mvalim;
+
+   FSDialog *legendselectDialog;
 
 /*   string *filename;
    int *nrelem;
@@ -114,14 +139,17 @@ public:
    virtual ~ScatHist();
 
    void SetFilenames(vector<string> *inFiles);
+   void SetMethod(string *inMethod);
    void SetObservables(vector<string> *inObs);
-   void SetTrees(vector<string> *inTrees);
+   void SetTrees(vector<int> *inTrees, vector<int> *inColor);
    void SetNrBins(int *inNrBins);
    void SetXaxisLimits(bool use, double *inLimits);
    void SetYaxisLimits(bool use, double *inLimits);
    void SetOtherSettings(bool *inConst);
 
-   int StartPlotting();
+   int StartPlotting(Observables *genObser);
+
+   bool InvertAxis(string *obs1, string *obs2);
 
 /*   void SetPrimaries(vector<int> *primVals);
    void SetMethod(string *inMethod);

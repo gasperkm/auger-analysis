@@ -546,7 +546,7 @@ int AdstMva::SetStationValues()
             cout << "Rejected: Asymmetry corrected station risetime is negative (" << risemean << ")." << endl;
 	 }
 
-	 // CHeck if risetime error has a positive value (at very high sec(theta) values, the uncertainties are negative)
+	 // Check if risetime error has a positive value (at very high sec(theta) values, the uncertainties are negative)
 	 if(riseerr < 0.)
 	 {
             *btemp = false;

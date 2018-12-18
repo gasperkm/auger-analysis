@@ -3,6 +3,7 @@
 
 #include "workstation.h"
 #include "root_include.h"
+#include "separate_functions.h"
 #include <string>
 
 using namespace std;
@@ -15,6 +16,14 @@ private:
    int signalfill, backgroundfill, datafill, residfill;
    double legendBaseHeight;
    TStyle *basestyle;
+
+   const double padTotDiffFactor = 0.003;
+   const double padHeightDiffFactor = 0.004;
+   const double padMarginDiffFactor = 0.014;
+   const double xTitleFactor = 3.6;
+   const double yTitleFactor = 2.25;
+   const double xTitleSingleFactor = 2.4;
+   const double yTitleSingleFactor = 2.85;
 public:
    RootStyle();
 
@@ -42,6 +51,19 @@ public:
    void SetColorScale(TGraph *plot, int cur, int nrscale);
    void SetColorScale(TGraphErrors *plot, int cur, int nrscale);
    void SetColorScale(TGraphAsymmErrors *plot, int cur, int nrscale);
+
+   double GetPlotWidth(int size);
+   double GetPlotHeight(int type, int size);
+
+   void SetSinglePlot(int xsize, int ysize, TCanvas *inCanv);
+   void SetMultiPlot(int xsize, int ysize, int nrpads, TCanvas *inCanv);
+   void SetPaddedPlot(int nrpads, TCanvas *inCanv, TPad **inPads);
+
+   double GetPaddedXoffset(int nrpads, TCanvas *inCanv);
+   double GetPaddedYoffset(int nrpads, TCanvas *inCanv);
+
+   double GetSingleXoffset(TCanvas *inCanv);
+   double GetSingleYoffset(TCanvas *inCanv);
 };
 
 #endif

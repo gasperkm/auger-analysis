@@ -411,3 +411,135 @@ void RootStyle::SetColorScale(TGraphAsymmErrors *plot, int cur, int nrscale)
    delete colormix;
 }
 
+double RootStyle::GetPlotWidth(int size)
+{
+   // Narrow
+   if(size == -1)
+      return 1000;
+   // Medium/Default
+   else if(size == 0)
+      return 1200;
+   // High
+   else if(size == 1)
+      return 1400;
+}
+double RootStyle::GetPlotHeight(int type, int size)
+{
+   // Single plots
+   if(type == 0)
+   {
+      // Very narrow
+      if(size == -2)
+         return 400;
+      // Narrow
+      else if(size == -1)
+         return 600;
+      // Medium/Default
+      else if(size == 0)
+         return 800;
+      // High
+      else if(size == 1)
+         return 1000;
+      // Very high
+      else if(size == 2)
+         return 1000;
+   }
+   // Multipad plots
+   else if(type == 1)
+   {
+      // Very narrow
+      if(size == -2)
+         return 200;
+      // Narrow
+      else if(size == -1)
+         return 300;
+      // Medium/Default
+      else if(size == 0)
+         return 400;
+      // High
+      else if(size == 1)
+         return 500;
+      // Very high
+      else if(size == 2)
+         return 600;
+   }
+}
+
+void RootStyle::SetSinglePlot(int xsize, int ysize, TCanvas *inCanv)
+{
+   inCanv->SetCanvasSize(GetPlotWidth(xsize), GetPlotHeight(0, ysize));
+   inCanv->Modified();
+   inCanv->Update();
+}
+
+void RootStyle::SetMultiPlot(int xsize, int ysize, int nrpads, TCanvas *inCanv)
+{
+   inCanv->SetCanvasSize(GetPlotWidth(xsize), nrpads*GetPlotHeight(1, ysize));
+   inCanv->Modified();
+   inCanv->Update();
+}
+
+void RootStyle::SetPaddedPlot(int nrpads, TCanvas *inCanv, TPad **inPads)
+{
+   double *dtemp = new double[4];
+   string *stemp = new string;
+
+   inCanv->cd();
+
+   dtemp[1] = 1.;
+   for(int i = 0; i < nrpads; i++)
+   {
+      dtemp[2] = 1./nrpads - padTotDiffFactor;
+//      cout << "1/nrpads - padTotDiffFactor = " << dtemp[2] << endl;
+      if(i != nrpads-1)
+         dtemp[3] = dtemp[2] - padHeightDiffFactor;
+      else
+         dtemp[3] = dtemp[2] + (nrpads-1)*padHeightDiffFactor;
+
+//      cout << "Each pad height = " << dtemp[3] << endl;
+
+      dtemp[0] = dtemp[1] - dtemp[3];
+
+//      cout << "Pad limits = " << dtemp[0] << ", " << dtemp[1] << endl;
+
+      *stemp = "pad" + ToString(i+1);
+      inPads[i] = new TPad(stemp->c_str(), "", 0.005, dtemp[0], 0.995, dtemp[1]);
+
+      if(i == nrpads-1)
+         inPads[i]->SetBottomMargin(0.1 + padMarginDiffFactor*nrpads);
+
+//      cout << " IN: Pad " << i << " bottom margin = " << inPads[i]->GetBottomMargin() << endl;
+
+      dtemp[1] -= dtemp[3];
+
+      inPads[i]->Draw();
+   }
+
+   inCanv->Modified();
+   inCanv->Update();
+
+   delete stemp;
+   delete[] dtemp;
+}
+
+double RootStyle::GetPaddedXoffset(int nrpads, TCanvas *inCanv)
+{
+//   return xTitleFactor*(inCanv->GetWindowHeight())*nrpads/(inCanv->GetWindowWidth());
+   return xTitleFactor*(inCanv->GetWindowHeight())/(inCanv->GetWindowWidth());
+}
+
+double RootStyle::GetPaddedYoffset(int nrpads, TCanvas *inCanv)
+{
+//   return yTitleFactor*(inCanv->GetWindowHeight())*nrpads/(inCanv->GetWindowWidth());
+   return yTitleFactor*(inCanv->GetWindowHeight())/(inCanv->GetWindowWidth());
+}
+
+double RootStyle::GetSingleXoffset(TCanvas *inCanv)
+{
+   return xTitleSingleFactor*(inCanv->GetWh())/(inCanv->GetWw());
+}
+
+double RootStyle::GetSingleYoffset(TCanvas *inCanv)
+{
+   return yTitleSingleFactor*(inCanv->GetWh())/(inCanv->GetWw());
+}

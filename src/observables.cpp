@@ -250,24 +250,19 @@ void Observables::ApplyCorrectionHECOErrors(Observables *mean, int type)
 }
 
 // Applying Xmax and energy corrections to Auger HECO data
-void Observables::ApplyUncertainty(Observables *errneg, Observables *errpos, int type)
+void Observables::ApplyUncertainty(Observables *errneg, Observables *errpos, string uncerObs, int type)
 {
    if((type == 0) || (type == 1))
    {
-//      cout << "Changing value (" << type << "):" << endl;
       float *ftemp = new float[3];
 
       for(int i = 0; i < nrobs; i++)
       {
-         // TESTING!
-	 if(GetName(i) == "xmax")
+	 if(GetName(i) == uncerObs)
 	 {
             ftemp[0] = GetValue(i);
             ftemp[1] = errneg->GetValue(i);
             ftemp[2] = errpos->GetValue(i);
-//            ftemp[1] = 10.;
-//            ftemp[2] = 10.;
-//	    cout << i << "\teye" << j << ", " << GetName(i) << "\t" << ftemp[0] << "\t" << ftemp[1] << "\t" << ftemp[2] << "\tnewVal = ";
 
 	    if(ftemp[0] != -1)
 	    {
@@ -281,7 +276,6 @@ void Observables::ApplyUncertainty(Observables *errneg, Observables *errpos, int
 	    }
 	 }
       }
-//      cout << endl;
 
       delete[] ftemp;
    }
@@ -329,7 +323,7 @@ void Observables::ApplySmearing()
 //      cout << "Additional Variance = " << ftemp[3] << endl;
 
       // Bias correction
-      ftemp[2] = 3.4 - 0.93*(*logE - 18.);
+      ftemp[2] = 3.4 - 0.93*(*logE - 18.);	// Should this be applied?
 //      cout << "Bias correction = " << ftemp[2] << endl;
 
       // Smeared value of Xmax

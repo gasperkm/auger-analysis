@@ -490,30 +490,54 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
             stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
             stemp[1] = RemovePath(&stemp[1]);
 
+	    if(itemp[1] == 0)
+	    {
+	       cout << "Tree name = " << stemp[1] << endl;
+	       cout << "Data tree selection = " << (dataSelect->widgetCB)->GetStringSelection() << endl;
+	    }
+
 	    // Check if current tree is data or Monte Carlo
 	    if((string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) || FindStringPart(stemp[1], "Data") )
 	    {
 	       // If treating selected data tree as Monte Carlo
 	       if( (string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) && ((specialMva->widgetChBox[9])->IsChecked()) )
 	       {
-                  if(j == 0)
+                  if(itemp[1] == 0)
                      cout << "Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
                   btemp[1] = false;
 	       }
 	       // If not treating selected data tree as Monte Carlo
 	       else
 	       {
-                  if(j == 0)
+                  if(itemp[1] == 0)
                      cout << "Tree " << stemp[1] << " will be considered as a data tree." << endl;
 	          btemp[1] = true;
 	       }
 	    }
 	    else
 	    {
-               if(j == 0)
+               if(itemp[1] == 0)
                   cout << "Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
 	       btemp[1] = false;
 	    }
+
+            // Apply systematic estimation by adding statistical uncertainties to mean value
+            if(btemp[1])	// set to btemp[1] if changing data and to !btemp[1] if changing simulations
+            {
+               if((specialMva->widgetChBox[5])->IsChecked())
+	       {
+	          if(itemp[1] == 0)
+                     cout << "Applying negative uncertainty to " << stemp[1] << endl;
+                  invalues->ApplyUncertainty(invalues_neg, invalues_pos, string((uncertSelect->widgetCB)->GetStringSelection()), 0);
+	       }
+
+               if((specialMva->widgetChBox[6])->IsChecked())
+	       {
+	          if(itemp[1] == 0)
+                     cout << "Applying positive uncertainty to " << stemp[1] << endl;
+                  invalues->ApplyUncertainty(invalues_neg, invalues_pos, string((uncertSelect->widgetCB)->GetStringSelection()), 1);
+	       }
+            }
 
 	    // Only apply to data
 	    if(btemp[1])
@@ -521,7 +545,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
                // Apply Xmax corrections to Auger FD standard data
                if((specialMva->widgetChBox[3])->IsChecked())
 	       {
-	          if(j == 0)
+	          if(itemp[1] == 0)
                      cout << "Applying FD standard correction to " << stemp[1] << endl;
                   invalues->ApplyCorrectionFD();
 	       }
@@ -529,7 +553,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
                // Apply Xmax and energy corrections to Auger HECO data
                if((specialMva->widgetChBox[4])->IsChecked())
                {
-	          if(j == 0)
+	          if(itemp[1] == 0)
                      cout << "Applying HECO correction to " << stemp[1] << endl;
                   invalues->ApplyCorrectionHECO();
                   invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
@@ -537,27 +561,19 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
                }
 	    }
 
-            // Apply systematic estimation by adding statistical uncertainties to mean value
-            if(btemp[1])	// set to == if changing data and to != if changing simulations
-            {
-               if((specialMva->widgetChBox[5])->IsChecked())
-                  invalues->ApplyUncertainty(invalues_neg, invalues_pos, 0);
-
-               if((specialMva->widgetChBox[6])->IsChecked())
-                  invalues->ApplyUncertainty(invalues_neg, invalues_pos, 1);
-            }
-
             // Only apply this to non-data
             if(!btemp[1])
             {
 	       // Apply atmospheric and alignment resolution smearing on MC simulations
 	       if((specialMva->widgetChBox[8])->IsChecked())
 	       {
-		  if(j == 0)
+		  if(itemp[1] == 0)
                      cout << "Applying MC smearing to " << stemp[1] << endl;
                   invalues->ApplySmearing();
 	       }
 	    }
+
+	    itemp[1]++;
          }
 
          // Convert S1000 to S38 and then to DeltaS38
@@ -618,7 +634,7 @@ int MyFrame::MvaSetTrees(int type, TFile *ifile, TTree *outtree)
    }
 
    cout << "# MvaSetTrees           #: " << "Number of events inside the cuts = " << itemp[0] << endl;
-   cout << "# MvaSetTrees           #: " << "Number of events with multiple eyes inside the cuts = " << itemp[1] << endl;
+//   cout << "# MvaSetTrees           #: " << "Number of events with multiple eyes inside the cuts = " << itemp[1] << endl;
 
    ret = itemp[0];
 
@@ -661,10 +677,12 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
    string *stemp;
    int *itemp;
    float *ftemp;
+   int *btemp;
 
    stemp = new string[3];
    itemp = new int[4];
    ftemp = new float[9];
+   btemp = new int[2];
 
    double *binLimit;
 
@@ -716,6 +734,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
+         delete[] btemp;
          return -1;
       }
 
@@ -728,6 +747,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
+         delete[] btemp;
          return -1;
       }
 
@@ -740,6 +760,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
+         delete[] btemp;
          return -1;
       }
 
@@ -778,6 +799,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
       }
 
       itemp[0] = 0;
+      itemp[1] = 0;
       for(int j = 0; j < tempTree->GetEntries(); j++)
       {
          tempTree->GetEntry(j);
@@ -787,15 +809,69 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
             stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
             stemp[1] = RemovePath(&stemp[1]);
 
-	    // Apply the FD standard correction - doesn't really affect energy, just Xmax
-	    if( (FDcorrect == 1) && (string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) )
-               invalues->ApplyCorrectionFD();
-	    // Apply the HeCO correction - affects both energy and Xmax
-	    else if( (FDcorrect == 2) && (string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) )
+	    // Check if current tree is data or Monte Carlo
+	    if((string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) || FindStringPart(stemp[1], "Data") )
 	    {
-               invalues->ApplyCorrectionHECO();
-               invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
-               invalues_pos->ApplyCorrectionHECOErrors(invalues, 1);
+	       // If treating selected data tree as Monte Carlo
+	       if( (string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) && ((specialMva->widgetChBox[9])->IsChecked()) )
+	       {
+                  if(itemp[1] == 0)
+                     cout << "SetDeltaS38: Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
+                  btemp[1] = false;
+	       }
+	       // If not treating selected data tree as Monte Carlo
+	       else
+	       {
+                  if(itemp[1] == 0)
+                     cout << "SetDeltaS38: Tree " << stemp[1] << " will be considered as a data tree." << endl;
+	          btemp[1] = true;
+	       }
+	    }
+	    else
+	    {
+               if(itemp[1] == 0)
+                  cout << "SetDeltaS38: Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
+	       btemp[1] = false;
+	    }
+
+            // Apply systematic estimation by adding statistical uncertainties to mean value
+            if(btemp[1])	// set to btemp[1] if changing data and to !btemp[1] if changing simulations
+            {
+               if((specialMva->widgetChBox[5])->IsChecked())
+	       {
+	          if(itemp[1] == 0)
+                     cout << "SetDeltaS38: Applying negative uncertainty to " << stemp[1] << endl;
+                  invalues->ApplyUncertainty(invalues_neg, invalues_pos, string((uncertSelect->widgetCB)->GetStringSelection()), 0);
+	       }
+
+               if((specialMva->widgetChBox[6])->IsChecked())
+	       {
+	          if(itemp[1] == 0)
+                     cout << "SetDeltaS38: Applying negative uncertainty to " << stemp[1] << endl;
+                  invalues->ApplyUncertainty(invalues_neg, invalues_pos, string((uncertSelect->widgetCB)->GetStringSelection()), 1);
+	       }
+            }
+
+	    // Only apply to data
+	    if(btemp[1])
+	    {
+               // Apply Xmax corrections to Auger FD standard data
+               if(FDcorrect == 1)
+	       {
+	          if(itemp[1] == 0)
+                     cout << "SetDeltaS38: Applying FD standard correction to " << stemp[1] << endl;
+                  invalues->ApplyCorrectionFD();
+	       }
+
+               // Apply Xmax and energy corrections to Auger HECO data
+               if(FDcorrect == 2)
+               {
+	          if(itemp[1] == 0)
+                     cout << "SetDeltaS38: Applying HECO correction to " << stemp[1] << endl;
+                  invalues->ApplyCorrectionHECO();
+                  invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
+                  invalues_pos->ApplyCorrectionHECOErrors(invalues, 1);
+               }
 	    }
 
 	    if( (TMath::Log10(invalues->GetValue("energyFD")) > binLimit[0]) && (TMath::Log10(invalues->GetValue("energyFD")) <= binLimit[2]) )
@@ -824,6 +900,8 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
 	          }
 	       }
 	    }
+
+	    itemp[1]++;
 	 }
       }
 
@@ -851,6 +929,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
+         delete[] btemp;
 
          return -1;
       }
@@ -955,9 +1034,9 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
 //	 cout << "Mean value of S1000 = " << ftemp[2] << endl;
 	 fitgraphMid->Draw("AP");
 
-         fitfuncMid = new TF1("fitfuncMid", "[0]+[1]*(TMath::Power(1./x,2)-TMath::Power(cos(0.663225115),2))+[2]*TMath::Power((TMath::Power(1./x,2)-TMath::Power(cos(0.663225115),2)),2)+[3]*TMath::Power((TMath::Power(1./x,2)-TMath::Power(cos(0.663225115),2)),3)", 1., 2.);
-	 fitfuncMid->SetParameters(ftemp[2],ftemp[2]*1.,-ftemp[2]*1.5,-ftemp[2]*1.3);
-	 fitgraphMid->Fit("fitfuncMid","Q");
+//         fitfuncMid = new TF1("fitfuncMid", "[0]+[1]*(TMath::Power(1./x,2)-TMath::Power(cos(0.663225115),2))+[2]*TMath::Power((TMath::Power(1./x,2)-TMath::Power(cos(0.663225115),2)),2)+[3]*TMath::Power((TMath::Power(1./x,2)-TMath::Power(cos(0.663225115),2)),3)", 1., 2.);
+         fitfuncMid = new TF1("fitfuncMid", "[0]*(1+[1]*(TMath::Power(1./x,2)-TMath::Power(cos(0.663225115),2))+[2]*TMath::Power((TMath::Power(1./x,2)-TMath::Power(cos(0.663225115),2)),2)+[3]*TMath::Power((TMath::Power(1./x,2)-TMath::Power(cos(0.663225115),2)),3))", 1., 2.);
+//	 fitfuncMid->SetParameters(ftemp[2],ftemp[2]*1.,-ftemp[2]*1.5,-ftemp[2]*1.3);
 
 	 // Use the published value for fCIC or the fitted value
          if(isdata && ((specialMva->widgetChBox[7])->IsChecked()))
@@ -970,9 +1049,25 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
             fitparamErr[2] = 0.01;
             fitparam[3] = -1.30;
             fitparamErr[3] = 0.45;
+
+	    for(int i = 0; i < 4; i++)
+	    {
+               if(i == 0)
+	          fitfuncMid->SetParameter(0, ftemp[2]);
+	       else
+	          fitfuncMid->FixParameter(i, fitparam[i]);
+	    }
+
+	    fitgraphMid->Fit("fitfuncMid","Q0");
+
+            fitparam[0] = fitfuncMid->GetParameter(0);
+            fitparamErr[0] = fitfuncMid->GetParError(0);
 	 }
 	 else
          {
+	    fitfuncMid->SetParameters(ftemp[2],1.,-1.5,-1.3);
+	    fitgraphMid->Fit("fitfuncMid","Q0");
+
 	    for(int i = 0; i < 4; i++)
 	    {
                if(i == 0)
@@ -982,7 +1077,8 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
 	       }
 	       else
 	       {
-                  fitparam[i] = (fitfuncMid->GetParameter(i))/fitparam[0];
+//                  fitparam[i] = (fitfuncMid->GetParameter(i))/fitparam[0];
+                  fitparam[i] = fitfuncMid->GetParameter(i);
                   fitparamErr[i] = fitfuncMid->GetParError(i);
 	          fitparamErr[i] = TMath::Sqrt(TMath::Power((fitfuncMid->GetParError(i))/fitparam[0],2) + TMath::Power(-((fitfuncMid->GetParameter(i))*fitparamErr[0])/TMath::Power(fitparam[0],2),2));
 	       }
@@ -1005,6 +1101,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
 	 {
 //	    cout << "Calculating S38:" << endl;
 	    CalculateS38(shwsizeVect, zenithVect, fitparam, fitparamErr, s38Vect);
+	    PrintS1000Fit(&iEn, fitgraphMid, fitfuncMid, fitparam, fitparamErr, mystyle);
 
 	    for(int i = 0; i < zenithVect->size()/3; i++)
 	    {
@@ -1022,7 +1119,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
       {
          fitgraph->Draw("AP");
          fitfunc = new TF1("fitfunc", "TMath::Power(x/[0],1./[1])", 2., 100.);
-         fitfunc->SetParameters(0.1,1.);
+         fitfunc->SetParameters(0.190,1.025);
          fitgraph->Fit("fitfunc", "0");
 
 	 // Use the published value for S38 fit or the fitted value
@@ -1034,7 +1131,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
             fitparamErr[1] = 0.007;
             for(int i = 0; i < 2; i++)
             {
-               fitfunc->SetParameter(i, fitparam[i]);
+               fitfunc->FixParameter(i, fitparam[i]);
                fitfunc->SetParError(i, fitparamErr[i]);
             }
          }
@@ -1111,6 +1208,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
+         delete[] btemp;
          return -1;
       }
 
@@ -1123,6 +1221,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
+         delete[] btemp;
          return -1;
       }
 
@@ -1135,6 +1234,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
+         delete[] btemp;
          return -1;
       }
 
@@ -1200,6 +1300,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
       binLimit[4] = 0.10;	// zenith angle bin step
 
       itemp[0] = 0;
+      itemp[1] = 0;
       for(int j = 0; j < tempTree->GetEntries(); j++)
       {
          tempTree->GetEntry(j);
@@ -1219,15 +1320,69 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
             stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
             stemp[1] = RemovePath(&stemp[1]);
 
-	    // Apply the FD standard correction - doesn't really affect energy, just Xmax
-	    if( (FDcorrect == 1) && (string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) )
-               invalues->ApplyCorrectionFD();
-	    // Apply the HeCO correction - affects both energy and Xmax
-	    else if( (FDcorrect == 2) && (string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) )
+	    // Check if current tree is data or Monte Carlo
+	    if((string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) || FindStringPart(stemp[1], "Data") )
 	    {
-               invalues->ApplyCorrectionHECO();
-               invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
-               invalues_pos->ApplyCorrectionHECOErrors(invalues, 1);
+	       // If treating selected data tree as Monte Carlo
+	       if( (string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) && ((specialMva->widgetChBox[9])->IsChecked()) )
+	       {
+                  if(itemp[1] == 0)
+                     cout << "SetDeltaR: Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
+                  btemp[1] = false;
+	       }
+	       // If not treating selected data tree as Monte Carlo
+	       else
+	       {
+                  if(itemp[1] == 0)
+                     cout << "SetDeltaR: Tree " << stemp[1] << " will be considered as a data tree." << endl;
+	          btemp[1] = true;
+	       }
+	    }
+	    else
+	    {
+               if(itemp[1] == 0)
+                  cout << "SetDeltaR: Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
+	       btemp[1] = false;
+	    }
+
+            // Apply systematic estimation by adding statistical uncertainties to mean value
+            if(btemp[1])	// set to btemp[1] if changing data and to !btemp[1] if changing simulations
+            {
+               if((specialMva->widgetChBox[5])->IsChecked())
+	       {
+	          if(itemp[1] == 0)
+                     cout << "SetDeltaR: Applying negative uncertainty to " << stemp[1] << endl;
+                  invalues->ApplyUncertainty(invalues_neg, invalues_pos, string((uncertSelect->widgetCB)->GetStringSelection()), 0);
+	       }
+
+               if((specialMva->widgetChBox[6])->IsChecked())
+	       {
+	          if(itemp[1] == 0)
+                     cout << "SetDeltaR: Applying negative uncertainty to " << stemp[1] << endl;
+                  invalues->ApplyUncertainty(invalues_neg, invalues_pos, string((uncertSelect->widgetCB)->GetStringSelection()), 1);
+	       }
+            }
+
+	    // Only apply to data
+	    if(btemp[1])
+	    {
+               // Apply Xmax corrections to Auger FD standard data
+               if(FDcorrect == 1)
+	       {
+	          if(itemp[1] == 0)
+                     cout << "SetDeltaR: Applying FD standard correction to " << stemp[1] << endl;
+                  invalues->ApplyCorrectionFD();
+	       }
+
+               // Apply Xmax and energy corrections to Auger HECO data
+               if(FDcorrect == 2)
+               {
+	          if(itemp[1] == 0)
+                     cout << "SetDeltaR: Applying HECO correction to " << stemp[1] << endl;
+                  invalues->ApplyCorrectionHECO();
+                  invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
+                  invalues_pos->ApplyCorrectionHECOErrors(invalues, 1);
+               }
 	    }
 
 //	    cout << "Number of stations = " << invalues->GetValue("nrstations") << endl;
@@ -1267,6 +1422,8 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
 	          }
 	       }
 	    }
+
+	    itemp[1]++;
 	 }
       }
 
@@ -1301,6 +1458,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
          delete[] stemp;
          delete[] itemp;
          delete[] ftemp;
+         delete[] btemp;
 
          return -1;
       }
@@ -1380,7 +1538,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
             fitfuncMid->SetParameters(100.,0.1);
             fitfuncMid->SetParLimits(0,0.,1000.);
             fitfuncMid->SetParLimits(1,0.,1.);
-            fitgraphMid->Fit("fitfuncLow","Q");
+            fitgraphMid->Fit("fitfuncLow","Q0");
 
             for(int i = 0; i < 2; i++)
             {
@@ -1394,7 +1552,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
             fitfunc->FixParameter(0, fitfuncMid->GetParameter(0));
             fitfunc->FixParameter(1, fitfuncMid->GetParameter(1));
             fitfunc->SetParameter(2, 1.1);
-            fitgraph->Fit("fitfuncHigh","Q");
+            fitgraph->Fit("fitfuncHigh","Q0");
 
             fitparam[2] = fitfunc->GetParameter(2);
             fitparamErr[2] = fitfunc->GetParError(2);
@@ -1407,6 +1565,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
             cout << "- N = " << fitparam[2] << " ± " << fitparamErr[2] << endl;
             cout << endl;*/
 
+	    PrintRisetimeFit(&iZen, fitgraphMid, fitgraph, fitfuncMid, fitfunc, fitparam, fitparamErr, mystyle);
 	    WriteoutDeltaFits(type, binLimit[2], binLimit[3], ftemp[0], ftemp[1], 3, fitparam, fitparamErr);
 
 	    delete fitfuncMid;
@@ -1453,6 +1612,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
       delete[] stemp;
       delete[] itemp;
       delete[] ftemp;
+      delete[] btemp;
       return -1;
    }
 
@@ -1461,7 +1621,115 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
    delete[] stemp;
    delete[] itemp;
    delete[] ftemp;
+   delete[] btemp;
    return 0;
+}
+
+void MyFrame::PrintS1000Fit(int *ebinS1000, TGraphAsymmErrors *fitgraph, TF1 *fitfunc, float *fitpar, float *fitparErr, RootStyle *mystyle)
+{
+   string *stemp = new string[2];
+   double *dtemp = new double[2];
+   double *val = new double[2];
+
+   dtemp[0] = 0;
+   for(int i = 0; i < fitgraph->GetN(); i++)
+   {
+      fitgraph->GetPoint(i, val[0], val[1]);
+      dtemp[1] = val[1] + fitgraph->GetErrorYhigh(i);
+
+      if(dtemp[1] > dtemp[0])
+         dtemp[0] = dtemp[1];
+   }
+
+   dtemp[0] = dtemp[0]*1.05;
+
+   cout << "fitgraph maximum is = " << dtemp[0] << endl;
+
+   mystyle->SetBaseStyle();
+   TCanvas *c1 = new TCanvas("c1","",1200,900);
+   gStyle->SetEndErrorSize(0);
+
+   TGraph *tempgr = new TGraph(2);
+   tempgr->SetPoint(0, 0.95, 0.);
+   tempgr->SetPoint(1, 2.05, dtemp[0]);
+   tempgr->SetMarkerStyle(1);
+   tempgr->SetMarkerColor(0);
+   tempgr->Draw("AP");
+
+   tempgr->GetXaxis()->SetRange(0.95,2.05);
+   tempgr->GetXaxis()->SetRangeUser(0.95,2.05);
+
+   mystyle->SetAxisTitles(tempgr, "SD zenith angle (sec#theta)", "S_{1000} (VEM)");
+   mystyle->SetGraphColor(fitgraph, 2);
+/*   c1->SetLogx(kTRUE);
+   c1->SetLogy(kTRUE);*/
+//   fitgraph->SetMarkerSize(0.8);
+   fitgraph->SetMarkerStyle(1);
+//   fitgraph->SetLineWidth(1);
+/*   fitgraph->GetXaxis()->SetMoreLogLabels(kTRUE);
+   fitgraph->GetYaxis()->SetNoExponent(kTRUE);*/
+   fitgraph->Draw("P;SAME");
+   mystyle->SetFuncColor(fitfunc, 0);
+   for(int i = 0; i < 4; i++)
+      fitfunc->SetParameter(i, fitpar[i]);
+   fitfunc->Draw("L;SAME");
+
+   c1->Update();
+
+   tempgr->GetYaxis()->SetRange(0, dtemp[0]);
+   tempgr->GetYaxis()->SetRangeUser(0, dtemp[0]);
+
+/*   cout << "Uxmin and Uymax = " << TMath::Power(10,c1->GetUxmin()) << ", " << TMath::Power(10,c1->GetUymax()) << endl;
+
+   ltext->SetTextAlign(11);
+   stemp[0] = "A = (" + ToString(fitpar[0]*10.,2) + " #pm " + ToString(fitparErr[0]*10.,2) + ") #times 10^{17} eV";
+   ltext->DrawLatex(TMath::Power(10, (c1->GetUxmin()+0.1)), TMath::Power(10, (c1->GetUymax()-0.2)), stemp[0].c_str());
+   stemp[0] = "B = " + ToString(fitpar[1],3) + " #pm " + ToString(fitparErr[1],3);
+   ltext->DrawLatex(TMath::Power(10, (c1->GetUxmin()+0.1)), TMath::Power(10, (c1->GetUymax()-0.26)), stemp[0].c_str());
+
+   if(multipleEnergyBins)
+      stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/../delta_conversion/s38_vs_energyFD_data.pdf";
+   else
+      stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/delta_conversion/s38_vs_energyFD_data.pdf";
+   system(stemp[0].c_str());
+   if(multipleEnergyBins)
+      stemp[1] = string(*currentAnalysisDir) + "/../delta_conversion/s38_vs_energyFD_data.pdf";
+   else
+      stemp[1] = string(*currentAnalysisDir) + "/delta_conversion/s38_vs_energyFD_data.pdf";*/
+
+   mystyle->SetSinglePlot(0, 0, c1);
+
+   if(multipleEnergyBins)
+   {
+      stemp[0] = "mkdir -p " + string(*currentAnalysisDir) + "/../delta_conversion/s38_conversion";
+      system(stemp[0].c_str());
+      stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/../delta_conversion/s38_conversion/s1000_vs_energyFD_data.pdf";
+      system(stemp[0].c_str());
+   }
+   else
+   {
+      stemp[0] = "mkdir -p " + string(*currentAnalysisDir) + "/delta_conversion/s38_conversion";
+      system(stemp[0].c_str());
+      stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/delta_conversion/s38_conversion/s1000_vs_energyFD_data.pdf";
+      system(stemp[0].c_str());
+   }
+   if((*ebinS1000)+1 < 10)
+      stemp[0] = "0" + ToString((*ebinS1000)+1);
+   else
+      stemp[0] = ToString((*ebinS1000)+1);
+
+   if(multipleEnergyBins)
+      stemp[1] = string(*currentAnalysisDir) + "/../delta_conversion/s38_conversion/s1000_vs_energyFD_data_ebin-" + stemp[0] + ".pdf";
+   else
+      stemp[1] = string(*currentAnalysisDir) + "/delta_conversion/s38_conversion/s1000_vs_energyFD_data_ebin-" + stemp[0] + ".pdf";
+
+   c1->SaveAs(stemp[1].c_str());
+
+   delete tempgr;
+   delete[] stemp;
+   delete[] dtemp;
+   delete[] val;
+   delete c1;
 }
 
 void MyFrame::PrintS38Fit(TGraphAsymmErrors *fitgraph, TF1 *fitfunc, float *fitpar, float *fitparErr, RootStyle *mystyle)
@@ -1470,19 +1738,36 @@ void MyFrame::PrintS38Fit(TGraphAsymmErrors *fitgraph, TF1 *fitfunc, float *fitp
 
    TLatex *ltext = new TLatex();
 
+   mystyle->SetBaseStyle();
    TCanvas *c1 = new TCanvas("c1","",1200,900);
-   gStyle->SetEndErrorSize(2);
+   gStyle->SetEndErrorSize(0);
+
+   TGraph *tempgr = new TGraph(2);
+   tempgr->SetPoint(0, 2.5, 3.);
+   tempgr->SetPoint(1, 100., 450.);
+   tempgr->SetMarkerStyle(1);
+   tempgr->SetMarkerColor(0);
+   tempgr->Draw("AP");
+
+   tempgr->GetXaxis()->SetRange(2.5,100.);
+   tempgr->GetXaxis()->SetRangeUser(2.5,100.);
+
+   mystyle->SetAxisTitles(tempgr, "FD energy (EeV)", "S_{38} (VEM)");
    
-   mystyle->SetGraphColor(fitgraph, 0);
-   mystyle->SetAxisTitles(fitgraph, "FD energy (EeV)", "S_{38} (VEM)");
+   mystyle->SetGraphColor(fitgraph, 2);
    c1->SetLogx(kTRUE);
    c1->SetLogy(kTRUE);
-   fitgraph->SetMarkerSize(0.8);
+//   fitgraph->SetMarkerSize(0.8);
+   fitgraph->SetMarkerStyle(1);
+   fitgraph->SetLineWidth(1);
    fitgraph->GetXaxis()->SetMoreLogLabels(kTRUE);
    fitgraph->GetYaxis()->SetNoExponent(kTRUE);
-   fitgraph->Draw("AP");
-   mystyle->SetFuncColor(fitfunc, 2);
+   fitgraph->Draw("P;SAME");
+   mystyle->SetFuncColor(fitfunc, 0);
    fitfunc->Draw("L;SAME");
+
+   tempgr->GetYaxis()->SetRange(3., 450.);
+   tempgr->GetYaxis()->SetRangeUser(3., 450.);
 
    c1->Update();
 
@@ -1505,8 +1790,117 @@ void MyFrame::PrintS38Fit(TGraphAsymmErrors *fitgraph, TF1 *fitfunc, float *fitp
       stemp[1] = string(*currentAnalysisDir) + "/delta_conversion/s38_vs_energyFD_data.pdf";
    c1->SaveAs(stemp[1].c_str());
 
+   delete tempgr;
    delete ltext;
    delete[] stemp;
+   delete c1;
+}
+
+void MyFrame::PrintRisetimeFit(int *zbinRise, TGraphAsymmErrors *fitgraphHG, TGraphAsymmErrors *fitgraph, TF1 *fitfuncHG, TF1 *fitfunc, float *fitpar, float *fitparErr, RootStyle *mystyle)
+{
+   string *stemp = new string[2];
+   double *dtemp = new double[2];
+   double *val = new double[2];
+
+   dtemp[0] = 0;
+   for(int i = 0; i < fitgraphHG->GetN(); i++)
+   {
+      fitgraphHG->GetPoint(i, val[0], val[1]);
+      dtemp[1] = val[1] + fitgraphHG->GetErrorYhigh(i);
+
+      if(dtemp[1] > dtemp[0])
+         dtemp[0] = dtemp[1];
+   }
+   for(int i = 0; i < fitgraph->GetN(); i++)
+   {
+      fitgraph->GetPoint(i, val[0], val[1]);
+      dtemp[1] = val[1] + fitgraph->GetErrorYhigh(i);
+
+      if(dtemp[1] > dtemp[0])
+         dtemp[0] = dtemp[1];
+   }
+
+   dtemp[0] = dtemp[0]*1.05;
+
+   cout << "fitgraph/fitgraphHG maximum is = " << dtemp[0] << endl;
+
+   mystyle->SetBaseStyle();
+   TCanvas *c1 = new TCanvas("c1","",1200,900);
+   gStyle->SetEndErrorSize(0);
+
+   TGraph *tempgr = new TGraph(2);
+   tempgr->SetPoint(0, 200., 0.);
+   tempgr->SetPoint(1, 1500., dtemp[0]);
+   tempgr->SetMarkerStyle(1);
+   tempgr->SetMarkerColor(0);
+   tempgr->Draw("AP");
+
+   tempgr->GetXaxis()->SetRange(200.,1500.);
+   tempgr->GetXaxis()->SetRangeUser(200.,1500.);
+
+   mystyle->SetAxisTitles(tempgr, "SD station distance from axis (m)", "t_{1/2} (ns)");
+
+   mystyle->SetGraphColor(fitgraphHG, 2);
+   fitgraphHG->SetLineColor(14);
+   fitgraphHG->SetMarkerColor(14);
+//   fitgraphHG->SetMarkerSize(0.8);
+   fitgraphHG->SetMarkerStyle(1);
+//   fitgraphHG->SetLineWidth(1);
+   fitgraphHG->Draw("P;SAME");
+
+   mystyle->SetGraphColor(fitgraph, 2);
+//   fitgraph->SetMarkerSize(0.8);
+   fitgraph->SetMarkerStyle(1);
+//   fitgraph->SetLineWidth(1);
+   fitgraph->Draw("P;SAME");
+
+   mystyle->SetFuncColor(fitfuncHG, 1);
+   for(int i = 0; i < 4; i++)
+      fitfuncHG->SetParameter(i, fitpar[i]);
+   fitfuncHG->Draw("L;SAME");
+
+   mystyle->SetFuncColor(fitfunc, 0);
+   for(int i = 0; i < 4; i++)
+      fitfunc->SetParameter(i, fitpar[i]);
+   fitfunc->Draw("L;SAME");
+
+   c1->Update();
+
+   tempgr->GetYaxis()->SetRange(0., dtemp[0]);
+   tempgr->GetYaxis()->SetRangeUser(0., dtemp[0]);
+
+   mystyle->SetSinglePlot(0, 0, c1);
+
+   if(multipleEnergyBins)
+   {
+      stemp[0] = "mkdir -p " + string(*currentAnalysisDir) + "/../delta_conversion/deltaR_conversion";
+      system(stemp[0].c_str());
+      stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/../delta_conversion/deltaR_conversion/risetime_vs_distance_data.pdf";
+      system(stemp[0].c_str());
+   }
+   else
+   {
+      stemp[0] = "mkdir -p " + string(*currentAnalysisDir) + "/delta_conversion/deltaR_conversion";
+      system(stemp[0].c_str());
+      stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/delta_conversion/deltaR_conversion/risetime_vs_distance_data.pdf";
+      system(stemp[0].c_str());
+   }
+   if((*zbinRise)+1 < 10)
+      stemp[0] = "0" + ToString((*zbinRise)+1);
+   else
+      stemp[0] = ToString((*zbinRise)+1);
+
+   if(multipleEnergyBins)
+      stemp[1] = string(*currentAnalysisDir) + "/../delta_conversion/deltaR_conversion/risetime_vs_distance_data_zbin-" + stemp[0] + ".pdf";
+   else
+      stemp[1] = string(*currentAnalysisDir) + "/delta_conversion/deltaR_conversion/risetime_vs_distance_data_zbin-" + stemp[0] + ".pdf";
+
+   c1->SaveAs(stemp[1].c_str());
+
+   delete tempgr;
+   delete[] stemp;
+   delete[] dtemp;
+   delete[] val;
    delete c1;
 }
 
@@ -1975,10 +2369,11 @@ int MyFrame::PerformMvaAnalysis(string *infilename, string *outfilename, int *cu
 
    nrTreeEvents[0] = -1;
    nrTreeEvents[1] = -1;
-   TList *tempkeyslist = (TList*) ifile->GetListOfKeys();
-   for(int j = 1; j <= GetRootKeys(ifile); j++)
+//   TList *tempkeyslist = (TList*) ifile->GetListOfKeys();
+   for(int j = 1; j <= GetRootKeys(ifile, "TreeS"); j++)
    {
-      stemp[0] = string((tempkeyslist->At(j-1))->GetName());
+//      stemp[0] = string((tempkeyslist->At(j-1))->GetName());
+      stemp[0] = "TreeS" + ToString(j);
       stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
       stemp[1] = RemovePath(&stemp[1]);
 
@@ -2166,6 +2561,8 @@ void MyFrame::SetTmvaType(TMVA::Factory *factory, int nr, string *formula)
    string *stemp;
    stemp = new string[2];
 
+   cout << "Input method = " << methods[nr] << endl;
+
    // Cut optimization
    if(methods[nr].find("Cuts") != string::npos)
       factory->BookMethod(TMVA::Types::kCuts, methods[nr].c_str(), methodsOpt[nr].c_str());
@@ -2248,8 +2645,9 @@ int MyFrame::BookTheMethod(TMVA::Factory *factory)
    
    if(GetMethodName(stemp[0]) == "All")
    {
-      for(int i = 1; i <= nrmethods; i++)
-         SetTmvaType(factory, i, &stemp[2]);
+      // All is set as the first method, so we skip it (but still counts in the nrmethods variable)
+      for(int i = 0; i < nrmethods; i++)
+         SetTmvaType(factory, i+1, &stemp[2]);
    }
    else
       SetTmvaType(factory, itemp[0], &stemp[2]);
@@ -2838,10 +3236,11 @@ void MyFrame::GetMvaError(int selection, double *outvalue, string *inname)
 
       TTree *dataTree = new TTree;
 
-      TList *tempkeyslist = (TList*)ifile->GetListOfKeys();
-      for(int j = 1; j <= GetRootKeys(ifile); j++)
+//      TList *tempkeyslist = (TList*)ifile->GetListOfKeys();
+      for(int j = 1; j <= GetRootKeys(ifile, "TreeS"); j++)
       {
-         stemp[0] = string((tempkeyslist->At(j-1))->GetName());
+//         stemp[0] = string((tempkeyslist->At(j-1))->GetName());
+         stemp[0] = "TreeS" + ToString(j);
          stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
          stemp[1] = RemovePath(&stemp[1]);
 

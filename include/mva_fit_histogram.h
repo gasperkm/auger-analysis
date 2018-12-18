@@ -36,6 +36,7 @@ private:
    int *himodel;
    int *simProd;
    int *dataNum;
+   string *dataName;
    double *mvalim;
    vector<int> *includePart;
 
@@ -58,6 +59,7 @@ private:
    int *nrsim;
    int *nrparam;
    bool *iszero;
+   bool *hasmiddist;
 
    TObjArray *mc;
    TFractionFitter *fracFitter;
@@ -86,6 +88,8 @@ private:
    int *compnrp;
    vector<double> *composition;
 
+   TPad *pads[10];
+
 public:
    MvaFitHist();
    virtual ~MvaFitHist();
@@ -94,7 +98,7 @@ public:
    void SetMethod(string *inMethod);
    void SetHImodel(int *inModel);
    void SetSimProduction(int *inProd);
-   void SetData(int *inTree);
+   void SetData(int *inTree, string *inTreeName);
    void SetNrBins(int *inNrBins);
    void SetXaxisLimits(bool use, double *inLimits);
    void SetYaxisLimits(bool use, double *inLimits);

@@ -64,13 +64,15 @@ int MyFrame::CheckFormat(string *infile)
 	 tempfile->Close();
 	 return 1;
       }
-      else if( (tempfile->GetListOfKeys()->Contains("TreeOldS1")) || (tempfile->GetListOfKeys()->Contains("TreeNewS1")) )
+//      else if( (tempfile->GetListOfKeys()->Contains("TreeOldS1")) || (tempfile->GetListOfKeys()->Contains("TreeNewS1")) )
+      else if( ((tempfile->GetListOfKeys()->Contains("TreeOldS1")) || (tempfile->GetListOfKeys()->Contains("TreeNewS1"))) && !(tempfile->GetListOfKeys()->Contains("TreeS1")) )
       {
          cout << "# CheckFormat           #: " << "Input file " << *infile << " is in MVA rewritten ADST format." << endl;
 	 tempfile->Close();
 	 return 2;
       }
-      else if( (tempfile->GetListOfKeys()->Contains("TreeS1")) || (tempfile->GetListOfKeys()->Contains("TreeS1")) )
+//      else if( (tempfile->GetListOfKeys()->Contains("TreeS1")) || (tempfile->GetListOfKeys()->Contains("TreeS1")) )
+      else if(tempfile->GetListOfKeys()->Contains("TreeS1"))
       {
          cout << "# CheckFormat           #: " << "Input file " << *infile << " is in MVA rewritten ADST format and will be used as input for MVA analysis." << endl;
 	 tempfile->Close();

@@ -36,10 +36,22 @@ void MyFrame::EnableMvaFile(wxCommandEvent& event)
       (dataSelect->widgetCB)->Clear();
 
       // Append all trees from root files
-      nrkeys = GetRootKeys(ifile);
+      nrkeys = GetRootKeys(ifile, "TreeS");
       if(DBGSIG > 1)
          cout << "# EnableMvaFile         #: " << "Starting number of keys " << nrkeys << endl;
-      keyslist = (TList*) ifile->GetListOfKeys();
+      for(int i = 1; i <= nrkeys; i++)
+      {
+         *signalName = "TreeS" + ToString(i);
+	 stemp[1] = string(ifile->GetKey(signalName->c_str())->GetTitle());
+	 (signalSelect->widgetCB)->Append(stemp[1]);
+	 (backgroundSelect->widgetCB)->Append(stemp[1]);
+	 (dataSelect->widgetCB)->Append(stemp[1]);
+         (*cnt)++;
+
+	 if(FindStringPart(stemp[1], "Data") == 0)
+ 	    backgroundType->push_back(stemp[1]);
+      }
+/*      keyslist = (TList*) ifile->GetListOfKeys();
       for(int i = 1; i <= nrkeys; i++)
       {
          if(strcmp((keyslist->At(i-1))->GetName(), "TreeA") != 0)
@@ -51,10 +63,10 @@ void MyFrame::EnableMvaFile(wxCommandEvent& event)
 	    (dataSelect->widgetCB)->Append(stemp[1]);
             (*cnt)++;
 
-	    if(FindStringPart(stemp[1], "Data") == 0/*stemp[1] != "Data"*/)
+	    if(FindStringPart(stemp[1], "Data") == 0)
  	       backgroundType->push_back(stemp[1]);
 	 }
-      }
+      }*/
 
       nrkeys = *cnt;
       cout << "# EnableMvaFile         #: " << "Found " << nrkeys << " signal keys in the selected file." << endl;
@@ -1098,6 +1110,27 @@ void MyFrame::UpdateObservableSelection(wxCommandEvent& event)
    freshAnalysis = false;
 }
 
+// Set the negative uncertainty shift
+void MyFrame::SetNegativeUncertainty(wxCommandEvent& event)
+{
+   (specialMva->widgetChBox[5])->SetValue(true);
+   (specialMva->widgetChBox[6])->SetValue(false);
+}
+
+// Set the positive uncertainty shift
+void MyFrame::SetPositiveUncertainty(wxCommandEvent& event)
+{
+   (specialMva->widgetChBox[5])->SetValue(false);
+   (specialMva->widgetChBox[6])->SetValue(true);
+}
+
+// Disable uncertainty shift
+void MyFrame::DisableUncertainty(wxCommandEvent& event)
+{
+   (specialMva->widgetChBox[5])->SetValue(false);
+   (specialMva->widgetChBox[6])->SetValue(false);
+}
+
 // Handle events concerning lists
 void MyFrame::EditList(wxCommandEvent& event)
 {
@@ -1730,7 +1763,7 @@ void MyFrame::SetDefaultMva(wxCommandEvent& event)
    }
    (selectObservables->widgetLB)->SetFirstItem(0);
 
-   (methodsSelect->widgetCB)->SetSelection((methodsSelect->widgetCB)->FindString(wxT("Neural network (MLPBNN)")));
+   (methodsSelect->widgetCB)->SetSelection((methodsSelect->widgetCB)->FindString(wxT("Boosted_decision_trees_(BDTG)")));
    (cutMva->widgetNE[0])->SetValue(0.);
    (cutObservables->widgetCB)->SetSelection(1);
    (cutEnergy->widgetChBox)->SetValue(true);
@@ -1754,11 +1787,16 @@ void MyFrame::SetDefaultMva(wxCommandEvent& event)
    (cutRisetime->widgetChBox)->SetValue(false);
    (cutRisetime->widgetNE[0])->SetValue(0.3);
 
-   (specialMva->widgetChBox[0])->SetValue(false);
+   (specialMva->widgetChBox[0])->SetValue(true);
    (specialMva->widgetChBox[1])->SetValue(true);
    (specialMva->widgetChBox[2])->SetValue(true);
    (specialMva->widgetChBox[3])->SetValue(false);
    (specialMva->widgetChBox[4])->SetValue(false);
+   (specialMva->widgetChBox[5])->SetValue(false);
+   (specialMva->widgetChBox[6])->SetValue(false);
+   (specialMva->widgetChBox[7])->SetValue(false);
+   (specialMva->widgetChBox[8])->SetValue(true);
+   (specialMva->widgetChBox[9])->SetValue(false);
 
    freshAnalysis = false;
 }

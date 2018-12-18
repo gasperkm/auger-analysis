@@ -435,7 +435,7 @@ void SplitDelimitedList(string inlist, vector<string> *outvec)
 }
 
 // Get the correct number of keys, even if file was updated
-int GetRootKeys(TFile *ifile)
+int GetRootKeys(TFile *ifile, string keytemp)
 {
    int ret;
    string *stemp = new string;
@@ -448,16 +448,18 @@ int GetRootKeys(TFile *ifile)
    ret = 0;
    for(int i = 1; i <= ifile->GetNkeys(); i++)
    {
-      *stemp = "TreeS" + ToString(i);
+      *stemp = keytemp + ToString(i);
       if(ifile->GetListOfKeys()->Contains(stemp->c_str()))
          ret++;
    }
 
-   if(ifile->GetListOfKeys()->Contains("TreeA"))
-      ret++;
+   cout << "# GetRootKeys           #: " << "Number of " << keytemp << " keys in file = " << ret << endl;
 
-//   cout << "Number of actual keys = " << ret << endl;
-   cout << "# GetRootKeys           #: " << "Number of keys in file = " << ret << endl;
+/*   if(ifile->GetListOfKeys()->Contains("TreeA"))
+   {
+      cout << "# GetRootKeys           #: " << "Number of TreeA keys in file = " << 1 << endl;
+      ret++;
+   }*/
 
    delete stemp;
 
