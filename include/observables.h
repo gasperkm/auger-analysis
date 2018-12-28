@@ -75,8 +75,8 @@ public:
    void SetupZenith(int type, Observables *errneg, Observables *errpos);
 
    void ConvertToS38(int type, Observables *errneg, Observables *errpos, vector<float> *fitresults);
-   void ConvertToDeltaS38(int type, Observables *errneg, Observables *errpos, float *fitresults);
-   void ConvertToDelta(int type, Observables *errneg, Observables *errpos, vector<float> **SDdist, vector<float> **SDrise, vector<bool> *SDsat, vector<float> *fitresults);
+   void ConvertToDeltaS38(int type, Observables *errneg, Observables *errpos, float *fitresults, int syst, bool *isdata);
+   void ConvertToDelta(int type, Observables *errneg, Observables *errpos, vector<float> **SDdist, vector<float> **SDrise, vector<bool> *SDsat, vector<float> *fitresults, int syst, bool *isdata);
 };
 
 #endif

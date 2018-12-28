@@ -266,6 +266,8 @@ void MyFrame::StartHistogramScatterPlot(int type)
       return;
    }
 
+   InitObservables();
+
    // Check for the number of bins
    int *nrbins = new int;
    *nrbins = (plotNrBins->widgetNE[0])->GetValue();

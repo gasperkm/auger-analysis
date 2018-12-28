@@ -151,6 +151,8 @@ public:
 
    bool InvertAxis(string *obs1, string *obs2);
 
+   void SetRangeSpecial(double *range, Observables *genObser, TTree *tempTree, string *obsname);
+
 /*   void SetPrimaries(vector<int> *primVals);
    void SetMethod(string *inMethod);
    void SetHImodel(int *inModel);

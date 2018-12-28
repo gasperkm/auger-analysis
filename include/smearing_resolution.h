@@ -1,3 +1,14 @@
+/*
+ * Smearing and corrections described in this code is taken from the supplementary
+ * material of the [PRD 90 (2014) 122005] paper. You can find all relevant
+ * information at:
+ *    https://web.ikp.kit.edu/munger/Xmax
+ * The supplementary material can be found at:
+ *    https://web.ikp.kit.edu/munger/Xmax/xmaxPaper2014/suppl_01_09_2014.pdf
+ * Equation numbering throughout this code corresponds to equations in the
+ * above mentioned pdf.
+*/
+
 #ifndef _Resolution_h_
 #define _Resolution_h_
 #include "smearing_selection.h"
@@ -40,27 +51,27 @@ namespace erAna {
       ePlus = +1
     };
 
+    /* Molecular atmosphere correction, Eq. (7) */
     inline double XmaxMolAtmVariance(const double lgE, const EResoSys sys)
     {
-      // Eq. (E.5)
       if (sys == eVariance)
         return pow(2 + 0.75 * (lgE-18), 2);
       else
         return 0;
     }
 
+    /* Statistical uncertainty of VAODs, Eq. (8) */
     inline double XmaxStatVAODVariance(const double lgE, const EResoSys sys)
     {
-      // Eq. (E.6)
       if (sys == eVariance)
         return 12. / (exp((17.9-lgE)/0.28)+1);
       else
         return 0;
     }
 
+    /* VAOD systematics correction, Eqs. (13) and (14) */
     inline double XmaxCorrVAODVariance(const double lgE, const EResoSys /*sys*/)
     {
-      // Eq. (E.11) and (E.12)
       const double sigmaHalf = 2.7 / (exp((17.4-lgE)/0.6)+1) / 2;
 
       // for all three cases: sigma = sigmaHalf +/- sigmaHalf
@@ -68,44 +79,45 @@ namespace erAna {
 
     }
 
+    /* Horizontal VAOD uniformity correction, Eqs. (10), (11) and (12) */
     inline double XmaxVAODUniformityVariance(const double lgE, const EResoSys sys)
     {
-      // Eq. (E.8)
+      // Eq. (10)
       const double varLAUnif = pow(14. / (exp((17.8-lgE)/0.65)+1), 2);
 
-      // Eq. (E.9)
+      // Eq. (11)
       const double varVAODStat =  XmaxStatVAODVariance(lgE, sys);
       const double varUnif = (varLAUnif - 2 * varVAODStat) / 2;
       const double sigmaUnif = sqrt(varUnif);
 
-      // Eq. (E.10): +0 - sigma/2
+      // Eq. (12): +0 - sigma/2
       if (sys == eVariance)
         return pow(0.75 * sigmaUnif, 2);
       else
         return pow(0.25 * sigmaUnif, 2);
     }
 
+    /* Telescope alignment correction, Eqs. (21) and (22) */
     inline double XmaxAlignmentVariance(const double lgE, const EResoSys /*sys*/)
     {
-      // Eq. (E.16) and (E.17)
       const double sigmaHalf = (5 + 1.1 * (lgE - 18)) / 2;
 
       // for all three cases: sigma = sigmaHalf +/- sigmaHalf
       return pow(sigmaHalf, 2);
     }
 
+    /* Multiple scattering correction, Eq. (19) */
     inline double XmaxMultScattVariance(const double /*lgE*/, const EResoSys sys)
     {
-      // Eq. (E.22)
       if (sys == eVariance)
         return 1*1;
       else
         return 0;
     }
 
+    /* Detector width ratio, Eq. (28) */
     inline double XmaxDetectorWidthRatio(const double lgE, const ESelection selType)
     {
-      // Eq. (E.25)
       const double z18 = lgE-18;
       switch (selType)
       {
@@ -130,9 +142,9 @@ namespace erAna {
       }
     }
 
+    /* Detector Gaussian fraction, Eq. (30) */
     inline double XmaxDetectorGaussFraction(const double lgE, const ESelection selType)
     {
-      // Eq. (E.27)
       const double z18 = lgE-18;
       switch (selType)
       {
@@ -157,14 +169,15 @@ namespace erAna {
       }
     }
 
+    /* Full distribution width, Eq. (29) */
     inline double detFunc(const double z18, const double* p)
     {
       return pow(p[0],2) + pow(p[1]*exp(-z18/(p[2]-p[3]*z18)), 2);
     }
 
+    /* Parameters for Eq. (29) */
     inline double XmaxDetectorVariance(const double lgE, const EResoSys sys, const ESelection selType)
     {
-      // Eq. (E.26)
       double pDefault[4] = { 12, 19.415, 1.537, 0.621 };
       double pDefaultProton[4] = { 6.93778e-03, 2.24665e+01, 1.87603e+00, -8.40818e-01 };
       double pDefaultIron[4] = { 9.68743e+00, 1.90939e+01, 1.62752e+00, 7.75500e-01 };
@@ -230,6 +243,7 @@ namespace erAna {
       }
     }
 
+    /* First Gaussian width \sigma_1 from Eq. (26) */
     // first sigma of detector variance double-Gauss
     inline double XmaxDetectorVariance1(const double lgE, const EResoSys sys, const ESelection selType)
     {
@@ -239,6 +253,7 @@ namespace erAna {
       return varianceFull/(f + (1 - f) * alpha2);
     }
 
+    /* First Gaussian width \sigma_2 from Eq. (26) */
     // second sigma of detector variance double-Gauss
     inline double XmaxDetectorVariance2(const double lgE, const EResoSys sys, const ESelection selType)
     {
@@ -335,10 +350,11 @@ namespace erAna {
       return xmaxVar2NoSys * factor;
     }
 
+    /* Reconstructio bias and lateral width correction, Eqs. (27) and (36) */
     // Xmax^\prime = Xmax + XmaxCorrection
     inline double XmaxCorrection(const double lgE, const ESelection selType, const bool isMC = false)
     {
-      // Eq. (E.24)
+      // Eq. (27)
       const double z18 = lgE-18;
       double mu = 0;
       switch (selType)
@@ -374,7 +390,7 @@ namespace erAna {
         mu = 0;
       }
 
-      // Eq.(E.31)
+      // Eq. (36)
       const double lwCorrBias = isMC ? 0 : 6.5 / (exp((lgE-18.23)/0.41)+1);
 
       return -lwCorrBias - mu;

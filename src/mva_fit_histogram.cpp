@@ -992,8 +992,16 @@ int MvaFitHist::StartFitting()
 	       // when errors are missing and parabolic errors are calculated, use those
 	       if( (dtemp[0] > 0.9) && (dtemp[0] < 1.1) )
 	       {
-                  bestfracerr[2*i] = TMath::Abs(dtemp[1]);
-	          cout << "Using parabolic error instead (" << dtemp[1] << ")." << endl;
+                  if(bestfrac[i] + TMath::Abs(dtemp[1]) > 1.)
+		  {
+                     bestfracerr[2*i] = 1. - bestfrac[i];
+	             cout << "Using (1-frac) instead (" << dtemp[1] << ")." << endl;
+		  }
+		  else
+		  {
+                     bestfracerr[2*i] = TMath::Abs(dtemp[1]);
+	             cout << "Using parabolic error instead (" << dtemp[1] << ")." << endl;
+		  }
 	       }
 	       else
                   bestfracerr[2*i] = 0;
@@ -1009,8 +1017,16 @@ int MvaFitHist::StartFitting()
 	       // when errors are missing and parabolic errors are calculated, use those
 	       if( (dtemp[0] > 0.9) && (dtemp[0] < 1.1) )
 	       {
-                  bestfracerr[2*i+1] = TMath::Abs(dtemp[1]);
-	          cout << "Using parabolic error instead (" << dtemp[1] << ")." << endl;
+                  if(bestfrac[i] - TMath::Abs(dtemp[1]) < 0.)
+		  {
+                     bestfracerr[2*i+1] = bestfrac[i];
+	             cout << "Using (frac) instead (" << dtemp[1] << ")." << endl;
+		  }
+		  else
+		  {
+                     bestfracerr[2*i+1] = TMath::Abs(dtemp[1]);
+	             cout << "Using parabolic error instead (" << dtemp[1] << ")." << endl;
+		  }
 	       }
 	       else
                   bestfracerr[2*i+1] = 0;
@@ -1096,24 +1112,30 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
 {
    mystyle->SetBaseStyle();
    TCanvas *c1 = new TCanvas("c1","",1200,900);
+   mystyle->SetMultiPlot(0, 0, 2, c1);
    TLatex chiText;
    c1->cd();
-   TPad *upperpad = new TPad("upperpad", "upperpad", 0.004, 0.490, 0.996, 0.996);
+/*   TPad *upperpad = new TPad("upperpad", "upperpad", 0.004, 0.490, 0.996, 0.996);
    TPad *lowerpad = new TPad("lowerpad", "lowerpad", 0.004, 0.000, 0.996, 0.490);
    upperpad->Draw();
-   lowerpad->Draw();
+   lowerpad->Draw();*/
+   mystyle->SetPaddedPlot(2, c1, pads);
 
    // Plot the data distribution
-   upperpad->cd();
+//   upperpad->cd();
+   pads[0]->cd();
 
    if(!otherSettings[3])
    {
       mystyle->SetHistColor((TH1*)newdata, 2);
-      if(otherSettings[1])
+      mystyle->SetAxisTitles((TH1*)newdata, "", "Probability density");
+/*      if(otherSettings[1])
          mystyle->SetAxisTitles((TH1*)newdata, "X_{max} (g/cm^{2})", "Probability density");
       else
-         mystyle->SetAxisTitles((TH1*)newdata, "MVA variable", "Probability density");
-      newdata->GetXaxis()->SetTitleOffset(2.0);
+         mystyle->SetAxisTitles((TH1*)newdata, "MVA variable", "Probability density");*/
+      newdata->GetXaxis()->SetTitleOffset(mystyle->GetPaddedXoffset(2, c1));
+      newdata->GetYaxis()->SetTitleOffset(mystyle->GetPaddedYoffset(2, c1));
+//      newdata->GetXaxis()->SetTitleOffset(2.0);
       newdata->Draw();
 
       if(!otherSettings[0])
@@ -1133,7 +1155,7 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
       yrange[1] = newsig->GetMaximum();
 
       mystyle->SetHistColor((TH1*)newsig, 0);
-      mystyle->SetAxisTitles((TH1*)newsig, "MVA variable", "Probability density");
+      mystyle->SetAxisTitles((TH1*)newsig, "", "Probability density");
       newsig->SetMaximum(1.1*TMath::MaxElement(2, yrange));
       newsig->Draw("SAME");
 
@@ -1152,17 +1174,23 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
       yrange[1] = data->GetMaximum();
 
       mystyle->SetHistColor((TH1*)sim, 0);
-      if(otherSettings[1])
+/*      if(otherSettings[1])
          mystyle->SetAxisTitles((TH1*)sim, "X_{max} (g/cm^{2})", "Number of events");
       else
-         mystyle->SetAxisTitles((TH1*)sim, "MVA variable", "Number of events");
+         mystyle->SetAxisTitles((TH1*)sim, "MVA variable", "Number of events");*/
+      sim->GetXaxis()->SetTitleOffset(mystyle->GetPaddedXoffset(2, c1));
+      sim->GetYaxis()->SetTitleOffset(mystyle->GetPaddedYoffset(2, c1));
+      mystyle->SetAxisTitles((TH1*)sim, "", "Number of events");
       sim->Draw();
       
       mystyle->SetHistColor((TH1*)data, 2);
-      if(otherSettings[1])
+/*      if(otherSettings[1])
          mystyle->SetAxisTitles((TH1*)data, "X_{max} (g/cm^{2})", "Number of events");
       else
-         mystyle->SetAxisTitles((TH1*)data, "MVA variable", "Number of events");
+         mystyle->SetAxisTitles((TH1*)data, "MVA variable", "Number of events");*/
+      data->GetXaxis()->SetTitleOffset(mystyle->GetPaddedXoffset(2, c1));
+      data->GetYaxis()->SetTitleOffset(mystyle->GetPaddedYoffset(2, c1));
+      mystyle->SetAxisTitles((TH1*)data, "", "Number of events");
       sim->SetMaximum(1.1*TMath::MaxElement(2, yrange));
       data->Draw("Ep;same");
 
@@ -1204,7 +1232,8 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
    double *tempd = new double[residAll->size()];
 
    c1->cd();
-   upperpad->cd();
+//   upperpad->cd();
+   pads[0]->cd();
 
    for(int i = 0; i < residAll->size(); i++)
       tempd[i] = residAll->at(i);
@@ -1228,7 +1257,7 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
       {
          if(!otherSettings[1])
 	 {
-            stemp[0] = "r_{" + ToString(i+1) + "} = " + ToString(sigFrac[i], 4) + " +" + ToString(sigFracErr[2*i], 4) + "/-" + ToString(sigFracErr[2*i+1], 4) + " (" + treeNames->at(i) + ")";
+            stemp[0] = "f_{" + ToString(i+1) + "} = " + ToString(sigFrac[i], 4) + " +" + ToString(sigFracErr[2*i], 4) + "/-" + ToString(sigFracErr[2*i+1], 4) + " (" + treeNames->at(i) + ")";
             chiText.DrawLatex((xlim[0]+xlim[1])/2., (1.-0.06*((double)i+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
 	 }
 	 else
@@ -1238,12 +1267,12 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
                dtemp[0] -= sigFrac[i];
                dtemp[1] += sigFracErr[2*i];
                dtemp[2] += sigFracErr[2*i+1];
-               stemp[0] = "r_{" + ToString(i+1) + "} = " + ToString(sigFrac[i], 4) + " +" + ToString(sigFracErr[2*i], 4) + "/-" + ToString(sigFracErr[2*i+1], 4) + " (" + treeNames->at(i) + ")";
+               stemp[0] = "f_{" + ToString(i+1) + "} = " + ToString(sigFrac[i], 4) + " +" + ToString(sigFracErr[2*i], 4) + "/-" + ToString(sigFracErr[2*i+1], 4) + " (" + treeNames->at(i) + ")";
                chiText.DrawLatex((xlim[0]+xlim[1])/2., (1.-0.06*((double)i+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
             }
             else
             {
-               stemp[0] = "r_{" + ToString(i+1) + "} = " + ToString(dtemp[0], 4) + " +" + ToString(dtemp[1], 4) + "/-" + ToString(dtemp[2], 4) + " (" + treeNames->at(i) + ")";
+               stemp[0] = "f_{" + ToString(i+1) + "} = " + ToString(dtemp[0], 4) + " +" + ToString(dtemp[1], 4) + "/-" + ToString(dtemp[2], 4) + " (" + treeNames->at(i) + ")";
                chiText.DrawLatex((xlim[0]+xlim[1])/2., (1.-0.06*((double)i+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
             }
 	 }
@@ -1269,7 +1298,7 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
       dtemp[2] = 0.;
       for(int i = 0; i < (*nrparam); i++)
       {
-         stemp[0] = "r_{" + ToString(i+1) + "} = " + ToString(sigFrac[i], 4) + " +" + ToString(sigFracErr[2*i], 4) + "/-" + ToString(sigFracErr[2*i+1], 4) + " (" + treeNames->at(i) + ")";
+         stemp[0] = "f_{" + ToString(i+1) + "} = " + ToString(sigFrac[i], 4) + " +" + ToString(sigFracErr[2*i], 4) + "/-" + ToString(sigFracErr[2*i+1], 4) + " (" + treeNames->at(i) + ")";
          // Use xmax instead of MVA:
 	 if(otherSettings[1] || *hasmiddist)
             chiText.DrawLatex(xlim[1]*0.98, (1.-0.06*((double)i+1.))*TMath::MaxElement(2, yrange), stemp[0].c_str());
@@ -1297,12 +1326,25 @@ void MvaFitHist::PlotSumResiduals(double *sigFrac, double *sigFracErr, int statu
    delete residAll;
    delete tempd;
 
-   lowerpad->cd();
+//   lowerpad->cd();
+   pads[1]->cd();
    mystyle->SetHistColor((TH1*)resid, 3);
-   if(!otherSettings[3])
-     mystyle->SetAxisTitles((TH1*)resid, "", "Adjusted residuals");
+   resid->GetXaxis()->SetTitleOffset(mystyle->GetPaddedXoffset(2, c1));
+   resid->GetYaxis()->SetTitleOffset(mystyle->GetPaddedYoffset(2, c1));
+   if(otherSettings[1])
+   {
+      if(!otherSettings[3])
+         mystyle->SetAxisTitles((TH1*)resid, "X_{max} (g/cm^{2})", "Adjusted residuals");
+      else
+         mystyle->SetAxisTitles((TH1*)resid, "X_{max} (g/cm^{2})", "Standardized residuals");
+   }
    else
-     mystyle->SetAxisTitles((TH1*)resid, "", "Standardized residuals");
+   {
+      if(!otherSettings[3])
+         mystyle->SetAxisTitles((TH1*)resid, "MVA variable", "Adjusted residuals");
+      else
+         mystyle->SetAxisTitles((TH1*)resid, "MVA variable", "Standardized residuals");
+   }
    resid->GetYaxis()->SetRangeUser(-1.1*TMath::MaxElement(2, yresidrange), 1.1*TMath::MaxElement(2, yresidrange));
    resid->Draw();
 
@@ -1589,6 +1631,9 @@ void MvaFitHist::PlotLnaComposition()
       *addPublishedFrac = false;
    }
 
+   if(otherSettings[1])
+      *addPublishedSD = false;
+
    // Plot lnA graph, where we add Xmax and Delta analysis (both from ICRC 2017)
    mystyle->SetAxisTitles(grLna, "FD energy [log(E/eV)]", "<lnA> of data events");
    grLna->GetYaxis()->SetTitleOffset(mystyle->GetSingleYoffset(c1));
@@ -1842,7 +1887,6 @@ void MvaFitHist::PlotLnaComposition()
    mystyle->SetMultiPlot(0, 0, *nrelem, c1);
 
    TGraphAsymmErrors *grComp[40], *grCompPub[40];
-cout << "26" << endl;
 
    // Get published composition results
    if(*himodel != 3)
@@ -1878,7 +1922,7 @@ cout << "26" << endl;
                ybinCompPubErrlo[j][i] = TMath::Abs(returnFrac->at(3*j+itemp[0]+2));
                ybinCompPubErrhi[j][i] = TMath::Abs(returnFrac->at(3*j+itemp[0]+3));
 
-     	  cout << ", fraction = " << ybinCompPub[j][i] << ", +" << ybinCompPubErrhi[j][i] << "/-" << ybinCompPubErrlo[j][i];
+     	       cout << ", fraction = " << ybinCompPub[j][i] << ", +" << ybinCompPubErrhi[j][i] << "/-" << ybinCompPubErrlo[j][i];
             }
 
             cout << endl;
@@ -1967,6 +2011,12 @@ cout << "26" << endl;
       grComp[j]->GetYaxis()->SetTitleOffset(mystyle->GetSingleYoffset(c2));
       grComp[j]->GetXaxis()->SetTitle("FD energy [log(E/eV)]");
       grComp[j]->GetXaxis()->SetTitleOffset(mystyle->GetSingleXoffset(c2));
+
+      testmeanfit = new TF1("testmeanfit", "[0]", 18.5, 20.0);
+      testmeanfit->SetParameter(0, 0.95);
+      grComp[j]->Fit("testmeanfit","Q0");
+      cout << "Elemental fraction mean and uncertainty (element " << j+1  << ") = " << testmeanfit->GetParameter(0) << ", " << testmeanfit->GetParError(0) << endl;
+      delete testmeanfit;
 
       if(j == 0)
          grComp[j]->Draw("ALP");

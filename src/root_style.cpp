@@ -524,14 +524,14 @@ void RootStyle::SetPaddedPlot(int nrpads, TCanvas *inCanv, TPad **inPads)
 
 double RootStyle::GetPaddedXoffset(int nrpads, TCanvas *inCanv)
 {
-//   return xTitleFactor*(inCanv->GetWindowHeight())*nrpads/(inCanv->GetWindowWidth());
-   return xTitleFactor*(inCanv->GetWindowHeight())/(inCanv->GetWindowWidth());
+//   return xTitleFactor*(inCanv->GetWindowHeight())/(inCanv->GetWindowWidth());
+   return xTitleFactor*(inCanv->GetWh())/(inCanv->GetWw());
 }
 
 double RootStyle::GetPaddedYoffset(int nrpads, TCanvas *inCanv)
 {
-//   return yTitleFactor*(inCanv->GetWindowHeight())*nrpads/(inCanv->GetWindowWidth());
-   return yTitleFactor*(inCanv->GetWindowHeight())/(inCanv->GetWindowWidth());
+//   return yTitleFactor*(inCanv->GetWindowHeight())/(inCanv->GetWindowWidth());
+   return yTitleFactor*(inCanv->GetWh())/(inCanv->GetWw());
 }
 
 double RootStyle::GetSingleXoffset(TCanvas *inCanv)

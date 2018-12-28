@@ -488,7 +488,7 @@ int AdstMva::SetStationValues()
                      }
                   }
    
-                  //cout << "Calculated risetime (" << byrange[0]/25. << "," << bzrange[0]/25. << ") = " << bzrange[0] - byrange[0] << endl;	// DEBUG
+                  cout << "Calculated station risetime (" << byrange[0]/25. << "," << bzrange[0]/25. << ") = " << bzrange[0] - byrange[0] << endl;	// DEBUG
    
                   ftemp[0] += bzrange[0] - byrange[0];
                   ftemp[1] += bzrange[0] - byrange[0];
@@ -497,11 +497,14 @@ int AdstMva::SetStationValues()
 	 }
    
          ftemp[1] = ftemp[1]/itemp[1];
+         cout << "Average station risetime = " << ftemp[1] << endl;	// DEBUG
 
 	 // Some ADST files don't calculate the VEM for an event
          ftemp[3] = actstations[i].GetTotalSignal();
 	 if(ftemp[3] == 0)
             ftemp[3] = TotalSignalFromPMT(&actstations[i], false);
+
+	 cout << "Total SD station signal = " << ftemp[3] << endl;	// DEBUG
 
          // Asymmetry correction
          *eventThetaRec = fRecEvent->GetSDEvent().GetSdRecShower().GetZenith();
@@ -510,9 +513,15 @@ int AdstMva::SetStationValues()
          *gamma = -0.0009572 + (*secZenith)*(0.002068 + (*secZenith)*(-0.001362 + 0.0002861*(*secZenith)));
          *g = (*alpha) + (*gamma) * actstations[i].GetSPDistance()*actstations[i].GetSPDistance();
          *zeta = actstations[i].GetAzimuthSP();
+
+	 cout << "Station distance = " << actstations[i].GetSPDistance() << endl;	// DEBUG
+	 cout << "Zenith angle = " << *eventThetaRec << endl;	// DEBUG
+	 cout << "Azimuth angle = " << actstations[i].GetAzimuthSP() << endl;	// DEBUG
    
          risemean = ftemp[1] - (*g)*cos(*zeta);
+	 cout << "Asymmetry corrected station risetime = " << risemean << endl;	// DEBUG
          riseerr = fRTWeights->Eval(actstations[i].GetSPDistance(), (*secZenith), ftemp[3]);
+	 cout << "Asymmetry corrected station risetime uncertainty = " << riseerr << endl;	// DEBUG
 //	 if(riseerr < 0)
 //	    cout << "negative risetime, " << i << ": Risetime = " << risemean << ", riseerr = " << riseerr << ", energy = " << TMath::Log10((fRecEvent->GetSDEvent().GetSdRecShower()).GetEnergy()) << ", sec zenith = " << *secZenith << ", PMT signal = " << ftemp[3] << ", distance = " << actstations[i].GetSPDistance() << endl;
 

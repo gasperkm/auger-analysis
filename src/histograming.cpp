@@ -303,8 +303,9 @@ int ScatHist::StartPlotting(Observables *genObser)
          }
          else
          {
-            dtemp[0] = genObser->GetMin(stemp[1]);
-            dtemp[1] = genObser->GetMax(stemp[1]);
+            SetRangeSpecial(dtemp, genObser, getTree[j], &stemp[1]);
+/*            dtemp[0] = genObser->GetMin(stemp[1]);
+            dtemp[1] = genObser->GetMax(stemp[1]);*/
 
 	    if((stemp[1] == "energySD") || (stemp[1] == "energyFD"))
 	    {
@@ -363,8 +364,9 @@ int ScatHist::StartPlotting(Observables *genObser)
                }
                else
                {
-                  dtemp[0] = genObser->GetMin(stemp[1]);
-                  dtemp[1] = genObser->GetMax(stemp[1]);
+                  SetRangeSpecial(dtemp, genObser, getTree[j], &stemp[1]);
+/*                  dtemp[0] = genObser->GetMin(stemp[1]);
+                  dtemp[1] = genObser->GetMax(stemp[1]);*/
 
                   // Take mean + negative uncertainties
                   if(otherSettings[1])
@@ -384,7 +386,7 @@ int ScatHist::StartPlotting(Observables *genObser)
                      dtemp[2] = dtemp[2]/1.e+18;
 
                   treeHist[j]->Fill(dtemp[2]);
-                  cout << "Filling value = " << dtemp[2] << endl;
+//                  cout << "Filling value = " << dtemp[2] << endl;
 	       }
    
                totcount[0][j]++;
@@ -408,6 +410,7 @@ int ScatHist::StartPlotting(Observables *genObser)
 
       // Plot histograms
       c1->cd();
+      mystyle->SetSinglePlot(0, -1, c1);
 
       // Prepare logarithmic Y-axis for energy
       if((stemp[1] == "energySD") || (stemp[1] == "energyFD"))
@@ -432,8 +435,9 @@ int ScatHist::StartPlotting(Observables *genObser)
          }
          else
          {
-            dtemp[0] = genObser->GetMin(stemp[1]);
-            dtemp[1] = genObser->GetMax(stemp[1]);
+            SetRangeSpecial(dtemp, genObser, getTree[0], &stemp[1]);
+/*            dtemp[0] = genObser->GetMin(stemp[1]);
+            dtemp[1] = genObser->GetMax(stemp[1]);*/
             stemp[2] = genObser->GetLabel(stemp[1]);
 
             if((stemp[1] == "energySD") || (stemp[1] == "energyFD"))
@@ -489,6 +493,8 @@ int ScatHist::StartPlotting(Observables *genObser)
             treeHist[j]->SetMaximum(1.2*max[0]);
 	 }
          mystyle->SetAxisTitles((TH1*)treeHist[j], stemp[2], "Number of events (normalized)");
+         treeHist[j]->GetYaxis()->SetTitleOffset(mystyle->GetSingleYoffset(c1));
+         treeHist[j]->GetXaxis()->SetTitleOffset(mystyle->GetSingleXoffset(c1));
       }
    
       cout << "Preparing a legend" << endl;
@@ -580,7 +586,6 @@ int ScatHist::StartPlotting(Observables *genObser)
 	 for(int i = 0; i < *nrfiles; i++)
 	 {
             stemp[0] = RemoveFilename(&(filename->at(i))) + "/histograms/" + stemp[2] + "_" + obser->at(0) + ".pdf";
-            mystyle->SetSinglePlot(0, 0, c1);
             c1->SaveAs(stemp[0].c_str());
             cout << "Saving histogram to file (" << i << "): " << stemp[0] << endl;
 	 }
@@ -588,7 +593,6 @@ int ScatHist::StartPlotting(Observables *genObser)
       else
       {
          stemp[0] = RemoveFilename(&(filename->at(0))) + "/histograms/" + stemp[2] + "_" + obser->at(0) + "-" + obser->at(1) + ".pdf";
-         mystyle->SetSinglePlot(0, 0, c1);
          c1->SaveAs(stemp[0].c_str());
          cout << "Saving histogram to file: " << stemp[0] << endl;
       }
@@ -722,8 +726,11 @@ int ScatHist::StartPlotting(Observables *genObser)
 		  }
 		  else
 		  {
-                     dtemp[0] = genObser->GetMin(stemp[1]);
-		     dtemp[1] = genObser->GetMax(stemp[1]);
+                     SetRangeSpecial(dtemp, genObser, getTree[k], &stemp[1]);
+/*                     dtemp[0] = genObser->GetMin(stemp[1]);
+		     dtemp[1] = genObser->GetMax(stemp[1]);*/
+
+//		     cout << "Set range = " << dtemp[0] << "\t" << dtemp[1] << endl;
 
 	             if((stemp[1] == "energySD") || (stemp[1] == "energyFD"))
                      {
@@ -813,8 +820,9 @@ int ScatHist::StartPlotting(Observables *genObser)
 		        }
 		        else
 		        {
-                           dtemp[0] = genObser->GetMin(stemp[1]);
-		           dtemp[1] = genObser->GetMax(stemp[1]);
+                           SetRangeSpecial(dtemp, genObser, getTree[k], &stemp[1]);
+/*                           dtemp[0] = genObser->GetMin(stemp[1]);
+		           dtemp[1] = genObser->GetMax(stemp[1]);*/
 
 		           // Take mean + negative uncertainties
                            if(otherSettings[1])
@@ -834,7 +842,7 @@ int ScatHist::StartPlotting(Observables *genObser)
                               dtemp[2] = dtemp[2]/1.e+18;
 
                            treeHist[j*(*nrtrees)+k]->Fill(dtemp[2]);
-                           cout << "Filling value = " << dtemp[2] << endl;
+//                           cout << "Filling value = " << dtemp[2] << endl;
 			}
    
                         totcount[k][j]++;
@@ -1002,6 +1010,7 @@ int ScatHist::StartPlotting(Observables *genObser)
             for(int j = 0; j < (*nrobs); j++)
             {
                c1->cd();
+               mystyle->SetSinglePlot(0, -1, c1);
                stemp[1] = obser->at(j);
 
 	       // Prepare logarithmic Y-axis for energy
@@ -1020,8 +1029,9 @@ int ScatHist::StartPlotting(Observables *genObser)
                }
                else
                {
-                  dtemp[0] = genObser->GetMin(stemp[1]);
-                  dtemp[1] = genObser->GetMax(stemp[1]);
+                  SetRangeSpecial(dtemp, genObser, getTree[0], &stemp[1]);
+/*                  dtemp[0] = genObser->GetMin(stemp[1]);
+                  dtemp[1] = genObser->GetMax(stemp[1]);*/
                   stemp[2] = genObser->GetLabel(stemp[1]);
 
 	          if((stemp[1] == "energySD") || (stemp[1] == "energyFD"))
@@ -1079,6 +1089,8 @@ int ScatHist::StartPlotting(Observables *genObser)
                      treeHist[j*(*nrtrees)+k]->SetMaximum(1.2*max[j]);
 		  }
                   mystyle->SetAxisTitles((TH1*)treeHist[j*(*nrtrees)+k], stemp[2], "Number of events (normalized)");
+                  treeHist[j*(*nrtrees)+k]->GetYaxis()->SetTitleOffset(mystyle->GetSingleYoffset(c1));
+                  treeHist[j*(*nrtrees)+k]->GetXaxis()->SetTitleOffset(mystyle->GetSingleXoffset(c1));
                }
    
                // Draw a legend with into on the number of event of all trees
@@ -1143,7 +1155,6 @@ int ScatHist::StartPlotting(Observables *genObser)
                   stemp[2] += "_TreeS" + ToString(trees->at(k));
                stemp[0] = RemoveFilename(&(filename->at(i))) + "/histograms/" + stemp[2] + "_" + stemp[1] + ".pdf";
    
-               mystyle->SetSinglePlot(0, 0, c1);
                c1->SaveAs(stemp[0].c_str());
                cout << "Saving histogram to file: " << stemp[0] << endl;
 	    }
@@ -1163,6 +1174,7 @@ int ScatHist::StartPlotting(Observables *genObser)
                   if(j2 > j)
                   {
                      c1->cd();
+                     mystyle->SetSinglePlot(0, 0, c1);
                      // Go over all trees
                      for(int k = 0; k < (*nrtrees); k++)
                      {
@@ -1200,6 +1212,8 @@ int ScatHist::StartPlotting(Observables *genObser)
                            mystyle->SetAxisTitles(treeAGraph[itemp[1]+k], stemp[4], stemp[3]);
 			else
                            mystyle->SetAxisTitles(treeAGraph[itemp[1]+k], stemp[3], stemp[4]);
+                        treeAGraph[itemp[1]+k]->GetYaxis()->SetTitleOffset(mystyle->GetSingleYoffset(c1));
+                        treeAGraph[itemp[1]+k]->GetXaxis()->SetTitleOffset(mystyle->GetSingleXoffset(c1));
                      }
    
                      // Draw a legend with into on the number of event of all trees
@@ -1224,7 +1238,6 @@ int ScatHist::StartPlotting(Observables *genObser)
 		     else
                         stemp[0] = RemoveFilename(&(filename->at(i))) + "/histograms/" + stemp[3] + "_" + stemp[1] + "-" + stemp[2] + ".pdf";
    
-                     mystyle->SetSinglePlot(0, 0, c1);
                      c1->SaveAs(stemp[0].c_str());
                      cout << "Saving scatter plot to file: " << stemp[0] << endl;
 
@@ -1312,4 +1325,65 @@ bool ScatHist::InvertAxis(string *obs1, string *obs2)
       delete[] btemp;
       return false;
    }
+}
+
+void ScatHist::SetRangeSpecial(double *range, Observables *genObser, TTree *tempTree, string *obsname)
+{
+   double *tempen = new double;
+
+   *tempen = tempTree->GetMaximum("energyFD");
+//   cout << "Energy maximum = " << *tempen << ", " << TMath::Log10(*tempen) << endl;
+   *tempen = TMath::Log10(*tempen);
+
+   if( (*obsname == "shwsize") || (*obsname == "deltas38") )
+   {
+      if(*tempen < 19.05)
+      {
+         if(*obsname == "shwsize")
+         {
+            range[0] = genObser->GetMin(*obsname);
+            range[1] = genObser->GetMax(*obsname)/6.;
+         }
+      
+         if(*obsname == "deltas38")
+         {
+            range[0] = genObser->GetMin(*obsname)/4.;
+            range[1] = genObser->GetMax(*obsname)/3.;
+         }
+
+//         cout << "Set range (<19.0) = " << range[0] << "\t" << range[1] << endl;
+      }
+      else if(*tempen < 19.55)
+      {
+         if(*obsname == "shwsize")
+         {
+            range[0] = genObser->GetMin(*obsname);
+            range[1] = genObser->GetMax(*obsname)/2.3;
+         }
+      
+         if(*obsname == "deltas38")
+         {
+            range[0] = genObser->GetMin(*obsname)/2.;
+            range[1] = genObser->GetMax(*obsname)/2.;
+         }
+
+//         cout << "Set range (<19.5) = " << range[0] << "\t" << range[1] << endl;
+      }
+      else
+      {
+         range[0] = genObser->GetMin(*obsname);
+         range[1] = genObser->GetMax(*obsname);
+
+//         cout << "Set range (>19.5) = " << range[0] << "\t" << range[1] << endl;
+      }
+   }
+   else
+   {
+      range[0] = genObser->GetMin(*obsname);
+      range[1] = genObser->GetMax(*obsname);
+
+//      cout << "Set range (all) = " << range[0] << "\t" << range[1] << endl;
+   }
+
+   delete tempen;
 }

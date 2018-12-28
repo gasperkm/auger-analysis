@@ -266,13 +266,22 @@ void Observables::ApplyUncertainty(Observables *errneg, Observables *errpos, str
 
 	    if(ftemp[0] != -1)
 	    {
-	       if(type == 0)
-                  ftemp[0] -= ftemp[1];
-
-	       if(type == 1)
-                  ftemp[0] += ftemp[2];
-
-	       SetValue(i, ftemp[0]);
+               if(uncerObs == "xmax")
+	       {
+	          if(type == 0)
+                     ftemp[0] -= 10.;//ftemp[1];
+	          if(type == 1)
+                     ftemp[0] += 10.;//ftemp[2];
+	          SetValue(i, ftemp[0]);
+	       }
+               else if((uncerObs == "risetimerecalc") || (uncerObs == "risetime"))
+	       {
+	          if(type == 0)
+                     ftemp[0] -= 25.0;//ftemp[1];
+	          if(type == 1)
+                     ftemp[0] += 25.0;//ftemp[2];
+	          SetValue(i, ftemp[0]);
+	       }
 	    }
 	 }
       }
@@ -528,7 +537,7 @@ void Observables::ConvertToS38(int type, Observables *errneg, Observables *errpo
 }
 
 // Converting S38 to DeltaS38
-void Observables::ConvertToDeltaS38(int type, Observables *errneg, Observables *errpos, float *fitresults)
+void Observables::ConvertToDeltaS38(int type, Observables *errneg, Observables *errpos, float *fitresults, int syst, bool *isdata)
 {
 //   cout << "# Convert to Delta S38  #: " << "Converting S38 to DeltaS38 for " << GetName(type) << endl;
 
@@ -564,7 +573,19 @@ void Observables::ConvertToDeltaS38(int type, Observables *errneg, Observables *
    }
    else
    {
-      ftemp[1] = s38temp[0] - ftemp[0];
+      if(*isdata)
+      {
+         if(syst == 0)
+            ftemp[1] = s38temp[0] - ftemp[0];
+         else if(syst == 1)
+            ftemp[1] = (s38temp[0]-0.24) - ftemp[0];
+         else if(syst == 2)
+            ftemp[1] = (s38temp[0]+0.24) - ftemp[0];
+      }
+      else
+         ftemp[1] = s38temp[0] - ftemp[0];
+
+//      ftemp[1] = s38temp[0] - ftemp[0];
       SetValue(type, ftemp[1]);
 //      cout << ", DeltaS38 = " << ftemp[1]; 
 
@@ -617,7 +638,7 @@ void Observables::ConvertToDeltaS38(int type, Observables *errneg, Observables *
 }
 
 // Converting risetime to Delta Risetime
-void Observables::ConvertToDelta(int type, Observables *errneg, Observables *errpos, vector<float> **SDdist, vector<float> **SDrise, vector<bool> *SDsat, vector<float> *fitresults)
+void Observables::ConvertToDelta(int type, Observables *errneg, Observables *errpos, vector<float> **SDdist, vector<float> **SDrise, vector<bool> *SDsat, vector<float> *fitresults, int syst, bool *isdata)
 {
 //   cout << "# Convert to Delta      #: " << "Converting risetime to Risetime Delta for " << GetName(type) << endl;
 
@@ -726,7 +747,17 @@ void Observables::ConvertToDelta(int type, Observables *errneg, Observables *err
             tbench[2] = TMath::Sqrt(ftemp[3]);
 //            cout << ", tbench[1-2] = (" << tbench[1] << ", " << tbench[2]  << ")" << endl;
 
-            ftemp[0] = SDrise[0]->at(i) - tbench[0];
+	    if(*isdata)
+	    {
+	       if(syst == 0)
+                  ftemp[0] = SDrise[0]->at(i) - tbench[0];
+	       else if(syst == 1)
+                  ftemp[0] = (SDrise[0]->at(i)-25.0) - tbench[0];
+	       else if(syst == 2)
+                  ftemp[0] = (SDrise[0]->at(i)+25.0) - tbench[0];
+	    }
+	    else
+               ftemp[0] = SDrise[0]->at(i) - tbench[0];
 //          cout << "deltaVal_i = " << ftemp[0];
             deltaVal[0] += ftemp[0];
 

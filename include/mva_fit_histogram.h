@@ -65,6 +65,8 @@ private:
    TFractionFitter *fracFitter;
    TVirtualFitter *fracVirtFitter;
 
+   TF1 *testmeanfit;
+
    // Composition and lnA values
    double *midLna;
    vector<double> *midComposition;

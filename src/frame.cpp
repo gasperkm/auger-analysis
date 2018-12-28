@@ -525,7 +525,7 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    nrlists++;
 
    // Label + NEntry for choosing the number of bins
-   plotNrBins = new LabelNEntry(plotpanel, wxT("Choose number of bins (for histogram plots):"), 50., -1, lwidth);
+   plotNrBins = new LabelNEntry(plotpanel, wxT("Choose number of bins (for histogram plots):"), 75., -1, lwidth);
    plotNrBins->SetNEntryFormat(plotNrBins->widgetNE[0], 0, 1, -1, 5., -1.);
    vbox->Add(plotNrBins->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
 

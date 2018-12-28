@@ -1,0 +1,12 @@
+f_{i} - f_{i}^{sys} (X_{max})
+xmax
+f_{i} - f_{i}^{sys} (X_{max})
+xmax
+f_{i} - f_{i}^{sys} (t_{1000})
+risetime
+f_{i} - f_{i}^{sys} (X_{max})
+xmax
+f_{i} - f_{i}^{sys} (#Delta_{R})
+risetime
+f_{i} - f_{i}^{sys} (#Delta S_{38})
+deltas38

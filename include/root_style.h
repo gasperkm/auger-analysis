@@ -20,7 +20,7 @@ private:
    const double padTotDiffFactor = 0.003;
    const double padHeightDiffFactor = 0.004;
    const double padMarginDiffFactor = 0.014;
-   const double xTitleFactor = 3.6;
+   const double xTitleFactor = 3.2;
    const double yTitleFactor = 2.25;
    const double xTitleSingleFactor = 2.4;
    const double yTitleSingleFactor = 2.85;

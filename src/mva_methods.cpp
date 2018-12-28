@@ -97,9 +97,9 @@ double GetMethodMax(TString name)
    else if(name.Contains("LD"))
       return 4.;
    else if(name.Contains("BoostedFisher"))
-      return 1.;
+      return 1.4;
    else if(name.Contains("Fisher"))
-      return 4.;
+      return 5.;
    else if(name.Contains("FDA_GA"))
       return 1.;
    else if(name.Contains("MLPBNN"))
