@@ -641,8 +641,11 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    vstemp->push_back("Remove zero bins");
    vitemp->push_back(0);
    vitemp2->push_back(-1);
-   vstemp->push_back("Use FractionFitter");
+   vstemp->push_back("Use TFractionFitter");
    vitemp->push_back(1);
+   vitemp2->push_back(-1);
+   vstemp->push_back("Plot in a two column grid");
+   vitemp->push_back(0);
    vitemp2->push_back(-1);
    specialPlot = new CheckList(plotpanel, vitemp, vstemp, vitemp2, lwidth, "vertical");
    vbox->Add(specialPlot->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);

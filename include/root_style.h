@@ -18,6 +18,7 @@ private:
    TStyle *basestyle;
 
    const double padTotDiffFactor = 0.003;
+   const double padWidthDiffFactor = 0.022;
    const double padHeightDiffFactor = 0.004;
    const double padMarginDiffFactor = 0.014;
    const double xTitleFactor = 3.2;
@@ -47,6 +48,7 @@ public:
 
    double SetLegendHeight(int nrfigs);
 
+   void CreateColorScale(int cur, int nrscale);
    void SetColorScale(TH1 *plot, int cur, int nrscale);
    void SetColorScale(TGraph *plot, int cur, int nrscale);
    void SetColorScale(TGraphErrors *plot, int cur, int nrscale);
@@ -57,10 +59,15 @@ public:
 
    void SetSinglePlot(int xsize, int ysize, TCanvas *inCanv);
    void SetMultiPlot(int xsize, int ysize, int nrpads, TCanvas *inCanv);
+   void SetGridPlot(int xsize, int ysize, int nrpads, TCanvas *inCanv);
    void SetPaddedPlot(int nrpads, TCanvas *inCanv, TPad **inPads);
+   void SetGridPaddedPlot(int nrpads, TCanvas *inCanv, TPad **inPads);
 
    double GetPaddedXoffset(int nrpads, TCanvas *inCanv);
    double GetPaddedYoffset(int nrpads, TCanvas *inCanv);
+
+   double GetGridXoffset(int nrpads, TCanvas *inCanv);
+   double GetGridYoffset(int nrpads, TCanvas *inCanv);
 
    double GetSingleXoffset(TCanvas *inCanv);
    double GetSingleYoffset(TCanvas *inCanv);

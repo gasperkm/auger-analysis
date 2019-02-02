@@ -22,11 +22,16 @@ int main(int argc, char **argv)
    TPad *pads[10];
    TFile *infile;
    TGraphAsymmErrors *grin;
-   TGraphAsymmErrors *grindiff[10];
+   TGraph *grindiff[10];
+   TGraph *grindiffComb[10];
+   TGraph *simpgr;
    TGraphAsymmErrors *tempgr[3];
    TF1 *simpfit[2];
    TText *t;
-   string *stemp = new string[5];
+   TLine *l;
+   TLegend *legend;
+   int c_Legend = TColor::GetColor("#ffff66");
+   string *stemp = new string[6];
    int *itemp = new int[3];
    double *dtemp = new double[3];
    double maxval = 0.;
@@ -39,12 +44,13 @@ int main(int argc, char **argv)
    vector<double> energy;
    vector<double> tempenergy;
    vector<double> fraction;
-   vector<double> fractionErr;
+//   vector<double> fractionErr;
 
-   vector<double> systFitNeg;
-   vector<double> systFitPos;
+//   vector<double> systFitNeg;
+//   vector<double> systFitPos;
+   vector<double> residVal;
 
-   bool nomean, noneg, nopos;
+   bool nobase, nocomp;
 
    RootStyle *mystyle;
 
@@ -52,57 +58,68 @@ int main(int argc, char **argv)
 
    ofstream *outfile = new ofstream;
 
-   if(argc > 3)
+   if(argc > 2)
    {
-      // Three input files to determine systematics
+      // Two input files to determine residuals between them
       cout << "Input files:" << endl;
-      cout << "- " << argv[1] << " (mean value)" << endl;
-      cout << "- " << argv[2] << " (negative systematics)" << endl;
-      cout << "- " << argv[3] << " (positive systematics)" << endl;
+      cout << "- " << argv[1] << " (main function for residual)" << endl;
+      cout << "- " << argv[2] << " (comparison function)" << endl;
 
       mystyle = new RootStyle();
       mystyle->SetBaseStyle();
       c2 = new TCanvas("c2","",1200,900);
-      mystyle->SetSinglePlot(0, -1, c2);
+      mystyle->SetSinglePlot(0, 0, c2);
 
       c1 = new TCanvas("c1","",1200,1600);
       mystyle->SetMultiPlot(0, 0, 4, c1);
       c1->cd();
       mystyle->SetPaddedPlot(4, c1, pads);
+      
+      gStyle->SetBarWidth(0.2);
+
+      simpgr = new TGraph(2);
+      simpgr->SetPoint(0, 18.55, 0);
+      simpgr->SetPoint(1, 19.75, 0);
 
       inname = argv[1];
       plotdir = RemoveFilename(&inname);
-      stemp[0] = "mkdir -p " + plotdir + "/syst";
+      stemp[0] = "mkdir -p " + plotdir + "/resid";
       system(stemp[0].c_str());
 
-      // Graph to hold final systematics graph
+      // Graph to hold final residuals graph
       grin = new TGraphAsymmErrors();
 
-      cerr << "Set Y-axis title for systematic difference plots: ";
+      cerr << "Set Y-axis title for residuals plots: ";
       getline(cin, stemp[3]);
 
       cerr << "Select naming convention for output files: ";
       getline(cin, stemp[4]);
 
-      stemp[0] = plotdir + "/syst/systematics_" + stemp[4] + "_results.txt";
+      cerr << "Select tree: ";
+      getline(cin, stemp[5]);
+
+      stemp[0] = plotdir + "/resid/residuals_" + stemp[4] + "_results.txt";
       outfile->open(stemp[0].c_str(), ofstream::out);
 
-      systFitNeg.clear();
-      systFitPos.clear();
+//      systFitNeg.clear();
+//      systFitPos.clear();
+      residVal.clear();
 
+      // Prepare colors
       for(int j = 0; j < 4; j++)
          mystyle->CreateColorScale(j, 4);
 
       // Go through the elemental composition
       for(int j = 0; j < 4; j++)
       {
-         grindiff[2*j] = new TGraphAsymmErrors();
-         grindiff[2*j+1] = new TGraphAsymmErrors();
+         grindiff[j] = new TGraph();
+         grindiffComb[j] = new TGraph();
+//         grindiff[2*j+1] = new TGraphAsymmErrors();
 
          energy.clear();
          tempenergy.clear();
 	 fraction.clear();
-	 fractionErr.clear();
+//	 fractionErr.clear();
 
          if(j == 0)
             stemp[1] = "Proton";
@@ -113,10 +130,11 @@ int main(int argc, char **argv)
 	 else if(j == 3)
             stemp[1] = "Iron";
 
-	 stemp[0] = "composition_" + stemp[1] + "_TreeS6";
+	 stemp[0] = "composition_" + stemp[1] + "_" + stemp[5];
+	 cout << stemp[0] << endl;
 
 	 // Go through the open files and get the composition graphs
-         for(int i = 0; i < 3; i++)
+         for(int i = 0; i < 2; i++)
          {
             inname = argv[i+1];
             infile = TFile::Open(inname.c_str(), "READ");
@@ -130,7 +148,7 @@ int main(int argc, char **argv)
 	 // Get the largest number of points
 	 cout << endl;
 	 itemp[0] = 0;
-         for(int i = 0; i < 3; i++)
+         for(int i = 0; i < 2; i++)
 	 {
             cout << i << ": Number of points = " << tempgr[i]->GetN() << endl;
 	    if(tempgr[i]->GetN() > itemp[0])
@@ -154,67 +172,52 @@ int main(int argc, char **argv)
          for(int i = 0; i < itemp[0]; i++)
 	 {
             // Test if some points are missing in any of the graphs
-            nomean = false;
-	    noneg = false;
-	    nopos = false;
+            nobase = false;
+	    nocomp = false;
             
-	    if(!nomean)
+	    if(!nobase)
 	    {
                tempgr[0]->GetPoint(pcount[0], xpval[0], ypval[0]);
 	       if(xpval[0] != tempenergy[i])
-                  nomean = true;
+                  nobase = true;
 	    }
             
-	    if(!noneg)
+	    if(!nocomp)
 	    {
                tempgr[1]->GetPoint(pcount[1], xpval[0], ypval[0]);
 	       if(xpval[0] != tempenergy[i])
-                  noneg = true;
-	    }
-               
-	    if(!nopos)
-	    {
-               tempgr[2]->GetPoint(pcount[2], xpval[0], ypval[0]);
-	       if(xpval[0] != tempenergy[i])
-                  nopos = true;
+                  nocomp = true;
 	    }
 
-	    if(!nomean)
+	    if(!nobase)
 	    {
                tempgr[0]->GetPoint(pcount[0], xpval[0], ypval[0]);
 	       fraction.push_back(ypval[0]);
-	       fractionErr.push_back(tempgr[0]->GetErrorYlow(pcount[0]));
-	       fractionErr.push_back(tempgr[0]->GetErrorYhigh(pcount[0]));
+//	       fractionErr.push_back(tempgr[0]->GetErrorYlow(pcount[0]));
+//	       fractionErr.push_back(tempgr[0]->GetErrorYhigh(pcount[0]));
 	       energy.push_back(tempenergy[pcount[0]]);
 	       cout << pcount[0] << ") " << energy[pcount[0]] << endl;
-	       cout << "- Mean = " << fraction[3*pcount[0]] << " + " << fractionErr[2*pcount[0]] << " - " << fractionErr[2*pcount[0]+1] << endl;
+	       cout << "- Base = " << fraction[3*pcount[0]] /*<< " + " << fractionErr[2*pcount[0]] << " - " << fractionErr[2*pcount[0]+1]*/ << endl;
 
-               if(!noneg)
+               if(!nocomp)
 	       {
                   tempgr[1]->GetPoint(pcount[1], xpval[1], ypval[1]);
+	          fraction.push_back(ypval[1]);
 		  pcount[1]++;
 	       }
 	       else
 	       {
 	          ypval[1] = -1;
-                  cout << "No negative systematics for point " << i << endl;
+	          fraction.push_back(ypval[1]);
+                  cout << "No comparison plot for point " << i << endl;
 	       }
 
-               if(!nopos)
-	       {
-                  tempgr[2]->GetPoint(pcount[2], xpval[2], ypval[2]);
-		  pcount[2]++;
-	       }
-	       else
-	       {
-	          ypval[2] = -1;
-                  cout << "No positive systematics for point " << i << endl;
-	       }
+	       // Calculate the residuals R = (base - comp)/sqrt(base)
+               dtemp[0] = (ypval[0] - ypval[1])/TMath::Sqrt(ypval[0]);
+//               dtemp[0] = ypval[0] - ypval[1];
+	       fraction.push_back(dtemp[0]);
 
-               dtemp[0] = ypval[0] - ypval[1];
-               dtemp[1] = ypval[2] - ypval[0];
-
-	       // Both systematics are present
+/*	       // Both systematics are present
                if((ypval[1] != -1) && (ypval[2] != -1))
 	       {
 		  if((dtemp[0] >= 0) && (dtemp[1] >= 0))
@@ -279,53 +282,58 @@ int main(int argc, char **argv)
 	       {
                   fraction.push_back(0.);
                   fraction.push_back(0.);
-	       }
+	       }*/
 
-	       cout << "- Negative syst = " << fraction[3*i+1] << endl;
-	       cout << "- Positive syst = " << fraction[3*i+2] << endl;
+	       cout << "- Comp = " << fraction[3*i+1] << endl;
+	       cout << "- Diff = " << fraction[3*i] - fraction[3*i+1] << endl;
+	       cout << "- Residuals = " << fraction[3*i+2] << endl;
 
 	       pcount[0]++;
 	    }
             else
 	    {
-               if(!noneg)
+               if(!nocomp)
                   pcount[1]++;
-               if(!nopos)
-                  pcount[2]++;
-               cout << "No fitting for the mean value. Skipping point " << i << endl;
+               cout << "No fitting for the base value. Skipping point " << i << endl;
 	    }
 	 }
 
 	 cout << endl << "Final systematics results (" << stemp[1] << "):" << endl;
-	 *outfile << "# " << stemp[1] << " (energy, mean, negative syst, positive syst)" << endl;
+	 *outfile << "# " << stemp[1] << " (energy, base, comp, diff, residuals)" << endl;
 	 *outfile << energy.size() << endl;
 	 for(int i = 0; i < energy.size(); i++)
          {
-            grin->SetPoint(i, energy[i], fraction[3*i]);
-	    grin->SetPointError(i, 0., 0., fraction[3*i+1], fraction[3*i+2]);
-	    cout << "  " << energy[i] << "\t" << fraction[3*i] << "\t" << fraction[3*i+1] << "\t" << fraction[3*i+2] << endl;
-	    *outfile << energy[i] << "\t" << fraction[3*i] << "\t" << fraction[3*i+1] << "\t" << fraction[3*i+2] << endl;
+            grin->SetPoint(i, energy[i], fraction[3*i+2]);
+	    grin->SetPointError(i, 0., 0., 0., 0.);
+	    cout << "  " << energy[i] << "\t" << fraction[3*i] << "\t" << fraction[3*i+1] << "\t" << fraction[3*i] - fraction[3*i+1] << "\t" << fraction[3*i+2] << endl;
+	    *outfile << energy[i] << "\t" << fraction[3*i] << "\t" << fraction[3*i+1] << "\t" << fraction[3*i] - fraction[3*i+1] << "\t" << fraction[3*i+2] << endl;
 
-	    grindiff[2*j]->SetPoint(i, energy[i], fraction[3*i+1]);
-	    grindiff[2*j+1]->SetPoint(i, energy[i], fraction[3*i+2]);
+	    grindiffComb[j]->SetPoint(i, energy[i], fraction[3*i+2]);
+//	    grindiffComb[j]->SetPointError(i, 0., 0., 0., 0.);
+	    grindiff[j]->SetPoint(i, energy[i]-0.03375+0.0225*j, fraction[3*i+2]);
+//	    grindiff[j]->SetPointError(i, 0., 0., 0., 0.);
+/*	    grindiff[2*j]->SetPoint(i, energy[i], fraction[3*i+1]);
+	    grindiff[2*j+1]->SetPoint(i, energy[i], fraction[3*i+2]);*/
 
-	    if(fraction[3*i+1] - fractionErr[2*i] < 0)
+/*	    if(fraction[3*i+1] - fractionErr[2*i] < 0)
 	       grindiff[2*j]->SetPointError(i, 0., 0., fraction[3*i+1], fractionErr[2*i+1]);
  	    else
 	       grindiff[2*j]->SetPointError(i, 0., 0., fractionErr[2*i], fractionErr[2*i+1]);
 	    if(fraction[3*i+2] - fractionErr[2*i] < 0)
 	       grindiff[2*j+1]->SetPointError(i, 0., 0., fraction[3*i+2], fractionErr[2*i+1]);
  	    else
-	       grindiff[2*j+1]->SetPointError(i, 0., 0., fractionErr[2*i], fractionErr[2*i+1]);
+	       grindiff[2*j+1]->SetPointError(i, 0., 0., fractionErr[2*i], fractionErr[2*i+1]);*/
 
-	    if(fraction[3*i+1] + fractionErr[2*i+1] > maxval)
+/*	    if(fraction[3*i+1] + fractionErr[2*i+1] > maxval)
                maxval = fraction[3*i+1] + fractionErr[2*i+1];
 	    if(fraction[3*i+2] + fractionErr[2*i+1] > maxval)
-               maxval = fraction[3*i+2] + fractionErr[2*i+1];
+               maxval = fraction[3*i+2] + fractionErr[2*i+1];*/
+	    if((TMath::Abs(fraction[3*i+2]) > maxval) && (TMath::Abs(fraction[3*i+2]) < 1.5))
+               maxval = TMath::Abs(fraction[3*i+2]);
 	 }
 	 cout << endl;
 
-	 c2->cd();
+/*	 c2->cd();
 
          tempgr[0]->SetMarkerStyle(20);
          tempgr[0]->SetMarkerSize(1.4);
@@ -347,17 +355,48 @@ int main(int argc, char **argv)
 	 grin->Draw("[];SAME");
 
 	 stemp[2] = plotdir + "/syst/systematics_" + stemp[1] + "_" + stemp[4] + "_TreeS6.pdf";
-	 c2->SaveAs(stemp[2].c_str());
+	 c2->SaveAs(stemp[2].c_str());*/
 
 	 c2->cd();
 
-	 mystyle->SetGraphColor(grindiff[2*j], 1);
+	 mystyle->SetColorScale(grindiff[j], j, 4);
+	 grindiff[j]->SetMarkerStyle(20+j);
+	 grindiff[j]->SetMarkerSize(1.2);
+         grindiff[j]->GetYaxis()->SetTitleOffset(mystyle->GetSingleYoffset(c2));
+         grindiff[j]->GetXaxis()->SetTitleOffset(mystyle->GetSingleXoffset(c2));
+	 mystyle->SetAxisTitles(grindiff[j], "FD energy [log(E/eV)]", stemp[3].c_str());
+	 if(j == 0)
+	 {
+	    simpgr->Draw("AP");
+            simpgr->GetYaxis()->SetTitleOffset(mystyle->GetSingleYoffset(c2));
+            simpgr->GetXaxis()->SetTitleOffset(mystyle->GetSingleXoffset(c2));
+	    mystyle->SetAxisTitles(simpgr, "FD energy [log(E/eV)]", stemp[3].c_str());
+	 }
+	 grindiff[j]->Draw("B;SAME");
+
+	 c1->cd();
+	 pads[j]->cd();
+
+	 mystyle->SetColorScale(grindiffComb[j], j, 4);
+	 grindiffComb[j]->SetMarkerStyle(20);
+	 grindiffComb[j]->SetMarkerSize(1.2);
+//	 grindiffComb[j]->SetFillColorAlpha(grindiffComb[j]->GetMarkerColor(), 0.6);
+         grindiffComb[j]->GetYaxis()->SetTitleOffset(mystyle->GetPaddedYoffset(4, c1));
+         grindiffComb[j]->GetXaxis()->SetTitleOffset(mystyle->GetPaddedXoffset(4, c1));
+	 if(j == 3)
+	    mystyle->SetAxisTitles(grindiffComb[j], "FD energy [log(E/eV)]", stemp[3].c_str());
+	 else
+	    mystyle->SetAxisTitles(grindiffComb[j], "", stemp[3].c_str());
+	 grindiffComb[j]->Draw("AB");
+
+/*	 mystyle->SetGraphColor(grindiff[2*j], 1);
 	 mystyle->SetGraphColor(grindiff[2*j+1], 0);
-         grindiff[2*j]->GetYaxis()->SetTitleOffset(mystyle->GetSingleYoffset(c2));
-         grindiff[2*j]->GetXaxis()->SetTitleOffset(mystyle->GetSingleXoffset(c2));
-	 mystyle->SetAxisTitles(grindiff[2*j], "FD energy [log(E/eV)]", stemp[3].c_str());
-	 grindiff[2*j]->GetYaxis()->SetRange(0., 0.3);
-	 grindiff[2*j]->GetYaxis()->SetRangeUser(0., 0.3);
+         grindiff[2*j]->GetYaxis()->SetTitleOffset(mystyle->GetPaddedYoffset(4, c1));
+         grindiff[2*j]->GetXaxis()->SetTitleOffset(mystyle->GetPaddedXoffset(4, c1));
+	 if(j == 3)
+	    mystyle->SetAxisTitles(grindiff[2*j], "FD energy [log(E/eV)]", stemp[3].c_str());
+	 else
+	    mystyle->SetAxisTitles(grindiff[2*j], "", stemp[3].c_str());
 	 grindiff[2*j]->Draw("AP");
 	 grindiff[2*j+1]->Draw("P;SAME");
 
@@ -369,48 +408,41 @@ int main(int argc, char **argv)
 	 simpfit[1] = new TF1("simpfit1", "[0]", 18.5, 20.0);
 	 simpfit[1]->SetParameter(0, 0.5);
 	 mystyle->SetFuncColor(simpfit[1], 0);
-	 simpfit[1]->SetLineStyle(9);
          grindiff[2*j+1]->Fit("simpfit1");
 
 	 systFitNeg.push_back(simpfit[0]->GetParameter(0));
 	 systFitNeg.push_back(simpfit[0]->GetParError(0));
 	 systFitPos.push_back(simpfit[1]->GetParameter(0));
-	 systFitPos.push_back(simpfit[1]->GetParError(0));
-
-	 c2->Update();
-
-         t = new TText();
-         t->SetTextAlign(31);
-         t->SetTextColor(1);
-         t->SetTextSize(17);
-         t->DrawText(gPad->GetUxmax(), (gPad->GetUymax())+(0.01*(gPad->GetUymax()-gPad->GetUymin())), stemp[1].c_str());
-
-	 stemp[2] = plotdir + "/syst/systematics-diff_" + stemp[1] + "_" + stemp[4] + "_TreeS6.pdf";
-	 c2->SaveAs(stemp[2].c_str());
-
-	 c1->cd();
-	 pads[j]->cd();
-
-	 mystyle->SetGraphColor(grindiff[2*j], 1);
-	 mystyle->SetGraphColor(grindiff[2*j+1], 0);
-         grindiff[2*j]->GetYaxis()->SetTitleOffset(mystyle->GetPaddedYoffset(4, c1));
-         grindiff[2*j]->GetXaxis()->SetTitleOffset(mystyle->GetPaddedXoffset(4, c1));
-	 if(j == 3)
-	    mystyle->SetAxisTitles(grindiff[2*j], "FD energy [log(E/eV)]", stemp[3].c_str());
-	 else
-	    mystyle->SetAxisTitles(grindiff[2*j], "", stemp[3].c_str());
-	 grindiff[2*j]->Draw("AP");
-	 grindiff[2*j+1]->Draw("P;SAME");
+	 systFitPos.push_back(simpfit[1]->GetParError(0));*/
       }
 
-      cout << "Average systematic uncertainty from negative and positive fit + mean of the two:" << endl;
+      cout << "Average systematic uncertainty from negative and positive fit:" << endl;
       for(int j = 0; j < 4; j++)
       {
-	 pads[j]->cd();
-	 grindiff[2*j]->GetYaxis()->SetRange(0., maxval*1.1);
-	 grindiff[2*j]->GetYaxis()->SetRangeUser(0., maxval*1.1);
+         if(maxval*1.1 > 1.)
+	 {
+	    c2->cd();
+	    grindiff[j]->GetYaxis()->SetRange(-maxval*1.1, maxval*1.1);
+	    grindiff[j]->GetYaxis()->SetRangeUser(-maxval*1.1, maxval*1.1);
+	    simpgr->GetYaxis()->SetRange(-maxval*1.1, maxval*1.1);
+	    simpgr->GetYaxis()->SetRangeUser(-maxval*1.1, maxval*1.1);
+	    pads[j]->cd();
+	    grindiffComb[j]->GetYaxis()->SetRange(-maxval*1.1, maxval*1.1);
+	    grindiffComb[j]->GetYaxis()->SetRangeUser(-maxval*1.1, maxval*1.1);
+	 }
+	 else
+	 {
+	    c2->cd();
+	    grindiff[j]->GetYaxis()->SetRange(-1., 1.);
+	    grindiff[j]->GetYaxis()->SetRangeUser(-1., 1.);
+	    simpgr->GetYaxis()->SetRange(-1., 1.);
+	    simpgr->GetYaxis()->SetRangeUser(-1., 1.);
+	    pads[j]->cd();
+	    grindiffComb[j]->GetYaxis()->SetRange(-1., 1.);
+	    grindiffComb[j]->GetYaxis()->SetRangeUser(-1., 1.);
+	 }
 
-	 cout << "- " << systFitNeg[2*j] << " ± " << systFitNeg[2*j+1] << ", " << systFitPos[2*j] << " ± " << systFitPos[2*j+1] << ", " << (systFitNeg[2*j] + systFitPos[2*j])/2. << " ± " << TMath::Abs(systFitNeg[2*j] - (systFitNeg[2*j] + systFitPos[2*j])/2.) << endl;
+//	 cout << "- " << systFitNeg[2*j] << " ± " << systFitNeg[2*j+1] << ", " << systFitPos[2*j] << " ± " << systFitPos[2*j+1] << endl;
       }
 
       c1->Update();
@@ -429,18 +461,50 @@ int main(int argc, char **argv)
       pads[3]->cd();
       t->DrawText(gPad->GetUxmax(), (gPad->GetUymax())+(0.01*(gPad->GetUymax()-gPad->GetUymin())), "Iron");
 
-      stemp[2] = plotdir + "/syst/systematics-diff_" + stemp[4] + "_TreeS6.pdf";
+      l = new TLine();
+      l->SetLineColor(1);
+      l->SetLineWidth(1);
+      pads[0]->cd();
+      l->DrawLine(gPad->GetUxmin(), 0, gPad->GetUxmax(), 0);
+      pads[1]->cd();
+      l->DrawLine(gPad->GetUxmin(), 0, gPad->GetUxmax(), 0);
+      pads[2]->cd();
+      l->DrawLine(gPad->GetUxmin(), 0, gPad->GetUxmax(), 0);
+      pads[3]->cd();
+      l->DrawLine(gPad->GetUxmin(), 0, gPad->GetUxmax(), 0);
+
+      stemp[2] = plotdir + "/resid/residuals_" + stemp[4] + "_TreeS6_combine.pdf";
       c1->SaveAs(stemp[2].c_str());
+
+      c2->cd();
+      c2->Update();
+      l->DrawLine(gPad->GetUxmin(), 0, gPad->GetUxmax(), 0);
+
+      legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(4)-0.003*4), gPad->GetLeftMargin()+.17, 1-gPad->GetTopMargin());
+      legend->SetFillStyle(1001);
+      legend->SetFillColor(c_Legend);
+      legend->AddEntry(grindiff[0], "Proton", "f");
+      legend->AddEntry(grindiff[1], "Helium", "f");
+      legend->AddEntry(grindiff[2], "Oxygen", "f");
+      legend->AddEntry(grindiff[3], "Iron", "f");
+      legend->SetBorderSize(1);
+      legend->SetMargin(0.3);
+      legend->Draw("same");
+
+      stemp[2] = plotdir + "/resid/residuals_" + stemp[4] + "_TreeS6.pdf";
+      c2->SaveAs(stemp[2].c_str());
 
       outfile->close();
 
       delete outfile;
       delete grin;
 
+      delete simpgr;
+
       for(int j = 0; j < 4; j++)
       {
-         delete grindiff[2*j];
-         delete grindiff[2*j+1];
+         delete grindiff[j];
+         delete grindiffComb[j];
       }
 
       delete c1;
@@ -448,7 +512,7 @@ int main(int argc, char **argv)
    }
    else
    {
-      cerr << "Error! No input files supplied. Rerun program and add three input files as arguments (lna_composition_results*.root)." << endl;
+      cerr << "Error! No input files supplied. Rerun program and add two input files as arguments (lna_composition_results*.root)." << endl;
       return 1;
    }
 

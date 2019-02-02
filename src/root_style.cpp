@@ -348,7 +348,7 @@ double RootStyle::SetLegendHeight(int nrfigs)
    return nrfigs*legendBaseHeight;
 }
 
-void RootStyle::SetColorScale(TH1 *plot, int cur, int nrscale)
+void RootStyle::CreateColorScale(int cur, int nrscale)
 {
    int *ci = new int;
    *ci = 1738+cur;
@@ -356,59 +356,72 @@ void RootStyle::SetColorScale(TH1 *plot, int cur, int nrscale)
    *colormix = (double)cur/(double)(nrscale-1.);
    TColor *color = new TColor(*ci, *colormix, 0, 1.-(*colormix), "", 1);
 
-   plot->SetMarkerColor(*ci);
-   plot->SetLineColor(*ci);
-
    delete ci;
    delete colormix;
-/*   gr->SetMarkerSize(0.9);
-   gr->SetMarkerStyle(20+cur);
-   gr->SetLineWidth(2);*/
+}
+
+void RootStyle::SetColorScale(TH1 *plot, int cur, int nrscale)
+{
+   int *ci = new int;
+   *ci = 1738+cur;
+/*   double *colormix = new double;
+   *colormix = (double)cur/(double)(nrscale-1.);
+   TColor *color = new TColor(*ci, *colormix, 0, 1.-(*colormix), "", 1);*/
+
+   plot->SetMarkerColor(*ci);
+   plot->SetLineColor(*ci);
+   plot->SetFillColorAlpha(*ci, 0.8);
+
+   delete ci;
+//   delete colormix;
 }
 
 void RootStyle::SetColorScale(TGraph *plot, int cur, int nrscale)
 {
    int *ci = new int;
    *ci = 1738+cur;
-   double *colormix = new double;
+/*   double *colormix = new double;
    *colormix = (double)cur/(double)(nrscale-1.);
-   TColor *color = new TColor(*ci, *colormix, 0, 1.-(*colormix), "", 1);
+   TColor *color = new TColor(*ci, *colormix, 0, 1.-(*colormix), "", 1);*/
 
    plot->SetMarkerColor(*ci);
    plot->SetLineColor(*ci);
+   plot->SetFillColorAlpha(*ci, 0.8);
 
    delete ci;
-   delete colormix;
+//   delete colormix;
 }
 
 void RootStyle::SetColorScale(TGraphErrors *plot, int cur, int nrscale)
 {
    int *ci = new int;
    *ci = 1738+cur;
-   double *colormix = new double;
+/*   double *colormix = new double;
    *colormix = (double)cur/(double)(nrscale-1.);
-   TColor *color = new TColor(*ci, *colormix, 0, 1.-(*colormix), "", 1);
+   TColor *color = new TColor(*ci, *colormix, 0, 1.-(*colormix), "", 1);*/
 
    plot->SetMarkerColor(*ci);
    plot->SetLineColor(*ci);
+   plot->SetFillColorAlpha(*ci, 0.8);
 
    delete ci;
-   delete colormix;
+//   delete colormix;
 }
 
 void RootStyle::SetColorScale(TGraphAsymmErrors *plot, int cur, int nrscale)
 {
    int *ci = new int;
    *ci = 1738+cur;
-   double *colormix = new double;
+/*   double *colormix = new double;
    *colormix = (double)cur/(double)(nrscale-1.);
-   TColor *color = new TColor(*ci, *colormix, 0, 1.-(*colormix), "", 1);
+   TColor *color = new TColor(*ci, *colormix, 0, 1.-(*colormix), "", 1);*/
 
    plot->SetMarkerColor(*ci);
    plot->SetLineColor(*ci);
+   plot->SetFillColorAlpha(*ci, 0.8);
 
    delete ci;
-   delete colormix;
+//   delete colormix;
 }
 
 double RootStyle::GetPlotWidth(int size)
@@ -475,6 +488,16 @@ void RootStyle::SetSinglePlot(int xsize, int ysize, TCanvas *inCanv)
 void RootStyle::SetMultiPlot(int xsize, int ysize, int nrpads, TCanvas *inCanv)
 {
    inCanv->SetCanvasSize(GetPlotWidth(xsize), nrpads*GetPlotHeight(1, ysize));
+   cout << GetPlotWidth(xsize) << ", " << nrpads*GetPlotHeight(1, ysize) << endl;
+   inCanv->Modified();
+   inCanv->Update();
+}
+
+void RootStyle::SetGridPlot(int xsize, int ysize, int nrpads, TCanvas *inCanv)
+{
+   // Grid plot arranges graphs in two columns
+   inCanv->SetCanvasSize(2*GetPlotWidth(xsize), (nrpads/2.)*GetPlotHeight(1, ysize));
+   cout << 2*GetPlotWidth(xsize) << ", " << (nrpads/2.)*GetPlotHeight(1, ysize) << endl;
    inCanv->Modified();
    inCanv->Update();
 }
@@ -490,17 +513,17 @@ void RootStyle::SetPaddedPlot(int nrpads, TCanvas *inCanv, TPad **inPads)
    for(int i = 0; i < nrpads; i++)
    {
       dtemp[2] = 1./nrpads - padTotDiffFactor;
-//      cout << "1/nrpads - padTotDiffFactor = " << dtemp[2] << endl;
+      cout << "1/nrpads - padTotDiffFactor = " << dtemp[2] << endl;
       if(i != nrpads-1)
          dtemp[3] = dtemp[2] - padHeightDiffFactor;
       else
          dtemp[3] = dtemp[2] + (nrpads-1)*padHeightDiffFactor;
 
-//      cout << "Each pad height = " << dtemp[3] << endl;
+      cout << "Each pad height = " << dtemp[3] << endl;
 
       dtemp[0] = dtemp[1] - dtemp[3];
 
-//      cout << "Pad limits = " << dtemp[0] << ", " << dtemp[1] << endl;
+      cout << "Pad limits = " << dtemp[0] << ", " << dtemp[1] << endl;
 
       *stemp = "pad" + ToString(i+1);
       inPads[i] = new TPad(stemp->c_str(), "", 0.005, dtemp[0], 0.995, dtemp[1]);
@@ -508,7 +531,7 @@ void RootStyle::SetPaddedPlot(int nrpads, TCanvas *inCanv, TPad **inPads)
       if(i == nrpads-1)
          inPads[i]->SetBottomMargin(0.1 + padMarginDiffFactor*nrpads);
 
-//      cout << " IN: Pad " << i << " bottom margin = " << inPads[i]->GetBottomMargin() << endl;
+      cout << " IN: Pad " << i << " bottom margin = " << inPads[i]->GetBottomMargin() << endl;
 
       dtemp[1] -= dtemp[3];
 
@@ -518,6 +541,76 @@ void RootStyle::SetPaddedPlot(int nrpads, TCanvas *inCanv, TPad **inPads)
    inCanv->Modified();
    inCanv->Update();
 
+   delete stemp;
+   delete[] dtemp;
+}
+
+void RootStyle::SetGridPaddedPlot(int nrpads, TCanvas *inCanv, TPad **inPads)
+{
+   double *dtemp = new double[6];
+   string *stemp = new string;
+   int *nrpadscol = new int; // number of pad columns (horizontal)
+   int *nrpadsrow = new int; // number of pad rows (vertical)
+
+   *nrpadscol = 2;
+   *nrpadsrow = nrpads/(*nrpadscol);
+
+   inCanv->cd();
+
+   dtemp[1] = 1.;
+   for(int i = 0; i < (*nrpadsrow); i++)
+   {
+      for(int j = 0; j < (*nrpadscol); j++)
+      {
+         dtemp[2] = 1./(*nrpadsrow) - padTotDiffFactor;
+         cout << "1/nrpads - padTotDiffFactor = " << dtemp[2] << endl;
+         if(j+(*nrpadscol)*i < (nrpads)-2)
+            dtemp[3] = dtemp[2] - padHeightDiffFactor;
+         else
+            dtemp[3] = dtemp[2] + ((*nrpadsrow)-1)*padHeightDiffFactor;
+
+         cout << "Each pad height = " << dtemp[3] << endl;
+
+         dtemp[0] = dtemp[1] - dtemp[3];
+
+	 dtemp[4] = 0.005+0.495*j;
+	 dtemp[5] = 0.995-0.495*(1-j);
+	 if(j == 0)
+            dtemp[5] += padWidthDiffFactor;
+	 else if(j == 1)
+            dtemp[4] += padWidthDiffFactor;
+         cout << "Pad limits (horizontal) = " << dtemp[4] << ", " << dtemp[5] << endl;
+         cout << "Pad limits (vertical) = " << dtemp[0] << ", " << dtemp[1] << endl;
+
+         *stemp = "pad" + ToString(j+(*nrpadscol)*i+1);
+         inPads[j+(*nrpadscol)*i] = new TPad(stemp->c_str(), "", dtemp[4], dtemp[0], dtemp[5], dtemp[1]);
+
+         if(j+(*nrpadscol)*i >= nrpads-2)
+            inPads[j+(*nrpadscol)*i]->SetBottomMargin(0.1 + padMarginDiffFactor*(nrpads/2));
+
+         cout << " IN: Pad " << j+(*nrpadscol)*i << " bottom margin = " << inPads[j+(*nrpadscol)*i]->GetBottomMargin() << endl;
+
+	 if(j == 0)
+            inPads[j+(*nrpadscol)*i]->SetRightMargin(0.03);
+
+         cout << " IN: Pad " << j+(*nrpadscol)*i << " right margin = " << inPads[j+(*nrpadscol)*i]->GetRightMargin() << endl;
+
+	 if(j == 1)
+            inPads[j+(*nrpadscol)*i]->SetLeftMargin(0.04);
+
+         cout << " IN: Pad " << j+(*nrpadscol)*i << " left margin = " << inPads[j+(*nrpadscol)*i]->GetLeftMargin() << endl;
+
+         inPads[j+(*nrpadscol)*i]->Draw();
+      }
+
+      dtemp[1] -= dtemp[3];
+   }
+
+   inCanv->Modified();
+   inCanv->Update();
+
+   delete nrpadscol;
+   delete nrpadsrow;
    delete stemp;
    delete[] dtemp;
 }
@@ -532,6 +625,18 @@ double RootStyle::GetPaddedYoffset(int nrpads, TCanvas *inCanv)
 {
 //   return yTitleFactor*(inCanv->GetWindowHeight())/(inCanv->GetWindowWidth());
    return yTitleFactor*(inCanv->GetWh())/(inCanv->GetWw());
+}
+
+double RootStyle::GetGridXoffset(int nrpads, TCanvas *inCanv)
+{
+//   return xTitleFactor*(inCanv->GetWindowHeight())/(inCanv->GetWindowWidth());
+   return 2*xTitleFactor*(inCanv->GetWh())/(inCanv->GetWw());
+}
+
+double RootStyle::GetGridYoffset(int nrpads, TCanvas *inCanv)
+{
+//   return yTitleFactor*(inCanv->GetWindowHeight())/(inCanv->GetWindowWidth());
+   return 2*yTitleFactor*(inCanv->GetWh())/(inCanv->GetWw());
 }
 
 double RootStyle::GetSingleXoffset(TCanvas *inCanv)

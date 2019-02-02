@@ -117,7 +117,10 @@ void MvaFitHist::SetPrimaries(vector<int> *primVals)
    nrelem = new int;
    *nrelem = primVals->size();
    for(int i = 0; i < *nrelem; i++)
+   {
       includePart->push_back(primVals->at(i));
+      mystyle->CreateColorScale(i, *nrelem);
+   }
 }
 
 void MvaFitHist::SetMethod(string *inMethod)
@@ -183,11 +186,12 @@ void MvaFitHist::SetYaxisLimits(bool use, double *inLimits)
 
 void MvaFitHist::SetOtherSettings(bool *inConst)
 {
-   otherSettings = new bool[4];
+   otherSettings = new bool[5];
    otherSettings[0] = inConst[0];
    otherSettings[1] = inConst[1];
    otherSettings[2] = inConst[2];
    otherSettings[3] = inConst[3];
+   otherSettings[4] = inConst[4];
 
    // Running an Xmax distribution fit
    if(otherSettings[1])
@@ -1882,9 +1886,17 @@ void MvaFitHist::PlotLnaComposition()
    double *ybinCompPubErrlo[40];
    double *ybinCompPubErrhi[40];
 
-   // Plot composition plots (all together)
-   c1 = new TCanvas("c1","",1200,400.*(*nrelem));
-   mystyle->SetMultiPlot(0, 0, *nrelem, c1);
+   if(otherSettings[4])
+   {
+      c1 = new TCanvas("c1","",1200*2,400.*(*nrelem/2));
+      mystyle->SetGridPlot(0, 0, *nrelem, c1);
+   }
+   else
+   {
+      // Plot composition plots (all together)
+      c1 = new TCanvas("c1","",1200,400.*(*nrelem));
+      mystyle->SetMultiPlot(0, 0, *nrelem, c1);
+   }
 
    TGraphAsymmErrors *grComp[40], *grCompPub[40];
 
@@ -2045,56 +2057,139 @@ void MvaFitHist::PlotLnaComposition()
 
    delete c2;
 
-   // Plot all four on separate pads
-   c1->cd();
-   mystyle->SetPaddedPlot(*nrelem, c1, pads);
-//   c1->Divide(1,*nrelem);
+   if(otherSettings[4])
+   {
+      c1->cd();
+      mystyle->SetGridPaddedPlot(*nrelem, c1, pads);
+   }
+   else
+   {
+      // Plot all four on separate pads
+      c1->cd();
+      mystyle->SetPaddedPlot(*nrelem, c1, pads);
+//      c1->Divide(1,*nrelem);
+   }
 
    for(int j = 0; j < (*nrelem); j++)
    {
       pads[j]->cd();
-//      c1->cd(j+1);
       if(*addPublishedFrac)
       {
-         mystyle->SetAxisTitles(grCompPub[j], "", "Elemental fractions");
+         if(otherSettings[4])
+	 {
+            if(j%2 == 0)
+               mystyle->SetAxisTitles(grCompPub[j], "", "Elemental fractions");
+	    else
+               mystyle->SetAxisTitles(grCompPub[j], "", "");
+	 }
+	 else
+            mystyle->SetAxisTitles(grCompPub[j], "", "Elemental fractions");
          grCompPub[j]->GetXaxis()->SetRange(18.5, 20.0);
          grCompPub[j]->GetXaxis()->SetRangeUser(18.5, 20.0);
          grCompPub[j]->GetXaxis()->SetLimits(18.5, 20.0);
 //         grCompPub[j]->GetYaxis()->SetTitleOffset(1.9 + ((*nrelem)-2)*0.45);
-         grCompPub[j]->GetYaxis()->SetTitleOffset(mystyle->GetPaddedYoffset(*nrelem, c1));
+/*         grCompPub[j]->GetYaxis()->SetTitleOffset(mystyle->GetPaddedYoffset(*nrelem, c1));
 	 if(j == (*nrelem)-1)
 	 {
             grCompPub[j]->GetXaxis()->SetTitle("FD energy [log(E/eV)]");
             grCompPub[j]->GetXaxis()->SetTitleOffset(mystyle->GetPaddedXoffset(*nrelem, c1));
+	 }*/
+	 if(otherSettings[4])
+	 {
+            if(j%2 == 0)
+               grCompPub[j]->GetYaxis()->SetTitleOffset(mystyle->GetGridYoffset(*nrelem, c1));
+	    if(j >= (*nrelem)-2)
+	    {
+               grCompPub[j]->GetXaxis()->SetTitle("FD energy [log(E/eV)]");
+               grCompPub[j]->GetXaxis()->SetTitleOffset(mystyle->GetGridXoffset(*nrelem, c1));
+	    }
+	 }
+	 else
+	 {
+            grCompPub[j]->GetYaxis()->SetTitleOffset(mystyle->GetPaddedYoffset(*nrelem, c1));
+	    if(j == (*nrelem)-1)
+	    {
+               grCompPub[j]->GetXaxis()->SetTitle("FD energy [log(E/eV)]");
+               grCompPub[j]->GetXaxis()->SetTitleOffset(mystyle->GetPaddedXoffset(*nrelem, c1));
+	    }
 	 }
          grCompPub[j]->Draw("ALP");
          grCompPub[j]->GetYaxis()->SetRangeUser(0.,1.);
-         mystyle->SetAxisTitles(grComp[j], "", "Elemental fractions");
+
+         if(otherSettings[4])
+	 {
+            if(j%2 == 0)
+               mystyle->SetAxisTitles(grComp[j], "", "Elemental fractions");
+	    else
+               mystyle->SetAxisTitles(grComp[j], "", "");
+	 }
+	 else
+            mystyle->SetAxisTitles(grComp[j], "", "Elemental fractions");
          grComp[j]->GetXaxis()->SetRange(18.5, 20.0);
          grComp[j]->GetXaxis()->SetRangeUser(18.5, 20.0);
          grComp[j]->GetXaxis()->SetLimits(18.5, 20.0);
 //         grComp[j]->GetYaxis()->SetTitleOffset(1.9 + ((*nrelem)-2)*0.45);
-         grComp[j]->GetYaxis()->SetTitleOffset(mystyle->GetPaddedYoffset(*nrelem, c1));
+/*         grComp[j]->GetYaxis()->SetTitleOffset(mystyle->GetPaddedYoffset(*nrelem, c1));
 	 if(j == (*nrelem)-1)
 	 {
             grComp[j]->GetXaxis()->SetTitle("FD energy [log(E/eV)]");
             grComp[j]->GetXaxis()->SetTitleOffset(mystyle->GetPaddedXoffset(*nrelem, c1));
+	 }*/
+	 if(otherSettings[4])
+	 {
+            if(j%2 == 0)
+               grComp[j]->GetYaxis()->SetTitleOffset(mystyle->GetGridYoffset(*nrelem, c1));
+	    if(j >= (*nrelem)-2)
+	    {
+               grComp[j]->GetXaxis()->SetTitle("FD energy [log(E/eV)]");
+               grComp[j]->GetXaxis()->SetTitleOffset(mystyle->GetGridXoffset(*nrelem, c1));
+	    }
+	 }
+	 else
+	 {
+            grComp[j]->GetYaxis()->SetTitleOffset(mystyle->GetPaddedYoffset(*nrelem, c1));
+	    if(j == (*nrelem)-1)
+	    {
+               grComp[j]->GetXaxis()->SetTitle("FD energy [log(E/eV)]");
+               grComp[j]->GetXaxis()->SetTitleOffset(mystyle->GetPaddedXoffset(*nrelem, c1));
+	    }
 	 }
          grComp[j]->Draw("LP;SAME");
          grComp[j]->GetYaxis()->SetRangeUser(0.,1.);
       }
       else
       {
-         mystyle->SetAxisTitles(grComp[j], "", "Elemental fractions");
+         if(otherSettings[4])
+	 {
+            if(j%2 == 0)
+               mystyle->SetAxisTitles(grComp[j], "", "Elemental fractions");
+	    else
+               mystyle->SetAxisTitles(grComp[j], "", "");
+	 }
+	 else
+            mystyle->SetAxisTitles(grComp[j], "", "Elemental fractions");
          grComp[j]->GetXaxis()->SetRange(18.5, 20.0);
          grComp[j]->GetXaxis()->SetRangeUser(18.5, 20.0);
          grComp[j]->GetXaxis()->SetLimits(18.5, 20.0);
 //         grComp[j]->GetYaxis()->SetTitleOffset(1.9 + ((*nrelem)-2)*0.45);
-         grComp[j]->GetYaxis()->SetTitleOffset(mystyle->GetPaddedYoffset(*nrelem, c1));
-	 if(j == (*nrelem)-1)
+	 if(otherSettings[4])
 	 {
-            grComp[j]->GetXaxis()->SetTitle("FD energy [log(E/eV)]");
-            grComp[j]->GetXaxis()->SetTitleOffset(mystyle->GetPaddedXoffset(*nrelem, c1));
+            if(j%2 == 0)
+               grComp[j]->GetYaxis()->SetTitleOffset(mystyle->GetGridYoffset(*nrelem, c1));
+	    if(j >= (*nrelem)-2)
+	    {
+               grComp[j]->GetXaxis()->SetTitle("FD energy [log(E/eV)]");
+               grComp[j]->GetXaxis()->SetTitleOffset(mystyle->GetGridXoffset(*nrelem, c1));
+	    }
+	 }
+	 else
+	 {
+            grComp[j]->GetYaxis()->SetTitleOffset(mystyle->GetPaddedYoffset(*nrelem, c1));
+	    if(j == (*nrelem)-1)
+	    {
+               grComp[j]->GetXaxis()->SetTitle("FD energy [log(E/eV)]");
+               grComp[j]->GetXaxis()->SetTitleOffset(mystyle->GetPaddedXoffset(*nrelem, c1));
+	    }
 	 }
          grComp[j]->Draw("ALP");
          grComp[j]->GetYaxis()->SetRangeUser(0.,1.);
@@ -2130,9 +2225,19 @@ void MvaFitHist::PlotLnaComposition()
    stemp[1] = RemoveFilename(filename);
 
    if(otherSettings[1])
-      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_TreeS" + ToString((*dataNum)+1) + "_xmax_combine.pdf";
+   {
+      if(otherSettings[4])
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_TreeS" + ToString((*dataNum)+1) + "_xmax_combine-grid.pdf";
+      else
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_TreeS" + ToString((*dataNum)+1) + "_xmax_combine.pdf";
+   }
    else
-      stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_TreeS" + ToString((*dataNum)+1) + "_combine.pdf";
+   {
+      if(otherSettings[4])
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_TreeS" + ToString((*dataNum)+1) + "_combine-grid.pdf";
+      else
+         stemp[2] = RemoveFilename(&stemp[1]) + "/plots/mass_composition_plot_TreeS" + ToString((*dataNum)+1) + "_combine.pdf";
+   }
    c1->SaveAs(stemp[2].c_str());
 
    compfile->cd();

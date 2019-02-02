@@ -447,11 +447,12 @@ void MyFrame::StartMvaHistFit(wxCommandEvent& event)
    ylimit[1] = (plotYaxisRange->widgetNE[1])->GetValue();
 
    // Check other plotting settings
-   bool *otherSet = new bool[4];
+   bool *otherSet = new bool[5];
    otherSet[0] = (bool)(specialPlot->widgetChBox[0])->IsChecked();
    otherSet[1] = (bool)(specialPlot->widgetChBox[1])->IsChecked();
    otherSet[2] = (bool)(specialPlot->widgetChBox[2])->IsChecked();
    otherSet[3] = (bool)(specialPlot->widgetChBox[3])->IsChecked();
+   otherSet[4] = (bool)(specialPlot->widgetChBox[4])->IsChecked();
 
    if(fileSelections->size() > 1)
    {
