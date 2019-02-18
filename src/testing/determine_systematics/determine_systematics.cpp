@@ -46,6 +46,15 @@ int main(int argc, char **argv)
 
    bool nomean, noneg, nopos;
 
+   bool absfirst = true;
+   cerr << "Make absolute value first? ";
+   getline(cin, stemp[4]);
+   if(stemp[4] == "true")
+      absfirst = true;
+   else if(stemp[4] == "false")
+      absfirst = false;
+   cout << "Absolute value first = " << (int)absfirst << endl;
+
    RootStyle *mystyle;
 
    string plotdir;
@@ -187,7 +196,7 @@ int main(int argc, char **argv)
 	       fractionErr.push_back(tempgr[0]->GetErrorYhigh(pcount[0]));
 	       energy.push_back(tempenergy[pcount[0]]);
 	       cout << pcount[0] << ") " << energy[pcount[0]] << endl;
-	       cout << "- Mean = " << fraction[3*pcount[0]] << " + " << fractionErr[2*pcount[0]] << " - " << fractionErr[2*pcount[0]+1] << endl;
+	       cout << "- Mean = " << fraction[3*pcount[0]] << " - " << fractionErr[2*pcount[0]] << " + " << fractionErr[2*pcount[0]+1] << endl;
 
                if(!noneg)
 	       {
@@ -211,13 +220,26 @@ int main(int argc, char **argv)
                   cout << "No positive systematics for point " << i << endl;
 	       }
 
-               dtemp[0] = ypval[0] - ypval[1];
+               dtemp[0] = ypval[1] - ypval[0];
+//               dtemp[0] = ypval[0] - ypval[1];
                dtemp[1] = ypval[2] - ypval[0];
 
 	       // Both systematics are present
                if((ypval[1] != -1) && (ypval[2] != -1))
 	       {
-		  if((dtemp[0] >= 0) && (dtemp[1] >= 0))
+                  if(absfirst)
+		  {
+                     fraction.push_back(TMath::Abs(dtemp[0]));
+                     fraction.push_back(TMath::Abs(dtemp[1]));
+		  }
+		  else
+		  {
+                     fraction.push_back(dtemp[0]);
+                     fraction.push_back(dtemp[1]);
+		  }
+/*                  fraction.push_back(TMath::Abs(dtemp[0]));
+                  fraction.push_back(TMath::Abs(dtemp[1]));*/
+/*		  if((dtemp[0] >= 0) && (dtemp[1] >= 0))
 		  {
                      fraction.push_back(dtemp[0]);
                      fraction.push_back(dtemp[1]);
@@ -244,12 +266,24 @@ int main(int argc, char **argv)
 		  {
                      fraction.push_back(TMath::Abs(dtemp[1]));
                      fraction.push_back(TMath::Abs(dtemp[0]));
-		  }
+		  }*/
 	       }
 	       // Only negative systematic is present
 	       else if(ypval[1] != -1)
 	       {
-                  if(dtemp[0] >= 0)
+                  if(absfirst)
+		  {
+                     fraction.push_back(TMath::Abs(dtemp[0]));
+                     fraction.push_back(0.);
+		  }
+		  else
+		  {
+                     fraction.push_back(dtemp[0]);
+                     fraction.push_back(0.);
+		  }
+/*                  fraction.push_back(TMath::Abs(dtemp[0]));
+                  fraction.push_back(0.);*/
+/*                  if(dtemp[0] >= 0)
 		  {
                      fraction.push_back(dtemp[0]);
                      fraction.push_back(0.);
@@ -258,12 +292,24 @@ int main(int argc, char **argv)
 		  {
                      fraction.push_back(0.);
                      fraction.push_back(TMath::Abs(dtemp[0]));
-		  }
+		  }*/
 	       }
 	       // Only positive systematic is present
 	       else if(ypval[2] != -1)
 	       {
-                  if(dtemp[1] >= 0)
+                  if(absfirst)
+		  {
+                     fraction.push_back(0.);
+                     fraction.push_back(TMath::Abs(dtemp[1]));
+		  }
+		  else
+		  {
+                     fraction.push_back(0.);
+                     fraction.push_back(dtemp[1]);
+		  }
+/*                  fraction.push_back(0.);
+                  fraction.push_back(TMath::Abs(dtemp[1]));*/
+/*                  if(dtemp[1] >= 0)
 		  {
                      fraction.push_back(0.);
                      fraction.push_back(dtemp[1]);
@@ -272,7 +318,7 @@ int main(int argc, char **argv)
 		  {
                      fraction.push_back(TMath::Abs(dtemp[1]));
                      fraction.push_back(0.);
-		  }
+		  }*/
 	       }
 	       // No systematics present
 	       else
@@ -309,14 +355,20 @@ int main(int argc, char **argv)
 	    grindiff[2*j]->SetPoint(i, energy[i], fraction[3*i+1]);
 	    grindiff[2*j+1]->SetPoint(i, energy[i], fraction[3*i+2]);
 
-	    if(fraction[3*i+1] - fractionErr[2*i] < 0)
+	    cout << fraction[3*i+1] << "\t" << fraction[3*i+2] << endl;
+	    cout << fractionErr[2*i] << "\t" << fractionErr[2*i+1] << endl;
+
+	    grindiff[2*j]->SetPointError(i, 0., 0., fractionErr[2*i], fractionErr[2*i+1]);
+	    grindiff[2*j+1]->SetPointError(i, 0., 0., fractionErr[2*i], fractionErr[2*i+1]);
+
+/*	    if(fraction[3*i+1] - fractionErr[2*i] < 0)
 	       grindiff[2*j]->SetPointError(i, 0., 0., fraction[3*i+1], fractionErr[2*i+1]);
  	    else
 	       grindiff[2*j]->SetPointError(i, 0., 0., fractionErr[2*i], fractionErr[2*i+1]);
 	    if(fraction[3*i+2] - fractionErr[2*i] < 0)
 	       grindiff[2*j+1]->SetPointError(i, 0., 0., fraction[3*i+2], fractionErr[2*i+1]);
  	    else
-	       grindiff[2*j+1]->SetPointError(i, 0., 0., fractionErr[2*i], fractionErr[2*i+1]);
+	       grindiff[2*j+1]->SetPointError(i, 0., 0., fractionErr[2*i], fractionErr[2*i+1]);*/
 
 	    if(fraction[3*i+1] + fractionErr[2*i+1] > maxval)
                maxval = fraction[3*i+1] + fractionErr[2*i+1];
@@ -356,8 +408,16 @@ int main(int argc, char **argv)
          grindiff[2*j]->GetYaxis()->SetTitleOffset(mystyle->GetSingleYoffset(c2));
          grindiff[2*j]->GetXaxis()->SetTitleOffset(mystyle->GetSingleXoffset(c2));
 	 mystyle->SetAxisTitles(grindiff[2*j], "FD energy [log(E/eV)]", stemp[3].c_str());
-	 grindiff[2*j]->GetYaxis()->SetRange(0., 0.3);
-	 grindiff[2*j]->GetYaxis()->SetRangeUser(0., 0.3);
+	 if(absfirst)
+	 {
+	    grindiff[2*j]->GetYaxis()->SetRange(0., 0.3);
+	    grindiff[2*j]->GetYaxis()->SetRangeUser(0., 0.3);
+	 }
+	 else
+	 {
+	    grindiff[2*j]->GetYaxis()->SetRange(-0.3, 0.3);
+	    grindiff[2*j]->GetYaxis()->SetRangeUser(-0.3, 0.3);
+	 }
 	 grindiff[2*j]->Draw("AP");
 	 grindiff[2*j+1]->Draw("P;SAME");
 
@@ -385,7 +445,10 @@ int main(int argc, char **argv)
          t->SetTextSize(17);
          t->DrawText(gPad->GetUxmax(), (gPad->GetUymax())+(0.01*(gPad->GetUymax()-gPad->GetUymin())), stemp[1].c_str());
 
-	 stemp[2] = plotdir + "/syst/systematics-diff_" + stemp[1] + "_" + stemp[4] + "_TreeS6.pdf";
+	 if(absfirst)
+   	    stemp[2] = plotdir + "/syst/systematics-diff-abs_" + stemp[1] + "_" + stemp[4] + "_TreeS6.pdf";
+	 else
+	    stemp[2] = plotdir + "/syst/systematics-diff_" + stemp[1] + "_" + stemp[4] + "_TreeS6.pdf";
 	 c2->SaveAs(stemp[2].c_str());
 
 	 c1->cd();
@@ -407,10 +470,21 @@ int main(int argc, char **argv)
       for(int j = 0; j < 4; j++)
       {
 	 pads[j]->cd();
-	 grindiff[2*j]->GetYaxis()->SetRange(0., maxval*1.1);
-	 grindiff[2*j]->GetYaxis()->SetRangeUser(0., maxval*1.1);
+	 if(absfirst)
+	 {
+	    grindiff[2*j]->GetYaxis()->SetRange(0., maxval*1.1);
+	    grindiff[2*j]->GetYaxis()->SetRangeUser(0., maxval*1.1);
+	 }
+	 else
+	 {
+	    grindiff[2*j]->GetYaxis()->SetRange(-maxval*1.1, maxval*1.1);
+	    grindiff[2*j]->GetYaxis()->SetRangeUser(-maxval*1.1, maxval*1.1);
+	 }
+/*	 grindiff[2*j]->GetYaxis()->SetRange(0., maxval*1.1);
+	 grindiff[2*j]->GetYaxis()->SetRangeUser(0., maxval*1.1);*/
 
-	 cout << "- " << systFitNeg[2*j] << " ± " << systFitNeg[2*j+1] << ", " << systFitPos[2*j] << " ± " << systFitPos[2*j+1] << ", " << (systFitNeg[2*j] + systFitPos[2*j])/2. << " ± " << TMath::Abs(systFitNeg[2*j] - (systFitNeg[2*j] + systFitPos[2*j])/2.) << endl;
+//	 cout << "- " << systFitNeg[2*j] << " ± " << systFitNeg[2*j+1] << ", " << systFitPos[2*j] << " ± " << systFitPos[2*j+1] << ", " << (systFitNeg[2*j] + systFitPos[2*j])/2. << " ± " << TMath::Abs(systFitNeg[2*j] - (systFitNeg[2*j] + systFitPos[2*j])/2.) << endl;
+	 cout << "- " << systFitNeg[2*j] << " ± " << systFitNeg[2*j+1] << ", " << systFitPos[2*j] << " ± " << systFitPos[2*j+1] << ", " << (TMath::Abs(systFitNeg[2*j]) + TMath::Abs(systFitPos[2*j]))/2. << " ± " << TMath::Abs(TMath::Abs(systFitNeg[2*j]) - (TMath::Abs(systFitNeg[2*j]) + TMath::Abs(systFitPos[2*j]))/2.) << endl;
       }
 
       c1->Update();
@@ -429,7 +503,10 @@ int main(int argc, char **argv)
       pads[3]->cd();
       t->DrawText(gPad->GetUxmax(), (gPad->GetUymax())+(0.01*(gPad->GetUymax()-gPad->GetUymin())), "Iron");
 
-      stemp[2] = plotdir + "/syst/systematics-diff_" + stemp[4] + "_TreeS6.pdf";
+      if(absfirst)
+         stemp[2] = plotdir + "/syst/systematics-diff-abs_" + stemp[4] + "_TreeS6.pdf";
+      else
+         stemp[2] = plotdir + "/syst/systematics-diff_" + stemp[4] + "_TreeS6.pdf";
       c1->SaveAs(stemp[2].c_str());
 
       outfile->close();

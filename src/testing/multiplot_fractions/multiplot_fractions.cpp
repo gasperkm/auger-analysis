@@ -662,7 +662,7 @@ int main(int argc, char **argv)
 	 }
       } 
 
-      // Get systematic uncertainty from other contributions: Taking EPOS-LHC uncertainties = 0.066 for proton, 0.097 for helium, (0.090+0.085)/2 = 0.088 for oxygen+iron
+/*      // Get systematic uncertainty from other contributions: Taking EPOS-LHC uncertainties = 0.066 for proton, 0.097 for helium, (0.090+0.085)/2 = 0.088 for oxygen+iron
       cout << endl << "Systematic uncertainty:" << endl;
       for(int j = 0; j < 3; j++)
       {
@@ -674,6 +674,24 @@ int main(int argc, char **argv)
                dtemp[0] = 0.097;
             else if(j == 2)
                dtemp[0] = 0.088;
+
+	    sysdev.push_back(dtemp[0]);
+	    cout << "  " << dtemp[0] << " (" << j << "," << k << ")" << endl;
+	 }
+      }*/
+
+      // Get systematic uncertainty from other contributions: Taking EPOS-LHC uncertainties = 0.064 for proton, 0.083 for helium, (0.053+0.079)/2 = 0.066 for oxygen+iron
+      cout << endl << "Systematic uncertainty:" << endl;
+      for(int j = 0; j < 3; j++)
+      {
+         for(int k = 0; k < grindiff[3*j+1]->GetN(); k++)
+         {
+            if(j == 0)
+               dtemp[0] = 0.064;
+            else if(j == 1)
+               dtemp[0] = 0.083;
+            else if(j == 2)
+               dtemp[0] = 0.066;
 
 	    sysdev.push_back(dtemp[0]);
 	    cout << "  " << dtemp[0] << " (" << j << "," << k << ")" << endl;
@@ -692,8 +710,13 @@ int main(int argc, char **argv)
       grinfinalSystModel[2] = new TGraphAsymmErrors();
 
       itemp[0] = 0;
+      cout << "Final results:" << endl;
       for(int m = 0; m < 3; m++)
       {
+         if(m == 0) cout << "- Proton" << endl;
+         else if(m == 1) cout << "- Helium" << endl;
+	 else if(m == 2) cout << "- Oxygen+Iron" << endl;
+
          for(int k = 0; k < energy.size()/3.; k++)
 	 {
             grinfinal[m]->SetPoint(k, energy[itemp[0]+k], fraction[itemp[0]+k]);
@@ -703,7 +726,10 @@ int main(int argc, char **argv)
             grinfinal[m]->SetPointError(k, 0., 0., fractionErr[2*(itemp[0]+k)], fractionErr[2*(itemp[0]+k)+1]);
             grinfinalSyst[m]->SetPointError(k, 0., 0., sysdev[itemp[0]+k], sysdev[itemp[0]+k]);
             grinfinalSystModel[m]->SetPointError(k, 0., 0., statdev[itemp[0]+k]+sysdev[itemp[0]+k], statdev[itemp[0]+k]+sysdev[itemp[0]+k]);
+
+	    cout << k << ": " << energy[itemp[0]+k] << "\t" << fraction[itemp[0]+k] << " [ -" << fractionErr[2*(itemp[0]+k)] << ", +" << fractionErr[2*(itemp[0]+k)+1] << " ], " << " [ -" << sysdev[itemp[0]+k] << ", +" << sysdev[itemp[0]+k] << " ], " << " [ -" << statdev[itemp[0]+k]+sysdev[itemp[0]+k] << ", +" << statdev[itemp[0]+k]+sysdev[itemp[0]+k] << " ]" << endl;
 	 }
+	 cout << endl;
 	 itemp[0] += energy.size()/3.;
 
 	 // Draw each graph separately and save it

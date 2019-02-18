@@ -1,12 +1,18 @@
+false
 f_{i} - f_{i}^{sys} (X_{max})
 xmax
+false
 f_{i} - f_{i}^{sys} (X_{max})
 xmax
+false
 f_{i} - f_{i}^{sys} (t_{1000})
 risetime
+false
 f_{i} - f_{i}^{sys} (X_{max})
 xmax
+false
 f_{i} - f_{i}^{sys} (#Delta_{R})
 risetime
+false
 f_{i} - f_{i}^{sys} (#Delta S_{38})
 deltas38
