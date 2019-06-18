@@ -422,8 +422,9 @@
      echo "" >> $startdir/start.sh
 
      echo "offlinedirectory=$offlinedirectory" >> $startdir/start.sh
+     echo "" >> $startdir/start.sh
      echo "if [ \$offlinedirectory != -1 ]; then" >> $startdir/start.sh
-     echo "  export ADSTROOT=\$AUGEROFFLINEROOT" >> $startdir/start.sh
+     echo "  export ADSTROOT=\$offlinedirectory" >> $startdir/start.sh
      echo "  echo \"Using ADST installed in \$ADSTROOT\"" >> $startdir/start.sh
      echo "else" >> $startdir/start.sh
      count=0
