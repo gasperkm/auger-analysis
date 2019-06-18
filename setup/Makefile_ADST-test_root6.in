@@ -1,0 +1,30 @@
+ROOTINC=$(shell root-config --incdir)
+ROOTLIB=$(shell root-config --libs)
+
+DICT=$(ADSTROOT)/lib
+LDIR=$(ADSTROOT)/lib
+SDIR=$(ADSTROOT)/RecEvent/src
+IDIR=$(ADSTROOT)/include/adst
+
+INC=-I$(ROOTINC) -I. -I$(IDIR)
+LIB=-L$(LDIR) -L.
+LIBSO=-lRecEventKG
+
+COMPOPT=-fPIC -g -std=c++11 -Wno-deprecated
+ADSTFILES=$(wildcard $(SDIR)/*.cc)
+ADSTHFILES=$(wildcard $(IDIR)/*.h)
+ADSTOFILES=$(addsuffix .o, $(basename $(ADSTFILES)))
+
+all: $(LDIR)/libRecEventKG.so $(DICT)/RecEventDict.cc
+
+$(LDIR)/libRecEventKG.so: $(ADSTOFILES)
+	$(CXX) $(COMPOPT) -shared $^ -o $@ $(ROOTLIB)
+
+$(DICT)/RecEventDict.cc: $(ADSTHFILES) $(SDIR)/RecEventLinkDef.h
+	rootcint -f $@ -c $(INC) $(COMPOPT) $^
+
+$(SDIR)/%.o: $(SDIR)/%.cc
+	$(CXX) $(INC) $(COMPOPT) -c $^ -o $@ $(ROOTLIB)
+
+clean:
+	rm -fr $(LDIR) $(SDIR)/*.o $(IDIR)
