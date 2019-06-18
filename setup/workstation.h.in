@@ -8,9 +8,16 @@
 #define DBGSIG 1
 
 #define rootdir "path-to-installation"
-//#define rootdir "/home/gkukec/Gasper/programiranje/wxWidgets/auger-analysis"
 
 #define OFFVER SOMETHING
+#define ROOTVER SOMETHING
+
+// ROOT 6 has not yet been implemented into ADST, so it will be disabled here during compilation
+#if ROOTVER == 5
+  #define ROOTADST 1
+#elif ROOTVER == 6
+  #define ROOTADST 0
+#endif
 
 // ALLEYES = LL, LM, LA, CO (CO+HE = HeCo)
 #define ALLEYES 4

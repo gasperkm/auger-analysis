@@ -746,6 +746,9 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
    if((specialMva->widgetChBox[4])->IsChecked())
       FDcorrect = 2;
 
+   // Check which observables to use
+   selcuttype = (cutObservables->widgetCB)->GetSelection();
+
    if(s38rise == 0)
    {
 //      cout << "# SetDeltas             #: " << "Setting DeltaS38 (from tree " << stemp[0] << ")" << endl;
@@ -765,31 +768,65 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
          ret = system(stemp[1].c_str());
       }
 
-      // Check if all needed observables are present
-      ret = Find(observables, "energyFD");
-      if(ret == -1)
+      // Using SD observables (and SD energy)
+      if(selcuttype == 0)
       {
-         AlertPopup("No FD energy observable found", "No FD energy observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable energyFD.");
-	 delete tempTree;
-	 delete mystyle;
-         delete[] stemp;
-         delete[] itemp;
-         delete[] ftemp;
-         delete[] btemp;
-         return -1;
-      }
+         // Check if all needed observables are present
+         ret = Find(observables, "energySD");
+         if(ret == -1)
+         {
+            AlertPopup("No SD energy observable found", "No SD energy observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable energySD.");
+            delete tempTree;
+            delete mystyle;
+            delete[] stemp;
+            delete[] itemp;
+            delete[] ftemp;
+            delete[] btemp;
+            return -1;
+         }
 
-      ret = Find(observables, "zenithFD");
-      if(ret == -1)
+         ret = Find(observables, "zenithSD");
+         if(ret == -1)
+         {
+            AlertPopup("No SD zenith angle observable found", "No SD zenith angle observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable zenithSD.");
+            delete tempTree;
+            delete mystyle;
+            delete[] stemp;
+            delete[] itemp;
+            delete[] ftemp;
+            delete[] btemp;
+            return -1;
+         }
+      }
+      // Using FD observables (and FD energy)
+      else if(selcuttype == 1)
       {
-         AlertPopup("No FD zenith angle observable found", "No FD zenith angle observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable zenithFD.");
-	 delete tempTree;
-	 delete mystyle;
-         delete[] stemp;
-         delete[] itemp;
-         delete[] ftemp;
-         delete[] btemp;
-         return -1;
+         // Check if all needed observables are present
+         ret = Find(observables, "energyFD");
+         if(ret == -1)
+         {
+            AlertPopup("No FD energy observable found", "No FD energy observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable energyFD.");
+            delete tempTree;
+            delete mystyle;
+            delete[] stemp;
+            delete[] itemp;
+            delete[] ftemp;
+            delete[] btemp;
+            return -1;
+         }
+
+         ret = Find(observables, "zenithFD");
+         if(ret == -1)
+         {
+            AlertPopup("No FD zenith angle observable found", "No FD zenith angle observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable zenithFD.");
+            delete tempTree;
+            delete mystyle;
+            delete[] stemp;
+            delete[] itemp;
+            delete[] ftemp;
+            delete[] btemp;
+            return -1;
+         }
       }
 
       ret = Find(observables, "shwsize");
@@ -850,104 +887,211 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
       {
          tempTree->GetEntry(j);
 
-	 if((invalues->GetValue("energyFD") != -1) && (invalues->GetValue("zenithFD") != -1) && (invalues->GetValue("shwsize") != -1))
+         // Using SD observables (and SD energy)
+	 if(selcuttype == 0)
 	 {
-            stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
-            stemp[1] = RemovePath(&stemp[1]);
-
-	    // Check if current tree is data or Monte Carlo
-	    if((string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) || FindStringPart(stemp[1], "Data") )
+	    if((invalues->GetValue("energySD") != -1) && (invalues->GetValue("zenithSD") != -1) && (invalues->GetValue("shwsize") != -1))
 	    {
-	       // If treating selected data tree as Monte Carlo
-	       if( (string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) && ((specialMva->widgetChBox[9])->IsChecked()) )
+               stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
+               stemp[1] = RemovePath(&stemp[1]);
+
+	       // Check if current tree is data or Monte Carlo
+	       if((string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) || FindStringPart(stemp[1], "Data") )
 	       {
-                  if(itemp[1] == 0)
-                     cout << "SetDeltaS38: Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
-                  btemp[1] = false;
+	          // If treating selected data tree as Monte Carlo
+	          if( (string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) && ((specialMva->widgetChBox[9])->IsChecked()) )
+	          {
+                     if(itemp[1] == 0)
+                        cout << "SetDeltaS38: Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
+                     btemp[1] = false;
+	          }
+	          // If not treating selected data tree as Monte Carlo
+	          else
+	          {
+                     if(itemp[1] == 0)
+                        cout << "SetDeltaS38: Tree " << stemp[1] << " will be considered as a data tree." << endl;
+	             btemp[1] = true;
+	          }
 	       }
-	       // If not treating selected data tree as Monte Carlo
 	       else
 	       {
                   if(itemp[1] == 0)
-                     cout << "SetDeltaS38: Tree " << stemp[1] << " will be considered as a data tree." << endl;
-	          btemp[1] = true;
-	       }
-	    }
-	    else
-	    {
-               if(itemp[1] == 0)
-                  cout << "SetDeltaS38: Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
-	       btemp[1] = false;
-	    }
-
-/*            // Apply systematic estimation by adding statistical uncertainties to mean value
-            if(btemp[1])	// set to btemp[1] if changing data and to !btemp[1] if changing simulations
-            {
-               if((specialMva->widgetChBox[5])->IsChecked())
-	       {
-	          if(itemp[1] == 0)
-                     cout << "SetDeltaS38: Applying negative uncertainty to " << stemp[1] << endl;
-                  invalues->ApplyUncertainty(invalues_neg, invalues_pos, string((uncertSelect->widgetCB)->GetStringSelection()), 0);
+                     cout << "SetDeltaS38: Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
+	          btemp[1] = false;
 	       }
 
-               if((specialMva->widgetChBox[6])->IsChecked())
-	       {
-	          if(itemp[1] == 0)
-                     cout << "SetDeltaS38: Applying negative uncertainty to " << stemp[1] << endl;
-                  invalues->ApplyUncertainty(invalues_neg, invalues_pos, string((uncertSelect->widgetCB)->GetStringSelection()), 1);
-	       }
-            }*/
-
-	    // Only apply to data
-	    if(btemp[1])
-	    {
-               // Apply Xmax corrections to Auger FD standard data
-               if(FDcorrect == 1)
-	       {
-	          if(itemp[1] == 0)
-                     cout << "SetDeltaS38: Applying FD standard correction to " << stemp[1] << endl;
-                  invalues->ApplyCorrectionFD();
-	       }
-
-               // Apply Xmax and energy corrections to Auger HECO data
-               if(FDcorrect == 2)
+/*               // Apply systematic estimation by adding statistical uncertainties to mean value
+               if(btemp[1])	// set to btemp[1] if changing data and to !btemp[1] if changing simulations
                {
-	          if(itemp[1] == 0)
-                     cout << "SetDeltaS38: Applying HECO correction to " << stemp[1] << endl;
-                  invalues->ApplyCorrectionHECO();
-                  invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
-                  invalues_pos->ApplyCorrectionHECOErrors(invalues, 1);
-               }
-	    }
-
-	    if( (TMath::Log10(invalues->GetValue("energyFD")) > binLimit[0]) && (TMath::Log10(invalues->GetValue("energyFD")) <= binLimit[2]) )
-	    {
-//               if( (invalues->GetValue("zenithFD") > InvSecTheta(zcutBins[0],false)) && (invalues->GetValue("zenithFD") <= InvSecTheta(zcutBins[zcutBins.size()-1],false)) )
-               if( (invalues->GetValue("zenithFD") > InvSecTheta(binLimit[4],false)) && (invalues->GetValue("zenithFD") <= InvSecTheta(binLimit[5],false)) )
-               {
-	          if( (invalues->GetValue("energyFD") != -1) && (invalues->GetValue("zenithFD") != -1) && (invalues->GetValue("shwsize") != -1) )
+                  if((specialMva->widgetChBox[5])->IsChecked())
 	          {
-	             tempvector->push_back(invalues->GetValue("energyFD"));
+	             if(itemp[1] == 0)
+                        cout << "SetDeltaS38: Applying negative uncertainty to " << stemp[1] << endl;
+                     invalues->ApplyUncertainty(invalues_neg, invalues_pos, string((uncertSelect->widgetCB)->GetStringSelection()), 0);
+	          }
 
-	             energy->push_back(invalues->GetValue("energyFD"));
-	             energy->push_back(invalues_neg->GetValue("energyFD"));
-	             energy->push_back(invalues_pos->GetValue("energyFD"));
+                  if((specialMva->widgetChBox[6])->IsChecked())
+	          {
+	             if(itemp[1] == 0)
+                        cout << "SetDeltaS38: Applying negative uncertainty to " << stemp[1] << endl;
+                     invalues->ApplyUncertainty(invalues_neg, invalues_pos, string((uncertSelect->widgetCB)->GetStringSelection()), 1);
+	          }
+               }*/
 
-	             zenith->push_back(invalues->GetValue("zenithFD"));
-	             zenith->push_back(invalues_neg->GetValue("zenithFD"));
-	             zenith->push_back(invalues_pos->GetValue("zenithFD"));
+/*	       // Only apply to data
+	       if(btemp[1])
+	       {
+                  // Apply Xmax corrections to Auger FD standard data
+                  if(FDcorrect == 1)
+	          {
+	             if(itemp[1] == 0)
+                        cout << "SetDeltaS38: Applying FD standard correction to " << stemp[1] << endl;
+                     invalues->ApplyCorrectionFD();
+	          }
 
-	             shwsize->push_back(invalues->GetValue("shwsize"));
-	             shwsize->push_back(invalues_neg->GetValue("shwsize"));
-	             shwsize->push_back(invalues_pos->GetValue("shwsize"));
+                  // Apply Xmax and energy corrections to Auger HECO data
+                  if(FDcorrect == 2)
+                  {
+	             if(itemp[1] == 0)
+                        cout << "SetDeltaS38: Applying HECO correction to " << stemp[1] << endl;
+                     invalues->ApplyCorrectionHECO();
+                     invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
+                     invalues_pos->ApplyCorrectionHECOErrors(invalues, 1);
+                  }
+	       }*/
 
-//                     cout << itemp[0] << " (" << j << "): energyFD = " << invalues->GetValue("energyFD") << ", " << invalues_neg->GetValue("energyFD") << ", " << invalues_pos->GetValue("energyFD") << ", zenithFD = " << invalues->GetValue("zenithFD") << ", " << invalues_neg->GetValue("zenithFD") << ", " << invalues_pos->GetValue("zenithFD") << ", shwsize = " << invalues->GetValue("shwsize") << ", " << invalues_neg->GetValue("shwsize") << ", " << invalues_pos->GetValue("shwsize") << endl;
-	             itemp[0]++;
+	       if( (TMath::Log10(invalues->GetValue("energySD")) > binLimit[0]) && (TMath::Log10(invalues->GetValue("energySD")) <= binLimit[2]) )
+	       {
+//                  if( (invalues->GetValue("zenithSD") > InvSecTheta(zcutBins[0],false)) && (invalues->GetValue("zenithSD") <= InvSecTheta(zcutBins[zcutBins.size()-1],false)) )
+                  if( (invalues->GetValue("zenithSD") > InvSecTheta(binLimit[4],false)) && (invalues->GetValue("zenithSD") <= InvSecTheta(binLimit[5],false)) )
+                  {
+	             if( (invalues->GetValue("energySD") != -1) && (invalues->GetValue("zenithSD") != -1) && (invalues->GetValue("shwsize") != -1) )
+	             {
+	                tempvector->push_back(invalues->GetValue("energySD"));
+
+	                energy->push_back(invalues->GetValue("energySD"));
+	                energy->push_back(invalues_neg->GetValue("energySD"));
+	                energy->push_back(invalues_pos->GetValue("energySD"));
+
+	                zenith->push_back(invalues->GetValue("zenithSD"));
+	                zenith->push_back(invalues_neg->GetValue("zenithSD"));
+	                zenith->push_back(invalues_pos->GetValue("zenithSD"));
+
+	                shwsize->push_back(invalues->GetValue("shwsize"));
+	                shwsize->push_back(invalues_neg->GetValue("shwsize"));
+	                shwsize->push_back(invalues_pos->GetValue("shwsize"));
+
+//                        cout << itemp[0] << " (" << j << "): energySD = " << invalues->GetValue("energySD") << ", " << invalues_neg->GetValue("energySD") << ", " << invalues_pos->GetValue("energySD") << ", zenithSD = " << invalues->GetValue("zenithSD") << ", " << invalues_neg->GetValue("zenithSD") << ", " << invalues_pos->GetValue("zenithSD") << ", shwsize = " << invalues->GetValue("shwsize") << ", " << invalues_neg->GetValue("shwsize") << ", " << invalues_pos->GetValue("shwsize") << endl;
+	                itemp[0]++;
+	             }
 	          }
 	       }
-	    }
 
-	    itemp[1]++;
+	       itemp[1]++;
+	    }
+	 }
+         // Using FD observables (and FD energy)
+	 else if(selcuttype == 1)
+	 {
+	    if((invalues->GetValue("energyFD") != -1) && (invalues->GetValue("zenithFD") != -1) && (invalues->GetValue("shwsize") != -1))
+	    {
+               stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
+               stemp[1] = RemovePath(&stemp[1]);
+
+	       // Check if current tree is data or Monte Carlo
+	       if((string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) || FindStringPart(stemp[1], "Data") )
+	       {
+	          // If treating selected data tree as Monte Carlo
+	          if( (string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) && ((specialMva->widgetChBox[9])->IsChecked()) )
+	          {
+                     if(itemp[1] == 0)
+                        cout << "SetDeltaS38: Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
+                     btemp[1] = false;
+	          }
+	          // If not treating selected data tree as Monte Carlo
+	          else
+	          {
+                     if(itemp[1] == 0)
+                        cout << "SetDeltaS38: Tree " << stemp[1] << " will be considered as a data tree." << endl;
+	             btemp[1] = true;
+	          }
+	       }
+	       else
+	       {
+                  if(itemp[1] == 0)
+                     cout << "SetDeltaS38: Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
+	          btemp[1] = false;
+	       }
+
+/*               // Apply systematic estimation by adding statistical uncertainties to mean value
+               if(btemp[1])	// set to btemp[1] if changing data and to !btemp[1] if changing simulations
+               {
+                  if((specialMva->widgetChBox[5])->IsChecked())
+	          {
+	             if(itemp[1] == 0)
+                        cout << "SetDeltaS38: Applying negative uncertainty to " << stemp[1] << endl;
+                     invalues->ApplyUncertainty(invalues_neg, invalues_pos, string((uncertSelect->widgetCB)->GetStringSelection()), 0);
+	          }
+
+                  if((specialMva->widgetChBox[6])->IsChecked())
+	          {
+	             if(itemp[1] == 0)
+                        cout << "SetDeltaS38: Applying negative uncertainty to " << stemp[1] << endl;
+                     invalues->ApplyUncertainty(invalues_neg, invalues_pos, string((uncertSelect->widgetCB)->GetStringSelection()), 1);
+	          }
+               }*/
+
+	       // Only apply to data
+	       if(btemp[1])
+	       {
+                  // Apply Xmax corrections to Auger FD standard data
+                  if(FDcorrect == 1)
+	          {
+	             if(itemp[1] == 0)
+                        cout << "SetDeltaS38: Applying FD standard correction to " << stemp[1] << endl;
+                     invalues->ApplyCorrectionFD();
+	          }
+
+                  // Apply Xmax and energy corrections to Auger HECO data
+                  if(FDcorrect == 2)
+                  {
+	             if(itemp[1] == 0)
+                        cout << "SetDeltaS38: Applying HECO correction to " << stemp[1] << endl;
+                     invalues->ApplyCorrectionHECO();
+                     invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
+                     invalues_pos->ApplyCorrectionHECOErrors(invalues, 1);
+                  }
+	       }
+
+	       if( (TMath::Log10(invalues->GetValue("energyFD")) > binLimit[0]) && (TMath::Log10(invalues->GetValue("energyFD")) <= binLimit[2]) )
+	       {
+//                  if( (invalues->GetValue("zenithFD") > InvSecTheta(zcutBins[0],false)) && (invalues->GetValue("zenithFD") <= InvSecTheta(zcutBins[zcutBins.size()-1],false)) )
+                  if( (invalues->GetValue("zenithFD") > InvSecTheta(binLimit[4],false)) && (invalues->GetValue("zenithFD") <= InvSecTheta(binLimit[5],false)) )
+                  {
+	             if( (invalues->GetValue("energyFD") != -1) && (invalues->GetValue("zenithFD") != -1) && (invalues->GetValue("shwsize") != -1) )
+	             {
+	                tempvector->push_back(invalues->GetValue("energyFD"));
+
+	                energy->push_back(invalues->GetValue("energyFD"));
+	                energy->push_back(invalues_neg->GetValue("energyFD"));
+	                energy->push_back(invalues_pos->GetValue("energyFD"));
+
+	                zenith->push_back(invalues->GetValue("zenithFD"));
+	                zenith->push_back(invalues_neg->GetValue("zenithFD"));
+	                zenith->push_back(invalues_pos->GetValue("zenithFD"));
+
+	                shwsize->push_back(invalues->GetValue("shwsize"));
+	                shwsize->push_back(invalues_neg->GetValue("shwsize"));
+	                shwsize->push_back(invalues_pos->GetValue("shwsize"));
+
+//                        cout << itemp[0] << " (" << j << "): energyFD = " << invalues->GetValue("energyFD") << ", " << invalues_neg->GetValue("energyFD") << ", " << invalues_pos->GetValue("energyFD") << ", zenithFD = " << invalues->GetValue("zenithFD") << ", " << invalues_neg->GetValue("zenithFD") << ", " << invalues_pos->GetValue("zenithFD") << ", shwsize = " << invalues->GetValue("shwsize") << ", " << invalues_neg->GetValue("shwsize") << ", " << invalues_pos->GetValue("shwsize") << endl;
+	                itemp[0]++;
+	             }
+	          }
+	       }
+
+	       itemp[1]++;
+	    }
 	 }
       }
 
@@ -1147,7 +1291,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
 	 {
 //	    cout << "Calculating S38:" << endl;
 	    CalculateS38(shwsizeVect, zenithVect, fitparam, fitparamErr, s38Vect);
-	    PrintS1000Fit(&iEn, fitgraphMid, fitfuncMid, fitparam, fitparamErr, mystyle);
+	    PrintS1000Fit(&iEn, fitgraphMid, fitfuncMid, fitparam, fitparamErr, mystyle, selcuttype);
 
 	    for(int i = 0; i < zenithVect->size()/3; i++)
 	    {
@@ -1192,14 +1336,14 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
 
 	 tempfunc = (TF1*)fitgraph->GetFunction("fitfunc");
          
-/*         cout << endl << "Fitting parameters for linear dependence between FD energy and S38:" << endl;
+/*         cout << endl << "Fitting parameters for linear dependence between SD energy and S38:" << endl;
          cout << "- A = " << fitparam[0] << " ± " << fitparamErr[0] << endl;
          cout << "- B = " << fitparam[1] << " ± " << fitparamErr[1] << endl;
          cout << endl;*/
 
 	 cout << "  Chi2/NDF of the fit = " << fitfunc->GetChisquare() << "/" << fitfunc->GetNDF() << " = " << (fitfunc->GetChisquare())/(fitfunc->GetNDF()) << endl;
 
-	 PrintS38Fit(fitgraph, tempfunc, fitparam, fitparamErr, mystyle);
+	 PrintS38Fit(fitgraph, tempfunc, fitparam, fitparamErr, mystyle, selcuttype);
          WriteoutS38Fits(type, 1, binLimit[0], binLimit[2], 2, fitparam, fitparamErr);
 
          delete fitfunc;
@@ -1244,31 +1388,65 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
          ret = system(stemp[1].c_str());
       }
 
-      // Check if all needed observables are present
-      ret = Find(observables, "energySD");
-      if(ret == -1)
+      // Using SD observables (and SD energy)
+      if(selcuttype == 0)
       {
-         AlertPopup("No SD energy observable found", "No SD energy observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable energySD.");
-	 delete tempTree;
-	 delete mystyle;
-         delete[] stemp;
-         delete[] itemp;
-         delete[] ftemp;
-         delete[] btemp;
-         return -1;
-      }
+         // Check if all needed observables are present
+         ret = Find(observables, "energySD");
+         if(ret == -1)
+         {
+            AlertPopup("No SD energy observable found", "No SD energy observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable energySD.");
+            delete tempTree;
+            delete mystyle;
+            delete[] stemp;
+            delete[] itemp;
+            delete[] ftemp;
+            delete[] btemp;
+            return -1;
+         }
 
-      ret = Find(observables, "zenithSD");
-      if(ret == -1)
+         ret = Find(observables, "zenithSD");
+         if(ret == -1)
+         {
+            AlertPopup("No SD zenith angle observable found", "No SD zenith angle observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable zenithSD.");
+            delete tempTree;
+            delete mystyle;
+            delete[] stemp;
+            delete[] itemp;
+            delete[] ftemp;
+            delete[] btemp;
+            return -1;
+         }
+      }
+      // Using FD observables (and FD energy)
+      else if(selcuttype == 1)
       {
-         AlertPopup("No SD zenith angle observable found", "No SD zenith angle observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable zenithSD.");
-	 delete tempTree;
-	 delete mystyle;
-         delete[] stemp;
-         delete[] itemp;
-         delete[] ftemp;
-         delete[] btemp;
-         return -1;
+         // Check if all needed observables are present
+         ret = Find(observables, "energyFD");
+         if(ret == -1)
+         {
+            AlertPopup("No FD energy observable found", "No FD energy observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable energyFD.");
+            delete tempTree;
+            delete mystyle;
+            delete[] stemp;
+            delete[] itemp;
+            delete[] ftemp;
+            delete[] btemp;
+            return -1;
+         }
+
+         ret = Find(observables, "zenithFD");
+         if(ret == -1)
+         {
+            AlertPopup("No FD zenith angle observable found", "No FD zenith angle observable found in the list of observables (" + string(rootdir) + "/input/observables.txt). Please name the observable zenithFD.");
+            delete tempTree;
+            delete mystyle;
+            delete[] stemp;
+            delete[] itemp;
+            delete[] ftemp;
+            delete[] btemp;
+            return -1;
+         }
       }
 
       ret = Find(observables, "nrstations");
@@ -1366,116 +1544,235 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
          brisepos->GetEntry(tentry);
          bsat->GetEntry(tentry);
 
-	 if((invalues->GetValue("energyFD") != -1) && (invalues->GetValue("zenithFD") != -1) && (invalues->GetValue("nrstations") != 0))
+         // Using SD observables (and SD energy)
+         if(selcuttype == 0)
 	 {
-            stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
-            stemp[1] = RemovePath(&stemp[1]);
-
-	    // Check if current tree is data or Monte Carlo
-	    if((string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) || FindStringPart(stemp[1], "Data") )
+	    if((invalues->GetValue("energySD") != -1) && (invalues->GetValue("zenithSD") != -1) && (invalues->GetValue("nrstations") != 0))
 	    {
-	       // If treating selected data tree as Monte Carlo
-	       if( (string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) && ((specialMva->widgetChBox[9])->IsChecked()) )
+               stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
+               stemp[1] = RemovePath(&stemp[1]);
+
+	       // Check if current tree is data or Monte Carlo
+	       if((string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) || FindStringPart(stemp[1], "Data") )
 	       {
-                  if(itemp[1] == 0)
-                     cout << "SetDeltaR: Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
-                  btemp[1] = false;
+	          // If treating selected data tree as Monte Carlo
+	          if( (string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) && ((specialMva->widgetChBox[9])->IsChecked()) )
+	          {
+                     if(itemp[1] == 0)
+                        cout << "SetDeltaR: Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
+                     btemp[1] = false;
+	          }
+	          // If not treating selected data tree as Monte Carlo
+	          else
+	          {
+                     if(itemp[1] == 0)
+                        cout << "SetDeltaR: Tree " << stemp[1] << " will be considered as a data tree." << endl;
+	             btemp[1] = true;
+	          }
 	       }
-	       // If not treating selected data tree as Monte Carlo
 	       else
 	       {
                   if(itemp[1] == 0)
-                     cout << "SetDeltaR: Tree " << stemp[1] << " will be considered as a data tree." << endl;
-	          btemp[1] = true;
-	       }
-	    }
-	    else
-	    {
-               if(itemp[1] == 0)
-                  cout << "SetDeltaR: Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
-	       btemp[1] = false;
-	    }
-
-/*            // Apply systematic estimation by adding statistical uncertainties to mean value
-            if(btemp[1])	// set to btemp[1] if changing data and to !btemp[1] if changing simulations
-            {
-               if((specialMva->widgetChBox[5])->IsChecked())
-	       {
-	          if(itemp[1] == 0)
-                     cout << "SetDeltaR: Applying negative uncertainty to " << stemp[1] << endl;
-                  invalues->ApplyUncertainty(invalues_neg, invalues_pos, string((uncertSelect->widgetCB)->GetStringSelection()), 0);
+                     cout << "SetDeltaR: Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
+	          btemp[1] = false;
 	       }
 
-               if((specialMva->widgetChBox[6])->IsChecked())
-	       {
-	          if(itemp[1] == 0)
-                     cout << "SetDeltaR: Applying negative uncertainty to " << stemp[1] << endl;
-                  invalues->ApplyUncertainty(invalues_neg, invalues_pos, string((uncertSelect->widgetCB)->GetStringSelection()), 1);
-	       }
-            }*/
-
-	    // Only apply to data
-	    if(btemp[1])
-	    {
-               // Apply Xmax corrections to Auger FD standard data
-               if(FDcorrect == 1)
-	       {
-	          if(itemp[1] == 0)
-                     cout << "SetDeltaR: Applying FD standard correction to " << stemp[1] << endl;
-                  invalues->ApplyCorrectionFD();
-	       }
-
-               // Apply Xmax and energy corrections to Auger HECO data
-               if(FDcorrect == 2)
+/*               // Apply systematic estimation by adding statistical uncertainties to mean value
+               if(btemp[1])	// set to btemp[1] if changing data and to !btemp[1] if changing simulations
                {
-	          if(itemp[1] == 0)
-                     cout << "SetDeltaR: Applying HECO correction to " << stemp[1] << endl;
-                  invalues->ApplyCorrectionHECO();
-                  invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
-                  invalues_pos->ApplyCorrectionHECOErrors(invalues, 1);
-               }
-	    }
-
-//	    cout << "Number of stations = " << invalues->GetValue("nrstations") << endl;
-
-	    if( (TMath::Log10(invalues->GetValue("energyFD")) > binLimit[0]) && (TMath::Log10(invalues->GetValue("energyFD")) <= binLimit[1]) )
-	    {
-//               if( (invalues->GetValue("zenithFD") > InvSecTheta(zcutBins[0],false)) && (invalues->GetValue("zenithFD") <= InvSecTheta(zcutBins[zcutBins.size()-1],false)) )
-               if( (invalues->GetValue("zenithFD") > InvSecTheta(binLimit[5],false)) && (invalues->GetValue("zenithFD") <= InvSecTheta(binLimit[6],false)) )
-               {
-	          if( (invalues->GetValue("energyFD") != -1) && (invalues->GetValue("zenithFD") != -1) && (invalues->GetValue("nrstations") != -1) )
+                  if((specialMva->widgetChBox[5])->IsChecked())
 	          {
-	             for(int i = 0; i < invalues->GetValue("nrstations"); i++)
+	             if(itemp[1] == 0)
+                        cout << "SetDeltaR: Applying negative uncertainty to " << stemp[1] << endl;
+                     invalues->ApplyUncertainty(invalues_neg, invalues_pos, string((uncertSelect->widgetCB)->GetStringSelection()), 0);
+	          }
+
+                  if((specialMva->widgetChBox[6])->IsChecked())
+	          {
+	             if(itemp[1] == 0)
+                        cout << "SetDeltaR: Applying negative uncertainty to " << stemp[1] << endl;
+                     invalues->ApplyUncertainty(invalues_neg, invalues_pos, string((uncertSelect->widgetCB)->GetStringSelection()), 1);
+	          }
+               }*/
+
+/*	       // Only apply to data
+	       if(btemp[1])
+	       {
+                  // Apply Xmax corrections to Auger FD standard data
+                  if(FDcorrect == 1)
+	          {
+	             if(itemp[1] == 0)
+                        cout << "SetDeltaR: Applying FD standard correction to " << stemp[1] << endl;
+                     invalues->ApplyCorrectionFD();
+	          }
+
+                  // Apply Xmax and energy corrections to Auger HECO data
+                  if(FDcorrect == 2)
+                  {
+	             if(itemp[1] == 0)
+                        cout << "SetDeltaR: Applying HECO correction to " << stemp[1] << endl;
+                     invalues->ApplyCorrectionHECO();
+                     invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
+                     invalues_pos->ApplyCorrectionHECOErrors(invalues, 1);
+                  }
+	       }*/
+
+//	       cout << "Number of stations = " << invalues->GetValue("nrstations") << endl;
+
+	       if( (TMath::Log10(invalues->GetValue("energySD")) > binLimit[0]) && (TMath::Log10(invalues->GetValue("energySD")) <= binLimit[1]) )
+	       {
+//                  if( (invalues->GetValue("zenithSD") > InvSecTheta(zcutBins[0],false)) && (invalues->GetValue("zenithSD") <= InvSecTheta(zcutBins[zcutBins.size()-1],false)) )
+                  if( (invalues->GetValue("zenithSD") > InvSecTheta(binLimit[5],false)) && (invalues->GetValue("zenithSD") <= InvSecTheta(binLimit[6],false)) )
+                  {
+	             if( (invalues->GetValue("energySD") != -1) && (invalues->GetValue("zenithSD") != -1) && (invalues->GetValue("nrstations") != -1) )
 	             {
-	                energy->push_back(invalues->GetValue("energyFD"));
-	                energy->push_back(invalues_neg->GetValue("energyFD"));
-	                energy->push_back(invalues_pos->GetValue("energyFD"));
+	                for(int i = 0; i < invalues->GetValue("nrstations"); i++)
+	                {
+	                   energy->push_back(invalues->GetValue("energySD"));
+	                   energy->push_back(invalues_neg->GetValue("energySD"));
+	                   energy->push_back(invalues_pos->GetValue("energySD"));
 
-	                if( (TMath::Log10(invalues->GetValue("energyFD")) > binLimit[2]) && (TMath::Log10(invalues->GetValue("energyFD")) <= binLimit[3]) )
-	                   tempvector->push_back(SecTheta(invalues->GetValue("zenithFD"),false));
+	                   if( (TMath::Log10(invalues->GetValue("energySD")) > binLimit[2]) && (TMath::Log10(invalues->GetValue("energySD")) <= binLimit[3]) )
+	                      tempvector->push_back(SecTheta(invalues->GetValue("zenithSD"),false));
 
-	                zenith->push_back(invalues->GetValue("zenithFD"));
-	                zenith->push_back(invalues_neg->GetValue("zenithFD"));
-	                zenith->push_back(invalues_pos->GetValue("zenithFD"));
+	                   zenith->push_back(invalues->GetValue("zenithSD"));
+	                   zenith->push_back(invalues_neg->GetValue("zenithSD"));
+	                   zenith->push_back(invalues_pos->GetValue("zenithSD"));
 
-	                risetime->push_back(stationRisetime[0]->at(i));
-	                risetime->push_back(stationRisetime[1]->at(i));
-	                risetime->push_back(stationRisetime[2]->at(i));
+	                   risetime->push_back(stationRisetime[0]->at(i));
+	                   risetime->push_back(stationRisetime[1]->at(i));
+	                   risetime->push_back(stationRisetime[2]->at(i));
 
-	                distance->push_back(stationDistance[0]->at(i));
-	                distance->push_back(stationDistance[1]->at(i));
-	                distance->push_back(stationDistance[2]->at(i));
+	                   distance->push_back(stationDistance[0]->at(i));
+	                   distance->push_back(stationDistance[1]->at(i));
+	                   distance->push_back(stationDistance[2]->at(i));
 
-	                HGsat->push_back(stationHSat->at(i));
+	                   HGsat->push_back(stationHSat->at(i));
 
-//                        cout << itemp[0] << " (" << j << "): energyFD = " << invalues->GetValue("energyFD") << ", " << invalues_neg->GetValue("energyFD") << ", " << invalues_pos->GetValue("energyFD") << ", zenithFD = " << invalues->GetValue("zenithFD") << ", " << invalues_neg->GetValue("zenithFD") << ", " << invalues_pos->GetValue("zenithFD") << ", distance = " << stationDistance[0]->at(i) << ", " << stationDistance[1]->at(i) << ", " << stationDistance[2]->at(i) << ", risetime = " << stationRisetime[0]->at(i) << ", " << stationRisetime[1]->at(i) << ", " << stationRisetime[2]->at(i) << ", HGsat = " << stationHSat->at(i) << endl;
-	                itemp[0]++;
+//                           cout << itemp[0] << " (" << j << "): energySD = " << invalues->GetValue("energySD") << ", " << invalues_neg->GetValue("energySD") << ", " << invalues_pos->GetValue("energySD") << ", zenithSD = " << invalues->GetValue("zenithSD") << ", " << invalues_neg->GetValue("zenithSD") << ", " << invalues_pos->GetValue("zenithSD") << ", distance = " << stationDistance[0]->at(i) << ", " << stationDistance[1]->at(i) << ", " << stationDistance[2]->at(i) << ", risetime = " << stationRisetime[0]->at(i) << ", " << stationRisetime[1]->at(i) << ", " << stationRisetime[2]->at(i) << ", HGsat = " << stationHSat->at(i) << endl;
+	                   itemp[0]++;
+	                }
 	             }
 	          }
 	       }
-	    }
 
-	    itemp[1]++;
+	       itemp[1]++;
+	    }
+	 }
+         // Using FD observables (and FD energy)
+         else if(selcuttype == 1)
+	 {
+	    if((invalues->GetValue("energyFD") != -1) && (invalues->GetValue("zenithFD") != -1) && (invalues->GetValue("nrstations") != 0))
+	    {
+               stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
+               stemp[1] = RemovePath(&stemp[1]);
+
+	       // Check if current tree is data or Monte Carlo
+	       if((string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) || FindStringPart(stemp[1], "Data") )
+	       {
+	          // If treating selected data tree as Monte Carlo
+	          if( (string((dataSelect->widgetCB)->GetStringSelection()) == stemp[1]) && ((specialMva->widgetChBox[9])->IsChecked()) )
+	          {
+                     if(itemp[1] == 0)
+                        cout << "SetDeltaR: Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
+                     btemp[1] = false;
+	          }
+	          // If not treating selected data tree as Monte Carlo
+	          else
+	          {
+                     if(itemp[1] == 0)
+                        cout << "SetDeltaR: Tree " << stemp[1] << " will be considered as a data tree." << endl;
+	             btemp[1] = true;
+	          }
+	       }
+	       else
+	       {
+                  if(itemp[1] == 0)
+                     cout << "SetDeltaR: Tree " << stemp[1] << " will be considered as a Monte Carlo tree." << endl;
+	          btemp[1] = false;
+	       }
+
+/*               // Apply systematic estimation by adding statistical uncertainties to mean value
+               if(btemp[1])	// set to btemp[1] if changing data and to !btemp[1] if changing simulations
+               {
+                  if((specialMva->widgetChBox[5])->IsChecked())
+	          {
+	             if(itemp[1] == 0)
+                        cout << "SetDeltaR: Applying negative uncertainty to " << stemp[1] << endl;
+                     invalues->ApplyUncertainty(invalues_neg, invalues_pos, string((uncertSelect->widgetCB)->GetStringSelection()), 0);
+	          }
+
+                  if((specialMva->widgetChBox[6])->IsChecked())
+	          {
+	             if(itemp[1] == 0)
+                        cout << "SetDeltaR: Applying negative uncertainty to " << stemp[1] << endl;
+                     invalues->ApplyUncertainty(invalues_neg, invalues_pos, string((uncertSelect->widgetCB)->GetStringSelection()), 1);
+	          }
+               }*/
+
+	       // Only apply to data
+	       if(btemp[1])
+	       {
+                  // Apply Xmax corrections to Auger FD standard data
+                  if(FDcorrect == 1)
+	          {
+	             if(itemp[1] == 0)
+                        cout << "SetDeltaR: Applying FD standard correction to " << stemp[1] << endl;
+                     invalues->ApplyCorrectionFD();
+	          }
+
+                  // Apply Xmax and energy corrections to Auger HECO data
+                  if(FDcorrect == 2)
+                  {
+	             if(itemp[1] == 0)
+                        cout << "SetDeltaR: Applying HECO correction to " << stemp[1] << endl;
+                     invalues->ApplyCorrectionHECO();
+                     invalues_neg->ApplyCorrectionHECOErrors(invalues, -1);
+                     invalues_pos->ApplyCorrectionHECOErrors(invalues, 1);
+                  }
+	       }
+
+//	       cout << "Number of stations = " << invalues->GetValue("nrstations") << endl;
+
+	       if( (TMath::Log10(invalues->GetValue("energyFD")) > binLimit[0]) && (TMath::Log10(invalues->GetValue("energyFD")) <= binLimit[1]) )
+	       {
+//                  if( (invalues->GetValue("zenithFD") > InvSecTheta(zcutBins[0],false)) && (invalues->GetValue("zenithFD") <= InvSecTheta(zcutBins[zcutBins.size()-1],false)) )
+                  if( (invalues->GetValue("zenithFD") > InvSecTheta(binLimit[5],false)) && (invalues->GetValue("zenithFD") <= InvSecTheta(binLimit[6],false)) )
+                  {
+	             if( (invalues->GetValue("energyFD") != -1) && (invalues->GetValue("zenithFD") != -1) && (invalues->GetValue("nrstations") != -1) )
+	             {
+	                for(int i = 0; i < invalues->GetValue("nrstations"); i++)
+	                {
+	                   energy->push_back(invalues->GetValue("energyFD"));
+	                   energy->push_back(invalues_neg->GetValue("energyFD"));
+	                   energy->push_back(invalues_pos->GetValue("energyFD"));
+
+	                   if( (TMath::Log10(invalues->GetValue("energyFD")) > binLimit[2]) && (TMath::Log10(invalues->GetValue("energyFD")) <= binLimit[3]) )
+	                      tempvector->push_back(SecTheta(invalues->GetValue("zenithFD"),false));
+
+	                   zenith->push_back(invalues->GetValue("zenithFD"));
+	                   zenith->push_back(invalues_neg->GetValue("zenithFD"));
+	                   zenith->push_back(invalues_pos->GetValue("zenithFD"));
+
+	                   risetime->push_back(stationRisetime[0]->at(i));
+	                   risetime->push_back(stationRisetime[1]->at(i));
+	                   risetime->push_back(stationRisetime[2]->at(i));
+
+	                   distance->push_back(stationDistance[0]->at(i));
+	                   distance->push_back(stationDistance[1]->at(i));
+	                   distance->push_back(stationDistance[2]->at(i));
+
+	                   HGsat->push_back(stationHSat->at(i));
+
+//                           cout << itemp[0] << " (" << j << "): energyFD = " << invalues->GetValue("energyFD") << ", " << invalues_neg->GetValue("energyFD") << ", " << invalues_pos->GetValue("energyFD") << ", zenithFD = " << invalues->GetValue("zenithFD") << ", " << invalues_neg->GetValue("zenithFD") << ", " << invalues_pos->GetValue("zenithFD") << ", distance = " << stationDistance[0]->at(i) << ", " << stationDistance[1]->at(i) << ", " << stationDistance[2]->at(i) << ", risetime = " << stationRisetime[0]->at(i) << ", " << stationRisetime[1]->at(i) << ", " << stationRisetime[2]->at(i) << ", HGsat = " << stationHSat->at(i) << endl;
+	                   itemp[0]++;
+	                }
+	             }
+	          }
+	       }
+
+	       itemp[1]++;
+	    }
 	 }
       }
 
@@ -1683,7 +1980,7 @@ int MyFrame::SetDeltas(int s38rise, int type, TFile *ifile, bool isdata)
    return 0;
 }
 
-void MyFrame::PrintS1000Fit(int *ebinS1000, TGraphAsymmErrors *fitgraph, TF1 *fitfunc, float *fitpar, float *fitparErr, RootStyle *mystyle)
+void MyFrame::PrintS1000Fit(int *ebinS1000, TGraphAsymmErrors *fitgraph, TF1 *fitfunc, float *fitpar, float *fitparErr, RootStyle *mystyle, int seltype)
 {
    string *stemp = new string[2];
    double *dtemp = new double[2];
@@ -1718,7 +2015,10 @@ void MyFrame::PrintS1000Fit(int *ebinS1000, TGraphAsymmErrors *fitgraph, TF1 *fi
    tempgr->GetXaxis()->SetRange(0.95,2.05);
    tempgr->GetXaxis()->SetRangeUser(0.95,2.05);
 
-   mystyle->SetAxisTitles(tempgr, "SD zenith angle (sec#theta)", "S_{1000} (VEM)");
+   if(seltype == 0)
+      mystyle->SetAxisTitles(tempgr, "SD zenith angle (sec#theta)", "S_{1000} (VEM)");
+   else if(seltype == 1)
+      mystyle->SetAxisTitles(tempgr, "FD zenith angle (sec#theta)", "S_{1000} (VEM)");
    tempgr->GetYaxis()->SetTitleOffset(mystyle->GetSingleYoffset(c1));
    tempgr->GetXaxis()->SetTitleOffset(mystyle->GetSingleXoffset(c1));
    mystyle->SetGraphColor(fitgraph, 2);
@@ -1758,29 +2058,58 @@ void MyFrame::PrintS1000Fit(int *ebinS1000, TGraphAsymmErrors *fitgraph, TF1 *fi
    else
       stemp[1] = string(*currentAnalysisDir) + "/delta_conversion/s38_vs_energyFD_data.pdf";*/
 
-   if(multipleEnergyBins)
+   if(seltype == 0)
    {
-      stemp[0] = "mkdir -p " + string(*currentAnalysisDir) + "/../delta_conversion/s38_conversion";
-      system(stemp[0].c_str());
-      stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/../delta_conversion/s38_conversion/s1000_vs_energyFD_data.pdf";
-      system(stemp[0].c_str());
-   }
-   else
-   {
-      stemp[0] = "mkdir -p " + string(*currentAnalysisDir) + "/delta_conversion/s38_conversion";
-      system(stemp[0].c_str());
-      stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/delta_conversion/s38_conversion/s1000_vs_energyFD_data.pdf";
-      system(stemp[0].c_str());
-   }
-   if((*ebinS1000)+1 < 10)
-      stemp[0] = "0" + ToString((*ebinS1000)+1);
-   else
-      stemp[0] = ToString((*ebinS1000)+1);
+      if(multipleEnergyBins)
+      {
+         stemp[0] = "mkdir -p " + string(*currentAnalysisDir) + "/../delta_conversion/s38_conversion";
+         system(stemp[0].c_str());
+         stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/../delta_conversion/s38_conversion/s1000_vs_energySD_data.pdf";
+         system(stemp[0].c_str());
+      }
+      else
+      {
+         stemp[0] = "mkdir -p " + string(*currentAnalysisDir) + "/delta_conversion/s38_conversion";
+         system(stemp[0].c_str());
+         stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/delta_conversion/s38_conversion/s1000_vs_energySD_data.pdf";
+         system(stemp[0].c_str());
+      }
+      if((*ebinS1000)+1 < 10)
+         stemp[0] = "0" + ToString((*ebinS1000)+1);
+      else
+         stemp[0] = ToString((*ebinS1000)+1);
 
-   if(multipleEnergyBins)
-      stemp[1] = string(*currentAnalysisDir) + "/../delta_conversion/s38_conversion/s1000_vs_energyFD_data_ebin-" + stemp[0] + ".pdf";
-   else
-      stemp[1] = string(*currentAnalysisDir) + "/delta_conversion/s38_conversion/s1000_vs_energyFD_data_ebin-" + stemp[0] + ".pdf";
+      if(multipleEnergyBins)
+         stemp[1] = string(*currentAnalysisDir) + "/../delta_conversion/s38_conversion/s1000_vs_energySD_data_ebin-" + stemp[0] + ".pdf";
+      else
+         stemp[1] = string(*currentAnalysisDir) + "/delta_conversion/s38_conversion/s1000_vs_energySD_data_ebin-" + stemp[0] + ".pdf";
+   }
+   else if(seltype == 1)
+   {
+      if(multipleEnergyBins)
+      {
+         stemp[0] = "mkdir -p " + string(*currentAnalysisDir) + "/../delta_conversion/s38_conversion";
+         system(stemp[0].c_str());
+         stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/../delta_conversion/s38_conversion/s1000_vs_energyFD_data.pdf";
+         system(stemp[0].c_str());
+      }
+      else
+      {
+         stemp[0] = "mkdir -p " + string(*currentAnalysisDir) + "/delta_conversion/s38_conversion";
+         system(stemp[0].c_str());
+         stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/delta_conversion/s38_conversion/s1000_vs_energyFD_data.pdf";
+         system(stemp[0].c_str());
+      }
+      if((*ebinS1000)+1 < 10)
+         stemp[0] = "0" + ToString((*ebinS1000)+1);
+      else
+         stemp[0] = ToString((*ebinS1000)+1);
+
+      if(multipleEnergyBins)
+         stemp[1] = string(*currentAnalysisDir) + "/../delta_conversion/s38_conversion/s1000_vs_energyFD_data_ebin-" + stemp[0] + ".pdf";
+      else
+         stemp[1] = string(*currentAnalysisDir) + "/delta_conversion/s38_conversion/s1000_vs_energyFD_data_ebin-" + stemp[0] + ".pdf";
+   }
 
    c1->SaveAs(stemp[1].c_str());
 
@@ -1791,7 +2120,7 @@ void MyFrame::PrintS1000Fit(int *ebinS1000, TGraphAsymmErrors *fitgraph, TF1 *fi
    delete c1;
 }
 
-void MyFrame::PrintS38Fit(TGraphAsymmErrors *fitgraph, TF1 *fitfunc, float *fitpar, float *fitparErr, RootStyle *mystyle)
+void MyFrame::PrintS38Fit(TGraphAsymmErrors *fitgraph, TF1 *fitfunc, float *fitpar, float *fitparErr, RootStyle *mystyle, int seltype)
 {
    string *stemp = new string[2];
 
@@ -1812,7 +2141,10 @@ void MyFrame::PrintS38Fit(TGraphAsymmErrors *fitgraph, TF1 *fitfunc, float *fitp
    tempgr->GetXaxis()->SetRange(2.5,100.);
    tempgr->GetXaxis()->SetRangeUser(2.5,100.);
 
-   mystyle->SetAxisTitles(tempgr, "FD energy (EeV)", "S_{38} (VEM)");
+   if(seltype == 0)
+      mystyle->SetAxisTitles(tempgr, "SD energy (EeV)", "S_{38} (VEM)");
+   else if(seltype == 1)
+      mystyle->SetAxisTitles(tempgr, "FD energy (EeV)", "S_{38} (VEM)");
    tempgr->GetYaxis()->SetTitleOffset(mystyle->GetSingleYoffset(c1));
    tempgr->GetXaxis()->SetTitleOffset(mystyle->GetSingleXoffset(c1));
    
@@ -1841,15 +2173,31 @@ void MyFrame::PrintS38Fit(TGraphAsymmErrors *fitgraph, TF1 *fitfunc, float *fitp
    stemp[0] = "B = " + ToString(fitpar[1],3) + " #pm " + ToString(fitparErr[1],3);
    ltext->DrawLatex(TMath::Power(10, (c1->GetUxmin()+0.1)), TMath::Power(10, (c1->GetUymax()-0.26)), stemp[0].c_str());
 
-   if(multipleEnergyBins)
-      stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/../delta_conversion/s38_vs_energyFD_data.pdf";
-   else
-      stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/delta_conversion/s38_vs_energyFD_data.pdf";
-   system(stemp[0].c_str());
-   if(multipleEnergyBins)
-      stemp[1] = string(*currentAnalysisDir) + "/../delta_conversion/s38_vs_energyFD_data.pdf";
-   else
-      stemp[1] = string(*currentAnalysisDir) + "/delta_conversion/s38_vs_energyFD_data.pdf";
+   if(seltype == 0)
+   {
+      if(multipleEnergyBins)
+         stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/../delta_conversion/s38_vs_energySD_data.pdf";
+      else
+         stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/delta_conversion/s38_vs_energySD_data.pdf";
+      system(stemp[0].c_str());
+      if(multipleEnergyBins)
+         stemp[1] = string(*currentAnalysisDir) + "/../delta_conversion/s38_vs_energySD_data.pdf";
+      else
+         stemp[1] = string(*currentAnalysisDir) + "/delta_conversion/s38_vs_energySD_data.pdf";
+   }
+   else if(seltype == 1)
+   {
+      if(multipleEnergyBins)
+         stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/../delta_conversion/s38_vs_energyFD_data.pdf";
+      else
+         stemp[0] = "rm -fr " + string(*currentAnalysisDir) + "/delta_conversion/s38_vs_energyFD_data.pdf";
+      system(stemp[0].c_str());
+      if(multipleEnergyBins)
+         stemp[1] = string(*currentAnalysisDir) + "/../delta_conversion/s38_vs_energyFD_data.pdf";
+      else
+         stemp[1] = string(*currentAnalysisDir) + "/delta_conversion/s38_vs_energyFD_data.pdf";
+   }
+
    c1->SaveAs(stemp[1].c_str());
 
    delete tempgr;
@@ -2384,6 +2732,9 @@ int MyFrame::PerformMvaAnalysis(string *infilename, string *outfilename, int *cu
    stemp = new string[4];
    itemp = new int;
 
+   cout << "# PerformMvaAnalysis    #: " << "Starting MVA analysis." << endl;
+#if ROOTVER == 5
+   cout << "# PerformMvaAnalysis    #: " << "Running with ROOT version 5." << endl;
    TFile *ifile = TFile::Open(infilename->c_str(), "READ");
    // Open the file to write out to
    TFile *ofile = TFile::Open(outfilename->c_str(), "RECREATE");
@@ -2401,6 +2752,7 @@ int MyFrame::PerformMvaAnalysis(string *infilename, string *outfilename, int *cu
    //        AnalysisType = setting the analysis type (Classification, Regression, Multiclass, Auto)
    // Default values = !V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Auto
    TMVA::Factory *factory = new TMVA::Factory("TMVAClassification",ofile,"!V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Classification");
+cout << "Setting opened file for TMVA analysis." << endl;
 
    // Selecting the weights directory
    (TMVA::gConfig().GetIONames()).fWeightFileDir = ((*currentAnalysisDir) + "/weights").c_str();
@@ -2541,10 +2893,177 @@ int MyFrame::PerformMvaAnalysis(string *infilename, string *outfilename, int *cu
    ifile->Close();
    delete factory;
    ofile->Close();
+#elif ROOTVER == 6
+   cout << "# PerformMvaAnalysis    #: " << "Running with ROOT version 6." << endl;
+   TFile *ifile = TFile::Open(infilename->c_str(), "READ");
+   // Open the file to write out to
+   TFile *ofile = TFile::Open(outfilename->c_str(), "RECREATE");
+   // Prepare the MVA Factory
+   // Factory usage:
+   // - user-defined job name, reappearing in names of weight files for training results ("TMVAClassification")
+   // - pointer to an output file (ofile)
+   // - options
+   // Factory has the following options:
+   //        V = verbose
+   //        Silent = batch mode
+   //        Color = colored screen output
+   //        DrawProgressBar = progress bar display during training and testing
+   //        Transformations = the transformations to make (identity, decorrelation, PCA, uniform, gaussian, gaussian decorrelation)
+   //        AnalysisType = setting the analysis type (Classification, Regression, Multiclass, Auto)
+   // Default values = !V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Auto
+   TMVA::Factory *factory = new TMVA::Factory("TMVAClassification",ofile,"!V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Classification");
 
+   // Selecting the weights directory
+   (TMVA::gConfig().GetIONames()).fWeightFileDir = ((*currentAnalysisDir) + "/weights").c_str();
+   cout << "# PerformMvaAnalysis    #: " << "Weights directory after = " << (TMVA::gConfig().GetIONames()).fWeightFileDir << endl;
+   (*curcount)++;
+   progress->Update(*curcount);
+
+   TMVA::DataLoader *dataloader = new TMVA::DataLoader("");
+
+   // Adding observables to the Factory
+   nrTreeEvents[0] = 0;
+   for(int i = 0; i < nrobs; i++)
+   {
+      if(obssel[i])
+      {
+         dataloader->AddVariable(observables[i].c_str(), 'F');
+         cout << "# PerformMvaAnalysis    #: " << "Adding variable: " << observables[i] << " (" << (int)obssel[i] << ")" << endl;
+         nrTreeEvents[0]++;
+      }
+   }
+   nrselobs = MvaNoteObservables(nrTreeEvents[0]);
+   (*curcount)++;
+   progress->Update(*curcount);
+
+   // Select signal and background trees (from the temporary input file)
+   TTree *signalTree = new TTree;
+   TTree *backgroundTree[mixednum];
+   for(int j = 0; j < mixednum; j++)
+      backgroundTree[j] = new TTree;
+   *itemp = 0;
+
+   nrTreeEvents[0] = -1;
+   nrTreeEvents[1] = -1;
+//   TList *tempkeyslist = (TList*) ifile->GetListOfKeys();
+   for(int j = 1; j <= GetRootKeys(ifile, "TreeS"); j++)
+   {
+//      stemp[0] = string((tempkeyslist->At(j-1))->GetName());
+      stemp[0] = "TreeS" + ToString(j);
+      stemp[1] = string(ifile->GetKey(stemp[0].c_str())->GetTitle());
+      stemp[1] = RemovePath(&stemp[1]);
+
+      // Signal tree setup
+      if( string((signalSelect->widgetCB)->GetStringSelection()) == stemp[1] )
+      {
+         cout << "# PerformMvaAnalysis    #: " << "Using signal tree: " << stemp[1] << endl;
+         signalTree = (TTree*)ifile->Get(stemp[0].c_str());
+         nrTreeEvents[0] = signalTree->GetEntries();
+      }
+
+      // Background tree setup
+      stemp[3] = string((backgroundSelect->widgetCB)->GetStringSelection());
+      if( stemp[3].find(stemp[1]) != string::npos )
+      {
+         cout << "# PerformMvaAnalysis    #: " << "Using background tree " << *itemp << ": " << stemp[1] << endl;
+         backgroundTree[*itemp] = (TTree*)ifile->Get(stemp[0].c_str());
+         nrTreeEvents[1] = backgroundTree[*itemp]->GetEntries();
+         (*itemp)++;
+      }
+   }
+
+   (*curcount)++;
+   progress->Update(*curcount);
+
+   cout << "# PerformMvaAnalysis    #: " << "Number of entries in signal tree = " << nrTreeEvents[0] << endl;
+   cout << "# PerformMvaAnalysis    #: " << "Number of entries in background tree = " << nrTreeEvents[1] << endl;
+
+   // Add signal and background tree
+   dataloader->AddSignalTree(signalTree, 1.0);
+   for(int i = 0; i < *itemp; i++)
+      dataloader->AddBackgroundTree(backgroundTree[i], 1.0);
+
+   // Preparing and training from the trees:
+   // - preselection cuts make cuts on input variables, before even starting the MVA
+   // - options
+   // These are the possible options:
+   //        nTrain_Signal = number of training events of class Signal (0 takes all)
+   //        nTrain_Background = number of training events of class Background (0 takes all)
+   //        nTest_Signal = number of test events of class Signal (0 takes all)
+   //        nTest_Background = number of test events of class Background (0 takes all)
+   //        SplitMode = method of choosing training and testing events (Random, Alternate, Block)
+   //        NormMode = renormalisation of event-by-event weights for training (NumEvents: average weight of 1 per event for signal and background, EqualNumEvents: average weight of 1 per event for signal and sum of weights for background equal to sum of weights for signal, None)
+   //        V = verbose
+   //        MixMode = method of mixing events of different classes into one dataset (SameAsSplitMode, Random, Alternate, Block)
+   //        SplitSeed = seed for random event shuffling (default = 100)
+   //        VerboseLevel = level of verbose (Debug, Verbose, Info)
+   dataloader->PrepareTrainingAndTestTree("", "", "nTrain_Signal=0:nTrain_Background=0:SplitMode=Random:NormMode=NumEvents:!V");
+   (*curcount)++;
+   progress->Update(*curcount);
+
+   // Booking MVA methods:
+   // - type of MVA method to be used (all defined in src/Types.h)
+   // - the unique name for the MVA method suplied by the user
+   // - options
+   // The possible options for each method are defined here: http://tmva.sourceforge.net/optionRef.html
+   // For example:
+   //        H = print method-specific help message
+   //        V = verbose
+   //        NeuronType = neuron activation function type (default = sigmoid)
+   //        VarTransform = list of variable transformations to do before training (D_Background,P_Signal,G,N_AllClasses -> N = Normalization for all classes)
+   //        NCycles = number of training cycles
+   //        HiddenLayers = hidden layer architecture (default = N,N-1)
+   //        TestRate = test for overtraining at each #th epoch (default = 10)
+   //        TrainingMethod = train with back propagation (BP), BFGS algorithm (BFGS) or generic algorithm (GA)
+   //        UseRegulator = use regulator to avoid overtraining
+   if(BookTheMethod(factory, dataloader) == -1)
+   {
+      delete signalTree;
+      for(int j = 0; j < mixednum; j++)
+         delete backgroundTree[j];
+      delete dataloader;
+      ifile->Close();
+      delete factory;
+      ofile->Close();
+
+      AlertPopup("Invalid MVA method", "The selected MVA method is invalid. Please make sure it is correctly defined.");
+      delete[] stemp;
+      delete[] nrTreeEvents;
+      delete itemp;
+      return -1;
+   }
+   (*curcount)++;
+   progress->Update(*curcount);
+
+   // Train the selected methods and save them to the weights folder
+   factory->TrainAllMethods();
+   (*curcount)++;
+   progress->Update(*curcount);
+   // Test the selected methods by applying the trained data to the test data set -> outputs saved to TestTree output file and then to the output ROOT file
+   factory->TestAllMethods();
+   (*curcount)++;
+   progress->Update(*curcount);
+   // Evaluation of methods printed to stdout
+   factory->EvaluateAllMethods();
+   (*curcount)++;
+   progress->Update(*curcount);
+
+   // Close the open files
+   delete signalTree;
+   for(int j = 0; j < mixednum; j++)
+      delete backgroundTree[j];
+   delete dataloader;
+   ifile->Close();
+   delete factory;
+   ofile->Close();
+#endif
+   cout << "# PerformMvaAnalysis    #: " << "Finished MVA classification." << endl;
+
+   /* NEWREMOVE - TODO
    // Copy the training values from results/transformation_stats.dat to the current analysis directory
    stemp[3] = "cp -r " + string(rootdir) + "/results/transformation_stats.dat " + (*currentAnalysisDir) + "/";
    system(stemp[3].c_str());
+   */
 
    // Skip the GUI interface for best cut and automatically select signal/background
    if(((cutEnergyBins->widgetNE[0])->GetValue() > 1) && ((specialMva->widgetChBox[0])->IsChecked()))
@@ -2619,6 +3138,7 @@ int MyFrame::PerformMvaAnalysis(string *infilename, string *outfilename, int *cu
 }
 
 // Get the TMVA type
+#if ROOTVER == 5
 void MyFrame::SetTmvaType(TMVA::Factory *factory, int nr, string *formula)
 {
    string *stemp;
@@ -2679,8 +3199,71 @@ void MyFrame::SetTmvaType(TMVA::Factory *factory, int nr, string *formula)
 
    delete[] stemp;
 }
+#elif ROOTVER == 6
+void MyFrame::SetTmvaType(TMVA::Factory *factory, TMVA::DataLoader *dataloader, int nr, string *formula)
+{
+   string *stemp;
+   stemp = new string[2];
+
+   cout << "Input method = " << methods[nr] << endl;
+
+   // Cut optimization
+   if(methods[nr].find("Cuts") != string::npos)
+      factory->BookMethod(dataloader, TMVA::Types::kCuts, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // 1D likelihood
+   if(methods[nr].find("Likelihood") != string::npos)
+      factory->BookMethod(dataloader, TMVA::Types::kLikelihood, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // Multidimensional likelihood
+   if(methods[nr].find("PDERS") != string::npos)
+      factory->BookMethod(dataloader, TMVA::Types::kPDERS, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // Likelihood estimator
+   if(methods[nr].find("PDEFoam") != string::npos)
+      factory->BookMethod(dataloader, TMVA::Types::kPDEFoam, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // Nearest neighbours
+   if(methods[nr].find("KNN") != string::npos)
+      factory->BookMethod(dataloader, TMVA::Types::kKNN, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // Linear discriminant
+   if(methods[nr].find("LD") != string::npos)
+      factory->BookMethod(dataloader, TMVA::Types::kLD, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // Fisher discriminants
+   if(methods[nr].find("Fisher") != string::npos)
+      factory->BookMethod(dataloader, TMVA::Types::kFisher, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // H-Matrix discriminant
+   if(methods[nr].find("HMatrix") != string::npos)
+      factory->BookMethod(dataloader, TMVA::Types::kHMatrix, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // Functional discriminant
+   if(methods[nr].find("FDA") != string::npos)
+   {
+      stemp[0] = methodsOpt[nr];
+      cout << "Old method options: " << stemp[0] << endl;
+      cout << "Formula: " << *formula << endl;
+      stemp[0].replace(stemp[0].find("VARFORMULA"), 10, *formula);
+      cout << "New method options: " << stemp[0] << endl;
+      factory->BookMethod(dataloader, TMVA::Types::kFDA, methods[nr].c_str(), stemp[0].c_str());
+   }
+   // Neural networks
+   if(methods[nr].find("MLP") != string::npos)
+      factory->BookMethod(dataloader, TMVA::Types::kMLP, methods[nr].c_str(), methodsOpt[nr].c_str());
+   if(methods[nr].find("CFMlpANN") != string::npos)
+      factory->BookMethod(dataloader, TMVA::Types::kCFMlpANN, methods[nr].c_str(), methodsOpt[nr].c_str());
+   if(methods[nr].find("TMlpANN") != string::npos)
+      factory->BookMethod(dataloader, TMVA::Types::kTMlpANN, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // Support vector machine
+   if(methods[nr].find("SVM") != string::npos)
+      factory->BookMethod(dataloader, TMVA::Types::kSVM, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // Boosted decision trees
+   if(methods[nr].find("BDT") != string::npos)
+      factory->BookMethod(dataloader, TMVA::Types::kBDT, methods[nr].c_str(), methodsOpt[nr].c_str());
+   // Friedman's rulefit
+   if(methods[nr].find("RuleFit") != string::npos)
+      factory->BookMethod(dataloader, TMVA::Types::kRuleFit, methods[nr].c_str(), methodsOpt[nr].c_str());
+
+   delete[] stemp;
+}
+#endif
 
 // Book the method, depending on which was chosen
+#if ROOTVER == 5
 int MyFrame::BookTheMethod(TMVA::Factory *factory)
 {
    string *stemp;
@@ -2719,7 +3302,48 @@ int MyFrame::BookTheMethod(TMVA::Factory *factory)
    delete[] itemp;
    return 0;
 }
+#elif ROOTVER == 6
+int MyFrame::BookTheMethod(TMVA::Factory *factory, TMVA::DataLoader *dataloader)
+{
+   string *stemp;
+   vector<string>::iterator it;
+   int *itemp;
 
+   stemp = new string[3];
+   itemp = new int[2];
+
+   stemp[0] = (methodsSelect->widgetCB)->GetStringSelection();
+   it = find(methods.begin(), methods.end(), GetMethodName(stemp[0]));
+   itemp[0] = distance(methods.begin(), it);
+   cout << "# BookTheMethod         #: " << stemp[0] << ", " << methods[itemp[0]] << endl;
+   cout << "Method info: " << methods[itemp[0]] << ", " << methodsDesc[itemp[0]] << ", " << methodsOpt[itemp[0]] << endl;
+
+   // Prepare formula for FDA methods
+   for(int i = 0; i <= nrselobs; i++)
+   {
+      if(i == 0)
+         stemp[2] = "(" + ToString(i) + ")";
+      else
+         stemp[2] = stemp[2] + "+(" + ToString(i) + ")*x" + ToString(i-1);
+   }
+   cout << "# BookTheMethod         #: Using formula " << stemp[2] << endl;
+   
+   if(GetMethodName(stemp[0]) == "All")
+   {
+      // All is set as the first method, so we skip it (but still counts in the nrmethods variable)
+      for(int i = 0; i < nrmethods; i++)
+         SetTmvaType(factory, dataloader, i+1, &stemp[2]);
+   }
+   else
+      SetTmvaType(factory, dataloader, itemp[0], &stemp[2]);
+
+   delete[] stemp;
+   delete[] itemp;
+   return 0;
+}
+#endif
+
+/* NEWREMOVE - TODO
 int MyFrame::GetTrainingShift(string *mvafilename)
 {
    string *stemp;
@@ -2776,7 +3400,9 @@ int MyFrame::GetTrainingShift(string *mvafilename)
 
    return 0;
 }
+*/
 
+/* NEWREMOVE - TODO
 void MyFrame::GetCorrelations(TFile *corfile)
 {
    TDirectoryFile *corrDir = new TDirectoryFile();
@@ -2870,7 +3496,9 @@ void MyFrame::GetCorrelations(TFile *corfile)
    delete[] itemp;
    delete corrDir;
 }
+*/
 
+/* NEWREMOVE - TODO
 void MyFrame::GetApplyCorrelations(string *corname)
 {
    string *stemp;
@@ -2942,6 +3570,7 @@ void MyFrame::GetApplyCorrelations(string *corname)
    delete canvCor;
    delete fileCor;
 }
+*/
 
 // Apply the MVA cut and save all events and MVA values into one output files (in order to plot anything from it)
 void MyFrame::CreateOutput(TTree *app, TMVA::Reader *reader, string mvamethod, float *obsvars, string signalName, int curtree, bool application, int mean)
@@ -2977,8 +3606,10 @@ void MyFrame::CreateOutput(TTree *app, TMVA::Reader *reader, string mvamethod, f
    if(DBGSIG > 1)
       cout << "# CreateOutput          #: " << "Number of events in the tree = " << app->GetEntries() << endl;
 
+   /* NEWREMOVE - TODO
    if(!application)
       GetErrors(app, obsvars, obs, curtree);
+   */
 
    // Determine which values are signal and which are background
    for(int ievt = 0; ievt < app->GetEntries(); ievt++)
@@ -3028,6 +3659,7 @@ void MyFrame::CreateOutput(TTree *app, TMVA::Reader *reader, string mvamethod, f
    delete[] backcount;
 }
 
+/* NEWREMOVE - TODO
 void MyFrame::GetErrors(TTree *app, float *obsvars, vector<string> *obs, int curtree)
 {
    string *stemp;
@@ -3193,7 +3825,9 @@ void MyFrame::GetErrors(TTree *app, float *obsvars, vector<string> *obs, int cur
    delete[] stemp;
    delete[] dtemp;
 }
+*/
 
+/* NEWREMOVE - TODO
 void MyFrame::GetMvaError(int selection, double *outvalue, string *inname)
 {
    string *stemp;
@@ -3378,3 +4012,4 @@ void MyFrame::GetMvaError(int selection, double *outvalue, string *inname)
       delete[] dtemp;
    }
 }
+*/

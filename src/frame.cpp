@@ -567,7 +567,7 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    vbox->Add(-1, 10);
 
    // Make a title
-   MakeTitle(plotpanel, vbox, wxT("MVA histogram fit for lnA and composition plots"));
+   MakeTitle(plotpanel, vbox, wxT("Distribution fitting for lnA and composition plots"));
 
 //   wxBoxSizer *hboxMid = new wxBoxSizer(wxHORIZONTAL);
 

@@ -1,6 +1,8 @@
 #ifndef _ROOT_INCLUDE_H__
 #define _ROOT_INCLUDE_H__
 
+#include "workstation.h"
+
 // ROOT base includes
 #ifndef ROOT_TRootBrowser
 #include "TRootBrowser.h"
@@ -141,6 +143,11 @@
 #endif
 #ifndef ROOT_TMVA_Tools
 #include "TMVA/Tools.h"
+#endif
+#if ROOTVER == 6
+  #ifndef ROOT_TMVA_DataLoader
+  #include "TMVA/DataLoader.h"
+  #endif
 #endif
 #ifndef ROOT_TMVA_Reader
 #include "TMVA/Reader.h"

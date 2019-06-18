@@ -111,10 +111,15 @@ int main(int argc, char **argv)
 
    //-----------------------------------------
    // Prepare MVA cut values (any can be used)
+   /* NEWREMOVE - TODO
    float mvacut[4];
+   */
+   float mvacut;
+   /* NEWREMOVE - TODO
    int mvacutapply;
    mvacut[1] = -1;
    mvacut[2] = -1;
+   */
 
    // Read out MVA cuts, if the results file exists
    ResultRead *analysisResults = new ResultRead();
@@ -124,14 +129,18 @@ int main(int argc, char **argv)
    if(itemp[0] == 1)
    {
       cerr << "Set the MVA cut value: ";
+      /* NEWREMOVE - TODO
       cin >> mvacut[0];
       cerr << "Set negative MVA cut value (set to -1 if not needed): ";
       cin >> mvacut[1];
       cerr << "Set positive MVA cut value (set to -1 if not needed): ";
       cin >> mvacut[2];
+      */
+      cin >> mvacut;
    }
    else
    {
+      /* NEWREMOVE - TODO
       mvacut[0] = analysisResults->GetMvaCut(0);
       mvacut[1] = analysisResults->GetMvaCut(-1);
       mvacut[2] = analysisResults->GetMvaCut(1);
@@ -139,6 +148,9 @@ int main(int argc, char **argv)
       cerr << "- " << mvacut[0] << " (mean)" << endl;
       cerr << "- " << mvacut[1] << " (neg)" << endl;
       cerr << "- " << mvacut[2] << " (pos)" << endl;
+      */
+      mvacut = analysisResults->GetMvaCut();
+      cerr << "The MVA cut value is: " << mvacut << endl;
 
 /*      analysisResults->PrintVectors();
 
@@ -151,6 +163,7 @@ int main(int argc, char **argv)
       cerr << ftemp[0] << "\t" << ftemp[1] << endl;*/
    }
 
+   /* NEWREMOVE - TODO
    // Plots use the mean, negative or positive MVA value as splitting element
    cerr << "Perform cut on mean value (0), negative value (-1) or positive value (1): ";
    cin >> mvacutapply;
@@ -171,16 +184,20 @@ int main(int argc, char **argv)
       cerr << "Error! Wrong cut selected, rerun program." << endl;
       return 1;
    }
+   */
    
    // Create directory structure for plots and delete old plots
    stemp[0] = "mkdir -p " + RemoveFilename(&filename) + "/created_plots";
    system(stemp[0].c_str());
+   /* NEWREMOVE - TODO
    if(mvacutapply == 0)
    {
+   */
       stemp[0] = "mkdir -p " + RemoveFilename(&filename) + "/created_plots/mean";
       system(stemp[0].c_str());
       stemp[0] = "rm -fr " + RemoveFilename(&filename) + "/created_plots/mean/mva_analysis* " + RemoveFilename(&filename) + "/created_plots/mean/scatter* " + RemoveFilename(&filename) + "/created_plots/mean/skymap_*";
       system(stemp[0].c_str());
+   /* NEWREMOVE - TODO
    }
    else if(mvacutapply == -1)
    {
@@ -196,6 +213,7 @@ int main(int argc, char **argv)
       stemp[0] = "rm -fr " + RemoveFilename(&filename) + "/created_plots/poserror/mva_analysis* " + RemoveFilename(&filename) + "/created_plots/poserror/scatter* " + RemoveFilename(&filename) + "/created_plots/poserror/skymap_*";
       system(stemp[0].c_str());
    }
+   */
 
    // Prepare colors for signal, background and MVA cut line
    int c_MvaCut         = TColor::GetColor("#ffff66");
@@ -442,25 +460,15 @@ int main(int argc, char **argv)
                   maximumval[i] = ftemp[0];
 	    }
 
-	    // Write out information for all observables, cut and event number
-/*            if(i == itemp[1]-1)
-	    {
-               cout << "  MVA Event = " << ievt << ": value = " << obsvars[mvanumber] << " (cut = " << mvacut[3] << ") , observable = " << observables[i] << endl;
-	    }
-	    else
-	    {
-               if(isangle[0])
-                  cout << "  Event = " << ievt << ": values = " << ToDeg(obsvars[3*i]) << ", " << ToDeg(obsvars[3*i+1]) << ", " << ToDeg(obsvars[3*i+2]) << ", observable = " << observables[i] << endl;
-               else
-                  cout << "  Event = " << ievt << ": values = " << obsvars[3*i] << ", " << obsvars[3*i+1] << ", " << obsvars[3*i+2] << ", observable = " << observables[i] << endl;
-	    }*/
-
 	    xhistlimit[2] = (tempmax[i]-tempmin[i])*0.05;
             xhistlimit[0] = tempmin[i] - xhistlimit[2];
 	    xhistlimit[1] = tempmax[i] + xhistlimit[2];
 
 	    // Count observables, if above MVA cut (signal) and save them to signal plots
+	    /* NEWREMOVE - TODO
             if(obsvars[mvanumber] >= mvacut[3])
+	    */
+            if(obsvars[mvanumber] >= mvacut)
             {
 	       if(isgood[0])
 	       {
@@ -524,7 +532,10 @@ int main(int argc, char **argv)
 	          else
 	             ftemp[1] = obsvars[3*j];
 
+	          /* NEWREMOVE - TODO
                   if(obsvars[mvanumber] >= mvacut[3])
+	          */
+                  if(obsvars[mvanumber] >= mvacut)
                   {
 	             if(isgood[0] && isgood[1])
 	             {
@@ -551,7 +562,10 @@ int main(int argc, char **argv)
          } // Loop over all observables
 
 	 // Fill 2D histogram sky maps
+	 /* NEWREMOVE - TODO
          if(obsvars[mvanumber] >= mvacut[3])
+	 */
+         if(obsvars[mvanumber] >= mvacut)
 	 {
 	    galacticaitoffsig->Fill( (RadToDeg(obsvars[3*galacticNr[0]])-180.), RadToDeg(obsvars[3*galacticNr[1]]));
 	    horizontalaitoffsig->Fill( (RadToDeg(obsvars[3*horizontalNr[0]])-180.), RadToDeg(obsvars[3*horizontalNr[1]]));
@@ -624,12 +638,16 @@ int main(int argc, char **argv)
 	 // Add MVA cut lines to MVA variable histograms (mean, neg and pos)
 	 if(i == itemp[1]-1)
 	 {
+            /* NEWREMOVE - TODO
             line[0] = new TLine(mvacut[0], 0., mvacut[0], basesig[i]->GetMaximum());
+	    */
+            line[0] = new TLine(mvacut, 0., mvacut, basesig[i]->GetMaximum());
             line[0]->SetLineWidth(2);
             line[0]->SetLineStyle(1);
             line[0]->SetLineColor(kOrange+2);
             line[0]->Draw("same");
 
+	    /* NEWREMOVE - TODO
 	    if(mvacut[1] != -1)
 	    {
                line[1] = new TLine(mvacut[1], 0., mvacut[1], basesig[i]->GetMaximum());
@@ -647,6 +665,7 @@ int main(int argc, char **argv)
                line[2]->SetLineColor(kOrange+2);
                line[2]->Draw("same");
 	    }
+	    */
 	 }
 
          // Draw a legend with info on signal and background events
@@ -665,8 +684,11 @@ int main(int argc, char **argv)
 
 	 // Prepare save name for plots
          stemp[1] = string((tempkeyslist->At(2*k))->GetName());
+	 /* NEWREMOVE - TODO
          if(mvacutapply == 0)
+	 */
             stemp[3] = RemoveFilename(&filename) + "/created_plots/mean/mva_analysis_" + stemp[1] + "_" + observables[i] + ".pdf";
+	 /* NEWREMOVE - TODO
 	 else if(mvacutapply == -1)
             stemp[3] = RemoveFilename(&filename) + "/created_plots/negerror/mva_analysis_" + stemp[1] + "_" + observables[i] + ".pdf";
 	 else if(mvacutapply == 1)
@@ -676,6 +698,7 @@ int main(int argc, char **argv)
             cerr << "Error! Wrong cut selected, rerun program." << endl;
             return 1;
 	 }
+	 */
 
 	 // Save plots as PDF
          c1->SaveAs(stemp[3].c_str());
@@ -728,8 +751,11 @@ int main(int argc, char **argv)
 
                // Prepare save name for scatter plots
                stemp[1] = string((tempkeyslist->At(2*k))->GetName());
+	       /* NEWREMOVE - TODO
                if(mvacutapply == 0)
+	       */
                   stemp[3] = RemoveFilename(&filename) + "/created_plots/mean/scatter_" + stemp[1] + "_" + observables[i] + "-" + observables[j] + ".pdf";
+	       /* NEWREMOVE - TODO
                else if(mvacutapply == -1)
                   stemp[3] = RemoveFilename(&filename) + "/created_plots/negerror/scatter_" + stemp[1] + "_" + observables[i] + "-" + observables[j] + ".pdf";
                else if(mvacutapply == 1)
@@ -739,13 +765,17 @@ int main(int argc, char **argv)
                   cerr << "Error! Wrong cut selected, rerun program." << endl;
                   return 1;
                }
+	       */
               
                // Save plots as PDF
                c1->SaveAs(stemp[3].c_str());
 
                stemp[1] = string((tempkeyslist->At(2*k))->GetName());
+	       /* NEWREMOVE - TODO
                if(mvacutapply == 0)
+	       */
                   stemp[3] = RemoveFilename(&filename) + "/created_plots/mean/scatter_" + stemp[1] + "_" + observables[i] + "-" + observables[j] + ".C";
+	       /* NEWREMOVE - TODO
                else if(mvacutapply == -1)
                   stemp[3] = RemoveFilename(&filename) + "/created_plots/negerror/scatter_" + stemp[1] + "_" + observables[i] + "-" + observables[j] + ".C";
                else if(mvacutapply == 1)
@@ -755,6 +785,7 @@ int main(int argc, char **argv)
                   cerr << "Error! Wrong cut selected, rerun program." << endl;
                   return 1;
                }
+	       */
               
                // Save plots as C script
                c1->SaveAs(stemp[3].c_str());
@@ -768,10 +799,13 @@ int main(int argc, char **argv)
 
       // Prepare save name for sky maps (galactic)
       stemp[1] = string((tempkeyslist->At(2*k))->GetName());
+      /* NEWREMOVE - TODO
       if(mvacutapply == 0)
       {
+      */
          stemp[3] = RemoveFilename(&filename) + "/created_plots/mean/skymap_galactic_" + stemp[1] + "_signal.png";
          stemp[4] = RemoveFilename(&filename) + "/created_plots/mean/skymap_galactic_" + stemp[1] + "_background.png";
+      /* NEWREMOVE - TODO
       }
       else if(mvacutapply == -1)
       {
@@ -788,6 +822,7 @@ int main(int argc, char **argv)
          cerr << "Error! Wrong cut selected, rerun program." << endl;
          return 1;
       }
+      */
 
       // Plot 2D histogram sky maps (galactic)
       c2->cd();
@@ -800,10 +835,13 @@ int main(int argc, char **argv)
 
       // Prepare save name for sky maps (horizontal)
       stemp[1] = string((tempkeyslist->At(2*k))->GetName());
+      /* NEWREMOVE - TODO
       if(mvacutapply == 0)
       {
+      */
          stemp[3] = RemoveFilename(&filename) + "/created_plots/mean/skymap_horizontal_" + stemp[1] + "_signal.png";
          stemp[4] = RemoveFilename(&filename) + "/created_plots/mean/skymap_horizontal_" + stemp[1] + "_background.png";
+      /* NEWREMOVE - TODO
       }
       else if(mvacutapply == -1)
       {
@@ -820,6 +858,7 @@ int main(int argc, char **argv)
          cerr << "Error! Wrong cut selected, rerun program." << endl;
          return 1;
       }
+      */
 
       // Plot 2D histogram sky maps (horizontal)
       mystyle->SetAxisTitles((TH2*)horizontalaitoffsig, "FD Zenith (deg)", "FD Azimuth (deg)");

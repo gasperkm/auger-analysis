@@ -23,7 +23,6 @@
 \usepackage[titletoc]{appendix}	% for setting appendix chapter title options
 \usepackage{url}	% for url links
 \usepackage{subfigure} % for making subfigures
-\usepackage{verbatim}
 \usepackage[]{units}
 \usepackage[table]{xcolor}
 \usepackage{lineno}
@@ -31,15 +30,17 @@
 	citecolor=black,%
 	filecolor=black,%
 	linkcolor=black,%
-	urlcolor=blue,%
-	pdftex}
+	urlcolor=blue}
+
+% Font type which is much better for reading
+\usepackage[sc]{mathpazo}
 
 %\titleformat{\chapter}[hang]{\huge\bf}{\thechapter}{1em}{}
 %\titlespacing{\chapter}{0pt}{0pt}{1cm}
-\titleformat{\chapter}[hang]{\normalfont\bf}{}{12pt}{\huge}
+\titleformat{\chapter}[hang]{\normalfont\bf}{}{12pt}{\Large\thechapter\enspace}
 \titlespacing{\chapter}{0pt}{0pt}{1cm}
-\titleformat{\section}[hang]{\normalfont\bf}{}{12pt}{\Large\thesection\enspace}
-\titleformat{\subsection}[hang]{\normalfont\bf}{}{12pt}{\large\thesubsection\enspace}
+\titleformat{\section}[hang]{\normalfont\bf}{}{12pt}{\large\thesection\enspace}
+\titleformat{\subsection}[hang]{\normalfont\bf}{}{12pt}{\normalsize\thesubsection\enspace}
 
 % definitions of commands and environments
 \newcommand{\diff}{\operatorname{d}\!}	% operator d for integration or differentiation
@@ -64,7 +65,7 @@
 \definecolor{white}{RGB}{255,255,255}	% defines a new color (white)
 
 %\setlist[itemize]{itemsep=1pt, topsep=3pt}	% sets global spacings for lists
-\setlist[itemize]{itemsep=1pt, topsep=2pt, after=\newline}	% sets global spacings for lists
+\setlist[itemize]{itemsep=1pt, topsep=1pt, after=\newline}	% sets global spacings for lists
 
 \definecolor{light-gold}{cmyk}{0,0.05,0.2,0}
 
@@ -75,136 +76,591 @@
   basicstyle = \ttfamily,
   basicstyle=\footnotesize}}{}
 
+% Setting options for centering table text horizontally (P) or vertically (M)
+\newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
+
 \begin{document}
 
 \selectlanguage{english}
 
+\begin{flushright}
+{\large\textbf{\today}}
+\end{flushright}
+
+\let\clearpage\relax
 \chapter{Installation instructions}
-The following instructions go over the complete installation procedure for compiling the auger-analysis program.
+{\noindent}The following instructions go over the complete installation procedure for compiling the auger-analysis program.
 
 \section{Folder structure}
-The folder structure of the auger-analysis program is as follows. The base non-compiled version of the program has:
+{\noindent}The folder structure of the auger-analysis program is as follows. The base non-compiled version of the program has:
 \begin{itemize}
-\item[--] \texttt{configure}: Script for configuring the compilation and running the installation.
-\item[--] \texttt{doc}: Documentation for the program. Installation and usage instructions.
-\item[--] \texttt{include}: Folder containing all header files.
-\item[--] \texttt{input}: Folder containing input files that are needed by some program options.
-\item[--] \texttt{layout}: Folder containing program GUI layout instructions.
-\item[--] \texttt{set\_environment.sh}: Script for setting up environmental variables.
-\item[--] \texttt{setup}: Folder containing additional setup files needed in the configuration.
-\item[--] \texttt{src}: Folder containing all source code files.
+\item[$\bullet$] \texttt{configure}: Script for configuring the compilation and running the installation.
+\item[$\bullet$] \texttt{doc}: Documentation for the program. Installation and usage instructions.
+\item[$\bullet$] \texttt{include}: Folder containing all header files.
+\item[$\bullet$] \texttt{input}: Folder containing input files that are needed by some program options.
+\item[$\bullet$] \texttt{layout}: Folder containing program GUI layout instructions.
+\item[$\bullet$] \texttt{set\_environment.sh}: Script for setting up environmental variables.
+\item[$\bullet$] \texttt{setup}: Folder containing additional setup files needed in the configuration.
+\item[$\bullet$] \texttt{src}: Folder containing all source code files.
 \end{itemize}
 The fully compiled version of the program also has:
 \begin{itemize}
-\item[--] \texttt{bin}: Folder containing all executables.
-\item[--] \texttt{lib}: Folder containing all created libraries.
-\item[--] \texttt{results}: Default folder for saving analysis results. When cleaning the installation, this folder remains unchanged.
-\item[--] \texttt{start.sh}: Script for running the GUI or batch version of the program.
+\item[$\bullet$] \texttt{bin}: Folder containing all executables.
+\item[$\bullet$] \texttt{lib}: Folder containing all created libraries.
+\item[$\bullet$] \texttt{results}: Default folder for saving analysis results. When cleaning the installation, this folder remains unchanged.
+\item[$\bullet$] \texttt{start.sh}: Script for running the GUI or batch version of the program.
 \end{itemize}
 
 \section{Installation prerequisites}
 For this software to work correctly, ROOT \cite{root}, wxWidgets \cite{wxWidgets} and their prerequisites need to be installed on the system. The following packages are essential on a clean installation of Linux, before either ROOT or wxWidgets can be installed. General purpose prerequisites are:
+\footnotesize
 \begin{verbatim}
-   sudo apt-get install git patch build-essential cmake gcc g++ \
-     gfortran python doxygen python-dev wget
+  # on Debian related systems
+  sudo apt-get update
+  sudo apt-get install binutils git patch build-essential cmake gcc g++ \
+    gfortran python doxygen python-dev wget
+  # on CentOS related systems, and Fedora 21 or below
+  sudo yum update
+  sudo yum install epel-release
+  sudo yum repolist
+  sudo yum install binutils git patch cmake gcc gcc-c++ gcc-gfortran python \
+    doxygen python-devel wget redhat-lsb-core bzip2
+  # on Fedora 22 or above related systems
+  sudo dnf update
+  sudo dnf repolist
+  sudo dnf install binutils git patch cmake gcc gcc-c++ gcc-gfortran python \
+    doxygen python-devel wget redhat-lsb-core bzip2
 \end{verbatim}
+\normalsize
 ROOT software prerequisites are:
+\footnotesize
 \begin{verbatim}
-   sudo apt-get install libx11-dev libxpm-dev libxft-dev \
-     libxext-dev libpng libjpeg libgsl0-dev libfftw3-dev \
-     libmysqlclient-dev libxml2-dev
+  # on Debian related systems
+  sudo apt-get install libx11-dev libxpm-dev libxft-dev libxext-dev \
+    libgsl0-dev libfftw3-dev libmysqlclient-dev libxml2-dev
+  # on CentOS related systems, and Fedora 21 or below
+  sudo yum install libX11-devel libXpm-devel libXft-devel libXext-devel \
+    gsl-devel fftw-devel mysql-devel libxml2-devel
+  # on Fedora 22 or above related systems
+  sudo dnf install libX11-devel libXpm-devel libXft-devel libXext-devel \
+    gsl-devel fftw-devel mysql-devel libxml2-devel
 \end{verbatim}
+\normalsize
 wxWidgets software prerequisites are:
+\footnotesize
 \begin{verbatim}
-   sudo apt-get install libgtk2.0-dev libc++1
+  # on Debian related systems
+  sudo apt-get install libgtk2.0-dev libc++1
+  # on CentOS related systems, and Fedora 21 or below
+  sudo yum install gtk2-devel 
+  # on Fedora 22 or above related systems
+  sudo dnf install gtk2-devel 
 \end{verbatim}
-These packages, ROOT, wxWidgets and the auger-analysis program have been tested on Linux distributions Mint 18.2 (sonya) and Ubuntu 14.04 (trusty) and work as expected.
+\normalsize
+Newest versions of Linux distributions renamed the \texttt{mysql} client. In Debian releases, if installation of \texttt{libmysqlclient-dev} fails, use \\\texttt{default-libmysqlclient-dev} instead.
 
 \section{Installing ROOT}
-ROOT is a data analysis framework able to handle python or C/C++ code integration. The complete instructions are available on the software page at \cite{root}. We assume here, that \texttt{\$ROOTSOURCE} is the location of the downloaded source files and \texttt{\$ROOTINSTALL} is the location of the ROOT installation.\\
-ROOT versions 5.XX.YY are installed as (installation of version 5.34.36 or higher is suggested):
+ROOT is a data analysis framework able to handle python or C/C++ code integration. The complete instructions are available on the software page at \cite{root}. We assume here, that \texttt{\$ROOTSOURCE} is the location of the downloaded source files (for example \texttt{/opt/source}) and \texttt{\$ROOTINSTALL} is the location of the ROOT installation (for example \texttt{/opt}).
+\subsection{ROOT 5}
+Note that the ADST part of the Pierre Auger Observatory software Offline \cite{offline} is currently limited to ROOT 5 and will not work correctly for ROOT 6. ROOT version 5.XX.YY is installed as (installation of version 5.34.36 or higher is suggested):
+\footnotesize
 \begin{verbatim}
-   cd $ROOTSOURCE
-   wget -nc https://root.cern.ch/download/root_v5.XX.YY.source.tar.gz
-   tar -zxf root_v5.XX.YY.source.tar.gz
-   mv ./root $ROOTINSTALL/root-5.XX.YY
-   cd $ROOTINSTALL/root-5.XX.YY
-   ./configure --enable-mysql --enable-python --enable-minuit2 \
-     --enable-roofit --enable-tmva --enable-xml \
-     --enable-builtin-freetype
-   make
+  cd $ROOTSOURCE
+  wget -nc https://root.cern.ch/download/root_v5.XX.YY.source.tar.gz
+  tar -zxf root_v5.XX.YY.source.tar.gz
+  mv ./root $ROOTINSTALL/root-5.XX.YY
+  cd $ROOTINSTALL/root-5.XX.YY
+  ./configure --enable-mysql --enable-python --enable-minuit2 --enable-roofit \
+    --enable-tmva --enable-xml --enable-builtin-freetype
+  make
 \end{verbatim}
-ROOT versions 6.XX.YY are installed as:
+\normalsize
+In order to setup ROOT's environmental variables once installed, run the following command:
+\footnotesize
 \begin{verbatim}
-   cd $ROOTSOURCE
-   wget -nc https://root.cern.ch/download/root_v6.XX.YY.source.tar.gz
-   tar -zxf root_v6.XX.YY.source.tar.gz
-   cd $ROOTSOURCE/root-6.XX.YY
-   mkdir ./builddir
-   cd ./builddir
-   cmake ../ -DCMAKE_INSTALL_PREFIX=$ROOTINSTALL/root-6.XX.YY \
-     -Dmysql=ON -Dpython=ON -Dminuit2=ON -Droofit=ON -Dtmva=ON \
-     -Dxml=ON -Dbuiltin-freetype=ON
-   cmake --build .
-   cmake --build . --target install
+  source $ROOTINSTALL/root-5.XX.YY/bin/thisroot.sh
 \end{verbatim}
-In order to setup their environmental variables once installed, run one of the following commands:
-\begin{verbatim}
-   source $ROOTINSTALL/root-5.XX.YY/bin/thisroot.sh
-   source $ROOTINSTALL/root-6.XX.YY/bin/thisroot.sh
-\end{verbatim}
+\normalsize
 The following command should now return the correct version of ROOT:
+\footnotesize
 \begin{verbatim}
-   root-config --version
+  root-config --version
 \end{verbatim}
+\normalsize
+\textbf{Important}: ROOT 5 will not compile correctly with \texttt{g++} compilers 6.3.0 or above (see Chapter \ref{ch:distroSoln}).
+\subsection{ROOT 6}
+ROOT 6 can still be used for the portion of the software that handles the MVA analysis and plotting. For this purpose, rewriting of ADST files has been disabled for this version of ROOT, but all other auger-analysis program options are enabled.\\
+ROOT version 6.XX.YY is installed as (installation of version 6.12.00 or higher is suggested to get the most out of TMVA):
+\footnotesize
+\begin{verbatim}
+  cd $ROOTSOURCE
+  wget -nc https://root.cern.ch/download/root_v6.XX.YY.source.tar.gz
+  tar -zxf root_v6.XX.YY.source.tar.gz
+  cd $ROOTSOURCE/root-6.XX.YY
+  mkdir ./builddir
+  cd ./builddir
+  cmake ../ -DCMAKE_INSTALL_PREFIX=$ROOTINSTALL/root-6.XX.YY -Dmysql=ON \
+    -Dpython=ON -Dminuit2=ON -Droofit=ON -Dtmva=ON -Dxml=ON -Dbuiltin-freetype=ON
+  cmake --build . --target VDT
+  cmake --build .
+  cmake --build . --target install
+\end{verbatim}
+\normalsize
+In order to setup ROOT's environmental variables once installed, run the following command:
+\footnotesize
+\begin{verbatim}
+  source $ROOTINSTALL/root-6.XX.YY/bin/thisroot.sh
+\end{verbatim}
+\normalsize
+The following command should now return the correct version of ROOT:
+\footnotesize
+\begin{verbatim}
+  root-config --version
+\end{verbatim}
+\normalsize
+\textbf{Important}: ROOT 6 requires \texttt{cmake} version 3.4.3 or above, which is not supplied with older Linux distributions (see Chapter \ref{ch:distroSoln}).
 
 \section{Installing wxWidgets}
-wxWidgets is a cross-platform GUI library used for the graphical user interface of the auger-analysis program. The complete instructions are available on the software page at \cite{wxWidgets}. We assume here, that \texttt{\$WXSOURCE} is the location of the downloaded source files and \texttt{\$WXINSTALL} is the location of its installation.\\
+wxWidgets is a cross-platform GUI library used for the graphical user interface of the auger-analysis program. The complete instructions are available on the software page at \cite{wxWidgets}. We assume here, that \texttt{\$WXSOURCE} is the location of the downloaded source files (for example \texttt{/opt/source}) and \texttt{\$WXINSTALL} is the location of its installation (for example \texttt{/opt}).\\
 wxWidgets version X.Y.Z is installed as (installation of version 3.0.3 or higher is suggested):
+\footnotesize
 \begin{verbatim}
-   cd $WXSOURCE
-   wget -nc https://github.com/wxWidgets/wxWidgets/releases/\
-     download/vX.Y.Z/wxWidgets-X.Y.Z.tar.bz2
-   tar -jxf wxWidgets-X.Y.Z.tar.bz2
-   cd $WXSOURCE/wxWidgets-X.Y.Z
-   mkdir ./gtk-build
-   cd ./gtk-build
-   ./configure --enable-unicode --enable-debug --prefix=$WXINSTALL
-   make
-   make install
+  cd $WXSOURCE
+  wget -nc https://github.com/wxWidgets/wxWidgets/releases/\
+    download/vX.Y.Z/wxWidgets-X.Y.Z.tar.bz2
+  tar -jxf wxWidgets-X.Y.Z.tar.bz2
+  cd $WXSOURCE/wxWidgets-X.Y.Z
+  mkdir ./gtk-build
+  cd ./gtk-build
+  ../configure --enable-unicode --enable-debug \
+    --prefix=$WXINSTALL/wxWidgets-X.Y.Z
+  make
+  make install
 \end{verbatim}
-For wxWidgets to be correctly recognized, add the following environmental variables (preferrably in the \texttt{~/.bashrc} script):
+\normalsize
+For wxWidgets to be correctly recognized, add the following environmental variables (preferrably in the \texttt{\mytilde/.bashrc} script):
+\footnotesize
 \begin{verbatim}
-   export WXLIN=$WXINSTALL/wxWidgets-X.Y.Z
-   export PATH=$WXLIN/bin:$PATH
-   export LD_LIBRARY_PATH=$WXLIN/lib:$LD_LIBRARY_PATH
+  export WXLIN=$WXINSTALL/wxWidgets-X.Y.Z
+  export PATH=$WXLIN/bin:$PATH
+  export LD_LIBRARY_PATH=$WXLIN/lib:$LD_LIBRARY_PATH
 \end{verbatim}
+\normalsize
 The following command should now return the correct version of wxWidgets:
+\footnotesize
 \begin{verbatim}
-   wx-config --version
+  wx-config --version
 \end{verbatim}
+\normalsize
 
 \section{Installing ADST reader}
 The ADST reader is part of the Offline software developed by the Pierre Auger Observatory \cite{offline}. A handful of versions have been included with this software and are automatically installed, when needed. See section \ref{sec:install} for installation of the auger-analysis program.\\
-If a new version of the ADST reader is needed, add its tar-ball into folder \texttt{setup} and name it \texttt{ADST\_vXrYpZ.tar.gz}, where \texttt{XrYpZ} denotes the version. The configure script will then automatically recognize that there is an additional version of the ADST reader available.
+If a new version of the ADST reader is needed, add its tar-ball into the \texttt{setup} directory and name it \texttt{ADST\_vXrYpZ.tar.gz}, where \texttt{XrYpZ} denotes the version. The configure script will then automatically recognize that there is an additional version of the ADST reader available.\\
+\textbf{Important}: The current version of ADST compiles with ROOT 6, but it does not work correctly, so any ADST file reading options have been disabled for this version of ROOT. See Chapter \ref{ch:distroSoln} for a possible solution.
 
 \section{Installing external TMVA}
-TMVA is the multivariate analysis package for ROOT \cite{tmva}. New versions have been implemented directly into ROOT versions 6.XX.YY, while ROOT 5.XX.YY can use an external version of TMVA. For this purpose, the TMVA version 4.2.0 has been included with this software and is automatically installed. See section \ref{sec:install} for installation of the auger-analysis program.
+TMVA is the multivariate analysis package for ROOT \cite{tmva}. New versions have been implemented directly into ROOT 6, while ROOT 5 can use an external version of TMVA. For this purpose, TMVA 4.2.0 has been included with this software and is automatically installed, when using ROOT 5. See section \ref{sec:install} for installation of the auger-analysis program.
 
 \section{Installation of the auger-analysis program} \label{sec:install}
 Once the above prerequesites and installations have been satisfied, it is now possible to install the auger-analysis program. The complete program is compiled and installed through a single call of the configure script:
+\footnotesize
 \begin{verbatim}
-   ./configure vXrYpZ
+  ./configure vXrYpZ
 \end{verbatim}
-Here, the program is installed using ADST version \texttt{XrYpZ}, but other options can simply be checked by running \texttt{./configure} or \texttt{./configure help}.
+\normalsize
+Here, the program is installed using ADST version \texttt{XrYpZ}, but other options can simply be checked by running \texttt{./configure} or \texttt{./configure help}. The program can then be run in batch mode for just rewriting ADST files:
+\footnotesize
+\begin{verbatim}
+  ./start.sh rewrite vXrYpZ [input ADST files]
+\end{verbatim}
+\normalsize
+or in graphical mode, with access to all options of the program:
+\footnotesize
+\begin{verbatim}
+  ./start.sh vXrYpZ
+\end{verbatim}
+\normalsize
+
+{\noindent}The program itself has been created in order to need minimal setup before installation. Currently, the program includes 24 different extensive air shower observables, which are listed in the \texttt{input/observables.txt} file of the auger-analysis program. In order to include additional observables, the user needs to add them to this file and implement them in the source files. Similarly, the \texttt{input/mva\_options.txt} file of the auger-analysis program lists the different possible MVA methods and their options. The user can add more to the list or change the existing options. For instructions on how to perform both tasks, please see usage instructions in the second documentation file. Note that both the observables and MVA methods are read into the program when starting it with the \texttt{start.sh} script.
+
+\chapter{Linux distribution solutions} \label{ch:distroSoln}
+{\noindent}The following instructions go over different Linux distributions and possible solutions, if the software is not compiling or working correctly.
+\section{Comparison of linux distributions}
+Tab. \ref{tab:distroCompDeb} shows a comparison of Linux distributions that are based on Debian and their versions. This makes it easier to determine the distribution version that should be used. Note that there might be some differences in package options for different distributions.
+\begin{table}[H]
+\centering
+\caption{Comparison of Linux distribution versions based on Debian.}
+\vspace*{3pt}
+\begin{tabular}{M{0.20\textwidth}M{0.20\textwidth}M{0.25\textwidth}M{0.20\textwidth}}
+   \toprule[1.4pt]
+   Debian & Ubuntu & Mint & elementary OS \\
+   \cmidrule{1-4}
+   8 (jessie) & 14.04 (trusty) & 17 (Qiana, Rebecca, Rafaela, Rosa) & 0.3 (Freya) \\
+   9 (stretch) & 16.04 (xenial) & 18 (Sarah, Serena, Sonya, Sylvia) & 0.4 (Loki) \\
+   10 (buster) & 18.04 (bionic) & 19 (Tara, Tessa) & 5.0 (Juno) \\
+   \bottomrule[1.4pt]
+   \end{tabular}
+   \label{tab:distroCompDeb}
+\end{table}
+{\noindent}In order to correctly install external software ROOT, wxWidgets and ADST, a correct version of \texttt{g++} and \texttt{cmake} compilers is needed. Tab. \ref{tab:distroVersions} lists the default compilers supplied to clean versions of different Linux distributions.\\
+\textbf{Important:} ROOT 5 needs \texttt{g++} compiler versions below 6.3.0, ROOT 6 needs \texttt{cmake} versions 3.4.3 or above, and the complete installation needs \texttt{g++} compiler versions 4.8 or above (for c++11 extensions).
+\begin{table}[H]
+\centering
+\caption{Comparison of default \texttt{g++} compiler and \texttt{cmake} versions in different Linux distributions.}
+\vspace*{3pt}
+\begin{tabular}{M{0.35\textwidth}M{0.20\textwidth}M{0.20\textwidth}}
+   \toprule[1.4pt]
+   Distribution & \texttt{g++} version & \texttt{cmake} version \\
+   \cmidrule{1-3}
+   Debian 8 (jessie) & 4.9.2 & 3.0.2 \\
+   Debian 9 (stretch) & 6.3.0 & 3.7.2 \\
+%    & 10 (buster) & 6.3.0 & 3.7.2 & \\
+   Ubuntu 14.04 (trusty) & 4.8.2 & 2.8.12.2 \\
+   Ubuntu 16.04 (xenial) & 5.3.1 & 3.5.1 \\
+   Ubuntu 18.04 (bionic) & 7.3.0 & 3.10.2 \\
+%   CentOS 6 & 4.4.7 & 2.8.12.2 \\
+   CentOS 7 & 4.8.5 & 2.8.12.2 \\
+   Fedora 23 & 5.3.1 & 3.4.3 \\
+   Fedora 25 & 6.4.1 & 3.9.1 \\
+   Fedora 27 & 7.3.1 & 3.11.2 \\
+   Fedora 29 & 8.3.1 & 3.12.1 \\
+   \bottomrule[1.4pt]
+   \end{tabular}
+   \label{tab:distroVersions}
+\end{table}
+\section{Software installation tests}
+Installation of the complete software package has been performed on a range of different clean Linux distributions listed in Tab. \ref{tab:softwareCheck}. The installed software versions for these test installations were ROOT 5.34.36, ROOT 6.14.00, wxWidgets 3.0.4, ADST v3r3p4 and external TMVA 4.2.0.
+\begin{table}[h]
+\scriptsize
+\centering
+\caption{Testing of installation on different clean Linux distributions. Green color marks that compilation and installation were successful, red color marks that either of them was unsuccessful, and blue color marks correct compilation and installation that results in errors. The external TMVA 4.2.0 is only installed, when using ROOT 5 and skipped for ROOT 6.}
+\vspace*{3pt}
+\setlength\tabcolsep{1.5pt}
+\begin{tabular}{M{0.23\textwidth}M{0.08\textwidth}||M{0.08\textwidth}||M{0.10\textwidth}||M{0.08\textwidth}||M{0.10\textwidth}||M{0.14\textwidth}}
+   \toprule[1.4pt]
+   \textbf{Distribution} & \textbf{ROOT 5} & \textbf{ROOT 6} & \textbf{wxWidgets} & \textbf{ADST} & \textbf{Ext. TMVA} & \textbf{auger-analysis} \\
+   \cmidrule{1-7}
+   Debian 8 (jessie) & \cellcolor{green} & \cellcolor{red} & \cellcolor{green} & \cellcolor{green} & \cellcolor{green} & \cellcolor{green} \\
+   \cmidrule{1-7}
+   Debian 9 (stretch) & \cellcolor{red} & \cellcolor{green} & \cellcolor{green} & \cellcolor{blue} & & \cellcolor{green} \\
+   \cmidrule{1-7}
+   Ubuntu 14.04 (trusty) & \cellcolor{green} & \cellcolor{red} & \cellcolor{green} & \cellcolor{green} & \cellcolor{green} & \cellcolor{green} \\
+   \cmidrule{1-7}
+   Ubuntu 16.04 (xenial) & \cellcolor{green} & \cellcolor{green} & \cellcolor{green} & \cellcolor{green} & \cellcolor{green} & \cellcolor{green} \\
+   \cmidrule{1-7}
+   Ubuntu 18.04 (bionic) & \cellcolor{red} & \cellcolor{green} & \cellcolor{green} & \cellcolor{blue} & & \cellcolor{green} \\
+%   \cmidrule{1-7}
+%   CentOS 6 & \cellcolor{green} & \cellcolor{green} & \cellcolor{green} & \cellcolor{green} & \cellcolor{green} & \cellcolor{green} \\
+   \cmidrule{1-7}
+   CentOS 7 & \cellcolor{green} & \cellcolor{red} & \cellcolor{green} & \cellcolor{green} & \cellcolor{green} & \cellcolor{green} \\
+   \cmidrule{1-7}
+   Fedora 23 & \cellcolor{green} & \cellcolor{green} & \cellcolor{green} & \cellcolor{green} & \cellcolor{green} & \cellcolor{green} \\
+   \cmidrule{1-7}
+   Fedora 25 & \cellcolor{red} & \cellcolor{green} & \cellcolor{green} & \cellcolor{blue} & & \cellcolor{green} \\
+   \cmidrule{1-7}
+   Fedora 27 & \cellcolor{red} & \cellcolor{green} & \cellcolor{green} & \cellcolor{blue} &  & \cellcolor{green} \\
+   \cmidrule{1-7}
+   Fedora 29 & \cellcolor{red} & \cellcolor{green} & \cellcolor{green} & \cellcolor{blue} &  & \cellcolor{green} \\
+   \bottomrule[1.4pt]
+   \end{tabular}
+   \label{tab:softwareCheck}
+\end{table}
+
+\section{Solution to the ROOT version problem}
+In order to enable the complete auger-analysis software, ROOT 5 needs to be installed on your current system. However, this coupled with the need for c++11 extensions during compilation, the version of the \texttt{g++} compiler needs to be between 4.8 and 6.3 (ROOT 5 will already not compile with \texttt{g++} 6.3.0). The possible solutions are the use of an operating system environment container or the installation of an older \texttt{g++} compiler. The former is simple to set up, because it creates a contained virtual environment for the selected Linux distribution. However, it does need root access for creating the container. The latter can also be installed in a custom directory, but needs care when switching between currently installed versions and can produce some version mismatch with other libraries. As such, the environment container installation is preferred.
+
+\subsection{Singularity environment container (preferred)}
+Singularity \cite{singularity} is an operating system environment container used in many applications, where precise versions of libraries and software is needed over multiple computers. It creates a clean version of a Linux distribution that can be used like any normal installation of Linux. The detailed documentation can be found in \cite{singularitydoc}.\\
+Singularity has the following dependencies that need to be installed on the host system:
+\footnotesize
+\begin{verbatim}
+  # on Debian related systems
+  sudo apt-get install build-essential libssl-dev uuid-dev libgpgme11-dev \
+    squashfs-tools libseccomp-dev pkg-config
+  # on CentOS related systems, and Fedora 21 or below
+  sudo yum install openssl-devel libuuid-devel squashfs-tools libseccomp-devel
+  # on Fedora 22 or above related systems
+  sudo dnf install openssl-devel libuuid-devel squashfs-tools libseccomp-devel
+\end{verbatim}
+\normalsize
+The additional packages \texttt{debootstrap} and \texttt{yum} need to be installed for creating Ubuntu/Debian and CentOS/Fedora containers, respectively. The \texttt{debootstrap} package is installed with:
+\footnotesize
+\begin{verbatim}
+  # on Debian related systems
+  sudo apt-get install debootstrap
+  # on CentOS related systems, and Fedora 21 or below
+  sudo yum install debootstrap
+  # on Fedora 22 or above related systems
+  sudo dnf install debootstrap
+\end{verbatim}
+\normalsize
+The \texttt{yum} package is installed with (not needed for systems based on \texttt{yum}):
+\footnotesize
+\begin{verbatim}
+  # on Debian related systems
+  sudo apt-get install yum
+  # on Fedora 22 or above related systems
+  sudo dnf install yum
+\end{verbatim}
+\normalsize
+Once the dependencies are installed, the programming language go needs to be installed. Download the Linux archive version from \cite{godown} that should appear as \texttt{goX.YY.linux-amd64.tar.gz}, where X.YY is the version. We assume \texttt{\$GOINSTALL} is the location of the downloaded source files (for example \linebreak\texttt{/opt/golang}) and \texttt{\$SINGULARINSTALL} is the install location of singularity (for example \texttt{/opt/singularity}). Install singularity with the following commands:
+\footnotesize
+\begin{verbatim}
+  # Prepare installation of go
+  cd $GOINSTALL
+  tar -zxf goX.YY.linux-amd64.tar.gz
+  mkdir $GOINSTALL/gopath
+  # Set environment variables
+  export GOROOT=${GOINSTALL}/go
+  export GOPATH=${GOINSTALL}/gopath
+  export PATH=${GOROOT}/bin:$PATH
+  # Download singularity and its dependencies
+  go get -u github.com/golang/dep/cmd/dep
+  go get -d github.com/sylabs/singularity
+  cd $GOPATH/src/github.com/sylabs/singularity
+  git fetch
+  # Install singularity
+  ./mconfig --prefix=$SINGULARINSTALL
+  cd builddir
+  make
+  sudo make install
+  cd /usr/bin
+  sudo ln -s $SINGULARINSTALL/bin/singularity singularity
+\end{verbatim}
+\normalsize
+The command \texttt{sudo make install} is important, because without root access, the containers will not work correctly. Once installed, container definitions are prepared in \texttt{.def} files and are used when creating containers. We supply a number of container definition files in Appendix \ref{app:containers} for clean installations of Linux distributions, where ROOT 5 works correctly.\\
+It is possible to create the container to be read-only or writable:
+\footnotesize
+\begin{verbatim}
+  # Create a read-only container
+  singularity build container.sif container.def
+  # Create a writable container
+  sudo singularity build --sandbox container/ container.def
+\end{verbatim}
+\normalsize
+Converting a writable container into a read-only container is done with:
+\footnotesize
+\begin{verbatim}
+  sudo singularity build container.sif container/
+\end{verbatim}
+\normalsize
+Using the container, you can open its shell as read-only or as writable:
+\footnotesize
+\begin{verbatim}
+  # Opening a read-only container
+  singularity shell container.sif
+  # Opening a writable container
+  sudo singularity shell --writable build container/
+\end{verbatim}
+\normalsize
+For more options when using the container, see singularity documentation \cite{singularitydoc}. The most important options is for mounting disks, which is done with \linebreak\texttt{-B /diskname}.\\
+\textbf{Important:} Even if the container is opened in read-only mode, you are still able to write to any mounted disks and inside the home folder. Think of it as having normal user access without root access.
+
+\subsection{Installing older compiler versions}
+An older compiler version can be installed alongside the general system compiler. Choose the compiler version you wish to have and download the other \texttt{g++} infrastructure software. We assume \texttt{\$GCCSOURCE} is the location of the downloaded source files (for example \texttt{/opt/source}) and \texttt{\$GCCINSTALL} is the install location (for example \texttt{/opt/gcc-X.Y.Z}).\\
+Download and install the GMP infrastructure version X.Y.Z:
+\footnotesize
+\begin{verbatim}
+  cd $GCCSOURCE
+  wget ftp://gcc.gnu.org/pub/gcc/infrastructure/gmp-X.Y.Z.tar.gz
+  tar -zxf gmp-X.Y.Z.tar.gz
+  cd $GCCSOURCE/gmp-X.Y.Z
+  ./configure --prefix=$GCCINSTALL/infrastructure/gmp-X.Y.Z
+  make
+  make install
+  export  LD_LIBRARY_PATH=$GCCINSTALL/infrastructure/gmp-X.Y.Z/lib:\
+    $LD_LIBRARY_PATH
+\end{verbatim}
+\normalsize
+Download and install the MPFR infrastructure version X.Y.Z:
+\footnotesize
+\begin{verbatim}
+  cd $GCCSOURCE
+  wget ftp://gcc.gnu.org/pub/gcc/infrastructure/mpfr-X.Y.Z.tar.gz
+  tar -zxf mpfr-X.Y.Z.tar.gz
+  cd $GCCSOURCE/mpfr-X.Y.Z
+  ./configure --prefix=$GCCINSTALL/infrastructure/mpfr-X.Y.Z \
+    --with-gmp=$GCCINSTALL/infrastructure/gmp-X.Y.Z
+  make
+  make install
+  export  LD_LIBRARY_PATH=$GCCINSTALL/infrastructure/mpfr-X.Y.Z/lib:\
+    $LD_LIBRARY_PATH
+\end{verbatim}
+\normalsize
+Download and install the MPC infrastructure version X.Y.Z:
+\footnotesize
+\begin{verbatim}
+  cd $GCCSOURCE
+  wget ftp://gcc.gnu.org/pub/gcc/infrastructure/mpc-X.Y.Z.tar.gz
+  tar -zxf mpfr-X.Y.Z.tar.gz
+  cd $GCCSOURCE/mpc-X.Y.Z
+  ./configure --prefix=$GCCINSTALL/infrastructure/mpc-X.Y.Z \
+    --with-gmp=$GCCINSTALL/infrastructure/gmp-X.Y.Z \
+    --with-mpfr=$GCCINSTALL/infrastructure/mpfr-X.Y.Z
+  make
+  make install
+  export  LD_LIBRARY_PATH=$GCCINSTALL/infrastructure/mpc-X.Y.Z/lib:\
+    $LD_LIBRARY_PATH
+\end{verbatim}
+\normalsize
+Then lastly, install the \texttt{g++ compiler} version X.Y.Z:
+\footnotesize
+\begin{verbatim}
+  cd $GCCSOURCE
+  wget ftp://gcc.gnu.org/pub/gcc/releases/gcc-X.Y.Z/gcc-X.Y.Z.tar.gz
+  tar -zxf gcc-X.Y.Z.tar.gz
+  cd $GCCSOURCE/gcc-X.Y.Z
+  ./configure --prefix=$GCCINSTALL/gcc-X.Y.Z \
+    --with-gmp=$GCCINSTALL/infrastructure/gmp-X.Y.Z \
+    --with-mpfr=$GCCINSTALL/infrastructure/mpfr-X.Y.Z \
+    --with-mpc=$GCCINSTALL/infrastructure/mpc-X.Y.Z
+  make
+  make install
+\end{verbatim}
+\normalsize
+In order to use this version of the \texttt{g++} compiler, the following has to be added to the \texttt{\mytilde/.bashrc} file or sourced when needed:
+\footnotesize
+\begin{verbatim}
+  CC=$GCCINSTALL/gcc-X.Y.Z/bin/gcc
+  CXX=$GCCINSTALL/gcc-X.Y.Z/bin/g++
+  PATH=$GCCINSTALL/gcc-X.Y.Z/bin:$PATH
+  CLIB=$GCCINSTALL/gcc-X.Y.Z/lib64:$GCCINSTALL/infrastructure/gmp-X.Y.Z/lib:\
+    $GCCINSTALL/infrastructure/mpfr-X.Y.Z/lib:$GCCINSTALL/infrastructure/\
+    mpc-X.Y.Z/lib
+  if [ -z "$LD_LIBRARY_PATH" ]; then
+    DELIM=
+  else
+    DELIM=:
+  fi
+  LD_LIBRARY_PATH=${CLIB}${LD_LIBRARY_PATH:+:}$LD_LIBRARY_PATH
+  export CC CXX PATH LD_LIBRARY_PATH
+\end{verbatim}
+\normalsize
+The following command should now return the correct version of the compiler:
+\footnotesize
+\begin{verbatim}
+  g++ --version
+\end{verbatim}
+\normalsize
+
+\begin{appendices}
+\chapter{Singularity container definitions} \label{app:containers}
+{\noindent}This appendix gives container definition files for clean installations of different Linux distributions, where ROOT 5 works correctly. We divide them into Debian/Ubuntu and CentOS/Fedora distributions. Typically, a container definition includes the bootstrap option for creating the container, the OS version and the mirror URL, where the distribution is located. The \texttt{\%post} section runs while creating the container in order to preinstall some packages/software. Preinstalled packages can also be added with the include option. All of the testing installation container definition files are located in the \texttt{setup/singularity} folder of the auger-analysis software.
+
+\section{Debian/Ubuntu distributions}
+Debian and Ubuntu distributions must always have the \texttt{Bootstrap}, \texttt{OSVersion} and \texttt{MirrorURL} keywords. \texttt{Bootstrap} is always set to \texttt{debootstrap} and the \texttt{MirrorURL} is set to a mirror site, with different distribution versions. You can find different mirror sites at \cite{debianmirror} for Debian and at \cite{ubuntumirror} for Ubuntu. In case the \texttt{MirrorURL} in the below examples does not work, choose a different one from the two mirror sites. \texttt{OSVersion} defines the distribution version, which can be set to \texttt{trusty} (14.04), \texttt{xenial} (16.04), \texttt{bionic} (18.04),{\dots} for Ubuntu, and \texttt{wheezy} (7), \texttt{jessie} (8), \texttt{stretch} (9),{\dots} for Debian. The additional script in the \texttt{\%post} section adds the correct repository and installs locale information in order to support keyboards other than English. Note that the example sets locale support for US and Slovene keyboards.\\
+
+{\noindent}\textbf{Container definition file for Ubuntu 14.04 (trusty):}
+\footnotesize
+\begin{verbatim}
+BootStrap: debootstrap
+OSVersion: trusty
+MirrorURL: http://us.archive.ubuntu.com/ubuntu/
+
+%post
+   apt-get -y --force-yes install software-properties-common
+   add-apt-repository "deb http://us.archive.ubuntu.com/ubuntu/ trusty universe
+     main"
+   apt-get update
+   apt-get -y --force-yes install locales
+   
+   locale-gen en_US.UTF-8
+   locale-gen sl_SI.UTF-8
+   localedef -i en_US -f UTF-8 en_US.UTF-8
+   localedef -i sl_SI -f UTF-8 sl_SI.UTF-8
+\end{verbatim}
+\normalsize
+{\noindent}\textbf{Container definition file for Ubuntu 16.04 (xenial):}
+\footnotesize
+\begin{verbatim}
+BootStrap: debootstrap
+OSVersion: xenial
+MirrorURL: http://us.archive.ubuntu.com/ubuntu/
+
+%post
+   apt-get -y --force-yes install software-properties-common
+   add-apt-repository "deb http://us.archive.ubuntu.com/ubuntu/ xenial universe
+     main"
+   apt-get update
+   apt-get -y --force-yes install locales
+   
+   locale-gen en_US.UTF-8
+   locale-gen sl_SI.UTF-8
+   localedef -i en_US -f UTF-8 en_US.UTF-8
+   localedef -i sl_SI -f UTF-8 sl_SI.UTF-8
+\end{verbatim}
+\normalsize
+{\noindent}\textbf{Container definition file for Debian 8 (jessie):}
+\footnotesize
+\begin{verbatim}
+BootStrap: debootstrap
+OSVersion: jessie
+MirrorURL: http://deb.debian.org/debian/
+
+%post
+   apt-get -y --force-yes install software-properties-common
+   add-apt-repository "deb http://deb.debian.org/debian/ jessie main contrib
+     non-free"
+   apt-get update
+   apt-get -y --force-yes install locales
+   
+   locale-gen en_US.UTF-8
+   locale-gen sl_SI.UTF-8
+   localedef -i en_US -f UTF-8 en_US.UTF-8
+   localedef -i sl_SI -f UTF-8 sl_SI.UTF-8
+\end{verbatim}
+\normalsize
+
+\section{CentOS/Fedora distributions}
+CentOS and Fedora distributions must always have the \texttt{Bootstrap} and \linebreak\texttt{MirrorURL} keywords. \texttt{Bootstrap} is always set to \texttt{yum} and the \texttt{MirrorURL} is set to a mirror site, with different distribution versions. You can find different mirror sites at \cite{centosmirror} for CentOS and at \cite{fedoramirror} for Fedora. In case the \texttt{MirrorURL} in the below examples does not work, choose a different one from the two mirror sites. \texttt{OSVersion} defines the optional distribution version, if the variable \texttt{\%\{OSVERSION\}} is then used, while setting the \texttt{MirrorURL}. The additional script in the \texttt{\%post} section adds the correct repository.\\
+
+{\noindent}\textbf{Container definition file for CentOS 7:}
+\footnotesize
+\begin{verbatim}
+BootStrap: yum
+OSVersion: 7
+MirrorURL: http://mirror.centos.org/centos-%{OSVERSION}/%{OSVERSION}/os/x86_64/
+Include: yum
+
+%post
+	yum -y update
+	yum -y install epel-release
+	yum -y repolist
+\end{verbatim}
+\normalsize
+{\noindent}\textbf{Container definition file for Fedora 23:}
+\footnotesize
+\begin{verbatim}
+BootStrap: yum
+OSVersion: 23
+MirrorURL: https://archives.fedoraproject.org/pub/archive/fedora/linux/releases/
+  ${OSVERSION}/Workstation/x86_64/os/
+Include: dnf
+
+%post
+   dnf -y update
+   dnf -y repolist
+\end{verbatim}
+\normalsize
+
+\end{appendices}
 
 \pagebreak
-\begin{thebibliography}{50} \addcontentsline{toc}{section}{Bibliography}
+\titleformat{\chapter}[hang]{\normalfont\bf}{}{12pt}{\Large}
+\begin{thebibliography}{50} \addcontentsline{toc}{chapter}{Bibliography}
 \raggedright
 \bibitem{root} ROOT data analysis framework, \href{https://root.cern.ch}{\texttt{https://root.cern.ch}}.
 \bibitem{wxWidgets} wxWidgets cross-platform GUI library, \href{https://www.wxwidgets.org}{\texttt{https://www.wxwidgets.org}}.
 \bibitem{offline} S. Argiro, \emph{et al.}, \emph{The Offline Software Framework of the Pierre Auger Observatory}, \href{http://arxiv.org/pdf/0707.1652v1.pdf}{\texttt{arXiv:0707.1652}} (1998).
 \bibitem{tmva} Toolkit for Multivariate Analysis (TMVA), \href{http://tmva.sourceforge.net}{\texttt{http://tmva.sourceforge.net}}.
+\bibitem{singularity} Singularity environment container, \href{https://www.sylabs.io/singularity}{\texttt{https://www.sylabs.io/singularity}}.
+\bibitem{singularitydoc} Singularity documentation, \href{https://www.sylabs.io/docs}{\texttt{https://www.sylabs.io/docs}}.
+\bibitem{godown} Go programming language, \href{https://golang.org/dl}{\texttt{https://golang.org/dl}}.
+\bibitem{debianmirror} Debian mirror list, \href{https://www.debian.org/mirror/list}{\texttt{https://www.debian.org/mirror/list}}.
+\bibitem{ubuntumirror} Ubuntu mirror list, \href{https://launchpad.net/ubuntu/+archivemirrors}{\texttt{https://launchpad.net/ubuntu/+archivemirrors}}.
+\bibitem{centosmirror} CentOS mirror list, \href{https://www.centos.org/downloads/mirrors}{\texttt{https://www.centos.org/downloads/mirrors}}.
+\bibitem{fedoramirror} Fedora mirror list, \href{https://admin.fedoraproject.org/mirrormanager/mirrors/Fedora}{\texttt{https://admin.fedoraproject.org/mirrormanager/mirrors/Fedora}}.
 \end{thebibliography}
 
 \end{document}

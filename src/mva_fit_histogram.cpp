@@ -494,7 +494,7 @@ void MvaFitHist::PrepareHistograms(int run)
       cout << endl << "The selected data tree is: " << trees->at(*nrelem) << " (" << treeNames->at(*nrelem) << ")" << endl << endl;
 
       // Getting the signal fraction approximation for the data
-      *mvacut = analRes->GetMvaCut(0);
+      *mvacut = analRes->GetMvaCut();
       *midEnergy = analRes->GetEnergy();
 
       cout << "Mva cut value: " << *mvacut << endl;

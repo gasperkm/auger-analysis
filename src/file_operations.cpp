@@ -58,6 +58,27 @@ int MyFrame::CheckFormat(string *infile)
    TFile *tempfile = TFile::Open(infile->c_str(), "READ");
    if(tempfile->IsOpen())
    {
+#if ROOTADST == 0
+      if( ((tempfile->GetListOfKeys()->Contains("TreeOldS1")) || (tempfile->GetListOfKeys()->Contains("TreeNewS1"))) && !(tempfile->GetListOfKeys()->Contains("TreeS1")) )
+      {
+         cout << "# CheckFormat           #: " << "Input file " << *infile << " is in MVA rewritten ADST format." << endl;
+	 tempfile->Close();
+	 return 2;
+      }
+//      else if( (tempfile->GetListOfKeys()->Contains("TreeS1")) || (tempfile->GetListOfKeys()->Contains("TreeS1")) )
+      else if(tempfile->GetListOfKeys()->Contains("TreeS1"))
+      {
+         cout << "# CheckFormat           #: " << "Input file " << *infile << " is in MVA rewritten ADST format and will be used as input for MVA analysis." << endl;
+	 tempfile->Close();
+	 return 3;
+      }
+      else
+      {
+	 AlertPopup("Input file error", "The selected input file " + *infile + " is not in a readable format for this program. Please select rewritten ADST files or combined rewritten ADST files.");
+         tempfile->Close();
+	 return -1;
+      }
+#else
       if( (tempfile->GetListOfKeys()->Contains("recEvent")) || (tempfile->GetListOfKeys()->Contains("eventInfo")) )
       {
          cout << "# CheckFormat           #: " << "Input file " << *infile << " is in ADST format." << endl;
@@ -84,6 +105,7 @@ int MyFrame::CheckFormat(string *infile)
          tempfile->Close();
 	 return -1;
       }
+#endif
    }
    else
    {
@@ -228,6 +250,9 @@ void MyFrame::PrepareFileSplitCustom(wxCommandEvent& event)
 // Select a file to use for rewritten file
 void MyFrame::SelectRewrite(wxCommandEvent& event)
 {
+#if ROOTADST == 0
+   AlertPopup("ADST reading disabled", "Reading of ADST files has been disabled for ROOT 6, because the ADST software is only written for ROOT 5. See the documentation for more information.");
+#else
    (mvaList[0]->widgetLB)->GetSelections(selections);
 
    if(!selections.IsEmpty())
@@ -259,6 +284,7 @@ void MyFrame::SelectRewrite(wxCommandEvent& event)
    }
    else
       AlertPopup("No selected files", "No files from the first listbox were selected. Please select one or more files (holding Ctrl or Shift while clicking) to rewrite.");
+#endif
 }
 
 // Select a file to use for combined file

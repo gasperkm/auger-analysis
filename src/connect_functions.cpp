@@ -1428,6 +1428,7 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
          stemp[3] = "cp -r " + string(rootdir) + "/results/transformation_stats.dat " + (*currentAnalysisDir) + "/";
          system(stemp[3].c_str());*/
 
+	 /* NEWREMOVE - TODO
          // Get MVA training values and variable correlations
          sigCorMat = new TMatrixD(nrselobs, nrselobs);
          backCorMat = new TMatrixD(nrselobs, nrselobs);
@@ -1435,6 +1436,7 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
          for(int i = 0; i < nrkeys; i++)
             otherCorMat[i] = new TMatrixD(nrselobs, nrselobs);
          GetApplyCorrelations(&tempAnalysisFile);
+	 */
 
 /*	 // Skip the GUI interface for best cut and automatically select signal/background
          if(((cutEnergyBins->widgetNE[0])->GetValue() > 1) && ((specialMva->widgetChBox[0])->IsChecked()))
@@ -1515,16 +1517,21 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
          dtemp[0] = (cutMva->widgetNE[0])->GetValue();
          dtemp[1] = 0;
          dtemp[2] = 0;
-         mvaresults = mvaresults + "\n\nResults for mean cut (" + ToString(dtemp[0], 4) + ")\n";
+         mvaresults = mvaresults + "\n\nResults for MVA cut (" + ToString(dtemp[0], 4) + ")\n";
 	 int *selectedBin = new int;
          *selectedBin = (cutEnergyBins->widgetCB)->GetSelection();
          mvaprintout = ToSciString(ecutBins[2*(*selectedBin)], 4) + "\t" + ToSciString(ecutBins[2*(*selectedBin)+1], 4) + "\n";
+	 /* NEWREMOVE - TODO
          mvaprintout = mvaprintout + ToString(0) + "\t" + ToString(dtemp[0],4) + "\t";
+	 */
+         mvaprintout = mvaprintout + ToString(dtemp[0],4) + "\t";
          MvaApplication(&tempAnalysisFile, false, 0);
 
          freshAnalysis = true;
 
+	 /* NEWREMOVE - TODO
          GetMvaError((dataSelect->widgetCB)->GetSelection()+1, dtemp, &tempAnalysisFile);
+	 
          (cutMva->widgetNE[0])->SetValue(dtemp[1]);
          mvaresults = mvaresults + "\nResults for negative error cut (" + ToString(dtemp[1], 4) + ")\n";
          mvaprintout = mvaprintout + ToString(-1) + "\t" + ToString(dtemp[1],4) + "\t";
@@ -1534,6 +1541,7 @@ void MyFrame::StartMvaAnalysis(wxCommandEvent& event)
          mvaresults = mvaresults + "\nResults for positive error cut (" + ToString(dtemp[2], 4) + ")\n";
          mvaprintout = mvaprintout + ToString(1) + "\t" + ToString(dtemp[2],4) + "\t";
          MvaApplication(&tempAnalysisFile, freshAnalysis, 1);
+	 */
 
          (cutMva->widgetNE[0])->SetValue(dtemp[0]);
 
@@ -1586,7 +1594,9 @@ void MyFrame::ApplyMvaCut(wxCommandEvent& event)
       mvaprintout = mvaprintout + ToString(0) + "\t" + ToString(dtemp[0],4) + "\t";
       MvaApplication(&tempAnalysisFile, freshAnalysis, 0);
 
+      /* NEWREMOVE - TODO
       GetMvaError((dataSelect->widgetCB)->GetSelection()+1, dtemp, &tempAnalysisFile);
+      */
       (cutMva->widgetNE[0])->SetValue(dtemp[1]);
       mvaresults = mvaresults + "\nResults for negative error cut (" + ToString(dtemp[1], 4) + ")\n";
       mvaprintout = mvaprintout + ToString(-1) + "\t" + ToString(dtemp[1],4) + "\t";

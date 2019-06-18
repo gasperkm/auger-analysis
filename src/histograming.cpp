@@ -19,6 +19,10 @@ ScatHist::ScatHist(int *inType)
    xlim = new double[2];
    ylim = new double[2];
 
+   limset = new bool[2];
+   limset[0] = false;
+   limset[1] = false;
+
    uflowcount = new int[3*MAXINFILES];
    oflowcount = new int[3*MAXINFILES];
    totcount[0] = new int[3*MAXINFILES];
@@ -43,6 +47,8 @@ ScatHist::~ScatHist()
 
    delete[] xlim;
    delete[] ylim;
+
+   delete[] limset;
 
    delete[] uflowcount;
    delete[] oflowcount;
@@ -137,22 +143,28 @@ void ScatHist::SetXaxisLimits(bool use, double *inLimits)
 {
    if(use)
    {
+      limset[0] = true;
       xlim[0] = inLimits[0]; 
       xlim[1] = inLimits[1]; 
 
       cout << "Custom X-axis limits: " << xlim[0] << ", " << xlim[1] << endl;
    }
+   else
+      limset[0] = false;
 }
 
 void ScatHist::SetYaxisLimits(bool use, double *inLimits)
 {
    if(use)
    {
+      limset[1] = true;
       ylim[0] = inLimits[0]; 
       ylim[1] = inLimits[1]; 
 
       cout << "Custom Y-axis limits: " << ylim[0] << ", " << ylim[1] << endl;
    }
+   else
+      limset[1] = false;
 }
 
 void ScatHist::SetOtherSettings(bool *inConst)
@@ -480,8 +492,17 @@ int ScatHist::StartPlotting(Observables *genObser)
          // Setup other plotting options
          mystyle->SetHistColor((TH1*)treeHist[j], treeColor->at(j));
    
-         treeHist[j]->GetXaxis()->SetRange(dtemp[0], dtemp[1]);
-         treeHist[j]->GetXaxis()->SetRangeUser(dtemp[0], dtemp[1]);
+	 if(limset[0] == true)
+	 {
+            treeHist[j]->GetXaxis()->SetRange(xlim[0], xlim[1]);
+            treeHist[j]->GetXaxis()->SetRangeUser(xlim[0], xlim[1]);
+	 }
+	 else
+	 {
+            treeHist[j]->GetXaxis()->SetRange(dtemp[0], dtemp[1]);
+            treeHist[j]->GetXaxis()->SetRangeUser(dtemp[0], dtemp[1]);
+	 }
+
          if((stemp[1] == "energySD") || (stemp[1] == "energyFD"))
 	 {
             treeHist[j]->GetYaxis()->SetRangeUser(min[0], TMath::Power(10, 1.2*max[0]));
@@ -498,7 +519,7 @@ int ScatHist::StartPlotting(Observables *genObser)
       }
    
       cout << "Preparing a legend" << endl;
-      // Draw a legend with into on the number of event of all trees
+      // Draw a legend with info on the number of events of all trees
       legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(*nrtrees)), gPad->GetLeftMargin()+.50, 1-gPad->GetTopMargin());
       legend->SetFillStyle(legendFill);
       legend->SetFillColor(c_MvaCut);
@@ -1076,8 +1097,17 @@ int ScatHist::StartPlotting(Observables *genObser)
                {
                   mystyle->SetHistColor((TH1*)treeHist[j*(*nrtrees)+k], treeColor->at(k));
    
-                  treeHist[j*(*nrtrees)+k]->GetXaxis()->SetRange(dtemp[0], dtemp[1]);
-                  treeHist[j*(*nrtrees)+k]->GetXaxis()->SetRangeUser(dtemp[0], dtemp[1]);
+		  if(limset[0] == true)
+		  {
+                     treeHist[j*(*nrtrees)+k]->GetXaxis()->SetRange(xlim[0], xlim[1]);
+                     treeHist[j*(*nrtrees)+k]->GetXaxis()->SetRangeUser(xlim[0], xlim[1]);
+		  }
+		  else
+		  {
+                     treeHist[j*(*nrtrees)+k]->GetXaxis()->SetRange(dtemp[0], dtemp[1]);
+                     treeHist[j*(*nrtrees)+k]->GetXaxis()->SetRangeUser(dtemp[0], dtemp[1]);
+		  }
+
 	          if((stemp[1] == "energySD") || (stemp[1] == "energyFD"))
 		  {
                      treeHist[j*(*nrtrees)+k]->GetYaxis()->SetRangeUser(min[j], TMath::Power(10, 1.2*max[j]));
@@ -1201,8 +1231,23 @@ int ScatHist::StartPlotting(Observables *genObser)
                            dtemp[1] = yrange[2*j2+1] - yrange[2*j2];
 			}
 
-                        treeAGraph[itemp[1]]->GetYaxis()->SetRange(-0.05*dtemp[1]+dtemp[0], 1.20*dtemp[1]+dtemp[0]);
-                        treeAGraph[itemp[1]+k]->GetYaxis()->SetRangeUser(-0.05*dtemp[1]+dtemp[0], 1.20*dtemp[1]+dtemp[0]);
+                        if(limset[0] == true)
+			{
+                           treeAGraph[itemp[1]]->GetXaxis()->SetRange(xlim[0], xlim[1]);
+                           treeAGraph[itemp[1]+k]->GetXaxis()->SetRangeUser(xlim[0], xlim[1]);
+			}
+
+			if(limset[1] == true)
+			{
+                           treeAGraph[itemp[1]]->GetYaxis()->SetRange(ylim[0], ylim[1]);
+                           treeAGraph[itemp[1]+k]->GetYaxis()->SetRangeUser(ylim[0], ylim[1]);
+			}
+			else
+			{
+                           treeAGraph[itemp[1]]->GetYaxis()->SetRange(-0.05*dtemp[1]+dtemp[0], 1.20*dtemp[1]+dtemp[0]);
+                           treeAGraph[itemp[1]+k]->GetYaxis()->SetRangeUser(-0.05*dtemp[1]+dtemp[0], 1.20*dtemp[1]+dtemp[0]);
+			}
+
                         treeAGraph[itemp[1]+k]->SetMarkerStyle(1);
                         treeAGraph[itemp[1]+k]->SetLineWidth(1);
                         stemp[3] = genObser->GetLabel(stemp[1]);

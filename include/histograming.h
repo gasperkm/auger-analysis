@@ -36,6 +36,7 @@ private:
    vector<int> *treeColor;
    double *xlim;
    double *ylim;
+   bool *limset;
    double *yrange;
    bool *otherSettings;
 

@@ -126,9 +126,12 @@
          tempstring=$(echo "${tempstring} \$(TARGET${verPrep})")
 	 echo "TARGET${verPrep}=\$(BIN)/auger-analysis-gui-${verPrep}" >> $startdir/Makefile
        done
+       echo "ROOTVER=${ROOTVER}" >> $startdir/Makefile
        cat $startdir/setup/Makefile2.in >> $startdir/Makefile
        echo "all:${tempstring}" >> $startdir/Makefile
-       echo "support: \$(BIN)/tmvagui \$(BIN)/create_mva_plots \$(BIN)/data_fraction_plots \$(BIN)/individual_cut \$(BIN)/mva_fit_histogram \$(BIN)/histograming \$(BIN)/mass_composition_fit \$(BIN)/plotting_script" >> $startdir/Makefile
+       # NEWREMOVE - TODO
+       #echo "support: \$(BIN)/tmvagui \$(BIN)/create_mva_plots \$(BIN)/data_fraction_plots \$(BIN)/individual_cut \$(BIN)/mva_fit_histogram \$(BIN)/histograming \$(BIN)/mass_composition_fit \$(BIN)/plotting_script" >> $startdir/Makefile
+       echo "support: \$(BIN)/tmvagui \$(BIN)/create_mva_plots \$(BIN)/histograming" >> $startdir/Makefile
        echo "library: \$(LDIR)/libsubstr.so" >> $startdir/Makefile
        for verPrep in ${adstver[@]}
        do
@@ -141,12 +144,22 @@
 	 echo "# Make for main program (ADST version ${verPrep})" >> $startdir/Makefile
          echo "\$(TARGET${verPrep}): \$(LDIR)/libsubstr.so \$(BIN)/batch-rewrite-${verPrep} \${FILES}" >> $startdir/Makefile
 	 echo -e '\t@echo "\\n# Compiling the main program (version '${verPrep}') ------------------------------------------"' >> $startdir/Makefile
-	 echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+#	 echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+         if [ "$ROOTVER" == "5" ]; then
+	   echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+         elif [ "$ROOTVER" == "6" ]; then
+           echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+         fi
          echo "" >> $startdir/Makefile
          echo "# Batch rewrite rules -----------------------------------------------" >> $startdir/Makefile
 	 echo "\$(BIN)/batch-rewrite-${verPrep}: \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp \$(SRC)/adst_mva.cpp \$(SRC)/calc_observables.cpp" >> $startdir/Makefile
 	 echo -e '\t@echo "\\n# Creating the standalone batch rewrite (version '${verPrep}') ------------------------------------------"' >> $startdir/Makefile
-         echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+#         echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+         if [ "$ROOTVER" == "5" ]; then
+           echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+         elif [ "$ROOTVER" == "6" ]; then
+           echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+         fi
          echo "" >> $startdir/Makefile
        done
        cat $startdir/setup/Makefile3.in >> $startdir/Makefile
@@ -161,12 +174,22 @@
          echo "# Make for main program (ADST version ${adstver[0]})" >> $startdir/Makefile
          echo "\$(TARGET${adstver[0]}): \$(LDIR)/libsubstr.so \$(BIN)/batch-rewrite-${adstver[0]}" >> $startdir/Makefile
 	 echo -e '\t@echo "\\n# Compiling the main program (version '${adstver[0]}') ------------------------------------------"' >> $startdir/Makefile
-	 echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+#	 echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+         if [ "$ROOTVER" == "5" ]; then
+	   echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+         elif [ "$ROOTVER" == "6" ]; then
+           echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+         fi
          echo "" >> $startdir/Makefile
          echo "# Batch rewrite rules -----------------------------------------------" >> $startdir/Makefile
          echo "\$(BIN)/batch-rewrite-${adstver[0]}: \$(SRC)/batch_rewrite/batch_rewrite.cpp" >> $startdir/Makefile
 	 echo -e '\t@echo "\\n# Creating the standalone batch rewrite (version '${adstver[0]}') ------------------------------------------"' >> $startdir/Makefile
-         echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+#         echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+         if [ "$ROOTVER" == "5" ]; then
+           echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+         elif [ "$ROOTVER" == "6" ]; then
+           echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+         fi
          cat $startdir/setup/Makefile3.in >> $startdir/Makefile
        fi
      fi
@@ -183,31 +206,40 @@
        errorecho "Error! No \"path-to-installation\" found in $startdir/setup/workstation.h.in"
      fi
 
+     # Find ROOTVER SOMETHING and set it depending on the selected ROOT version
+     grep -q "#define ROOTVER SOMETHING" $startdir/setup/workstation.h.mid
+     if [ $? == 0 ]; then
+       sed "s/ROOTVER SOMETHING/ROOTVER ${ROOTVER}/g" $startdir/setup/workstation.h.mid > $startdir/setup/workstation.h.mid2
+       rm -f $startdir/setup/workstation.h.mid
+     else
+         errorecho "Error! No \"ROOTVER SOMETHING\" found in $startdir/setup/workstation.h.in"
+     fi
+
      if [ "$1" != "" ]; then
        # Find OFFVER SOMETHING and set it depending on the selected ADST version
-       grep -q "#define OFFVER SOMETHING" $startdir/setup/workstation.h.mid
+       grep -q "#define OFFVER SOMETHING" $startdir/setup/workstation.h.mid2
        if [ $? == 0 ]; then
 	 if [ "$1" == "v2r9p1" ] || [ "$1" == "v2r9p5" ]; then
-           sed "s/OFFVER SOMETHING/OFFVER 0/g" $startdir/setup/workstation.h.mid > $startdir/include/workstation.h
+           sed "s/OFFVER SOMETHING/OFFVER 0/g" $startdir/setup/workstation.h.mid2 > $startdir/include/workstation.h
          else
-           sed "s/OFFVER SOMETHING/OFFVER 1/g" $startdir/setup/workstation.h.mid > $startdir/include/workstation.h
+           sed "s/OFFVER SOMETHING/OFFVER 1/g" $startdir/setup/workstation.h.mid2 > $startdir/include/workstation.h
          fi
-         rm -f $startdir/setup/workstation.h.mid
+         rm -f $startdir/setup/workstation.h.mid2
        else
          errorecho "Error! No \"OFFVER SOMETHING\" found in $startdir/setup/workstation.h.in"
        fi
      else
        if [ ! -f $startdir/include/workstation.h ]; then
          # Find OFFVER SOMETHING and set it depending on the selected ADST version
-         grep -q "#define OFFVER SOMETHING" $startdir/setup/workstation.h.mid
+         grep -q "#define OFFVER SOMETHING" $startdir/setup/workstation.h.mid2
          if [ $? == 0 ]; then
-           sed "s/OFFVER SOMETHING/OFFVER \"${adstver[0]}\"/g" $startdir/setup/workstation.h.mid > $startdir/include/workstation.h
-           rm -f $startdir/setup/workstation.h.mid
+           sed "s/OFFVER SOMETHING/OFFVER \"${adstver[0]}\"/g" $startdir/setup/workstation.h.mid2 > $startdir/include/workstation.h
+           rm -f $startdir/setup/workstation.h.mid2
          else
            errorecho "Error! No \"OFFVER SOMETHING\" found in $startdir/setup/workstation.h.in"
          fi
        else
-         rm -f $startdir/setup/workstation.h.mid
+         rm -f $startdir/setup/workstation.h.mid2
        fi
      fi
 
@@ -248,61 +280,106 @@
 
    function SetupTmva()
    {
-     source $startdir/setup/setup_TMVA.sh $startdir
-     if [ ! -d $TMVASYS ]; then
-       cd $startdir/setup
-       for ball in *.tgz
-       do
-          tar -zxf $ball
-       done
-     fi
+     # Compile TMVA version 4.2.0 only if we have ROOT 5
+     if [ "$ROOTVER" == "5" ]; then
+       source $startdir/setup/setup_TMVA.sh $startdir
+       if [ ! -d $TMVASYS ]; then
+         cd $startdir/setup
+         for ball in *.tgz
+         do
+            tar -zxf $ball
+         done
+       fi
 
-     # Replace original Factory.cxx with edited one
-     grep -q "TRANSFORMDIR" $startdir/setup/Factory.cxx.in
-     if [ $? == 0 ]; then
-       sed "s/TRANSFORMDIR/$basedir/g" $startdir/setup/Factory.cxx.in > $startdir/setup/Factory.cxx.mid
-     fi
-     diff -q $TMVASYS/src/Factory.cxx $startdir/setup/Factory.cxx.mid
-     if [ $? != 0 ]; then
-       cp $startdir/setup/Factory.cxx.mid $TMVASYS/src/Factory.cxx
-     fi
-     rm -fr $startdir/setup/Factory.cxx.mid
+       # Replace original Factory.cxx with edited one
+       grep -q "TRANSFORMDIR" $startdir/setup/Factory.cxx.in
+       if [ $? == 0 ]; then
+         sed "s/TRANSFORMDIR/$basedir/g" $startdir/setup/Factory.cxx.in > $startdir/setup/Factory.cxx.mid
+       fi
+       diff -q $TMVASYS/src/Factory.cxx $startdir/setup/Factory.cxx.mid
+       if [ $? != 0 ]; then
+         cp $startdir/setup/Factory.cxx.mid $TMVASYS/src/Factory.cxx
+       fi
+       rm -fr $startdir/setup/Factory.cxx.mid
 
-     # TESTING!
-     # Replace original MethodBase.cxx with edited one
-     diff -q $TMVASYS/src/MethodBase.cxx $startdir/setup/MethodBase.cxx.in
-     if [ $? != 0 ]; then
-       cp $startdir/setup/MethodBase.cxx.in $TMVASYS/src/MethodBase.cxx
-     fi
-     # TESTING!
+       # TESTING!
+       # Replace original MethodBase.cxx with edited one
+       diff -q $TMVASYS/src/MethodBase.cxx $startdir/setup/MethodBase.cxx.in
+       if [ $? != 0 ]; then
+         cp $startdir/setup/MethodBase.cxx.in $TMVASYS/src/MethodBase.cxx
+       fi
+       # TESTING!
 
-     # Create the TMVA version
-     cd $TMVASYS
-     make
-     if [ $? == 0 ]; then
-       source $TMVASYS/test/setup.sh $TMVASYS
-     else
-       errorecho "Compiling of TMVA has failed..."
-#       exit 1
+       # Create the TMVA version
+       cd $TMVASYS
+       make
+       if [ $? == 0 ]; then
+         source $TMVASYS/test/setup.sh $TMVASYS
+       else
+         errorecho "Compiling of TMVA has failed..."
+#         exit 1
+       fi
+
+       echo "TMVA external version 4.2.0 used with ROOT $ROOTVER"
+     # Use the TMVA included in ROOT 6
+     elif [ "$ROOTVER" == "6" ]; then
+       echo "TMVA used with ROOT $ROOTVER"
      fi
    }
 
    function SetupAdst()
    {
-     source $startdir/setup/setup_ADST.sh $startdir $1
-     
-     if [ ! -d $ADSTROOT ]; then
-       cd $startdir/setup
-       tar -zxf ADST_${1}.tar.gz
-     fi
-     cd $ADSTROOT
-     make
-     if [ $? != 0 ]; then
-       if [ ! -f $ADSTROOT/lib/libAnalysisKG.so ] || [ ! -f $ADSTROOT/lib/libRecEventKG.so ] || [ ! -f $ADSTROOT/bin/EventBrowser ]; then
-         errorecho "Compiling of ADST has failed..."
-         exit 1
+     # Compile ADST only if we have ROOT 5
+     if [ "$ROOTVER" == "5" ]; then
+       source $startdir/setup/setup_ADST.sh $startdir $1
+       
+       if [ ! -d $ADSTROOT ]; then
+         cd $startdir/setup
+         tar -zxf ADST_${1}.tar.gz
+       fi
+       cd $ADSTROOT
+       make
+       if [ $? != 0 ]; then
+         if [ ! -f $ADSTROOT/lib/libAnalysisKG.so ] || [ ! -f $ADSTROOT/lib/libRecEventKG.so ] || [ ! -f $ADSTROOT/bin/EventBrowser ]; then
+           errorecho "Compiling of ADST has failed..."
+           exit 1
+         else
+           errorecho "Compiling of ADST documentation has failed..."
+         fi
+       fi
+     # Do a test compilation of ADST if we have ROOT 6
+     elif [ "$ROOTVER" == "6" ]; then
+       source $startdir/setup/setup_ADST.sh $startdir $1
+       
+       if [ ! -d $ADSTROOT ]; then
+         cd $startdir/setup
+         tar -zxf ADST_${1}.tar.gz
        else
-         errorecho "Compiling of ADST documentation has failed..."
+         diff -q $startdir/setup/Makefile_ADST-test_root6.in $ADSTROOT/Makefile
+         if [ $? != 0 ]; then
+           rm -fr $ADSTROOT
+	 fi
+         cd $startdir/setup
+         tar -zxf ADST_${1}.tar.gz
+       fi
+
+       if [ -d $ADSTROOT ]; then
+         cd $ADSTROOT
+         mkdir -p $ADSTROOT/lib
+         mkdir -p $ADSTROOT/include/adst
+
+	 cp $ADSTROOT/RecEvent/src/*.h $ADSTROOT/include/adst/
+	 rm -fr $ADSTROOT/include/adst/*LinkDef.h
+	 cp $ADSTROOT/RecEvent/src/*LinkDef.h $ADSTROOT/lib/
+	 cp $startdir/setup/Makefile_ADST-test_root6.in $ADSTROOT/Makefile
+
+	 make
+         if [ $? != 0 ]; then
+           if [ ! -f $ADSTROOT/lib/libAnalysisKG.so ]; then
+             errorecho "Compiling of ADST has failed..."
+             exit 1
+           fi
+         fi
        fi
      fi
    }
@@ -396,9 +473,11 @@
      echo "fi" >> $startdir/start.sh
      echo "" >> $startdir/start.sh
 
-     echo "source $startdir/setup/setup_TMVA.sh $startdir" >> $startdir/start.sh
-     echo "cd $TMVASYS" >> $startdir/start.sh
-     echo "source $TMVASYS/test/setup.sh $TMVASYS" >> $startdir/start.sh
+     if [ "$ROOTVER" == "5" ]; then
+       echo "source $startdir/setup/setup_TMVA.sh $startdir" >> $startdir/start.sh
+       echo "cd $TMVASYS" >> $startdir/start.sh
+       echo "source $TMVASYS/test/setup.sh $TMVASYS" >> $startdir/start.sh
+     fi
      echo "cd $startdir" >> $startdir/start.sh
      echo "" >> $startdir/start.sh
      echo "export LD_LIBRARY_PATH=\$PWD/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}" >> $startdir/start.sh
