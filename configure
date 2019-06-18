@@ -421,7 +421,11 @@
      echo "fi" >> $startdir/start.sh
      echo "" >> $startdir/start.sh
 
-     echo "if [ \"\$ADSTROOT\" == \"\" ]; then" >> $startdir/start.sh
+     echo "offlinedirectory=$offlinedirectory" >> $startdir/start.sh
+     echo "if [ \$offlinedirectory != -1 ]; then" >> $startdir/start.sh
+     echo "  export ADSTROOT=\$AUGEROFFLINEROOT" >> $startdir/start.sh
+     echo "  echo \"Using ADST installed in \$ADSTROOT\"" >> $startdir/start.sh
+     echo "else" >> $startdir/start.sh
      count=0
      tempstring="if"
      for verSetup in ${adstver[@]}
@@ -475,8 +479,6 @@
      echo "    helptext" >> $startdir/start.sh
      echo "    exit 1" >> $startdir/start.sh
      echo "  fi" >> $startdir/start.sh
-     echo "else" >> $startdir/start.sh
-     echo "  echo \"Using ADST installed in \$ADSTROOT\"" >> $startdir/start.sh
      echo "fi" >> $startdir/start.sh
      echo "" >> $startdir/start.sh
 
