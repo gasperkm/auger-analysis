@@ -421,12 +421,13 @@
      echo "fi" >> $startdir/start.sh
      echo "" >> $startdir/start.sh
 
+     echo "if [ \"\$ADSTROOT\" == \"\" ]; then" >> $startdir/start.sh
      count=0
      tempstring="if"
      for verSetup in ${adstver[@]}
      do
        if [ $count == 0 ]; then
-         tempstring=$(echo "${tempstring} [ \"\$1\" == \"$verSetup\" ]")
+         tempstring=$(echo "  ${tempstring} [ \"\$1\" == \"$verSetup\" ]")
        else
          tempstring=$(echo "${tempstring} || [ \"\$1\" == \"$verSetup\" ]")
        fi
@@ -435,14 +436,14 @@
      done
      tempstring=$(echo "${tempstring}; then")
      echo "$tempstring" >> $startdir/start.sh
-     echo "  offversion=\$1" >> $startdir/start.sh
+     echo "    offversion=\$1" >> $startdir/start.sh
 
      count=0
      tempstring="elif"
      for verSetup in ${adstver[@]}
      do
        if [ $count == 0 ]; then
-         tempstring=$(echo "${tempstring} [ \"\$2\" == \"$verSetup\" ]")
+         tempstring=$(echo "  ${tempstring} [ \"\$2\" == \"$verSetup\" ]")
        else
          tempstring=$(echo "${tempstring} || [ \"\$2\" == \"$verSetup\" ]")
        fi
@@ -451,28 +452,31 @@
      done
      tempstring=$(echo "${tempstring}; then")
      echo "$tempstring" >> $startdir/start.sh
-     echo "  offversion=\$2" >> $startdir/start.sh
+     echo "    offversion=\$2" >> $startdir/start.sh
 
-     echo "fi" >> $startdir/start.sh
+     echo "  fi" >> $startdir/start.sh
      echo "" >> $startdir/start.sh
 
      count=0
      for verSetup in ${adstver[@]}
      do
        if [ $count == 0 ]; then
-         echo "if [ \"\$offversion\" == \"$verSetup\" ]; then" >> $startdir/start.sh
+         echo "  if [ \"\$offversion\" == \"$verSetup\" ]; then" >> $startdir/start.sh
        else
-         echo "elif [ \"\$offversion\" == \"$verSetup\" ]; then" >> $startdir/start.sh
+         echo "  elif [ \"\$offversion\" == \"$verSetup\" ]; then" >> $startdir/start.sh
        fi
-       echo "  source $startdir/setup/setup_ADST.sh $startdir $verSetup" >> $startdir/start.sh
-       echo "  cd $startdir" >> $startdir/start.sh
+       echo "    source $startdir/setup/setup_ADST.sh $startdir $verSetup" >> $startdir/start.sh
+       echo "    cd $startdir" >> $startdir/start.sh
 
        count=$(( $count + 1 ))
      done
+     echo "  else" >> $startdir/start.sh
+     echo "    echo \"Error! No ADST version supplied.\"" >> $startdir/start.sh
+     echo "    helptext" >> $startdir/start.sh
+     echo "    exit 1" >> $startdir/start.sh
+     echo "  fi" >> $startdir/start.sh
      echo "else" >> $startdir/start.sh
-     echo "  echo \"Error! No ADST version supplied.\"" >> $startdir/start.sh
-     echo "  helptext" >> $startdir/start.sh
-     echo "  exit 1" >> $startdir/start.sh
+     echo "  echo \"Using ADST installed in \$ADSTROOT\"" >> $startdir/start.sh
      echo "fi" >> $startdir/start.sh
      echo "" >> $startdir/start.sh
 
@@ -586,6 +590,11 @@
 
      if [ "$2" == "" ]; then
        cd $startdir
+       make support-${1}
+       if [ $? != 0 ]; then
+         errorecho "Compiling of the ADST version $1 of the batch program failed..."
+         exit 1
+       fi
        make ./bin/auger-analysis-gui-${1}
        if [ $? != 0 ]; then
          errorecho "Compiling of the ADST version $1 of the program failed..."
