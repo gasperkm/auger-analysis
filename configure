@@ -43,6 +43,19 @@
      esac 
    done   
    
+   # Check arguments for Offline install directory
+   offlinesearch="--offline-install="
+   offlinedirectory=-1
+   for var in $@
+   do
+     case $var in
+       "$offlinesearch"*)
+         offlinedirectory=${var#$offlinesearch}
+         echo "Offline directory: $offlinedirectory";;
+       *) ;;
+     esac 
+   done   
+   
    # Functions for coloring
    function colorecho
    {
@@ -74,8 +87,9 @@
      colorecho "  clean      Clean the installation directory. Does not clean the results directory."
      colorecho "  compress   Compress the source code in a tar-ball."
      colorecho ""
-     colorecho "[install directories] = Directory where ROOT is installed (when running with superuser, this is important, otherwise optional):"
+     colorecho "[install directories] = Directory where software is installed (when running with superuser, this is important, otherwise optional):"
      colorecho "  --root-install=/root/install/directory"
+     colorecho "  --offline-install=/offline/install/directory"
      colorecho ""
      colorecho "Example:"
      colorecho "  ./configure all --root-install=/home/user/root"
@@ -562,7 +576,13 @@
        SetupStartScript
      fi
 
-     SetupAdst $1
+     if [ $offlinedirectory != -1 ]; then
+       colorecho "Using a previously installed version of ADST from an Offline installation."
+       export ADSTROOT=$offlinedirectory
+     else
+       colorecho "Installing a version of ADST packaged with this software ($1)."
+       SetupAdst $1
+     fi
 
      if [ "$2" == "" ]; then
        cd $startdir
@@ -582,7 +602,14 @@
      for verLibs in ${adstver[@]}
      do
        PrepareInFiles $verLibs
-       SetupAdst $verLibs
+
+       if [ $offlinedirectory != -1 ]; then
+         colorecho "Using a previously installed version of ADST from an Offline installation."
+         export ADSTROOT=$offlinedirectory
+       else
+         colorecho "Installing a version of ADST packaged with this software ($verLibs)."
+         SetupAdst $verLibs
+       fi
      done
 
      cd $startdir
