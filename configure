@@ -421,18 +421,12 @@
      echo "fi" >> $startdir/start.sh
      echo "" >> $startdir/start.sh
 
-     echo "offlinedirectory=$offlinedirectory" >> $startdir/start.sh
-     echo "" >> $startdir/start.sh
-     echo "if [ \$offlinedirectory != -1 ]; then" >> $startdir/start.sh
-     echo "  export ADSTROOT=\$offlinedirectory" >> $startdir/start.sh
-     echo "  echo \"Using ADST installed in \$ADSTROOT\"" >> $startdir/start.sh
-     echo "else" >> $startdir/start.sh
      count=0
      tempstring="if"
      for verSetup in ${adstver[@]}
      do
        if [ $count == 0 ]; then
-         tempstring=$(echo "  ${tempstring} [ \"\$1\" == \"$verSetup\" ]")
+         tempstring=$(echo "${tempstring} [ \"\$1\" == \"$verSetup\" ]")
        else
          tempstring=$(echo "${tempstring} || [ \"\$1\" == \"$verSetup\" ]")
        fi
@@ -441,14 +435,14 @@
      done
      tempstring=$(echo "${tempstring}; then")
      echo "$tempstring" >> $startdir/start.sh
-     echo "    offversion=\$1" >> $startdir/start.sh
+     echo "  offversion=\$1" >> $startdir/start.sh
 
      count=0
      tempstring="elif"
      for verSetup in ${adstver[@]}
      do
        if [ $count == 0 ]; then
-         tempstring=$(echo "  ${tempstring} [ \"\$2\" == \"$verSetup\" ]")
+         tempstring=$(echo "${tempstring} [ \"\$2\" == \"$verSetup\" ]")
        else
          tempstring=$(echo "${tempstring} || [ \"\$2\" == \"$verSetup\" ]")
        fi
@@ -457,10 +451,17 @@
      done
      tempstring=$(echo "${tempstring}; then")
      echo "$tempstring" >> $startdir/start.sh
-     echo "    offversion=\$2" >> $startdir/start.sh
+     echo "  offversion=\$2" >> $startdir/start.sh
 
-     echo "  fi" >> $startdir/start.sh
+     echo "fi" >> $startdir/start.sh
      echo "" >> $startdir/start.sh
+
+     echo "offlinedirectory=$offlinedirectory" >> $startdir/start.sh
+     echo "" >> $startdir/start.sh
+     echo "if [ \$offlinedirectory != -1 ]; then" >> $startdir/start.sh
+     echo "  export ADSTROOT=\$offlinedirectory" >> $startdir/start.sh
+     echo "  echo \"Using ADST installed in \$ADSTROOT\"" >> $startdir/start.sh
+     echo "else" >> $startdir/start.sh
 
      count=0
      for verSetup in ${adstver[@]}
