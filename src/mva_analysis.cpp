@@ -2782,8 +2782,8 @@ cout << "Setting opened file for TMVA analysis." << endl;
       backgroundTree[j] = new TTree;
    *itemp = 0;
 
-   nrTreeEvents[0] = -1;
-   nrTreeEvents[1] = -1;
+   nrTreeEvents[0] = 0;
+   nrTreeEvents[1] = 0;
 //   TList *tempkeyslist = (TList*) ifile->GetListOfKeys();
    for(int j = 1; j <= GetRootKeys(ifile, "TreeS"); j++)
    {
@@ -2806,7 +2806,7 @@ cout << "Setting opened file for TMVA analysis." << endl;
       {
          cout << "# PerformMvaAnalysis    #: " << "Using background tree " << *itemp << ": " << stemp[1] << endl;
          backgroundTree[*itemp] = (TTree*)ifile->Get(stemp[0].c_str());
-         nrTreeEvents[1] = backgroundTree[*itemp]->GetEntries();
+         nrTreeEvents[1] += backgroundTree[*itemp]->GetEntries();
          (*itemp)++;
       }
    }
@@ -2943,8 +2943,8 @@ cout << "Setting opened file for TMVA analysis." << endl;
       backgroundTree[j] = new TTree;
    *itemp = 0;
 
-   nrTreeEvents[0] = -1;
-   nrTreeEvents[1] = -1;
+   nrTreeEvents[0] = 0;
+   nrTreeEvents[1] = 0;
 //   TList *tempkeyslist = (TList*) ifile->GetListOfKeys();
    for(int j = 1; j <= GetRootKeys(ifile, "TreeS"); j++)
    {
@@ -2967,7 +2967,7 @@ cout << "Setting opened file for TMVA analysis." << endl;
       {
          cout << "# PerformMvaAnalysis    #: " << "Using background tree " << *itemp << ": " << stemp[1] << endl;
          backgroundTree[*itemp] = (TTree*)ifile->Get(stemp[0].c_str());
-         nrTreeEvents[1] = backgroundTree[*itemp]->GetEntries();
+         nrTreeEvents[1] += backgroundTree[*itemp]->GetEntries();
          (*itemp)++;
       }
    }
@@ -3073,6 +3073,7 @@ cout << "Setting opened file for TMVA analysis." << endl;
 
       MvaEfficiency *effplot = new MvaEfficiency(nrTreeEvents[0], nrTreeEvents[1], currentAnalysisDir);
       effplot->RunMvaEfficiency(inname);
+      effplot->WriteoutMethod();
       // Selecting the signal/purity cut (not using signal/background or optimal)
       (cutMva->widgetNE[0])->SetValue(effplot->sigpurCut);
 
@@ -3089,6 +3090,7 @@ cout << "Setting opened file for TMVA analysis." << endl;
 
          MvaEfficiency *effplot = new MvaEfficiency(nrTreeEvents[0], nrTreeEvents[1], currentAnalysisDir);
          effplot->RunMvaEfficiency(inname);
+         effplot->WriteoutMethod();
 
          stemp[2] = "Finished running MVA analysis. For Signal/Background values of: [" + ToString(nrTreeEvents[0]) + "/" + ToString(nrTreeEvents[1]) + "] best cuts are (sig/bgd/pur/SNR):\n";
          stemp[2] = stemp[2] + "- Optimal cut: " + ToString(effplot->optimalCut, 4) + " (" + ToString(100.*(effplot->GetHistValue(0, 0)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(0, 1)), 2) + "%/" + ToString(100.*(effplot->GetHistValue(0, 2)), 2) + "%/" + ToString(effplot->GetHistValue(0, 3), 4) + ")\n";

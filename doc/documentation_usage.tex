@@ -32,6 +32,17 @@
 	linkcolor=black,%
 	urlcolor=blue}
 
+% Packages for nicer computer code
+\usepackage{xcolor}
+\usepackage{listings}
+\lstset{
+   basicstyle=\ttfamily\footnotesize,
+   columns=fullflexible,
+   frame=single,
+   breaklines=true,
+   postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space}
+}
+
 % Font type which is much better for reading
 \usepackage[sc]{mathpazo}
 
@@ -96,13 +107,13 @@
 
 \section{The graphical interface}
 The GUI of the program for ADST version \texttt{XrYpZ} is executed with:
-\begin{verbatim}
-   ./start.sh vXrYpZ
-\end{verbatim}
+\begin{lstlisting}[language=bash]
+  ./start.sh vXrYpZ
+\end{lstlisting}
 Note that standard output to the terminal might slow down the program considerably. It is thus advised to save the standard output into a file with:
-\begin{verbatim}
-   ./start.sh vXrYpZ > results/printout.txt
-\end{verbatim}
+\begin{lstlisting}[language=bash]
+  ./start.sh vXrYpZ > results/printout.txt
+\end{lstlisting}
 This opens the initial graphical interface of the program:
 \begin{figure}[H]
 \centerline{\includegraphics[width=0.94\textwidth]{figures/software_screenshot_1.png}}
@@ -199,8 +210,7 @@ Any important input files, through which the user can adjust or change input set
 \item[$\bullet$] \textbf{MVA method options:}\\Input file with instructions for each of the included MVA method from the TMVA package (\texttt{./input/mva\_options.txt}). The descriptive name will appear in the \texttt{Choose MVA analysis method} dropdown menu, while the method name is the name TMVA recognizes as an MVA method. Options for each of these methods can be adjusted, according to the TMVA documentation \cite{tmvadocument}. The file \texttt{./input/mva\_options.txt} must not be renamed in order for this to work!
 \item[$\bullet$] \textbf{Observables file:}\\Input file with all observables we wish to extract from the ADST file and use in the MVA analysis (\texttt{./input/observables.txt}). The observable name appears in the observables listbox, while the selection sets the default selection of observables in the listbox. Note that the observable name must not include any whitespaces, because these are also used while naming output plots. Minimum and maximum limits are only used during plotting, where these two values are used to set limits for the appropriate axis. Axis labels give a description of the observable, which will be used during plotting. The file \texttt{./input/observables.txt} must not be renamed in order for this to work!
 \item[$\bullet$] \textbf{Custom energy binning file:}\\Example of a custom energy binning input file \\(\texttt{./input/custom\_energy\_bins.txt}). The two columns determine low and high values of each energy bin as shown in this example:
-{\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   18.5   18.6
   18.6   18.7
   18.7   18.8
@@ -212,12 +222,10 @@ Any important input files, through which the user can adjust or change input set
   19.3   19.4
   19.4   19.5
   19.5   20.0
-\end{verbatim}
-}
+\end{lstlisting}
 This file can be selected using the \texttt{Select file...} button in the custom energy binning section of the MVA analysis part of the GUI.
 \item[$\bullet$] \textbf{Splitting instructions file:}\\Example of a file, which sets instructions on how to automatically split multiple files. This is done through the \texttt{Split (File)} button in the Rewritten ADST preparation part of the GUI. Each line must include the number of events that will be saved to the first output file as shown in this example:
-{\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   476
   326
   89
@@ -229,8 +237,7 @@ This file can be selected using the \texttt{Select file...} button in the custom
   0
   7
   0
-\end{verbatim}
-}
+\end{lstlisting}
 From this example, we have a total of 11 lines, which means this will sequentially split 11 selected input files automatically. When setting the splitting to 0, all events will be written to the second output file. Both output files will appear in the same folder as the input file, with an addition of \texttt{split1} or \texttt{split2} to their names, in order to separate them.
 \item[$\bullet$] \textbf{Previously published results files:}\\In order to plot previously published results in addition to the results created through the MVA analysis method, some input files must describe them:
 	\begin{itemize}
@@ -253,62 +260,62 @@ The depth of shower maximum $X_{\textrm{max}}$ is the depth at which the extensi
 f_{\textrm{GH}}(X) = \left(\frac{\diff E}{\diff X}\right)_{\textrm{max}}\cdot \left(\frac{X - X_0}{X_{\textrm{max}} - X_0}\right)^{\frac{X_{\textrm{max}} - X_0}{\lambda}}\, \me^{\frac{X_{\textrm{max}} - X}{\lambda}},
 \end{equation}
 where $X$ is the depth along the shower axis, and $\lambda$, $X_0$, $X_{\textrm{max}}$ and $\left(\frac{\diff E}{\diff X}\right)_{\textrm{max}}$ are shape parameters of the shower. From the ADST structure, the depth of shower maximum measured by an FD building (denoted with \texttt{eye}) can be accessed with
-\begin{verbatim}
+\begin{lstlisting}[language=C++]
   vector<FDEvent> acteyes;
   acteyes = fRecEvent->GetFDEvents();
   xmax = (acteyes[eye].GetFdRecShower()).GetXmax();
-\end{verbatim}
+\end{lstlisting}
 The reading and extraction of this observable is handled by function \texttt{GetXmax} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{x0} -- First interaction depth}
 $X_0$ describes the depth at which the initial interaction happened between the primary cosmic ray and an atmospheric molecule. This value depends on the simulation software and its atmospheric model, but is directly extracted from equation \eqref{eq:gaisserHillas}. From the ADST structure, the first interaction depth measured by an FD building (denoted with \texttt{eye}) can be accessed with
-\begin{verbatim}
+\begin{lstlisting}[language=C++]
   vector<FDEvent> acteyes;
   acteyes = fRecEvent->GetFDEvents();
   x0 = (acteyes[eye].GetFdRecShower()).GetX0();
-\end{verbatim}
+\end{lstlisting}
 The reading and extraction of this observable is handled by function \texttt{GetX0} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{lambda} -- Gaisser-Hillas fitting parameter $\lambda$}
 Similarly to the previous two observables, $\lambda$ is also a fitting parameter of the longitudinal profile and is directly extracted from equation \eqref{eq:gaisserHillas}. From the ADST structure, the $\lambda$ parameter measured by an FD building (denoted with \texttt{eye}) can be accessed with
-\begin{verbatim}
+\begin{lstlisting}[language=C++]
   vector<FDEvent> acteyes;
   acteyes = fRecEvent->GetFDEvents();
   lambda = (acteyes[eye].GetFdRecShower()).GetLambda();
-\end{verbatim}
+\end{lstlisting}
 The reading and extraction of this observable is handled by function \texttt{GetLambda} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{shfoot} -- Early development of the extensive air shower}
 \subsection{\texttt{energySD} -- SD reconstructed primary energy}
 This is the reconstructed energy as measured by the surface detector (SD). From the ADST structure, $E_{\textrm{SD}}$ can be accessed with
-\begin{verbatim}
+\begin{lstlisting}[language=C++]
   SdRecShower *sdrecshw;
   *sdrecshw = fRecEvent->GetSDEvent().GetSdRecShower();
   energySD = sdrecshw->GetEnergy();
-\end{verbatim}
+\end{lstlisting}
 The reading and extraction of this observable is handled by function \texttt{GetSdEnergy} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{energyFD} -- FD reconstructed primary energy}
 This is the reconstructed energy as measured by one of the FD buildings. From the ADST structure, $E_{\textrm{FD}}$ measured by an FD building (denoted with \texttt{eye}) can be accessed with
-\begin{verbatim}
+\begin{lstlisting}[language=C++]
   vector<FDEvent> acteyes;
   acteyes = fRecEvent->GetFDEvents();
   energyFD = (acteyes[eye].GetFdRecShower()).GetEnergy();
-\end{verbatim}
+\end{lstlisting}
 The reading and extraction of this observable is handled by function \texttt{GetFdEnergy} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{nrmu} -- Number of muons at ground level}
 For the time being, the number of muons at ground level is only determined through the simulated part of the shower. As such, any real data events will be missing this information. From the ADST structure, the number of muons can be accessed with
-\begin{verbatim}
+\begin{lstlisting}[language=C++]
   GenShower *genshw;
   genshw = fRecEvent->GetGenShower();
   nrmu = genshw->GetMuonNumber();
-\end{verbatim}
+\end{lstlisting}
 The reading and extraction of this observable is handled by function \texttt{GetNrMuons} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{nrstations} -- Number of triggered stations}
 This observable gives the number of SD stations that were triggered by an event. Each station is checked in order to see, if its signal is above the minimum VEM signal (\texttt{minSignal}), if it is not low gain saturated, if it is inside the limits for the distance from the shower axis, if its asymmetry corrected risetime has been calculated correctly and if its calculated uncertainty is positive. If the total number of stations tiggered by an event is lower than a predetermined limit of triggered stations (\texttt{minPoint}), this value will not be available. From the ADST structure, the number of triggered stations can be accessed with
-\begin{verbatim}
+\begin{lstlisting}[language=C++]
   vector<SdRecStation> actstations;
   actstations = fRecEvent->GetSDEvent().GetStationVector();
   int itemp;
@@ -320,8 +327,7 @@ This observable gives the number of SD stations that were triggered by an event.
       bool btemp = true;
       if(actstations[i].GetTotalSignal() < minSignal) btemp = false;
       if(actstations[i].IsLowGainSaturated()) btemp = false;
-      if( (actstations[i].GetSPDistance() < limitDistance[0]) || 
-          (actstations[i].GetSPDistance() > limitDistance[1]))
+      if( (actstations[i].GetSPDistance() < limitDistance[0]) || (actstations[i].GetSPDistance() > limitDistance[1]))
         btemp = false;
       if(risemean < 0.) btemp = false;
       if(riseerr < 0.) btemp = false;
@@ -333,7 +339,7 @@ This observable gives the number of SD stations that were triggered by an event.
 
   if(itemp < minPoints)
     nrstations = itemp;
-\end{verbatim}
+\end{lstlisting}
 The reading and extraction of this observable is handled by functions \texttt{SetStationValue} and \texttt{GetNrStations} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{shwsize} -- SD signal at $\unit[1000]{m}$ from the shower axis}
@@ -342,11 +348,11 @@ This returns the SD signal at $\unit[1000]{m}$ from the shower axis as determine
 S(r) = S_{1000}\, \left(\frac{r}{\unit[1000]{m}}\right)^{\beta}\cdot \left(\frac{r + \unit[700]{m}}{\unit[1700]{m}}\right)^{\beta + \gamma},
 \end{equation}
 where $r$ is the distance from the shower axis, $S_{1000}$ is the SD signal at $\unit[1000]{m}$ from the shower axis, and $\beta$ and $\gamma$ are the LDF fitting parameters. This observable is an indicator of the muonic content of a shower, since showers induced by heavier primaries typically have a larger muonic content and form a larger footprint on the surface detector. From the ADST structure, $S_{1000}$ can be accessed with
-\begin{verbatim}
+\begin{lstlisting}[language=C++]
   SdRecShower *sdrecshw;
   *sdrecshw = fRecEvent->GetSDEvent().GetSdRecShower();
   shwsize = sdrecshw->GetShowerSize();
-\end{verbatim}
+\end{lstlisting}
 Note that the function \texttt{GetS1000} is deprecated and \texttt{GetShowerSize} is used instead. The reading and extraction of this observable is handled by function \texttt{GetShowerSize} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{deltas38} -- Relative SD signal}
@@ -381,20 +387,20 @@ As opposed to other observables, this observable is calculated from SD station s
 
 \subsection{\texttt{ldfbeta} -- Lateral distribution function fitting parameter $\beta$}
 $\beta$ is a fitting parameter in the lateral distribution function and is directly extracted from equation \eqref{eq:ldfFunction}. From the ADST structure, $\beta$ can be accessed with
-\begin{verbatim}
+\begin{lstlisting}[language=C++]
   SdRecShower *sdrecshw;
   *sdrecshw = fRecEvent->GetSDEvent().GetSdRecShower();
   shwsize = sdrecshw->GetBeta();
-\end{verbatim}
+\end{lstlisting}
 The reading and extraction of this observable is handled by function \texttt{GetBeta} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{curvature} -- The curvature of the shower front}
 This observable describes the curvature of the shower front in units of $\unit[]{m^{-1}}$ as measured by the surface detector (SD). From the ADST structure, the curvature can be accessed with
-\begin{verbatim}
+\begin{lstlisting}[language=C++]
   SdRecShower *sdrecshw;
   *sdrecshw = fRecEvent->GetSDEvent().GetSdRecShower();
   curvature = sdrecshw->GetCurvature();
-\end{verbatim}
+\end{lstlisting}
 The reading and extraction of this observable is handled by function \texttt{GetCurvature} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{risetime, risetimerecalc} -- SD risetime at $\unit[1000]{m}$ from the shower axis}
@@ -416,11 +422,11 @@ The evaluation or reference distance from the shower axis removes any dependency
 In order to perform a fit through triggered stations with equation \eqref{eq:risetimeFit}, a minimum number of triggered stations needs to be determined. Typically, an event is considered to be valid if at least 3 stations are triggered and do not fall outside of previous selections mentioned above.
 \end{itemize}
 The difference between the \texttt{risetime} and \texttt{risetimerecalc} observables is only in selected options. \texttt{risetime} uses the default options and can be accessed from the ADST structure with
-\begin{verbatim}
+\begin{lstlisting}[language=C++]
   SdRecShower *sdrecshw;
   *sdrecshw = fRecEvent->GetSDEvent().GetSdRecShower();
   risetime = sdrecshw->GetRiseTimeResults().GetRiseTime1000();
-\end{verbatim}
+\end{lstlisting}
 The reading and extraction of this observable is handled by function \texttt{GetRisetime} in file \texttt{./src/calc\_observables.cpp}.\\
 \texttt{risetimerecalc}, on the other hand, repeats the reconstruction of SD risetime, but uses options from \cite{deltaMethod}. The reading and extraction of this observable is handled by functions \texttt{CalculateRisetime} and \texttt{GetRisetime} in file \texttt{./src/calc\_observables.cpp}.
 
@@ -457,73 +463,73 @@ As opposed to other observables, this observable is calculated from SD station r
 
 \subsection{\texttt{zenithSD} -- SD reconstructed zenith angle}
 This is the reconstructed zenith angle as measured by the surface detector (SD). From the ADST structure, $\theta_{\textrm{SD}}$ can be accessed with
-\begin{verbatim}
+\begin{lstlisting}[language=C++]
   SdRecShower *sdrecshw;
   *sdrecshw = fRecEvent->GetSDEvent().GetSdRecShower();
   zenithSD = sdrecshw->GetZenith();
-\end{verbatim}
+\end{lstlisting}
 The reading and extraction of this observable is handled by function \texttt{GetSdZenith} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{azimuthSD} -- SD reconstructed azimuth angle}
 This is the reconstructed azimuth angle as measured by the surface detector (SD). From the ADST structure, $\phi_{\textrm{SD}}$ can be accessed with
-\begin{verbatim}
+\begin{lstlisting}[language=C++]
   SdRecShower *sdrecshw;
   *sdrecshw = fRecEvent->GetSDEvent().GetSdRecShower();
   azimuthSD = sdrecshw->GetAzimuth();
-\end{verbatim}
+\end{lstlisting}
 The reading and extraction of this observable is handled by function \texttt{GetSdAzimuth} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{zenithFD} -- FD reconstructed zenith angle}
 This is the reconstructed zenith angle as measured by one of the FD buildings. From the ADST structure, $\theta_{\textrm{FD}}$ measured by an FD building (denoted with \texttt{eye}) can be accessed with
-\begin{verbatim}
+\begin{lstlisting}[language=C++]
   vector<FDEvent> acteyes;
   acteyes = fRecEvent->GetFDEvents();
   zenithFD = (acteyes[eye].GetFdRecShower()).GetZenith();
-\end{verbatim}
+\end{lstlisting}
 The reading and extraction of this observable is handled by function \texttt{GetFdZenith} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{azimuthFD} -- FD reconstructed azimuth angle}
 This is the reconstructed azimuth angle as measured by one of the FD buildings. From the ADST structure, $\phi_{\textrm{FD}}$ measured by an FD building (denoted with \texttt{eye}) can be accessed with
-\begin{verbatim}
+\begin{lstlisting}[language=C++]
   vector<FDEvent> acteyes;
   acteyes = fRecEvent->GetFDEvents();
   azimuthFD = (acteyes[eye].GetFdRecShower()).GetAzimuth();
-\end{verbatim}
+\end{lstlisting}
 The reading and extraction of this observable is handled by function \texttt{GetFdAzimuth} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{latitudeSD} -- SD reconstructed galactic latitude}
 This is the reconstructed galactic latitude as measured by the surface detector (SD). From the ADST structure, $B_{\textrm{SD}}$ can be accessed with
-\begin{verbatim}
+\begin{lstlisting}[language=C++]
   SdRecShower *sdrecshw;
   *sdrecshw = fRecEvent->GetSDEvent().GetSdRecShower();
   latitudeSD = sdrecshw->GetGalacticLatitude();
-\end{verbatim}
+\end{lstlisting}
 The reading and extraction of this observable is handled by function \texttt{GetSdLatitude} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{longitudeSD} -- SD reconstructed galactic longitude}
 This is the reconstructed galactic longitude as measured by the surface detector (SD). From the ADST structure, $L_{\textrm{SD}}$ can be accessed with
-\begin{verbatim}
+\begin{lstlisting}[language=C++]
   SdRecShower *sdrecshw;
   *sdrecshw = fRecEvent->GetSDEvent().GetSdRecShower();
   longitudeSD = sdrecshw->GetGalacticLongitude();
-\end{verbatim}
+\end{lstlisting}
 The reading and extraction of this observable is handled by function \texttt{GetSdLongitude} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{latitudeFD} -- FD reconstructed galactic latitude}
 This is the reconstructed galactic latitude as measured by one of the FD buildings. From the ADST structure, $B_{\textrm{FD}}$ measured by an FD building (denoted with \texttt{eye}) can be accessed with
-\begin{verbatim}
+\begin{lstlisting}[language=C++]
   vector<FDEvent> acteyes;
   acteyes = fRecEvent->GetFDEvents();
   latitudeFD = (acteyes[eye].GetFdRecShower()).GetGalacticLatitude();
-\end{verbatim}
+\end{lstlisting}
 The reading and extraction of this observable is handled by function \texttt{GetFdLatitude} in file \texttt{./src/calc\_observables.cpp}.
 \subsection{\texttt{longitudeFD} -- FD reconstructed galactic longitude}
 This is the reconstructed galactic longitude as measured by one of the FD buildings. From the ADST structure, $L_{\textrm{FD}}$ measured by an FD building (denoted with \texttt{eye}) can be accessed with
-\begin{verbatim}
+\begin{lstlisting}[language=C++]
   vector<FDEvent> acteyes;
   acteyes = fRecEvent->GetFDEvents();
   longitudeFD = (acteyes[eye].GetFdRecShower()).GetGalacticLongitude();
-\end{verbatim}
+\end{lstlisting}
 The reading and extraction of this observable is handled by function \texttt{GetFdLongitude} in file \texttt{./src/calc\_observables.cpp}.
 
 \section{Adding new observables} \label{ch:add-obs}

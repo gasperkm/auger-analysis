@@ -256,6 +256,7 @@ public:
     void SetPlotTreeSelect(string *plotFile, wxChoice *combo, bool wdisable);
     void StartHistogramPlot(wxCommandEvent& event);
     void StartScatterPlot(wxCommandEvent& event);
+    void StartROCPlot(wxCommandEvent& event);
     void StartHistogramScatterPlot(int type);
     void StartMvaHistFit(wxCommandEvent& event);
     void SetDefaultPlot(wxCommandEvent& event);
@@ -303,10 +304,11 @@ const int ID_OPENPLOTFILE	= 401;
 const int ID_OPENPLOTDIR	= 402;
 const int ID_PLOTHIST		= 403;
 const int ID_PLOTSCAT		= 404;
-const int ID_PLOTMVAFIT		= 405;
-const int ID_PLOTDEFOPTIONS	= 406;
-const int ID_PLOTMVADEFOPTIONS	= 407;
-const int ID_PLOTHISTDEFOPTIONS	= 408;
+const int ID_PLOTROC		= 405;
+const int ID_PLOTMVAFIT		= 406;
+const int ID_PLOTDEFOPTIONS	= 407;
+const int ID_PLOTMVADEFOPTIONS	= 408;
+const int ID_PLOTHISTDEFOPTIONS	= 409;
 
 // Additional IDs for any custom dialogs
 const int ID_MVACUTDIALOG	= 901;

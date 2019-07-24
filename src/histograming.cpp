@@ -638,6 +638,14 @@ int ScatHist::StartPlotting(Observables *genObser)
    // Don't mix observables on the same plot
    else
    {
+      // Only use signal and background for ROC curves
+      if(type == 2)
+      {
+         *nrtrees = 2;
+	 if(*nrbins < 100)
+            *nrbins = 100;
+      }
+
       // Run over all selected files
       for(int i = 0; i < filename->size(); i++)
       {
@@ -681,6 +689,12 @@ int ScatHist::StartPlotting(Observables *genObser)
 		  }
 	       }
 	    }
+	 }
+	 else if(type == 2)
+	 {
+            cout << "Selected observables for plotting ROC curves are (" << *nrobs << "):" << endl;
+            for(int j = 0; j < (*nrobs); j++)
+               cout << "- " << obser->at(j) << endl;
 	 }
      
          // Zero holders for underflow, overflow and total events (from each tree + all together)
@@ -782,6 +796,68 @@ int ScatHist::StartPlotting(Observables *genObser)
 			itemp[1]++;
 		     }
 		  }
+	       }
+               // Setting up the ROC tree histograms
+               else if(type == 2)
+	       {
+                  stemp[0] = "rocInHist" + ToString(j*(*nrtrees)+k);
+     	          stemp[1] = obser->at(j);
+
+		  if(stemp[1] == "MVA")
+                  {
+                     dtemp[0] = mvalim[0];
+		     dtemp[1] = mvalim[1];
+		  }
+		  else
+		  {
+                     SetRangeSpecial(dtemp, genObser, getTree[k], &stemp[1]);
+/*                     dtemp[0] = genObser->GetMin(stemp[1]);
+		     dtemp[1] = genObser->GetMax(stemp[1]);*/
+
+//		     cout << "Set range = " << dtemp[0] << "\t" << dtemp[1] << endl;
+
+	             if((stemp[1] == "energySD") || (stemp[1] == "energyFD"))
+                     {
+                        dtemp[0] = dtemp[0]/1.e+18;
+                        dtemp[1] = dtemp[1]/1.e+18;
+		     }
+		  }
+
+                  rocInHist[j*(*nrtrees)+k] = new TH1D(stemp[0].c_str(), stemp[1].c_str(), *nrbins, dtemp[0], dtemp[1]);
+#if ROOTVER == 5
+                  rocInHist[j*(*nrtrees)+k]->SetBit(TH1::kCanRebin);
+#elif ROOTVER == 6
+                  rocInHist[j*(*nrtrees)+k]->SetCanExtend(TH1::kXaxis);
+#endif
+/*
+		  if(k == 0)
+		  {
+                     stemp[0] = "rocOutHist" + ToString(j);
+     	             stemp[1] = obser->at(j);
+
+		     if(stemp[1] == "MVA")
+                     {
+                        dtemp[0] = mvalim[0];
+		        dtemp[1] = mvalim[1];
+		     }
+		     else
+		     {
+                        SetRangeSpecial(dtemp, genObser, getTree[k], &stemp[1]);
+
+	                if((stemp[1] == "energySD") || (stemp[1] == "energyFD"))
+                        {
+                           dtemp[0] = dtemp[0]/1.e+18;
+                           dtemp[1] = dtemp[1]/1.e+18;
+		        }
+		     }
+
+                     rocOutHist[j] = new TH1D(stemp[0].c_str(), stemp[1].c_str(), *nrbins, 0, 1);
+#if ROOTVER == 5
+                     rocOutHist[j]->SetBit(TH1::kCanRebin);
+#elif ROOTVER == 6
+                     rocOutHist[j]->SetCanExtend(TH1::kXaxis);
+#endif
+		  }*/
 	       }
             }
    
@@ -1008,20 +1084,97 @@ int ScatHist::StartPlotting(Observables *genObser)
                } // Loop over all observables (2)
             } // Loop over all observables
          }
+	 // Populate histograms for ROC curves
+         else if(type == 2)
+         {
+            // Loop over all trees
+            for(int k = 0; k < (*nrtrees); k++)
+            {
+               // Loop over all entries in a tree
+               for(int ievt = 0; ievt < getTree[k]->GetEntries(); ievt++)
+               {
+                  getTree[k]->GetEntry(ievt);
+   
+                  // Loop over all observables
+                  for(int j = 0; j < (*nrobs); j++)
+                  {
+                     stemp[1] = obser->at(j);
+
+                     // Check if observable is invalid and has value -1
+		     if(stemp[1] == "MVA")
+		     {
+                        isgood[0] = true;
+		     }
+		     else
+		     {
+                        if(obsvars[j*(*nrtrees)+k] == -1)
+                           isgood[0] = false;
+                        else
+                           isgood[0] = true;
+		     }
+   
+                     // Save observable values into the histograms
+                     if(isgood[0])
+                     {
+		        // Take mean
+                        dtemp[2] = obsvars[j*(*nrtrees)+k];
+
+		        if(stemp[1] == "MVA")
+		        {
+                           dtemp[0] = mvalim[0];
+		           dtemp[1] = mvalim[1];
+		        }
+		        else
+		        {
+                           SetRangeSpecial(dtemp, genObser, getTree[k], &stemp[1]);
+
+		           // Take mean + negative uncertainties
+                           if(otherSettings[1])
+                              dtemp[2] -= obsvars_neg[j*(*nrtrees)+k];
+		           // Take mean + positive uncertainties
+                           if(otherSettings[2])
+                              dtemp[2] += obsvars_pos[j*(*nrtrees)+k];
+		        }
+
+/*                        if(dtemp[2] > dtemp[1])
+                           oflowcount[j]++;
+                        else if(dtemp[2] < dtemp[0])
+                           uflowcount[j]++;
+                        else
+                        {*/
+	                   if((stemp[1] == "energySD") || (stemp[1] == "energyFD"))
+                              dtemp[2] = dtemp[2]/1.e+18;
+
+                           rocInHist[j*(*nrtrees)+k]->Fill(dtemp[2]);
+
+			   if(ievt == 0)
+			      cout << j << ", " << *nrtrees << ", " << k << ", " << j*(*nrtrees)+k << endl;
+/*			}
+   
+                        totcount[k][j]++;
+                        totcount[*nrtrees][j]++;*/
+                     }
+		  } // Loop over all observables
+               } // Loop over all entries
+            } // Loop over all trees
+         }
    
          // Write the valid event information
-         for(int k = 0; k < (*nrtrees); k++)
-         {
-            cout << "Valid events (" << getTree[k]->GetTitle() << "):" << endl;
-            for(int j = 0; j < (*nrobs); j++)
-	    {
-               if(type == 0)
-                  cout << " - " << obser->at(j) << " = " << totcount[k][j] << " (UFLOW=" << uflowcount[j] << ", OFLOW=" << oflowcount[j] << ")" << endl;
-               else if(type == 1)
-                  cout << " - " << obser->at(j) << " = " << totcount[k][j] << " (yrange min = " << yrange[2*j] << ", yrange max = " << yrange[2*j+1] << ")" << endl;
-	    }
-            cout << endl;
-         }
+	 if(type != 2)
+	 {
+            for(int k = 0; k < (*nrtrees); k++)
+            {
+               cout << "Valid events (" << getTree[k]->GetTitle() << "):" << endl;
+               for(int j = 0; j < (*nrobs); j++)
+	       {
+                  if(type == 0)
+                     cout << " - " << obser->at(j) << " = " << totcount[k][j] << " (UFLOW=" << uflowcount[j] << ", OFLOW=" << oflowcount[j] << ")" << endl;
+                  else if(type == 1)
+                     cout << " - " << obser->at(j) << " = " << totcount[k][j] << " (yrange min = " << yrange[2*j] << ", yrange max = " << yrange[2*j+1] << ")" << endl;
+	       }
+               cout << endl;
+            }
+	 }
    
 	 itemp[1] = 0;
          // Plot all observables (with all selected trees in the same plot)
@@ -1123,7 +1276,7 @@ int ScatHist::StartPlotting(Observables *genObser)
                   treeHist[j*(*nrtrees)+k]->GetXaxis()->SetTitleOffset(mystyle->GetSingleXoffset(c1));
                }
    
-               // Draw a legend with into on the number of event of all trees
+               // Draw a legend with info on the number of event of all trees
                legend = new TLegend(gPad->GetLeftMargin(), 1-gPad->GetTopMargin()-(mystyle->SetLegendHeight(*nrtrees)), gPad->GetLeftMargin()+.50, 1-gPad->GetTopMargin());
                legend->SetFillStyle(legendFill);
                legend->SetFillColor(c_MvaCut);
@@ -1291,6 +1444,81 @@ int ScatHist::StartPlotting(Observables *genObser)
 	       }
 	    }
          }
+	 else if(type == 2)
+	 {
+	    // Convert input histograms for each observable (signal and background) into ROC curves
+	    for(int j = 0; j < (*nrobs); j++)
+	    {
+               c1->cd();
+               mystyle->SetSinglePlot(0, -1, c1);
+               stemp[1] = obser->at(j);
+
+/*	       // Get the ROC curve from the signal and background distributions (signal distribution must be above background distribution!)
+	       if(rocInHist[2*j]->GetMean() > rocInHist[2*j+1]->GetMean())
+                  roccalc = new TMVA::ROCCalc(rocInHist[2*j], rocInHist[2*j+1]);
+	       else
+                  roccalc = new TMVA::ROCCalc(rocInHist[2*j+1], rocInHist[2*j]);
+
+               rocOutHist = new TH1D("rocOutHist", stemp[1].c_str(), *nrbins, 0, 1);
+	       rocOutHist = roccalc->GetROC();
+	       cout << "ROC Integral = " << roccalc->GetROCIntegral() << endl;
+	       cerr << "ROC Integral = " << roccalc->GetROCIntegral() << endl;*/
+	       // Get the ROC curve from the signal and background distributions (signal distribution must be above background distribution!)
+               roccurve = new RocCurve(rocInHist[2*j], rocInHist[2*j+1]);
+	       if(roccurve->IsGood())
+	       {
+//                  rocOutHist = new TH1D("rocOutHist", stemp[1].c_str(), roccurve->GetOutBins(), 0, 1);
+	          rocOutHist = roccurve->GetROC();
+
+	          // Plot the ROC curve
+	          rocOutHist->Draw("C");
+
+                  if(limset[0] == true)
+                  {
+                     if(xlim[0] < 0.) xlim[0] = 0.;
+                     if(xlim[0] > 1.) xlim[0] = 1.;
+                     if(xlim[1] < 0.) xlim[1] = 0.;
+                     if(xlim[1] > 1.) xlim[1] = 1.;
+
+                     rocOutHist->GetXaxis()->SetRange(xlim[0], xlim[1]);
+                     rocOutHist->GetXaxis()->SetRangeUser(xlim[0], xlim[1]);
+                  }
+
+                  if(limset[1] == true)
+                  {
+                     if(ylim[0] < 0.) ylim[0] = 0.;
+                     if(ylim[0] > 1.) ylim[0] = 1.;
+                     if(ylim[1] < 0.) ylim[1] = 0.;
+                     if(ylim[1] > 1.05) ylim[1] = 1.05;
+
+                     rocOutHist->GetYaxis()->SetRange(ylim[0], ylim[1]);
+                     rocOutHist->GetYaxis()->SetRangeUser(ylim[0], ylim[1]);
+                  }
+
+                  mystyle->SetHistColor((TH1*)rocOutHist, 0);
+	          rocOutHist->SetFillStyle(0);
+   
+                  mystyle->SetAxisTitles((TH1*)rocOutHist, "Signal efficiency", "Background rejection (1-eff)");
+                  rocOutHist->GetYaxis()->SetTitleOffset(mystyle->GetSingleYoffset(c1));
+                  rocOutHist->GetXaxis()->SetTitleOffset(mystyle->GetSingleXoffset(c1));
+
+                  stemp[2] = "roccurve";
+                  stemp[0] = RemoveFilename(&(filename->at(i))) + "/histograms/" + stemp[2] + "_" + stemp[1] + ".pdf";
+   
+                  c1->SaveAs(stemp[0].c_str());
+                  cout << "Saving histogram to file: " << stemp[0] << endl;
+
+//	          delete rocOutHist;
+//	          delete roccalc;
+                  delete roccurve;
+	       }
+	       else
+	       {
+                  delete roccurve;
+		  return -3;
+	       }
+	    }
+	 }
    
          itemp[1] = 0;
          for(int j = 0; j < (*nrobs); j++)
@@ -1310,6 +1538,8 @@ int ScatHist::StartPlotting(Observables *genObser)
 		     }
 		  }
 	       }
+	       else if(type == 2)
+                  delete rocInHist[j*(*nrtrees)+k];
 	    }
 	 }
    

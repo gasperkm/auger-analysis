@@ -40,6 +40,7 @@ void MyFrame::SelectPlotFile(wxCommandEvent& event)
 
                (openFileList->widgetLB)->Append(filenameArray->Item(i));
 	       *currentPlotDir = RemoveFromLast(tempstring, "/");
+	       (methodsPlotSelect->widgetCB)->SetSelection((methodsPlotSelect->widgetCB)->FindString(GetMethodName(GetSavedMethod(currentPlotDir))));
 	    }
 	 }
 
@@ -91,6 +92,7 @@ void MyFrame::SelectPlotDir(wxCommandEvent& event)
 	    {
                (openFileList->widgetLB)->Append(tempvectstring->at(i));
 	       *currentPlotDir = string(*directoryPath);
+	       (methodsPlotSelect->widgetCB)->SetSelection((methodsPlotSelect->widgetCB)->FindString(GetMethodName(GetSavedMethod(currentPlotDir))));
 	    }
 	 }
       }
@@ -197,6 +199,21 @@ void MyFrame::StartScatterPlot(wxCommandEvent& event)
 
    if(!selections.IsEmpty())
       StartHistogramScatterPlot(1);
+   else
+      AlertPopup("No selected files", "No files from the plotting listbox were selected. Please select one or more files (holding Ctrl or Shift while clicking) to use for plotting.");
+}
+
+// Start plotting histograms
+void MyFrame::StartROCPlot(wxCommandEvent& event)
+{
+   (openFileList->widgetLB)->GetSelections(selections);
+   if(!selections.IsEmpty())
+   {
+      if( ((dropHistTree[0]->widgetCB)->GetStringSelection() == "Disable") || ((dropHistTree[1]->widgetCB)->GetStringSelection() == "Disable") )
+         AlertPopup("No signal and background selected", "No trees have been selected as signal and background. Please select two trees using the signal color and background color selection boxes.");
+      else
+         StartHistogramScatterPlot(2);
+   }
    else
       AlertPopup("No selected files", "No files from the plotting listbox were selected. Please select one or more files (holding Ctrl or Shift while clicking) to use for plotting.");
 }

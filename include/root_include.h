@@ -125,6 +125,9 @@
 #ifndef ROOT_TMarker
 #include "TMarker.h"
 #endif
+#ifndef ROOT_TSpline
+#include "TSpline.h"
+#endif
 
 // ROOT MYSQL includes
 #ifndef ROOT_TSQLServer
@@ -141,6 +144,9 @@
 #ifndef ROOT_TMVA_Factory
 #include "TMVA/Factory.h"
 #endif
+#ifndef ROOT_TMVA_ROCCalc
+#include "TMVA/ROCCalc.h"
+#endif
 #ifndef ROOT_TMVA_Tools
 #include "TMVA/Tools.h"
 #endif
@@ -154,6 +160,9 @@
 #endif
 #ifndef ROOT_TMVA_Config
 #include "TMVA/Config.h"
+#endif
+#ifndef ROOT_TMVA_TSpline1
+#include "TMVA/TSpline1.h"
 #endif
 
 // Root Minuit and fitting includes

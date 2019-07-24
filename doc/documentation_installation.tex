@@ -32,6 +32,17 @@
 	linkcolor=black,%
 	urlcolor=blue}
 
+% Packages for nicer computer code
+\usepackage{xcolor}
+\usepackage{listings}
+\lstset{
+   basicstyle=\ttfamily\footnotesize,
+   columns=fullflexible,
+   frame=single,
+   breaklines=true,
+   postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space}
+}
+
 % Font type which is much better for reading
 \usepackage[sc]{mathpazo}
 
@@ -114,145 +125,111 @@ The fully compiled version of the program also has:
 
 \section{Installation prerequisites}
 For this software to work correctly, ROOT \cite{root}, wxWidgets \cite{wxWidgets} and their prerequisites need to be installed on the system. The following packages are essential on a clean installation of Linux, before either ROOT or wxWidgets can be installed. General purpose prerequisites are:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   # on Debian related systems
   sudo apt-get update
-  sudo apt-get install binutils git patch build-essential cmake gcc g++ \
-    gfortran python doxygen python-dev wget
+  sudo apt-get install binutils git patch build-essential cmake gcc g++ gfortran python doxygen python-dev wget
   # on CentOS related systems, and Fedora 21 or below
   sudo yum update
   sudo yum install epel-release
   sudo yum repolist
-  sudo yum install binutils git patch cmake gcc gcc-c++ gcc-gfortran python \
-    doxygen python-devel wget redhat-lsb-core bzip2
+  sudo yum install binutils git patch cmake gcc gcc-c++ gcc-gfortran python doxygen python-devel wget redhat-lsb-core bzip2
   # on Fedora 22 or above related systems
   sudo dnf update
   sudo dnf repolist
-  sudo dnf install binutils git patch cmake gcc gcc-c++ gcc-gfortran python \
-    doxygen python-devel wget redhat-lsb-core bzip2
-\end{verbatim}
-\normalsize
+  sudo dnf install binutils git patch cmake gcc gcc-c++ gcc-gfortran python doxygen python-devel wget redhat-lsb-core bzip2
+\end{lstlisting}
 ROOT software prerequisites are:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   # on Debian related systems
-  sudo apt-get install libx11-dev libxpm-dev libxft-dev libxext-dev \
-    libgsl0-dev libfftw3-dev libmysqlclient-dev libxml2-dev
+  sudo apt-get install libx11-dev libxpm-dev libxft-dev libxext-dev libgsl0-dev libfftw3-dev libmysqlclient-dev libxml2-dev
   # on CentOS related systems, and Fedora 21 or below
-  sudo yum install libX11-devel libXpm-devel libXft-devel libXext-devel \
-    gsl-devel fftw-devel mysql-devel libxml2-devel
+  sudo yum install libX11-devel libXpm-devel libXft-devel libXext-devel gsl-devel fftw-devel mysql-devel libxml2-devel
   # on Fedora 22 or above related systems
-  sudo dnf install libX11-devel libXpm-devel libXft-devel libXext-devel \
-    gsl-devel fftw-devel mysql-devel libxml2-devel
-\end{verbatim}
-\normalsize
+  sudo dnf install libX11-devel libXpm-devel libXft-devel libXext-devel gsl-devel fftw-devel mysql-devel libxml2-devel
+\end{lstlisting}
 wxWidgets software prerequisites are:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   # on Debian related systems
   sudo apt-get install libgtk2.0-dev libc++1
   # on CentOS related systems, and Fedora 21 or below
   sudo yum install gtk2-devel 
   # on Fedora 22 or above related systems
   sudo dnf install gtk2-devel 
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 Newest versions of Linux distributions renamed the \texttt{mysql} client. In Debian releases, if installation of \texttt{libmysqlclient-dev} fails, use \\\texttt{default-libmysqlclient-dev} instead.
 
 \section{Installing ROOT}
 ROOT is a data analysis framework able to handle python or C/C++ code integration. The complete instructions are available on the software page at \cite{root}. We assume here, that \texttt{\$ROOTSOURCE} is the location of the downloaded source files (for example \texttt{/opt/source}) and \texttt{\$ROOTINSTALL} is the location of the ROOT installation (for example \texttt{/opt}).
 \subsection{ROOT 5}
 Note that the ADST part of the Pierre Auger Observatory software Offline \cite{offline} is currently limited to ROOT 5 and will not work correctly for ROOT 6. ROOT version 5.XX.YY is installed as (installation of version 5.34.36 or higher is suggested):
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   cd $ROOTSOURCE
   wget -nc https://root.cern.ch/download/root_v5.XX.YY.source.tar.gz
   tar -zxf root_v5.XX.YY.source.tar.gz
   mv ./root $ROOTINSTALL/root-5.XX.YY
   cd $ROOTINSTALL/root-5.XX.YY
-  ./configure --enable-mysql --enable-python --enable-minuit2 --enable-roofit \
-    --enable-tmva --enable-xml --enable-builtin-freetype
+  ./configure --enable-mysql --enable-python --enable-minuit2 --enable-roofit --enable-tmva --enable-xml --enable-builtin-freetype
   make
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 In order to setup ROOT's environmental variables once installed, run the following command:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   source $ROOTINSTALL/root-5.XX.YY/bin/thisroot.sh
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 The following command should now return the correct version of ROOT:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   root-config --version
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 \textbf{Important}: ROOT 5 will not compile correctly with \texttt{g++} compilers 6.3.0 or above (see Chapter \ref{ch:distroSoln}).
 \subsection{ROOT 6}
 ROOT 6 can still be used for the portion of the software that handles the MVA analysis and plotting. For this purpose, rewriting of ADST files has been disabled for this version of ROOT, but all other auger-analysis program options are enabled.\\
 ROOT version 6.XX.YY is installed as (installation of version 6.12.00 or higher is suggested to get the most out of TMVA):
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   cd $ROOTSOURCE
   wget -nc https://root.cern.ch/download/root_v6.XX.YY.source.tar.gz
   tar -zxf root_v6.XX.YY.source.tar.gz
   cd $ROOTSOURCE/root-6.XX.YY
   mkdir ./builddir
   cd ./builddir
-  cmake ../ -DCMAKE_INSTALL_PREFIX=$ROOTINSTALL/root-6.XX.YY -Dmysql=ON \
-    -Dpython=ON -Dminuit2=ON -Droofit=ON -Dtmva=ON -Dxml=ON -Dbuiltin-freetype=ON
+  cmake ../ -DCMAKE_INSTALL_PREFIX=$ROOTINSTALL/root-6.XX.YY -Dmysql=ON -Dpython=ON -Dminuit2=ON -Droofit=ON -Dtmva=ON -Dxml=ON -Dbuiltin-freetype=ON
   cmake --build . --target VDT
   cmake --build .
   cmake --build . --target install
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 In order to setup ROOT's environmental variables once installed, run the following command:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   source $ROOTINSTALL/root-6.XX.YY/bin/thisroot.sh
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 The following command should now return the correct version of ROOT:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   root-config --version
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 \textbf{Important}: ROOT 6 requires \texttt{cmake} version 3.4.3 or above, which is not supplied with older Linux distributions (see Chapter \ref{ch:distroSoln}).
 
 \section{Installing wxWidgets}
 wxWidgets is a cross-platform GUI library used for the graphical user interface of the auger-analysis program. The complete instructions are available on the software page at \cite{wxWidgets}. We assume here, that \texttt{\$WXSOURCE} is the location of the downloaded source files (for example \texttt{/opt/source}) and \texttt{\$WXINSTALL} is the location of its installation (for example \texttt{/opt}).\\
 wxWidgets version X.Y.Z is installed as (installation of version 3.0.3 or higher is suggested):
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   cd $WXSOURCE
-  wget -nc https://github.com/wxWidgets/wxWidgets/releases/\
-    download/vX.Y.Z/wxWidgets-X.Y.Z.tar.bz2
+  wget -nc https://github.com/wxWidgets/wxWidgets/releases/download/vX.Y.Z/wxWidgets-X.Y.Z.tar.bz2
   tar -jxf wxWidgets-X.Y.Z.tar.bz2
   cd $WXSOURCE/wxWidgets-X.Y.Z
   mkdir ./gtk-build
   cd ./gtk-build
-  ../configure --enable-unicode --enable-debug \
-    --prefix=$WXINSTALL/wxWidgets-X.Y.Z
+  ../configure --enable-unicode --enable-debug --prefix=$WXINSTALL/wxWidgets-X.Y.Z
   make
   make install
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 For wxWidgets to be correctly recognized, add the following environmental variables (preferrably in the \texttt{\mytilde/.bashrc} script):
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   export WXLIN=$WXINSTALL/wxWidgets-X.Y.Z
   export PATH=$WXLIN/bin:$PATH
   export LD_LIBRARY_PATH=$WXLIN/lib:$LD_LIBRARY_PATH
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 The following command should now return the correct version of wxWidgets:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   wx-config --version
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 
 \section{Installing ADST reader}
 The ADST reader is part of the Offline software developed by the Pierre Auger Observatory \cite{offline}. A handful of versions have been included with this software and are automatically installed, when needed. See section \ref{sec:install} for installation of the auger-analysis program.\\
@@ -264,23 +241,17 @@ TMVA is the multivariate analysis package for ROOT \cite{tmva}. New versions hav
 
 \section{Installation of the auger-analysis program} \label{sec:install}
 Once the above prerequesites and installations have been satisfied, it is now possible to install the auger-analysis program. The complete program is compiled and installed through a single call of the configure script:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   ./configure vXrYpZ
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 Here, the program is installed using ADST version \texttt{XrYpZ}, but other options can simply be checked by running \texttt{./configure} or \texttt{./configure help}. The program can then be run in batch mode for just rewriting ADST files:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   ./start.sh rewrite vXrYpZ [input ADST files]
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 or in graphical mode, with access to all options of the program:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   ./start.sh vXrYpZ
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 
 {\noindent}The program itself has been created in order to need minimal setup before installation. Currently, the program includes 24 different extensive air shower observables, which are listed in the \texttt{input/observables.txt} file of the auger-analysis program. In order to include additional observables, the user needs to add them to this file and implement them in the source files. Similarly, the \texttt{input/mva\_options.txt} file of the auger-analysis program lists the different possible MVA methods and their options. The user can add more to the list or change the existing options. For instructions on how to perform both tasks, please see usage instructions in the second documentation file. Note that both the observables and MVA methods are read into the program when starting it with the \texttt{start.sh} script.
 
@@ -373,40 +344,32 @@ In order to enable the complete auger-analysis software, ROOT 5 needs to be inst
 \subsection{Singularity environment container (preferred)}
 Singularity \cite{singularity} is an operating system environment container used in many applications, where precise versions of libraries and software is needed over multiple computers. It creates a clean version of a Linux distribution that can be used like any normal installation of Linux. The detailed documentation can be found in \cite{singularitydoc}.\\
 Singularity has the following dependencies that need to be installed on the host system:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   # on Debian related systems
-  sudo apt-get install build-essential libssl-dev uuid-dev libgpgme11-dev \
-    squashfs-tools libseccomp-dev pkg-config
+  sudo apt-get install build-essential libssl-dev uuid-dev libgpgme11-dev squashfs-tools libseccomp-dev pkg-config
   # on CentOS related systems, and Fedora 21 or below
   sudo yum install openssl-devel libuuid-devel squashfs-tools libseccomp-devel
   # on Fedora 22 or above related systems
   sudo dnf install openssl-devel libuuid-devel squashfs-tools libseccomp-devel
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 The additional packages \texttt{debootstrap} and \texttt{yum} need to be installed for creating Ubuntu/Debian and CentOS/Fedora containers, respectively. The \texttt{debootstrap} package is installed with:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   # on Debian related systems
   sudo apt-get install debootstrap
   # on CentOS related systems, and Fedora 21 or below
   sudo yum install debootstrap
   # on Fedora 22 or above related systems
   sudo dnf install debootstrap
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 The \texttt{yum} package is installed with (not needed for systems based on \texttt{yum}):
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   # on Debian related systems
   sudo apt-get install yum
   # on Fedora 22 or above related systems
   sudo dnf install yum
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 Once the dependencies are installed, the programming language go needs to be installed. Download the Linux archive version from \cite{godown} that should appear as \texttt{goX.YY.linux-amd64.tar.gz}, where X.YY is the version. We assume \texttt{\$GOINSTALL} is the location of the downloaded source files (for example \linebreak\texttt{/opt/golang}) and \texttt{\$SINGULARINSTALL} is the install location of singularity (for example \texttt{/opt/singularity}). Install singularity with the following commands:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   # Prepare installation of go
   cd $GOINSTALL
   tar -zxf goX.YY.linux-amd64.tar.gz
@@ -427,41 +390,33 @@ Once the dependencies are installed, the programming language go needs to be ins
   sudo make install
   cd /usr/bin
   sudo ln -s $SINGULARINSTALL/bin/singularity singularity
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 The command \texttt{sudo make install} is important, because without root access, the containers will not work correctly. Once installed, container definitions are prepared in \texttt{.def} files and are used when creating containers. We supply a number of container definition files in Appendix \ref{app:containers} for clean installations of Linux distributions, where ROOT 5 works correctly.\\
 It is possible to create the container to be read-only or writable:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   # Create a read-only container
   singularity build container.sif container.def
   # Create a writable container
   sudo singularity build --sandbox container/ container.def
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 Converting a writable container into a read-only container is done with:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   sudo singularity build container.sif container/
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 Using the container, you can open its shell as read-only or as writable:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   # Opening a read-only container
   singularity shell container.sif
   # Opening a writable container
   sudo singularity shell --writable build container/
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 For more options when using the container, see singularity documentation \cite{singularitydoc}. The most important options is for mounting disks, which is done with \linebreak\texttt{-B /diskname}.\\
 \textbf{Important:} Even if the container is opened in read-only mode, you are still able to write to any mounted disks and inside the home folder. Think of it as having normal user access without root access.
 
 \subsection{Installing older compiler versions}
 An older compiler version can be installed alongside the general system compiler. Choose the compiler version you wish to have and download the other \texttt{g++} infrastructure software. We assume \texttt{\$GCCSOURCE} is the location of the downloaded source files (for example \texttt{/opt/source}) and \texttt{\$GCCINSTALL} is the install location (for example \texttt{/opt/gcc-X.Y.Z}).\\
 Download and install the GMP infrastructure version X.Y.Z:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   cd $GCCSOURCE
   wget ftp://gcc.gnu.org/pub/gcc/infrastructure/gmp-X.Y.Z.tar.gz
   tar -zxf gmp-X.Y.Z.tar.gz
@@ -469,65 +424,46 @@ Download and install the GMP infrastructure version X.Y.Z:
   ./configure --prefix=$GCCINSTALL/infrastructure/gmp-X.Y.Z
   make
   make install
-  export  LD_LIBRARY_PATH=$GCCINSTALL/infrastructure/gmp-X.Y.Z/lib:\
-    $LD_LIBRARY_PATH
-\end{verbatim}
-\normalsize
+  export  LD_LIBRARY_PATH=$GCCINSTALL/infrastructure/gmp-X.Y.Z/lib:$LD_LIBRARY_PATH
+\end{lstlisting}
 Download and install the MPFR infrastructure version X.Y.Z:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   cd $GCCSOURCE
   wget ftp://gcc.gnu.org/pub/gcc/infrastructure/mpfr-X.Y.Z.tar.gz
   tar -zxf mpfr-X.Y.Z.tar.gz
   cd $GCCSOURCE/mpfr-X.Y.Z
-  ./configure --prefix=$GCCINSTALL/infrastructure/mpfr-X.Y.Z \
-    --with-gmp=$GCCINSTALL/infrastructure/gmp-X.Y.Z
+  ./configure --prefix=$GCCINSTALL/infrastructure/mpfr-X.Y.Z --with-gmp=$GCCINSTALL/infrastructure/gmp-X.Y.Z
   make
   make install
-  export  LD_LIBRARY_PATH=$GCCINSTALL/infrastructure/mpfr-X.Y.Z/lib:\
-    $LD_LIBRARY_PATH
-\end{verbatim}
-\normalsize
+  export  LD_LIBRARY_PATH=$GCCINSTALL/infrastructure/mpfr-X.Y.Z/lib:$LD_LIBRARY_PATH
+\end{lstlisting}
 Download and install the MPC infrastructure version X.Y.Z:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   cd $GCCSOURCE
   wget ftp://gcc.gnu.org/pub/gcc/infrastructure/mpc-X.Y.Z.tar.gz
   tar -zxf mpfr-X.Y.Z.tar.gz
   cd $GCCSOURCE/mpc-X.Y.Z
-  ./configure --prefix=$GCCINSTALL/infrastructure/mpc-X.Y.Z \
-    --with-gmp=$GCCINSTALL/infrastructure/gmp-X.Y.Z \
-    --with-mpfr=$GCCINSTALL/infrastructure/mpfr-X.Y.Z
+  ./configure --prefix=$GCCINSTALL/infrastructure/mpc-X.Y.Z --with-gmp=$GCCINSTALL/infrastructure/gmp-X.Y.Z --with-mpfr=$GCCINSTALL/infrastructure/mpfr-X.Y.Z
   make
   make install
-  export  LD_LIBRARY_PATH=$GCCINSTALL/infrastructure/mpc-X.Y.Z/lib:\
-    $LD_LIBRARY_PATH
-\end{verbatim}
-\normalsize
+  export  LD_LIBRARY_PATH=$GCCINSTALL/infrastructure/mpc-X.Y.Z/lib:$LD_LIBRARY_PATH
+\end{lstlisting}
 Then lastly, install the \texttt{g++ compiler} version X.Y.Z:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   cd $GCCSOURCE
   wget ftp://gcc.gnu.org/pub/gcc/releases/gcc-X.Y.Z/gcc-X.Y.Z.tar.gz
   tar -zxf gcc-X.Y.Z.tar.gz
   cd $GCCSOURCE/gcc-X.Y.Z
-  ./configure --prefix=$GCCINSTALL/gcc-X.Y.Z \
-    --with-gmp=$GCCINSTALL/infrastructure/gmp-X.Y.Z \
-    --with-mpfr=$GCCINSTALL/infrastructure/mpfr-X.Y.Z \
-    --with-mpc=$GCCINSTALL/infrastructure/mpc-X.Y.Z
+  ./configure --prefix=$GCCINSTALL/gcc-X.Y.Z --with-gmp=$GCCINSTALL/infrastructure/gmp-X.Y.Z --with-mpfr=$GCCINSTALL/infrastructure/mpfr-X.Y.Z --with-mpc=$GCCINSTALL/infrastructure/mpc-X.Y.Z
   make
   make install
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 In order to use this version of the \texttt{g++} compiler, the following has to be added to the \texttt{\mytilde/.bashrc} file or sourced when needed:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   CC=$GCCINSTALL/gcc-X.Y.Z/bin/gcc
   CXX=$GCCINSTALL/gcc-X.Y.Z/bin/g++
   PATH=$GCCINSTALL/gcc-X.Y.Z/bin:$PATH
-  CLIB=$GCCINSTALL/gcc-X.Y.Z/lib64:$GCCINSTALL/infrastructure/gmp-X.Y.Z/lib:\
-    $GCCINSTALL/infrastructure/mpfr-X.Y.Z/lib:$GCCINSTALL/infrastructure/\
-    mpc-X.Y.Z/lib
+  CLIB=$GCCINSTALL/gcc-X.Y.Z/lib64:$GCCINSTALL/infrastructure/gmp-X.Y.Z/lib:$GCCINSTALL/infrastructure/mpfr-X.Y.Z/lib:$GCCINSTALL/infrastructure/mpc-X.Y.Z/lib
   if [ -z "$LD_LIBRARY_PATH" ]; then
     DELIM=
   else
@@ -535,14 +471,11 @@ In order to use this version of the \texttt{g++} compiler, the following has to 
   fi
   LD_LIBRARY_PATH=${CLIB}${LD_LIBRARY_PATH:+:}$LD_LIBRARY_PATH
   export CC CXX PATH LD_LIBRARY_PATH
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 The following command should now return the correct version of the compiler:
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[language=bash]
   g++ --version
-\end{verbatim}
-\normalsize
+\end{lstlisting}
 
 \begin{appendices}
 \chapter{Singularity container definitions} \label{app:containers}
@@ -552,97 +485,83 @@ The following command should now return the correct version of the compiler:
 Debian and Ubuntu distributions must always have the \texttt{Bootstrap}, \texttt{OSVersion} and \texttt{MirrorURL} keywords. \texttt{Bootstrap} is always set to \texttt{debootstrap} and the \texttt{MirrorURL} is set to a mirror site, with different distribution versions. You can find different mirror sites at \cite{debianmirror} for Debian and at \cite{ubuntumirror} for Ubuntu. In case the \texttt{MirrorURL} in the below examples does not work, choose a different one from the two mirror sites. \texttt{OSVersion} defines the distribution version, which can be set to \texttt{trusty} (14.04), \texttt{xenial} (16.04), \texttt{bionic} (18.04),{\dots} for Ubuntu, and \texttt{wheezy} (7), \texttt{jessie} (8), \texttt{stretch} (9),{\dots} for Debian. The additional script in the \texttt{\%post} section adds the correct repository and installs locale information in order to support keyboards other than English. Note that the example sets locale support for US and Slovene keyboards.\\
 
 {\noindent}\textbf{Container definition file for Ubuntu 14.04 (trusty):}
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}
 BootStrap: debootstrap
 OSVersion: trusty
 MirrorURL: http://us.archive.ubuntu.com/ubuntu/
 
 %post
-   apt-get -y --force-yes install software-properties-common
-   add-apt-repository "deb http://us.archive.ubuntu.com/ubuntu/ trusty universe
-     main"
-   apt-get update
-   apt-get -y --force-yes install locales
-   
-   locale-gen en_US.UTF-8
-   locale-gen sl_SI.UTF-8
-   localedef -i en_US -f UTF-8 en_US.UTF-8
-   localedef -i sl_SI -f UTF-8 sl_SI.UTF-8
-\end{verbatim}
-\normalsize
+  apt-get -y --force-yes install software-properties-common
+  add-apt-repository "deb http://us.archive.ubuntu.com/ubuntu/ trusty universe main"
+  apt-get update
+  apt-get -y --force-yes install locales
+  
+  locale-gen en_US.UTF-8
+  locale-gen sl_SI.UTF-8
+  localedef -i en_US -f UTF-8 en_US.UTF-8
+  localedef -i sl_SI -f UTF-8 sl_SI.UTF-8
+\end{lstlisting}
 {\noindent}\textbf{Container definition file for Ubuntu 16.04 (xenial):}
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}
 BootStrap: debootstrap
 OSVersion: xenial
 MirrorURL: http://us.archive.ubuntu.com/ubuntu/
 
 %post
-   apt-get -y --force-yes install software-properties-common
-   add-apt-repository "deb http://us.archive.ubuntu.com/ubuntu/ xenial universe
-     main"
-   apt-get update
-   apt-get -y --force-yes install locales
-   
-   locale-gen en_US.UTF-8
-   locale-gen sl_SI.UTF-8
-   localedef -i en_US -f UTF-8 en_US.UTF-8
-   localedef -i sl_SI -f UTF-8 sl_SI.UTF-8
-\end{verbatim}
-\normalsize
+  apt-get -y --force-yes install software-properties-common
+  add-apt-repository "deb http://us.archive.ubuntu.com/ubuntu/ xenial universe main"
+  apt-get update
+  apt-get -y --force-yes install locales
+  
+  locale-gen en_US.UTF-8
+  locale-gen sl_SI.UTF-8
+  localedef -i en_US -f UTF-8 en_US.UTF-8
+  localedef -i sl_SI -f UTF-8 sl_SI.UTF-8
+\end{lstlisting}
 {\noindent}\textbf{Container definition file for Debian 8 (jessie):}
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}
 BootStrap: debootstrap
 OSVersion: jessie
 MirrorURL: http://deb.debian.org/debian/
 
 %post
-   apt-get -y --force-yes install software-properties-common
-   add-apt-repository "deb http://deb.debian.org/debian/ jessie main contrib
-     non-free"
-   apt-get update
-   apt-get -y --force-yes install locales
-   
-   locale-gen en_US.UTF-8
-   locale-gen sl_SI.UTF-8
-   localedef -i en_US -f UTF-8 en_US.UTF-8
-   localedef -i sl_SI -f UTF-8 sl_SI.UTF-8
-\end{verbatim}
-\normalsize
+  apt-get -y --force-yes install software-properties-common
+  add-apt-repository "deb http://deb.debian.org/debian/ jessie main contrib non-free"
+  apt-get update
+  apt-get -y --force-yes install locales
+  
+  locale-gen en_US.UTF-8
+  locale-gen sl_SI.UTF-8
+  localedef -i en_US -f UTF-8 en_US.UTF-8
+  localedef -i sl_SI -f UTF-8 sl_SI.UTF-8
+\end{lstlisting}
 
 \section{CentOS/Fedora distributions}
 CentOS and Fedora distributions must always have the \texttt{Bootstrap} and \linebreak\texttt{MirrorURL} keywords. \texttt{Bootstrap} is always set to \texttt{yum} and the \texttt{MirrorURL} is set to a mirror site, with different distribution versions. You can find different mirror sites at \cite{centosmirror} for CentOS and at \cite{fedoramirror} for Fedora. In case the \texttt{MirrorURL} in the below examples does not work, choose a different one from the two mirror sites. \texttt{OSVersion} defines the optional distribution version, if the variable \texttt{\%\{OSVERSION\}} is then used, while setting the \texttt{MirrorURL}. The additional script in the \texttt{\%post} section adds the correct repository.\\
 
 {\noindent}\textbf{Container definition file for CentOS 7:}
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}
 BootStrap: yum
 OSVersion: 7
 MirrorURL: http://mirror.centos.org/centos-%{OSVERSION}/%{OSVERSION}/os/x86_64/
 Include: yum
 
 %post
-	yum -y update
-	yum -y install epel-release
-	yum -y repolist
-\end{verbatim}
-\normalsize
+  yum -y update
+  yum -y install epel-release
+  yum -y repolist
+\end{lstlisting}
 {\noindent}\textbf{Container definition file for Fedora 23:}
-\footnotesize
-\begin{verbatim}
+\begin{lstlisting}
 BootStrap: yum
 OSVersion: 23
-MirrorURL: https://archives.fedoraproject.org/pub/archive/fedora/linux/releases/
-  ${OSVERSION}/Workstation/x86_64/os/
+MirrorURL: https://archives.fedoraproject.org/pub/archive/fedora/linux/releases/${OSVERSION}/Workstation/x86_64/os/
 Include: dnf
 
 %post
-   dnf -y update
-   dnf -y repolist
-\end{verbatim}
-\normalsize
+  dnf -y update
+  dnf -y repolist
+\end{lstlisting}
 
 \end{appendices}
 

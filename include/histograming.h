@@ -7,6 +7,7 @@
 #include "primary_type.h"
 #include "observables.h"
 #include "popups.h"
+#include "roc_curve.h"
 
 #include "Math/Minimizer.h"
 #include "Math/Factory.h"
@@ -41,6 +42,10 @@ private:
    bool *otherSettings;
 
    TH1F *treeHist[3*MAXINFILES];
+   TH1D *rocInHist[2*MAXINFILES];
+   TH1D *rocOutHist;
+   TMVA::ROCCalc *roccalc;
+   RocCurve *roccurve;
    TGraphAsymmErrors *treeAGraph[3*MAXINFILES];
    TLegend *legend;
    TLatex *uoflowtext;

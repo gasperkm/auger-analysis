@@ -42,6 +42,7 @@ MvaEfficiency::MvaEfficiency(int sigN, int bgdN, string *plotdir)
    sigpurCut = -1;
    maxbin = -1;
    plotlocation = *plotdir;
+   plotdirectory = *plotdir;
 }
 
 MvaEfficiency::~MvaEfficiency()
@@ -544,4 +545,19 @@ double MvaEfficiency::GetHistValue(int type, int sigbgdpur)
    }
    else
       return -1.;
+}
+
+void MvaEfficiency::WriteoutMethod()
+{
+   string *stemp = new string;
+   *stemp = plotdirectory + "/mva_method.dat";
+   cout << "Write out method name to file: " << *stemp << endl;
+
+   ofstream *methodout = new ofstream;
+   methodout->open(stemp->c_str(), ofstream::out | ofstream::trunc);
+   if(methodout->is_open())
+      *methodout << string(methodTitle) << endl;
+   methodout->close();
+
+   delete stemp;
 }

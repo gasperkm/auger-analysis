@@ -63,4 +63,7 @@ void SplitDelimitedList(string inlist, vector<string> *outvec);
 // Get the correct number of keys, even if file was updated
 int GetRootKeys(TFile *ifile, string keytemp);
 
+// Read the method name
+string GetSavedMethod(string *location);
+
 #endif

@@ -741,6 +741,8 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    vitemp->push_back(ID_PLOTHIST);
    vstemp->push_back("Create scatter plots");
    vitemp->push_back(ID_PLOTSCAT);
+   vstemp->push_back("Create ROC curves");
+   vitemp->push_back(ID_PLOTROC);
 /*   vstemp->push_back("Start MVA histogram fit");
    vitemp->push_back(ID_PLOTMVAFIT);*/
    vstemp->push_back("Default options");
@@ -749,6 +751,7 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, -1, title, wxDefaultPosi
    vbox->Add(startHistPlot->subsizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
    Connect(ID_PLOTHIST, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::StartHistogramPlot));
    Connect(ID_PLOTSCAT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::StartScatterPlot));
+   Connect(ID_PLOTROC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::StartROCPlot));
    Connect(ID_PLOTHISTDEFOPTIONS, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MyFrame::SetDefaultHistPlot));
 
    plotpanel->SetSizer(vbox);

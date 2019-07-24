@@ -55,6 +55,7 @@ private:
    int maxbin;
    bool found[2];
    string plotlocation;
+   string plotdirectory;
 
    TCanvas *c;
    TLegend *legend1, *legend2;
@@ -80,6 +81,8 @@ public:
    void DrawHistogram();
 
    double GetHistValue(int type, int sigbgdpur);
+
+   void WriteoutMethod();
 };
 
 #endif

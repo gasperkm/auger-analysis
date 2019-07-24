@@ -465,3 +465,25 @@ int GetRootKeys(TFile *ifile, string keytemp)
 
    return ret;
 }
+
+string GetSavedMethod(string *location)
+{
+   string nmeth;
+   ifstream *instr = new ifstream;
+
+   nmeth = *location + "/mva_method.dat";
+   instr->open(nmeth.c_str(), ifstream::in);
+
+   if(instr->is_open())
+      *instr >> nmeth;
+   else
+   {
+      cout << "No information on method name found." << endl;
+      nmeth = "Fisher";
+   }
+
+   instr->close();
+   delete instr;
+
+   return nmeth;
+}
