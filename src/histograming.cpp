@@ -642,8 +642,8 @@ int ScatHist::StartPlotting(Observables *genObser)
       if(type == 2)
       {
          *nrtrees = 2;
-	 if(*nrbins < 100)
-            *nrbins = 100;
+/*	 if(*nrbins < 100)
+            *nrbins = 100;*/
       }
 
       // Run over all selected files
