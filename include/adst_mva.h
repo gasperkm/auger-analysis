@@ -118,6 +118,9 @@ public:
    float GetAoP(int type);
 
    float GetNrMuons(int type);
+
+   /*------ Declare functions for new observables here ------*/
+   /*------ Declare functions for new observables here ------*/
 };
 
 #endif

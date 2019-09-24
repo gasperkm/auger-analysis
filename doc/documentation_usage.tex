@@ -125,16 +125,16 @@ This opens the initial graphical interface of the program:
 \item[$\bullet$] \textbf{MVA analysis:} Holds all options regarding the MVA analysis. This includes observables, signal/background samples, MVA methods, data binning and other options.
 \end{itemize}
 The \textbf{Filelist} part has an input file selector at the top, which passes input files through a check in order to determine their structure (handled by \texttt{SelectMvaFile} and \texttt{CheckFormat} functions in \texttt{./src/file\_operations.cpp}). Valid selected files are then correctly displayed in one of the three listboxes: Top for ADST files, middle for rewritten ADST files and bottom for completely prepared MVA input files. The four buttons above each listbox can be used for ordering or removing listed files. Note that in some listboxes it is possible to select multiple files, by holding down \texttt{Ctrl} or \texttt{Shift} and selecting them.\\
-Rewritten ADST files are created by selecting files in the top listbox and using the button \texttt{Rewrite}. This extracts observables needed for further analysis and are listed in \texttt{./input/observables.txt}. The rewriting process is handled by functions \texttt{StartRewrite} in \texttt{./src/connect\_functions.cpp} and the code in files \texttt{./src/adst\_mva.cpp} and \texttt{./src/calc\_observables.cpp}. In order for rewriting of new observables to work correctly, they need to be added in \linebreak\texttt{./src/calc\_observables.cpp}. Adding new observables is described in Chapter \ref{ch:add-obs}.\\
+Rewritten ADST files are created by selecting files in the top listbox and using the button \texttt{Rewrite}. This extracts observables needed for further analysis, which are listed in \texttt{./input/observables.txt}. The rewriting process is handled by functions \texttt{StartRewrite} in \texttt{./src/connect\_functions.cpp} and the code in files \texttt{./src/adst\_mva.cpp} and \texttt{./src/calc\_observables.cpp}. In order for rewriting of new observables to work correctly, they need to be added in \linebreak\texttt{./src/calc\_observables.cpp}. Adding new observables is described in Chapter \ref{ch:add-obs}.\\
 The middle listbox is used for either merging rewritten ADST files into single rewritten ADST files (for example merging different primary particle simulations for a mixed composition) or combining rewritten ADST files into MVA input files. These MVA input files will then typically hold at least three ROOT trees -- one for signal, one for background and one for data. The structure of these files is displayed on the figure below.
 \begin{figure}[H]
 \centerline{\includegraphics[width=0.40\textwidth]{figures/file_structure.png}}
 \end{figure}
 {\noindent}The bottom listbox is only there to open MVA input files. Double-clicking a file on this list selects it as the current input to the MVA analysis.\\
 \\
-The \textbf{Rewritten ADST preparation} part can be used to do additional preparations on rewritten ADST files. This includes binning in energy, limiting the zenith angle and selecting the maximal relative risetime (only comes into play when using obsevable \texttt{risetimerecalc}). For example, this can be used, when we need a precise mass composition of simulation files by setting a number of events in each file. It can also be used to split a simulation set into two parts, for instance when creating MVA training and cross-validation sets. The split can be set as a fraction (using a decimal between 0 and 1) or as the number of events that will appear in the first file (1 or larger). If the splitting fraction is set to a negative number, all events will be filtered according to the settings and exported into a single file (useful for just binning in energy or limiting the zenith angle). The setting to enforce a valid SD reconstruction in the first file is there to make sure any mixed compositions actually have the desired mass composition. The difference between \texttt{Split} and \texttt{Split (File)} is that the first obeys the fraction or number of events entered in the number field, while the second uses a file with splitting instructions. This file needs to have the same number of lines as the number of selected rewritten ADST files. Each line can hold a decimal number (between 0 and 1) to set fractions or an integer to set the number of events. The files will then sequentially check each line and perform the splitting automatically. In case a specific energy binning structure is needed, use custom energy binning in the MVA analysis part.\\
+The \textbf{Rewritten ADST preparation} part can be used to do additional preparations on rewritten ADST files. This includes binning in energy, limiting the zenith angle and selecting the maximal relative risetime (only comes into play when using obsevable \texttt{risetimerecalc}). For example, this can be used, when we need a precise mass composition of simulation files by setting a number of events in each file. It can also be used to split a simulation set into two parts, for instance when creating MVA training and cross-validation sets. The split can be set as a fraction (using a decimal between 0 and 1) or as the number of events that will appear in the first file (1 or larger). If the splitting fraction is set to a negative number, all events will be filtered according to the settings and exported into a single file (useful for just binning in energy or limiting the zenith angle). The setting to enforce a valid SD reconstruction in the first file is there to make sure all observables have been correctly reconstructed. This helps, when we want a precise mass composition for mixed composition samples. The difference between \texttt{Split} and \texttt{Split (File)} is that the first obeys the fraction or number of events entered in the number field, while the second uses a file with splitting instructions. This file needs to have the same number of lines as the number of selected rewritten ADST files. Each line can hold a decimal number (between 0 and 1) to set fractions or an integer to set the number of events. The files will then sequentially check each line and perform the splitting automatically. In case a specific energy binning structure is needed, use custom energy binning in the MVA analysis part.\\
 \\
-The \textbf{MVA analysis} part is the main part of this software and takes care of setting up and running the MVA analysis. The currently selected file is displayed in the top entry. In the listbox we can select observables that will be used as input features in the MVA analysis. Observables that are already included in the program are described in Chapter \ref{ch:observables}. The uncertainty shift setting is used to individually apply systematic uncertainties to observables in order to estimate the final systematic uncertainty of the analysis. Instructions for systematic uncertainty shifts need to be added to the \texttt{./src/mva\_analysis.cpp} file as described in Chapter \ref{ch:uncert}. The signal and background trees set training samples that the MVA analysis will try to separate according to the selected MVA method. All instructions for MVA methods are taken from the \texttt{./input/mva\_options.txt} input file. The setting for the MVA cut value is currently only a holder for eventual event-by-event identification and is automatically or manually selected during the analysis as the cut for best separation between signal and background. Settings on binning and limits give the possibility to split the MVA analysis based on energy and zenith angle on-the-fly. The selection of the data tree is typically the sample we wish to determine mass composition for (either mock data or real data). Important to note is that some observable (for example for \texttt{deltas38} and \texttt{deltarisetime}) are always transformed using the selected data tree. The additional settings are:
+The \textbf{MVA analysis} part is the main part of this software and takes care of setting up and running the MVA analysis. The currently selected file is displayed in the top entry. In the listbox we can select observables that will be used as input features in the MVA analysis. Observables that are already included in the program are described in Chapter \ref{ch:observables}. The uncertainty shift setting is used to individually apply systematic uncertainties to observables in order to estimate the final systematic uncertainty of the analysis. Instructions for systematic uncertainty shifts need to be added to the \texttt{./src/mva\_analysis.cpp} file as described in Chapter \ref{ch:uncert}. The signal and background trees set training samples that the MVA analysis will try to separate according to the selected MVA method. All instructions for MVA methods are taken from the \texttt{./input/mva\_options.txt} input file. The setting for the MVA cut value is currently only a holder for eventual event-by-event identification and is automatically or manually selected during the analysis as the cut for best separation between signal and background. Settings on binning and limits give the possibility to split the MVA analysis based on energy and zenith angle on-the-fly. The selection of the data tree is typically the sample we wish to determine mass composition for (either mock data or real data). Important to note is that some observables (for example \texttt{deltas38} and \texttt{deltarisetime}) are always transformed using the selected data tree. The additional settings are:
 \begin{itemize}
 \item[$\bullet$] \emph{Automatically run analysis over all energy bins:}\\As the description suggests, this automatically runs the analysis over all selected energy bins. Note that this only works when we have a single MVA method selected.
 \item[$\bullet$] \emph{Manually select an MVA cut after method training:}\\In case we wish to manually set the MVA cut value (mostly a holder for future event-by-event identification) after separation strength is known.
@@ -142,7 +142,7 @@ The \textbf{MVA analysis} part is the main part of this software and takes care 
 \item[$\bullet$] \emph{Apply bias correction for Auger FD standard data files (AugerWiki/XmaxHeatIcrc2017):}\\Apply bias corrections to the selected data tree according to the FD standard data approach, as described in \cite{CompositionAugerWiki}.
 \item[$\bullet$] \emph{Apply bias correction for Auger HECO data files (AugerWiki/XmaxHeatIcrc2017):}\\Apply bias corrections to the selected data tree according to the HECO data approach, as described in \cite{CompositionAugerWiki}.
 \item[$\bullet$] \emph{Use published S38 fit (arXiv:1502.01323, page 65):}\\When converting observable $S_{1000}$ into $\Delta S_{38}$ instead use the previously published fitting function values, presented in \cite{paoDesignReport}.
-\item[$\bullet$] \emph{Apply atmospheric and alignment resolution smearing on Monte Carlo simulations:}\\Apply the smearing and bias corrections for Monte Carlo simulation samples, as described in \cite{xmaxMoments,xmaxUnger}.
+\item[$\bullet$] \emph{Apply atmospheric and alignment resolution smearing on Monte Carlo simulations:}\\Apply the smearing and bias corrections for Monte Carlo simulation samples, as described in \cite{xmaxMoments,xmaxUnger}. Note that smearing only works for Hybrid of FD data.
 \item[$\bullet$] \emph{Treat selected data tree as Monte Carlo simulations (for AugerMix):}\\Perform Monte Carlo corrections on the selected data tree. Otherwise it is assumed that the data tree has real data selected.
 \end{itemize}
 
@@ -172,9 +172,9 @@ up to the fitting approach, force one of the elemental fractions $f_i$ to obey t
 \end{itemize}
 The \textbf{Distribution and scatter plot} part plots distributions or scatter plots of observables in order to make comparisons. In the listbox, we can select between all observables, including the output MVA variable. We can then select up to three different trees from the output MVA file, taking signal colors (blue), background colors (red) or data colors (black). The following options give some additional flexibility:
 \begin{itemize}
-\item[$\bullet$] \emph{Perform a comparison of different observables (select in listbox):}\\Instead of performing a normal plot, make a comparison between different observables from a single tree.
-\item[$\bullet$] \emph{Use negative uncertainties instead of mean values:}\\Use mean values with added negative uncertainties unstead of plotting mean values in the histogram or scatter plot.
-\item[$\bullet$] \emph{Use positive uncertainties instead of mean values:}\\Use mean values with added positive uncertainties unstead of plotting mean values in the histogram or scatter plot.
+\item[$\bullet$] \emph{Perform a comparison of different observables (select in listbox):}\\Instead of creating a normal plot, make a comparison between different observables from a single tree.
+\item[$\bullet$] \emph{Use negative uncertainties instead of mean values:}\\Use mean values with added negative uncertainties instead of plotting mean values in the histogram or scatter plot.
+\item[$\bullet$] \emph{Use positive uncertainties instead of mean values:}\\Use mean values with added positive uncertainties instead of plotting mean values in the histogram or scatter plot.
 \end{itemize}
 
 \section{Handling uncertainties} \label{ch:uncert}
@@ -191,9 +191,9 @@ where $N$ is the number of elements in the mixture, $f_i$ are fractions of indiv
 %However, this approach did not bring satisfying fits, because distributions are finite and $\chi^2$ fits are primarily used on continuous distributions. This is especially apparent at the highest energy range, where the number of Pierre Auger data events is low.
 Instead of using a $\chi^2$ fitting procedure, a maximum likelihood fitting approach was used through the TFractionFitter fitting package \cite{tfractionfitter} included in the ROOT framework. Specifically designed for fitting finite distributions with Poissonian statistics \cite{finiteMCfitting}, it naturally satisfies the normalization condition
 \begin{equation}
-\displaystyle\sum_{i=1}^{N}{f_i} = 1.
+\displaystyle\sum_{i=1}^{N}{f_i} = 1
 \end{equation}
-and only limits elemental fractions to a $[0,1]$ range. The fitting procedure does not only enable MVA variable distribution fitting, but distribution fitting on any single observable. This skips the MVA analysis and tries to perform a distribution fit, with the same approach as described above. Fig. \ref{fig:distFit} shows the fitting procedure on MVA variable and $X_{\textrm{max}}$ distributions for a single energy bin.
+and limits elemental fractions to a $[0,1]$ range. The fitting procedure does not only enable MVA variable distribution fitting, but distribution fitting on any single observable. This skips the MVA analysis and tries to perform a distribution fit, with the same approach as described above. Fig. \ref{fig:distFit} shows the fitting procedure on MVA variable and $X_{\textrm{max}}$ distributions for a single energy bin.
 %
 \begin{figure}[!h]
 \centering
@@ -207,7 +207,7 @@ The fitting procedure returns elemental fractions for all included elements in t
 \section{Important input files}
 Any important input files, through which the user can adjust or change input settings, are located in the \texttt{./input} folder. The following are some of these files:
 \begin{itemize}
-\item[$\bullet$] \textbf{MVA method options:}\\Input file with instructions for each of the included MVA method from the TMVA package (\texttt{./input/mva\_options.txt}). The descriptive name will appear in the \texttt{Choose MVA analysis method} dropdown menu, while the method name is the name TMVA recognizes as an MVA method. Options for each of these methods can be adjusted, according to the TMVA documentation \cite{tmvadocument}. The file \texttt{./input/mva\_options.txt} must not be renamed in order for this to work!
+\item[$\bullet$] \textbf{MVA method options:}\\Input file with instructions for each of the included MVA methods from the TMVA package (\texttt{./input/mva\_options.txt}). The descriptive name will appear in the \texttt{Choose MVA analysis method} dropdown menu, while the method name is the name TMVA recognizes as an MVA method. Options for each of these methods can be adjusted, according to the TMVA documentation \cite{tmvadocument}. The file \texttt{./input/mva\_options.txt} must not be renamed in order for this to work!
 \item[$\bullet$] \textbf{Observables file:}\\Input file with all observables we wish to extract from the ADST file and use in the MVA analysis (\texttt{./input/observables.txt}). The observable name appears in the observables listbox, while the selection sets the default selection of observables in the listbox. Note that the observable name must not include any whitespaces, because these are also used while naming output plots. Minimum and maximum limits are only used during plotting, where these two values are used to set limits for the appropriate axis. Axis labels give a description of the observable, which will be used during plotting. The file \texttt{./input/observables.txt} must not be renamed in order for this to work!
 \item[$\bullet$] \textbf{Custom energy binning file:}\\Example of a custom energy binning input file \\(\texttt{./input/custom\_energy\_bins.txt}). The two columns determine low and high values of each energy bin as shown in this example:
 \begin{lstlisting}[language=bash]
@@ -250,7 +250,7 @@ Note that all of these input files have to be structured by the user accordingly
 \end{itemize}
 
 \chapter{Extensive air shower observables} \label{ch:observables}
-{\noindent}This chapter describes the extensive air shower observables already included in the program and gives instructions on how to add new observables. Each of the descriptions also explains how it was extracted from the ADST file structure of Offline. Note that \texttt{fFile} denotes the reconstructed ADST file (\texttt{RecEventFile}) and \texttt{fRecEvent} denotes an event in this file (\texttt{RecEvent}).
+{\noindent}This chapter describes the extensive air shower observables already included in the program and gives instructions on how to add new observables. Each of the descriptions also explains how it was extracted from the ADST file structure of Offline. Note that \texttt{fFile} denotes the reconstructed ADST file (\texttt{RecEventFile}) and \texttt{fRecEvent} denotes an event in this file (\texttt{RecEvent}). The rewriting and extraction of individual observables is handled in files \texttt{./src/adst\_mva.cpp} and \texttt{./src/calc\_observables.cpp}.
 
 \section{Observable descriptions}
 
@@ -286,6 +286,47 @@ Similarly to the previous two observables, $\lambda$ is also a fitting parameter
 The reading and extraction of this observable is handled by function \texttt{GetLambda} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{shfoot} -- Early development of the extensive air shower}
+The shower foot is an experimental observable which treats the longitudinal profile of a shower similarly as risetime determines the early deposit of energy from SD photomultiplier signals. The idea of this variable is to determine the depth at which the longitudinal profile reaches $10\%$ of the maximum of the cumulative longitudinal profile. As such, the observable could be able to predict the early development of an extensive shower, which should be larger for heavier primary particles. Note, however, that this observable has not been thoroughly tested and should not be used, unless more detailed analysis is performed.\\
+The shower foot has a default fractional value of $\texttt{showerlimit} = 0.1$, where it is estimated. For each of the FD buildings (denoted with \texttt{eye}), we first extract the longitudinal development of the shower with
+\begin{lstlisting}[language=C++]
+  vector<FDEvent> acteyes;
+  acteyes = fRecEvent->GetFDEvents();
+  vector<double> *slantDepth = new vector<double>;
+  vector<double> *profiledEdX = new vector<double>;
+  vector<double> *profiledEdXerr = new vector<double>;
+  *slantDepth = (acteyes[eye].GetFdRecShower()).GetDepth();
+  *profiledEdX = (acteyes[eye].GetFdRecShower()).GetEnergyDeposit();
+  *profiledEdXerr = (acteyes[eye].GetFdRecShower()).GetEnergyDepositError();
+\end{lstlisting}
+This profile is then converted into its cumulative distribution with:
+\begin{lstlisting}[language=C++]
+  double x = 0., xerr = 0.;
+  vector<double> xfoot;
+  vector<double> yfoot;
+  vector<double> yerrfoot;
+  for(int i = 0; i < slantDepth->size(); i++)
+  {
+    x += profiledEdX->at(i);
+    xerr += profiledEdXerr->at(i);
+    xfoot.push_back(slantDepth->at(i));
+    yfoot.push_back(x);
+    yerrfoot.push_back(xerr);
+  }
+\end{lstlisting}
+Once we have this distribution, we simply determine the final shower foot value, when the cumulative distribution reaches the \texttt{shfootlimit} fraction of its maximum
+\begin{lstlisting}[language=C++]
+  for(int i = 0; i < yfoot.size(); i++)
+  {
+    if(yfoot[i] >= shfootlimit*(yfoot[yfoot.size()-1]))
+    {
+      // estimate the exact value between two points with linear interpolation
+      // ...
+      break;
+    }
+  }
+\end{lstlisting}
+The reading and extraction of this observable is handled by functions \texttt{CalculateShowerFoot} and \texttt{GetShowerFoot} in file \texttt{./src/calc\_observables.cpp}.
+
 \subsection{\texttt{energySD} -- SD reconstructed primary energy}
 This is the reconstructed energy as measured by the surface detector (SD). From the ADST structure, $E_{\textrm{SD}}$ can be accessed with
 \begin{lstlisting}[language=C++]
@@ -314,7 +355,7 @@ For the time being, the number of muons at ground level is only determined throu
 The reading and extraction of this observable is handled by function \texttt{GetNrMuons} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{nrstations} -- Number of triggered stations}
-This observable gives the number of SD stations that were triggered by an event. Each station is checked in order to see, if its signal is above the minimum VEM signal (\texttt{minSignal}), if it is not low gain saturated, if it is inside the limits for the distance from the shower axis, if its asymmetry corrected risetime has been calculated correctly and if its calculated uncertainty is positive. If the total number of stations tiggered by an event is lower than a predetermined limit of triggered stations (\texttt{minPoint}), this value will not be available. From the ADST structure, the number of triggered stations can be accessed with
+This observable gives the number of SD stations that were triggered by an event. Each station is checked in order to see, if its signal is above the minimum VEM signal (\texttt{minSignal}), if it is not low gain saturated, if it is inside the limits for the distance from the shower axis (\texttt{limitDistance}), if its asymmetry corrected risetime has been calculated correctly and if its calculated uncertainty is positive. If the total number of stations tiggered by an event is lower than a predetermined limit of triggered stations for calculation of risetime (\texttt{minPoint}), this value will not be available. From the ADST structure, the number of triggered stations can be accessed with
 \begin{lstlisting}[language=C++]
   vector<SdRecStation> actstations;
   actstations = fRecEvent->GetSDEvent().GetStationVector();
@@ -337,10 +378,10 @@ This observable gives the number of SD stations that were triggered by an event.
     }
   }
 
-  if(itemp < minPoints)
+  if(itemp >= minPoints)
     nrstations = itemp;
 \end{lstlisting}
-The reading and extraction of this observable is handled by functions \texttt{SetStationValue} and \texttt{GetNrStations} in file \texttt{./src/calc\_observables.cpp}.
+The reading and extraction of this observable is handled by functions \texttt{SetStationValues} and \texttt{GetNrStations} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{shwsize} -- SD signal at $\unit[1000]{m}$ from the shower axis}
 This returns the SD signal at $\unit[1000]{m}$ from the shower axis as determined by the fit of the lateral distribution function
@@ -383,7 +424,7 @@ where $A$ and $B$ are free fitting parameters. As before, this fit can be replac
 \begin{equation}
 \Delta S_{38} = S_{38} - f_{38}(E_{\textrm{FD}}).
 \end{equation}
-As opposed to other observables, this observable is calculated from SD station signals at $\unit[1000]{m}$ from the shower axis right before the MVA analysis step. This enables the user to select the data set, which will produce the reference zero value of the $\Delta S_{38}$ observable.
+As opposed to other observables, this observable is calculated from SD station signals at $\unit[1000]{m}$ from the shower axis right before the MVA analysis step. This enables the user to select the data set, which will produce the reference zero value of the $\Delta S_{38}$ observable. The fitting is handled by function \texttt{SetDeltas} in file \texttt{./src/mva\_analysis.cpp}, while the conversion is handled by functions \texttt{ConvertToS38} and \texttt{ConvertToDeltaS38} in file \texttt{./src/observables.cpp}.
 
 \subsection{\texttt{ldfbeta} -- Lateral distribution function fitting parameter $\beta$}
 $\beta$ is a fitting parameter in the lateral distribution function and is directly extracted from equation \eqref{eq:ldfFunction}. From the ADST structure, $\beta$ can be accessed with
@@ -411,9 +452,9 @@ f(r) = \unit[40]{ns} + a\cdot r + b\cdot r^2
 and take the value at $\unit[1000]{m}$ from the shower axis. Important options for determining this observable are:
 \begin{itemize}
 \item[$\bullet$] \textbf{Range of valid SD station distances from the shower axis:}\\
-Setting minimum and maximum distances for valid SD station risetime enables removal of stations that would cause biases or have problems due to detector sampling. The default value of the range is between $\unit[0]{m}$ and $\unit[1800]{m}$. The range used in \cite{deltaMethod} is however between $\unit[300]{m}$ and $\unit[1400]{m}$ for lower energies, and $\unit[300]{m}$ and $\unit[2000]{m}$ for primary energies above $\unit[10^{19.6}]{eV}$.
+Setting minimum and maximum distances for valid SD station risetime enables removal of stations that would cause biases or have problems due to detector sampling. The default value of the range is between $\unit[0]{m}$ and $\unit[1800]{m}$. The range used in \cite{deltaMethod} is however between $\unit[300]{m}$ and $\unit[1400]{m}$ for energies below $\unit[10^{19.6}]{eV}$, and $\unit[300]{m}$ and $\unit[2000]{m}$ for primary energies above $\unit[10^{19.6}]{eV}$.
 \item[$\bullet$] \textbf{Minimum total SD station signal:}\\
-The minimum SD station signal sets the threshold, which removes any stations with a low signal measurement. The default value of the threshold is $\unit[10]{VEM}$ ($\unit[]{VEM}$ is the Vertical-Equivalent-Muon unit and describes the signal produced by a muon passing the SD station vertically and through the station center). The threshold used in \cite{deltaMethod} reduces this to $\unit[5]{VEM}$ in order to not drop too many SD stations at lower energies.
+The minimum SD station signal sets the threshold, which removes any stations with a low signal measurement. The default value of the threshold is $\unit[10]{VEM}$ ($\unit[]{VEM}$ is the Vertical-Equivalent-Muon unit and describes the signal produced by a muon passing the SD station vertically and through the station center). The threshold used in \cite{deltaMethod} reduces this to $\unit[5]{VEM}$ in order to not remove too many SD stations at lower energies.
 \item[$\bullet$] \textbf{Including low-gain saturated stations:}\\
 The SD signal is recorded in both the high-gain and low-gain channel. This is due to the large extent of signal sizes, when measuring extensive air showers. When the high-gain channel is saturated (signal is higher than the maximum of the ADC converter), analysis is performed on the low-gain channel. If the low-gain channel is saturated, the SD station is typically discarded from any further analysis.
 \item[$\bullet$] \textbf{Evaluation distance:}\\
@@ -457,9 +498,29 @@ Calculation of $\Delta_i$ again differs from the approach used in \cite{deltaMet
 \Delta_R = \frac{1}{N} \displaystyle\sum_{i = 1}^{N} \Delta_i,
 \end{equation}
 where $N$ is the number of triggered stations in a shower event. All uncertainties on $S_{38}$ and $\Delta S_{38}$ are calculated through uncertainty propagation.\\
-As opposed to other observables, this observable is calculated from SD station risetimes right before the MVA analysis step. This enables the user to select the data set, which will produce the reference zero value of the $\Delta_R$ observable.
+As opposed to other observables, this observable is calculated from SD station risetimes right before the MVA analysis step. This enables the user to select the data set, which will produce the reference zero value of the $\Delta_R$ observable. The fitting is handled by function \texttt{SetDeltas} in file \texttt{./src/mva\_analysis.cpp}, while the conversion is handled by function \texttt{ConvertToDelta} in file \texttt{./src/observables.cpp}.
 
 \subsection{\texttt{aop} -- Area-over-peak}
+The area-over-peak (AoP) is an observable that checks the area under the photomultiplier signal trace versus the peak value of the same trace. It is an indicator of electromagnetic versus muonic content in a shower, since muons produce sharp peaks in the station signal (formed high in the atmosphere) and electromagnetic particles form the broad distribution (formed closer to the surface). Showers with higher electromagnetic content will have a larger area under the signal, thus exhibiting a larger AoP value. The area (charge) and peak value of a specific photomultiplier in each of the SD stations are determined with
+\begin{lstlisting}[language=C++]
+  double charge, peak, aop;
+  vector<SdRecStation> stationVector =
+    fRecEvent->GetSDEvent().GetStationVector();
+  for(int i = 0; i < stationVector.size(); i++)
+  {
+    if(stationVector[i].IsCandidate())
+    {
+      // loop over photomultipliers
+      for(int j = 1; j <= 3; j++)
+      {
+        charge = stationVector[i].GetCharge(j);
+        peak = stationVector[i].GetPeak(j);
+	aop = charge/peak;
+      }
+    }
+  }
+\end{lstlisting}
+Individual photomultiplier AoP values are then summed together into a mean AoP value, depending on the number of active photomultipliers and active SD stations in an event. The reading and extraction of this observable is handled by functions \texttt{CalculateAoP} and \texttt{GetAoP} in file \texttt{./src/calc\_observables.cpp}.
 
 \subsection{\texttt{zenithSD} -- SD reconstructed zenith angle}
 This is the reconstructed zenith angle as measured by the surface detector (SD). From the ADST structure, $\theta_{\textrm{SD}}$ can be accessed with
@@ -533,7 +594,74 @@ This is the reconstructed galactic longitude as measured by one of the FD buildi
 The reading and extraction of this observable is handled by function \texttt{GetFdLongitude} in file \texttt{./src/calc\_observables.cpp}.
 
 \section{Adding new observables} \label{ch:add-obs}
-Adding new observables is easy and requires moderate knowledge of the ADST file structure from Offline and simple knowledge of the C++ programming language.
+Adding new observables is easy and requires moderate knowledge of the ADST file structure from Offline and simple knowledge of the C++ programming language. In order to add a new observable, first determine a unique name for it and add it to file \texttt{./input/observables.txt} as a new observable. This will automatically take the new observable into the analysis process. Now, we just need to extract or calculate the value of the observable in the actual code of the program. See the code of other observables for additional help, while changing the code. Follow these steps to correctly edit the code (for example, lets name the new observable \texttt{sigma}):
+\begin{itemize}
+\item[1.] Determine if this is an SD observable, FD observable or a simulated observable, as this will determine its placement in the source code.
+\item[2.] Declare the function in \texttt{./include/adst\_mva.h} inside the public part of the class. You are free to name the function in any way, but it is advisable to keep the naming conventions similar for all observables. For example, we can add an SD or simulated observable with
+\begin{lstlisting}[language=C++]
+  float GetSigma(int type);
+\end{lstlisting}
+To declare the function for an FD observable, instead use
+\begin{lstlisting}[language=C++]
+  float GetSigma(int eye, int type);
+\end{lstlisting}
+\item[3.] Set the default value for the new observable in file \texttt{./src/calc\_observables.cpp}. If this is an SD observable, add the code in the \texttt{ZeroSdObservables} function, if it is an FD observable, add it in the \texttt{ZeroFdObservables} function, and if this is a simulated observable, add it in the \texttt{ZeroSimObservables} function. For example, we can add
+\begin{lstlisting}[language=C++]
+  cursig[j]->SetValue("sigma", -1.);
+\end{lstlisting}
+Note that the default value of virtually all observables is $-1.$ in order to be able to distinguish between events with a valid reconstruction and those that have an invalid reconstruction.
+\item[4.] We now have to add the code for the actual calculation of the new observable. Again look at the type of the observable and correctly add it to the appropriate function \texttt{SetSdObservables}, \texttt{SetFdObservables} or \texttt{SetSimObservables}.
+\begin{itemize}
+\item[$\bullet$] If the observable is an SD or simulated observable, it is enough to get the value from the function declared in step two. For example, we can add
+\begin{lstlisting}[language=C++]
+  cursig[j]->SetValue("sigma", GetSigma(j));
+\end{lstlisting}
+\item[$\bullet$] If the observable is an FD observable, there is an additional step, which handles the combining of stereo events. In the function \texttt{SetFdObservables} find the use of functions that retrieve the observable value and add your own function declared in step two. For example, we can add
+\begin{lstlisting}[language=C++]
+  else if(j == 9)
+     dtemp[k] = GetSigma(i, k);
+\end{lstlisting}
+Since all FD observables are determined together, we must also tell the code, if it has the correct observable. After the above code addition, find the use of observable names and add your own. For example, we can add
+\begin{lstlisting}[language=C++]
+  else if(j == 9)
+     *stemp = "sigma";
+\end{lstlisting}
+Make sure that the numerical value we are comparing to $j$ in both above code segments is always one larger than for the previously used observable.
+\end{itemize}
+\item[5.] Define the function that we declared in the second step. Go to the end of file \texttt{./src/calc\_observables.cpp} and add the definition, which will calculate or retrieve the new observable. For example, we can add
+\begin{lstlisting}[language=C++]
+  float AdstMva::GetSigma(int type)
+  {
+     /* Code segment for the mean value of the observable */
+     if(type == 0)
+        // ...
+     /* Code segment for the absolute negative statistical uncertainty of the observable */
+     else if(type == 1)
+        // ...
+     /* Code segment for the absolute positive statistical uncertainty of the observable */
+     else if(type == 2)
+        // ...
+  }
+\end{lstlisting}
+This will give your new observable a mean and statistical uncertainty values.
+\end{itemize}
+
+\section{Applying corrections before the MVA training step}
+For certain purposes it is important to apply corrections to simulations and data just before starting the MVA training. This can be either calculation of a new observable (as for the above examples of $\Delta S_{38}$ and $\Delta_R$), or applying corrections such as detector smearing, bias corrections,\dots Since sometimes, it is not known which dataset corresponds to simulations and which to data before the user specifies them, it is important to have a section of code, where all of the selection, cuts and corrections are applied before acquiring the final input dataset for the MVA analysis. This is performed through function \texttt{MvaSetTrees} in file \texttt{./src/mva\_analysis.cpp}, which:
+\begin{itemize}
+\item[1.] Reads the complete tree structure in the ROOT file for each of the included datasets. This includes all of the observables that have been saved to the file.
+\item[2.] Prepares the same tree structure for a temporary tree in a new ROOT file, which will be used as the final input to the MVA analysis (\texttt{temporary\_mvatree\_file.root}). This way it is possible to apply on-the-fly changes to your input data.
+\item[3.] Reads fitting results for $\Delta S_{38}$ and $\Delta_R$, observables which require on-the-fly calculation.
+\item[4.] Applies optional systematic uncertainty shifts in order to estimate the final systematic uncertainty of the analysis. This is implemented through function \texttt{ApplyUncertainty} defined in file \texttt{./src/observables.cpp}. Note that only a select few systematics have been implemented so far ($X_{\textrm{max}}$ and risetime), any others should be included into the \texttt{ApplyUncertainty} function.
+\item[5.] Applies optional bias corrections to $X_{\textrm{max}}$ and FD energy for standard FD and HECO data, as described in \cite{CompositionAugerWiki}. This is implemented through functions \texttt{ApplyCorrectionFD} and \texttt{ApplyCorrectionHECO} defined in file \texttt{./src/observables.cpp}.
+\item[6.] Applies optional atmospheric and alignment resolution smearing to $X_{\textrm{max}}$ for Monte Carlo simulations, as described in \cite{xmaxMoments,xmaxUnger}. This is implemented through function \texttt{ApplySmearing} defined in file \texttt{./src/observables.cpp}.
+\item[7.] Converts absolute observables $S_{1000}$ and $t_{1000}$ into relative observables $\Delta S_{38}$ and $\Delta_R$, through functions \texttt{ConvertToS38}, \texttt{ConvertToDeltaS38} and \texttt{ConvertToDelta} defined in file \texttt{./src/observables.cpp}.
+\item[8.] Converts the zenith angle $\theta$ into a usable value for the MVA analysis $\sec \theta$. This is implemented through function \texttt{SetupZenith} defined in file \texttt{./src/observables}.
+\item[9.] Creates a selection of events, which have valid observables, and fall within the set energy and zenith angle selection cuts. The selection is done with function \texttt{IsInsideCuts} defined in file \texttt{./src/mva\_analysis.cpp}.
+\end{itemize}
+
+\chapter{MVA analysis procedure}
+Description of the MVA analysis procedure and all its steps.
 
 \pagebreak
 \titleformat{\chapter}[hang]{\normalfont\bf}{}{12pt}{\Large}

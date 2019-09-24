@@ -91,6 +91,9 @@
      colorecho "  --root-install=/root/install/directory"
      colorecho "  --offline-install=/offline/install/directory"
      colorecho ""
+     colorecho "Note that when using a preinstalled version of offline, omit the ADST version:"
+     colorecho "  ./configure --offline-install=\$AUGEROFFLINEROOT"
+     colorecho ""
      colorecho "Example:"
      colorecho "  ./configure all --root-install=/home/user/root"
      colorecho ""
@@ -133,50 +136,86 @@
    {
      # Put together the makefile and save it into base directory
      if [ "$1" != "" ]; then
-       cat $startdir/setup/Makefile1.in > $startdir/Makefile
-       tempstring=""
-       for verPrep in ${adstver[@]}
-       do
-         tempstring=$(echo "${tempstring} \$(TARGET${verPrep})")
-	 echo "TARGET${verPrep}=\$(BIN)/auger-analysis-gui-${verPrep}" >> $startdir/Makefile
-       done
-       echo "ROOTVER=${ROOTVER}" >> $startdir/Makefile
-       cat $startdir/setup/Makefile2.in >> $startdir/Makefile
-       echo "all:${tempstring}" >> $startdir/Makefile
-       # NEWREMOVE - TODO
-       #echo "support: \$(BIN)/tmvagui \$(BIN)/create_mva_plots \$(BIN)/data_fraction_plots \$(BIN)/individual_cut \$(BIN)/mva_fit_histogram \$(BIN)/histograming \$(BIN)/mass_composition_fit \$(BIN)/plotting_script" >> $startdir/Makefile
-       echo "support: \$(BIN)/tmvagui \$(BIN)/create_mva_plots \$(BIN)/histograming" >> $startdir/Makefile
-       echo "library: \$(LDIR)/libsubstr.so" >> $startdir/Makefile
-       for verPrep in ${adstver[@]}
-       do
-         echo "support-${verPrep}: \$(BIN)/batch-rewrite-${verPrep}" >> $startdir/Makefile
-       done
-       echo "" >> $startdir/Makefile
+       if [ "$1" == "preinstall" ]; then
+         cat $startdir/setup/Makefile1.in > $startdir/Makefile
+         echo "TARGET${1}=\$(BIN)/auger-analysis-gui-${1}" >> $startdir/Makefile
+         echo "ROOTVER=${ROOTVER}" >> $startdir/Makefile
+         cat $startdir/setup/Makefile2.in >> $startdir/Makefile
+         echo "all: \$(TARGET${1})" >> $startdir/Makefile
+         # NEWREMOVE - TODO
+         #echo "support: \$(BIN)/tmvagui \$(BIN)/create_mva_plots \$(BIN)/data_fraction_plots \$(BIN)/individual_cut \$(BIN)/mva_fit_histogram \$(BIN)/histograming \$(BIN)/mass_composition_fit \$(BIN)/plotting_script" >> $startdir/Makefile
+         echo "support: \$(BIN)/tmvagui \$(BIN)/create_mva_plots \$(BIN)/histograming" >> $startdir/Makefile
+         echo "library: \$(LDIR)/libsubstr.so" >> $startdir/Makefile
+         echo "support-${1}: \$(BIN)/batch-rewrite-${1}" >> $startdir/Makefile
+         echo "" >> $startdir/Makefile
 
-       for verPrep in ${adstver[@]}
-       do
-	 echo "# Make for main program (ADST version ${verPrep})" >> $startdir/Makefile
-         echo "\$(TARGET${verPrep}): \$(LDIR)/libsubstr.so \$(BIN)/batch-rewrite-${verPrep} \${FILES}" >> $startdir/Makefile
-	 echo -e '\t@echo "\\n# Compiling the main program (version '${verPrep}') ------------------------------------------"' >> $startdir/Makefile
-#	 echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+         echo "# Make for main program (ADST version ${1})" >> $startdir/Makefile
+         echo "\$(TARGET${1}): \$(LDIR)/libsubstr.so \$(BIN)/batch-rewrite-${1} \${FILES}" >> $startdir/Makefile
+         echo -e '\t@echo "\\n# Compiling the main program (version '${1}') ------------------------------------------"' >> $startdir/Makefile
+#        echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
          if [ "$ROOTVER" == "5" ]; then
-	   echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+           echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
          elif [ "$ROOTVER" == "6" ]; then
            echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
          fi
          echo "" >> $startdir/Makefile
          echo "# Batch rewrite rules -----------------------------------------------" >> $startdir/Makefile
-	 echo "\$(BIN)/batch-rewrite-${verPrep}: \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp \$(SRC)/adst_mva.cpp \$(SRC)/calc_observables.cpp" >> $startdir/Makefile
-	 echo -e '\t@echo "\\n# Creating the standalone batch rewrite (version '${verPrep}') ------------------------------------------"' >> $startdir/Makefile
-#         echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+         echo "\$(BIN)/batch-rewrite-${1}: \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp \$(SRC)/adst_mva.cpp \$(SRC)/calc_observables.cpp" >> $startdir/Makefile
+         echo -e '\t@echo "\\n# Creating the standalone batch rewrite (version '${1}') ------------------------------------------"' >> $startdir/Makefile
+#         echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
          if [ "$ROOTVER" == "5" ]; then
-           echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+           echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
          elif [ "$ROOTVER" == "6" ]; then
-           echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+           echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
          fi
          echo "" >> $startdir/Makefile
-       done
-       cat $startdir/setup/Makefile3.in >> $startdir/Makefile
+         cat $startdir/setup/Makefile3.in >> $startdir/Makefile
+       else
+         cat $startdir/setup/Makefile1.in > $startdir/Makefile
+         tempstring=""
+         for verPrep in ${adstver[@]}
+         do
+           tempstring=$(echo "${tempstring} \$(TARGET${verPrep})")
+           echo "TARGET${verPrep}=\$(BIN)/auger-analysis-gui-${verPrep}" >> $startdir/Makefile
+         done
+         echo "ROOTVER=${ROOTVER}" >> $startdir/Makefile
+         cat $startdir/setup/Makefile2.in >> $startdir/Makefile
+         echo "all:${tempstring}" >> $startdir/Makefile
+         # NEWREMOVE - TODO
+         #echo "support: \$(BIN)/tmvagui \$(BIN)/create_mva_plots \$(BIN)/data_fraction_plots \$(BIN)/individual_cut \$(BIN)/mva_fit_histogram \$(BIN)/histograming \$(BIN)/mass_composition_fit \$(BIN)/plotting_script" >> $startdir/Makefile
+         echo "support: \$(BIN)/tmvagui \$(BIN)/create_mva_plots \$(BIN)/histograming" >> $startdir/Makefile
+         echo "library: \$(LDIR)/libsubstr.so" >> $startdir/Makefile
+         for verPrep in ${adstver[@]}
+         do
+           echo "support-${verPrep}: \$(BIN)/batch-rewrite-${verPrep}" >> $startdir/Makefile
+         done
+         echo "" >> $startdir/Makefile
+
+         for verPrep in ${adstver[@]}
+         do
+           echo "# Make for main program (ADST version ${verPrep})" >> $startdir/Makefile
+           echo "\$(TARGET${verPrep}): \$(LDIR)/libsubstr.so \$(BIN)/batch-rewrite-${verPrep} \${FILES}" >> $startdir/Makefile
+           echo -e '\t@echo "\\n# Compiling the main program (version '${verPrep}') ------------------------------------------"' >> $startdir/Makefile
+#          echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+           if [ "$ROOTVER" == "5" ]; then
+             echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+           elif [ "$ROOTVER" == "6" ]; then
+             echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+           fi
+           echo "" >> $startdir/Makefile
+           echo "# Batch rewrite rules -----------------------------------------------" >> $startdir/Makefile
+           echo "\$(BIN)/batch-rewrite-${verPrep}: \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp \$(SRC)/adst_mva.cpp \$(SRC)/calc_observables.cpp" >> $startdir/Makefile
+           echo -e '\t@echo "\\n# Creating the standalone batch rewrite (version '${verPrep}') ------------------------------------------"' >> $startdir/Makefile
+#           echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+           if [ "$ROOTVER" == "5" ]; then
+             echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+           elif [ "$ROOTVER" == "6" ]; then
+             echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+           fi
+           echo "" >> $startdir/Makefile
+         done
+         cat $startdir/setup/Makefile3.in >> $startdir/Makefile
+       fi
      else
        if [ ! -f $startdir/Makefile ]; then
          cat $startdir/setup/Makefile1.in > $startdir/Makefile
@@ -200,9 +239,9 @@
 	 echo -e '\t@echo "\\n# Creating the standalone batch rewrite (version '${adstver[0]}') ------------------------------------------"' >> $startdir/Makefile
 #         echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
          if [ "$ROOTVER" == "5" ]; then
-           echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+           echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
          elif [ "$ROOTVER" == "6" ]; then
-           echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+           echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
          fi
          cat $startdir/setup/Makefile3.in >> $startdir/Makefile
        fi
@@ -412,6 +451,8 @@
        echo "  echo \"   ./start.sh $verSetup          (GUI with ADST version $verSetup)\"" >> $startdir/start.sh
        echo "  echo \"   ./start.sh rewrite $verSetup  (Batch rewrite with ADST version $verSetup)\"" >> $startdir/start.sh
      done
+     echo "  echo \"   ./start.sh preinstall          (GUI with a preinstalled version of ADST)\"" >> $startdir/start.sh
+     echo "  echo \"   ./start.sh rewrite preinstall  (Batch rewrite with a preinstalled version of ADST)\"" >> $startdir/start.sh
      echo "}" >> $startdir/start.sh
      echo "" >> $startdir/start.sh
 
@@ -433,6 +474,7 @@
 
        count=$(( $count + 1 ))
      done
+     tempstring=$(echo "${tempstring} || [ \"\$1\" == \"preinstall\" ]")
      tempstring=$(echo "${tempstring}; then")
      echo "$tempstring" >> $startdir/start.sh
      echo "  offversion=\$1" >> $startdir/start.sh
@@ -449,6 +491,7 @@
 
        count=$(( $count + 1 ))
      done
+     tempstring=$(echo "${tempstring} || [ \"\$2\" == \"preinstall\" ]")
      tempstring=$(echo "${tempstring}; then")
      echo "$tempstring" >> $startdir/start.sh
      echo "  offversion=\$2" >> $startdir/start.sh
@@ -460,6 +503,8 @@
      echo "" >> $startdir/start.sh
      echo "if [ \$offlinedirectory != -1 ]; then" >> $startdir/start.sh
      echo "  export ADSTROOT=\$offlinedirectory" >> $startdir/start.sh
+     echo "  export LD_LIBRARY_PATH=\${ADSTROOT}/lib:\${LD_LIBRARY_PATH}" >> $startdir/start.sh
+     echo "  export PATH=\${ADSTROOT}/bin:\${PATH}" >> $startdir/start.sh
      echo "  echo \"Using ADST installed in \$ADSTROOT\"" >> $startdir/start.sh
      echo "else" >> $startdir/start.sh
 
@@ -526,6 +571,12 @@
 
        count=$(( $count + 1 ))
      done
+     echo "elif [ \"\$offversion\" == \"preinstall\" ]; then" >> $startdir/start.sh
+     echo "  if [ \"\$1\" == \"rewrite\" ]; then" >> $startdir/start.sh
+     echo "    ./bin/batch-rewrite-preinstall \"\${@:3}\"" >> $startdir/start.sh
+     echo "  else" >> $startdir/start.sh
+     echo "    ./bin/auger-analysis-gui-preinstall" >> $startdir/start.sh
+     echo "  fi" >> $startdir/start.sh
      echo "else" >> $startdir/start.sh
      echo "  echo \"Error! No ADST version supplied.\"" >> $startdir/start.sh
      echo "  helptext" >> $startdir/start.sh
@@ -585,7 +636,7 @@
      fi
 
      if [ $offlinedirectory != -1 ]; then
-       colorecho "Using a previously installed version of ADST from an Offline installation."
+       colorecho "Using a previously installed version of ADST from $offlinedirectory."
        export ADSTROOT=$offlinedirectory
      else
        colorecho "Installing a version of ADST packaged with this software ($1)."
@@ -695,6 +746,8 @@
        ConfigureSupport $1
      elif [ "$1" == "all" ]; then
        ConfigureAll $1
+     elif [ "$1" == "preinstall" ]; then
+       ConfigureAdst $1
      fi
 
      for adst in ${adstver[@]}
@@ -720,13 +773,18 @@
      fi
    
      # Print help and exit if we give a wrong first argument
-     for arg in ${args[@]}
-     do
-       if  [ "$1" == "$arg" ]; then
-	 PerformConfigure $1
-	 exit 0
-       fi
-     done
+     if [ $offlinedirectory != -1 ]; then
+       PerformConfigure "preinstall"
+       exit 0
+     else
+       for arg in ${args[@]}
+       do
+         if  [ "$1" == "$arg" ]; then
+           PerformConfigure $1
+           exit 0
+         fi
+       done
+     fi
 
      errorecho "Error! Wrong configuration option selected (first argument)."
      echo ""

@@ -249,7 +249,7 @@ void Observables::ApplyCorrectionHECOErrors(Observables *mean, int type)
    delete[] ftemp;
 }
 
-// Applying Xmax and energy corrections to Auger HECO data
+// Applying systematic uncertainty to the selected observable
 void Observables::ApplyUncertainty(Observables *errneg, Observables *errpos, string uncerObs, int type)
 {
    if((type == 0) || (type == 1))
@@ -282,6 +282,8 @@ void Observables::ApplyUncertainty(Observables *errneg, Observables *errpos, str
                      ftemp[0] += 25.0;//ftemp[2];
 	          SetValue(i, ftemp[0]);
 	       }
+               /*------ Define systematic uncertainty shifts for other observables here ------*/
+               /*------ Define systematic uncertainty shifts for other observables here ------*/
 	    }
 	 }
       }

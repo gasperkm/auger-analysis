@@ -408,7 +408,7 @@ Using the container, you can open its shell as read-only or as writable:
   # Opening a read-only container
   singularity shell container.sif
   # Opening a writable container
-  sudo singularity shell --writable build container/
+  sudo singularity shell --writable container/
 \end{lstlisting}
 For more options when using the container, see singularity documentation \cite{singularitydoc}. The most important options is for mounting disks, which is done with \linebreak\texttt{-B /diskname}.\\
 \textbf{Important:} Even if the container is opened in read-only mode, you are still able to write to any mounted disks and inside the home folder. Think of it as having normal user access without root access.

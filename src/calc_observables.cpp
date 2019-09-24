@@ -18,6 +18,9 @@ int AdstMva::SetSimObservables(Observables **cursig)
    for(int j = 0; j < 3; j++)
    {
       cursig[j]->SetValue("nrmu", GetNrMuons(j));
+
+      /*------ Set values for new simulated observables here ------*/
+      /*------ Set values for new simulated observables here ------*/
    }
    return 0;
 }
@@ -31,6 +34,9 @@ void AdstMva::ZeroSimObservables(Observables **cursig)
    for(int j = 0; j < 3; j++)
    {
       cursig[j]->SetValue("nrmu", -1.);
+
+      /*------ Add default values for new simulated observables here ------*/
+      /*------ Add default values for new simulated observables here ------*/
    }
 }
 
@@ -59,6 +65,9 @@ int AdstMva::SetSdObservables(Observables **cursig)
       cursig[j]->SetValue("longitudeSD", GetSdLongitude(j));
       CalculateAoP();
       cursig[j]->SetValue("aop", GetAoP(j));
+
+      /*------ Set values for new SD observables here ------*/
+      /*------ Set values for new SD observables here ------*/
    }
    cout << "Writing out SD observable: nrstations = " << cursig[0]->GetValue("nrstations") << ", err = " << cursig[1]->GetValue("nrstations") << ", " << cursig[2]->GetValue("nrstations") << endl;
    cout << "Writing out SD observable: shwsize = " << cursig[0]->GetValue("shwsize") << ", err = " << cursig[1]->GetValue("shwsize") << ", " << cursig[2]->GetValue("shwsize") << endl;
@@ -72,6 +81,10 @@ int AdstMva::SetSdObservables(Observables **cursig)
    cout << "Writing out SD observable: latitudeSD = " << cursig[0]->GetValue("latitudeSD") << ", err = " << cursig[1]->GetValue("latitudeSD") << ", " << cursig[2]->GetValue("latitudeSD") << endl;
    cout << "Writing out SD observable: longitudeSD = " << cursig[0]->GetValue("longitudeSD") << ", err = " << cursig[1]->GetValue("longitudeSD") << ", " << cursig[2]->GetValue("longitudeSD") << endl;
    cout << "Writing out SD observable: aop = " << cursig[0]->GetValue("aop") << ", err = " << cursig[1]->GetValue("aop") << ", " << cursig[2]->GetValue("aop") << endl;
+
+   /*------ Add optional printout for new SD observables here ------*/
+   /*------ Add optional printout for new SD observables here ------*/
+
    return 0;
 }
 
@@ -97,6 +110,9 @@ void AdstMva::ZeroSdObservables(Observables **cursig)
       cursig[j]->SetValue("latitudeSD", -1.);
       cursig[j]->SetValue("longitudeSD", -1.);
       cursig[j]->SetValue("aop", -1.);
+
+      /*------ Add default values for new SD observables here ------*/
+      /*------ Add default values for new SD observables here ------*/
    }
 }
 
@@ -187,6 +203,8 @@ int AdstMva::SetFdObservables(Observables **cursig)
                dtemp[k] = GetFdLongitude(i, k);
             else if(j == 8)
                dtemp[k] = GetShowerFoot(i, k);
+            /*------ Set values for new FD observables here ------*/
+            /*------ Set values for new FD observables here ------*/
 	    else
 	    {
                *fdobservable = false;
@@ -229,6 +247,8 @@ int AdstMva::SetFdObservables(Observables **cursig)
             *stemp = "longitudeFD";
          else if(j == 8)
             *stemp = "shfoot";
+         /*------ Set names for new FD observables here ------*/
+         /*------ Set names for new FD observables here ------*/
 
          if(nreyes > 0)
 	 {
@@ -294,6 +314,9 @@ void AdstMva::ZeroFdObservables(Observables **cursig)
       cursig[j]->SetValue("latitudeFD", -1.);
       cursig[j]->SetValue("longitudeFD", -1.);
       cursig[j]->SetValue("shfoot", -1.);
+
+      /*------ Add default values for new FD observables here ------*/
+      /*------ Add default values for new FD observables here ------*/
    }
 }
 
@@ -1505,4 +1528,6 @@ float AdstMva::GetNrMuons(int type)
    else
       return -1.0;
 }
-// User defined functions for getting observable values ------------------------
+
+/*------ Define functions for new observables here ------*/
+/*------ Define functions for new observables here ------*/
