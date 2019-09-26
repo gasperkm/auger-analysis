@@ -3,6 +3,7 @@
 
 #include "workstation.h"
 #include "root_include.h"
+#include <string>
 /*#include "TH1.h"
 #include "TROOT.h"
 #include "TList.h"
@@ -34,6 +35,8 @@
 #include "TGButton.h"
 #include "TGLabel.h"
 #include "TGNumberEntry.h"*/
+
+using namespace std;
 
 class MvaEfficiency
 {

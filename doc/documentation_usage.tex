@@ -609,7 +609,7 @@ To declare the function for an FD observable, instead use
 \begin{lstlisting}[language=C++]
   cursig[j]->SetValue("sigma", -1.);
 \end{lstlisting}
-Note that the default value of virtually all observables is $-1.$ in order to be able to distinguish between events with a valid reconstruction and those that have an invalid reconstruction.
+Note that the default value of virtually all observables is $-1$ in order to be able to distinguish between events with a valid reconstruction, those that have an invalid reconstruction and correctly reconstructed events.
 \item[4.] We now have to add the code for the actual calculation of the new observable. Again look at the type of the observable and correctly add it to the appropriate function \texttt{SetSdObservables}, \texttt{SetFdObservables} or \texttt{SetSimObservables}.
 \begin{itemize}
 \item[$\bullet$] If the observable is an SD or simulated observable, it is enough to get the value from the function declared in step two. For example, we can add
@@ -646,7 +646,7 @@ Make sure that the numerical value we are comparing to $j$ in both above code se
 This will give your new observable a mean and statistical uncertainty values.
 \end{itemize}
 
-\section{Applying corrections before the MVA training step}
+\section{Applying corrections before the MVA training step} \label{ch:corrections}
 For certain purposes it is important to apply corrections to simulations and data just before starting the MVA training. This can be either calculation of a new observable (as for the above examples of $\Delta S_{38}$ and $\Delta_R$), or applying corrections such as detector smearing, bias corrections,\dots Since sometimes, it is not known which dataset corresponds to simulations and which to data before the user specifies them, it is important to have a section of code, where all of the selection, cuts and corrections are applied before acquiring the final input dataset for the MVA analysis. This is performed through function \texttt{MvaSetTrees} in file \texttt{./src/mva\_analysis.cpp}, which:
 \begin{itemize}
 \item[1.] Reads the complete tree structure in the ROOT file for each of the included datasets. This includes all of the observables that have been saved to the file.
@@ -658,10 +658,50 @@ For certain purposes it is important to apply corrections to simulations and dat
 \item[7.] Converts absolute observables $S_{1000}$ and $t_{1000}$ into relative observables $\Delta S_{38}$ and $\Delta_R$, through functions \texttt{ConvertToS38}, \texttt{ConvertToDeltaS38} and \texttt{ConvertToDelta} defined in file \texttt{./src/observables.cpp}.
 \item[8.] Converts the zenith angle $\theta$ into a usable value for the MVA analysis $\sec \theta$. This is implemented through function \texttt{SetupZenith} defined in file \texttt{./src/observables}.
 \item[9.] Creates a selection of events, which have valid observables, and fall within the set energy and zenith angle selection cuts. The selection is done with function \texttt{IsInsideCuts} defined in file \texttt{./src/mva\_analysis.cpp}.
+\item[10.] Writes out the output file structure and saves it to the output file, which is used for MVA training.
 \end{itemize}
 
 \chapter{MVA analysis procedure}
-Description of the MVA analysis procedure and all its steps.
+Once all observables are rewritten, cuts chosen, and the MVA input file created (following the steps in Chapter \ref{ch:corrections}), the actual MVA analysis step can continue. On the graphical user interface (GUI) select options for the MVA analysis: from observables to use as machine learning input features, MVA method, signal, background and data trees, energy and zenith cuts, to additional options corresponding to bias corrections. The input file to the MVA analysis is created on-the-fly and named \texttt{temporary\_mvatree\_file.root}. This file doesn't include any events with invalid reconstructions and only takes events inside the selected energy and zenith angle cuts. The analysis is performed through function \texttt{StartMvaAnalysis} in file \texttt{./src/connect\_functions.cpp} and follows these steps:
+\begin{itemize}
+\item[1.] Creates the input file \texttt{temporary\_mvatree\_file.root} using functions \texttt{MvaTreeFile} and \texttt{MvaSetTrees} as described in Chapter \ref{ch:corrections}.
+\item[2.] Runs the \texttt{PerformMvaAnalysis} function in file \texttt{./src/mva\_analysis.cpp}.
+\item[3.] Opens both the created input file and an MVA output file. The MVA output file is named by the user, when saving the analysis. This output file can then later be used for classification purposes.
+\item[4.] Prepares the MVA Factory object, which holds selected options and methods and handles the analysis. 
+\begin{lstlisting}[language=C++]
+  TMVA::Factory *factory = new TMVA::Factory("TMVAClassification", ofile, "!V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G;D:AnalysisType=Classification");
+\end{lstlisting}
+The naming \texttt{TMVAClassification} just defines the name that will be used for the complete analysis and can be recalled to get MVA training results during the classification step. The third argument of the function give some options for the complete analysis, for which the complete list can be found in \cite{tmvadocument}.
+\item[5.] Sets the save directory for weights files created during the analysis. These files are needed during the classification step.
+\begin{lstlisting}[language=C++]
+  (TMVA::gConfig().GetIONames()).fWeightFileDir = ((*currentAnalysisDir) + "/weights").c_str();
+\end{lstlisting}
+\item[6.] Only for ROOT version 6: Create the DataLoader object, which will hold all of the information connected to signal, background and MVA methods.
+\begin{lstlisting}[language=C++]
+  TMVA::DataLoader *dataloader = new TMVA::DataLoader("");
+\end{lstlisting}
+For ROOT version 5, you use the Factory instead of the DataLoader object.
+\item[7.] Chooses observables that will be used as input features to the MVA analysis and chooses signal and background trees for training purposes.
+\begin{lstlisting}[language=C++]
+  // ROOT version 5
+  for(int i = 0; i < nrobs; i++)
+    factory->AddVariable(observables[i].c_str(), 'F');
+  factory->AddSignalTree(signalTree, 1.0);
+  factory->AddBackgroundTree(backgroundTree[i], 1.0);
+
+  // ROOT version 6
+  for(int i = 0; i < nrobs; i++)
+    dataloader->AddVariable(observables[i].c_str(), 'F');
+  dataloader->AddSignalTree(signalTree, 1.0);
+  dataloader->AddBackgroundTree(backgroundTree[i], 1.0);
+\end{lstlisting}
+Note that the option \texttt{'F'} denotes a decimal point of \texttt{float} or \texttt{double} precision. Another posibility is also to have an integer with option \texttt{'I'}.
+\item[8.] Prepares training and test trees, by taking all event files from signal and background trees and then splitting them into two subsets.
+\begin{lstlisting}[language=C++]
+  factory->PrepareTrainingAndTestTree("", "", "nTrain_Signal=0:nTrain_Background=0:SplitMode=Random:NormMode=NumEvents:!V");
+\end{lstlisting}
+When using $0$ for the number of signal and background events to use during training, it will take all available events for training and testing. It will additionally randomly split each set in half, and then use one for training and the other for testing.
+\end{itemize}
 
 \pagebreak
 \titleformat{\chapter}[hang]{\normalfont\bf}{}{12pt}{\Large}

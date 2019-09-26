@@ -236,8 +236,13 @@ public:
 //    int IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, vector<int> *seleye, bool split, int splitbin);
     int IsInsideCuts(Observables *mean, Observables *neg, Observables *pos, bool split, int splitbin);
     int PerformMvaAnalysis(string *infilename, string *outfilename, int *curcount);
+#if ROOTVER == 5
     void SetTmvaType(TMVA::Factory *factory, int nr, string *formula);
     int BookTheMethod(TMVA::Factory *factory);
+#elif ROOTVER == 6
+    void SetTmvaType(TMVA::Factory *factory, TMVA::DataLoader *dataloader, int nr, string *formula);
+    int BookTheMethod(TMVA::Factory *factory, TMVA::DataLoader *dataloader);
+#endif
     int GetTrainingShift(string *mvafilename);
     void GetCorrelations(TFile *corfile);
     void GetApplyCorrelations(string *corname);

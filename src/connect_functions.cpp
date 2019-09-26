@@ -5,6 +5,7 @@
 #include "combine.h"
 
 #include <chrono>
+#include <random>
 
 // Double click on list to select a MVA file for input
 void MyFrame::EnableMvaFile(wxCommandEvent& event)
