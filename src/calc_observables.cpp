@@ -5,6 +5,7 @@
 
 // TODO
 
+#if ROOTADST == 1
 // Functions to hold rules for saving observables ------------------------------
 /*
      Return values determine if the selected observable was valid or not -> these values will set the rewrite code
@@ -1531,3 +1532,5 @@ float AdstMva::GetNrMuons(int type)
 
 /*------ Define functions for new observables here ------*/
 /*------ Define functions for new observables here ------*/
+
+#endif // ROOTADST

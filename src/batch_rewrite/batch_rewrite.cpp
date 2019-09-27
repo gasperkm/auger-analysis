@@ -10,6 +10,9 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
+#if ROOTADST == 0
+   cout << "Program stop: Rewriting of ADST files is currently not available with ROOT version " << ROOTVER << "." << endl;
+#else
    int nrfiles = argc;
    if(nrfiles < 2)
    {
@@ -169,6 +172,8 @@ cout << "Values: " << stemp[1] << "\t" << *itemp << "\t" << ftemp[0] << "\t" << 
    delete itemp;
    delete[] ftemp;
    delete[] ctemp;
+
+#endif // ROOTADST
 
    return 0;
 }

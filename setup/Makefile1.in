@@ -23,8 +23,4 @@ COMPOPT=-fPIC -g -std=c++11 -Wno-deprecated
 # Include directories
 INC=-I. -I$(IDIR) -I$(ADSTROOT)/include/adst -I$(ROOTINC) -I$(TMVASYS)/inc
 
-# Used libraries
-OFFLINELIBS=-lRecEventKG# -lAnalysisKG
-LIBS=-L. -L$(LDIR) -lsubstr -L$(ADSTROOT)/lib $(OFFLINELIBS) -L$(TMVASYS)/lib -lTMVA $(ROOTLIB) -lMLP -lMinuit -lstdc++
-
 # Specific variables for the main program

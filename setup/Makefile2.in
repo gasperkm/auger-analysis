@@ -1,4 +1,13 @@
 
+# Used libraries
+ifeq ($(ROOTVER),5)
+   OFFLINELIBS=-lRecEventKG
+   LIBS=-L. -L$(LDIR) -lsubstr -L$(ADSTROOT)/lib $(OFFLINELIBS) -L$(TMVASYS)/lib -lTMVA $(ROOTLIB) -lMLP -lMinuit -lstdc++
+else
+   OFFLINELIBS=
+   LIBS=-L. -L$(LDIR) -lsubstr $(OFFLINELIBS) -L$(TMVASYS)/lib -lTMVA $(ROOTLIB) -lMLP -lMinuit -lstdc++
+endif
+
 # Filenames for source files
 FILES=$(wildcard $(SRC)/*.cpp)
 SUBFILES=$(wildcard $(SUBSRC)/*.cpp)

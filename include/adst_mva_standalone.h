@@ -4,10 +4,12 @@
 #define _STANDALONE_ 1
 #include "observables.h"
 #include "workstation.h"
-#if OFFVER == 0
-   #include "OfflineIncludeOld.h"
-#elif OFFVER == 1
-   #include "OfflineIncludeNew.h"
+#if ROOTADST == 1
+   #if OFFVER == 0
+      #include "OfflineIncludeOld.h"
+   #elif OFFVER == 1
+      #include "OfflineIncludeNew.h"
+   #endif
 #endif
 
 class AdstMva
@@ -16,6 +18,7 @@ public:
    AdstMva();
    virtual ~AdstMva();
 
+#if ROOTADST == 1
    // Variables for files and their structure
    string outname;
    string inname;
@@ -93,6 +96,10 @@ public:
    double GetAoP(int eye, int type);
 
    double GetNrMuons(int eye, int type);
+
+   /*------ Declare functions for new observables here ------*/
+   /*------ Declare functions for new observables here ------*/
+#endif // ROOTADST
 };
 
 #endif

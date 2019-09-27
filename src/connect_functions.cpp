@@ -1815,6 +1815,7 @@ void MyFrame::SetDefaultMva(wxCommandEvent& event)
 // Rewrite the observables from an ADST file into a root file
 int MyFrame::StartRewrite(string *outfile)
 {
+#if ROOTADST == 1
    // Check for all selections in the first listbox
    (mvaList[0]->widgetLB)->GetSelections(selections);
 
@@ -1876,6 +1877,7 @@ int MyFrame::StartRewrite(string *outfile)
       AlertPopup("No selected files", "No files from the first listbox were selected. Please select one or more files (holding Ctrl or Shift while clicking) to rewrite.");
       return -1;
    }
+#endif
 }
 
 void MyFrame::RunEnergyBinSplitSelect()

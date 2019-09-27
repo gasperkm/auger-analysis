@@ -5,6 +5,7 @@
 
 AdstMva::AdstMva()
 {
+#if ROOTADST == 1
    // ADST objects
    fRecEvent = new RecEvent();
    fDetGeo = new DetectorGeometry();
@@ -19,17 +20,21 @@ AdstMva::AdstMva()
 
    // Initializing some variables
    shfootlimit = 0.1;
+#endif
 }
 
 AdstMva::~AdstMva()
 {
+#if ROOTADST == 1
    delete fRTWeights;
    delete genshw;
    delete sdrecshw;
    delete fDetGeo;
    delete fRecEvent;
+#endif
 }
 
+#if ROOTADST == 1
 void AdstMva::PrepareOtherTrees(unsigned int nrfiles, int innr, vector<string> obs)
 {
    Observables *othersig = new Observables(obs);
@@ -426,3 +431,4 @@ int AdstMva::RewriteObservables(int nrfiles, int innr, Observables **sig, Observ
 
    return 0;
 }
+#endif // ROOTADST

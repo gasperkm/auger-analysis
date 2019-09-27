@@ -156,7 +156,8 @@
          if [ "$ROOTVER" == "5" ]; then
            echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
          elif [ "$ROOTVER" == "6" ]; then
-           echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+#           echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+           echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
          fi
          echo "" >> $startdir/Makefile
          echo "# Batch rewrite rules -----------------------------------------------" >> $startdir/Makefile
@@ -166,7 +167,8 @@
          if [ "$ROOTVER" == "5" ]; then
            echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
          elif [ "$ROOTVER" == "6" ]; then
-           echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+#           echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+           echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
          fi
          echo "" >> $startdir/Makefile
          cat $startdir/setup/Makefile3.in >> $startdir/Makefile
@@ -200,7 +202,8 @@
            if [ "$ROOTVER" == "5" ]; then
              echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
            elif [ "$ROOTVER" == "6" ]; then
-             echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+#             echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+             echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
            fi
            echo "" >> $startdir/Makefile
            echo "# Batch rewrite rules -----------------------------------------------" >> $startdir/Makefile
@@ -210,7 +213,8 @@
            if [ "$ROOTVER" == "5" ]; then
              echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
            elif [ "$ROOTVER" == "6" ]; then
-             echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+#             echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+             echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
            fi
            echo "" >> $startdir/Makefile
          done
@@ -231,7 +235,8 @@
          if [ "$ROOTVER" == "5" ]; then
 	   echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
          elif [ "$ROOTVER" == "6" ]; then
-           echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+#           echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
+           echo -e '\t'"\$(CXX) \$(INC) \$(COMPOPT) \$(FILES) \$(CPPFLAGS) -o \$@ \$(WXCONF) \$(LIBS)" >> $startdir/Makefile
          fi
          echo "" >> $startdir/Makefile
          echo "# Batch rewrite rules -----------------------------------------------" >> $startdir/Makefile
@@ -241,7 +246,8 @@
          if [ "$ROOTVER" == "5" ]; then
            echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
          elif [ "$ROOTVER" == "6" ]; then
-           echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+#           echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ADSTROOT)/include/adst -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp \$(ADSTROOT)/lib/RecEventDict.cc -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
+           echo -e '\t'"\$(CXX) -I. -I\$(IDIR) -I\$(ROOTINC) \$(COMPOPT) \$(SRC)/batch_rewrite/batch_rewrite.cpp \$(SRC)/separate_functions.cpp \$(SRC)/observables.cpp -o \$@ -L. -L\$(ADSTROOT)/lib \$(OFFLINELIBS) \$(ROOTCONF) -lMLP -lMinuit -lstdc++" >> $startdir/Makefile
          fi
          cat $startdir/setup/Makefile3.in >> $startdir/Makefile
        fi
@@ -400,40 +406,40 @@
            errorecho "Compiling of ADST documentation has failed..."
          fi
        fi
-     # Do a test compilation of ADST if we have ROOT 6
-     elif [ "$ROOTVER" == "6" ]; then
-       source $startdir/setup/setup_ADST.sh $startdir $1
-       
-       if [ ! -d $ADSTROOT ]; then
-         cd $startdir/setup
-         tar -zxf ADST_${1}.tar.gz
-       else
-         diff -q $startdir/setup/Makefile_ADST-test_root6.in $ADSTROOT/Makefile
-         if [ $? != 0 ]; then
-           rm -fr $ADSTROOT
-	 fi
-         cd $startdir/setup
-         tar -zxf ADST_${1}.tar.gz
-       fi
-
-       if [ -d $ADSTROOT ]; then
-         cd $ADSTROOT
-         mkdir -p $ADSTROOT/lib
-         mkdir -p $ADSTROOT/include/adst
-
-	 cp $ADSTROOT/RecEvent/src/*.h $ADSTROOT/include/adst/
-	 rm -fr $ADSTROOT/include/adst/*LinkDef.h
-	 cp $ADSTROOT/RecEvent/src/*LinkDef.h $ADSTROOT/lib/
-	 cp $startdir/setup/Makefile_ADST-test_root6.in $ADSTROOT/Makefile
-
-	 make
-         if [ $? != 0 ]; then
-           if [ ! -f $ADSTROOT/lib/libAnalysisKG.so ]; then
-             errorecho "Compiling of ADST has failed..."
-             exit 1
-           fi
-         fi
-       fi
+#     # Do a test compilation of ADST if we have ROOT 6
+#     elif [ "$ROOTVER" == "6" ]; then
+#       source $startdir/setup/setup_ADST.sh $startdir $1
+#       
+#       if [ ! -d $ADSTROOT ]; then
+#         cd $startdir/setup
+#         tar -zxf ADST_${1}.tar.gz
+#       else
+#         diff -q $startdir/setup/Makefile_ADST-test_root6.in $ADSTROOT/Makefile
+#         if [ $? != 0 ]; then
+#           rm -fr $ADSTROOT
+#	 fi
+#         cd $startdir/setup
+#         tar -zxf ADST_${1}.tar.gz
+#       fi
+#
+#       if [ -d $ADSTROOT ]; then
+#         cd $ADSTROOT
+#         mkdir -p $ADSTROOT/lib
+#         mkdir -p $ADSTROOT/include/adst
+#
+#	 cp $ADSTROOT/RecEvent/src/*.h $ADSTROOT/include/adst/
+#	 rm -fr $ADSTROOT/include/adst/*LinkDef.h
+#	 cp $ADSTROOT/RecEvent/src/*LinkDef.h $ADSTROOT/lib/
+#	 cp $startdir/setup/Makefile_ADST-test_root6.in $ADSTROOT/Makefile
+#
+#	 make
+#         if [ $? != 0 ]; then
+#           if [ ! -f $ADSTROOT/lib/libAnalysisKG.so ]; then
+#             errorecho "Compiling of ADST has failed..."
+#             exit 1
+#           fi
+#         fi
+#       fi
      fi
    }
 
